@@ -113,6 +113,58 @@ class SSOAuthController extends Controller
 
         $targetSystem = $request->get('system');
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson() || $request->get('ajax')) {
+            try {
+                $user = Auth::user();
+                $accessResult = $this->ssoService->checkAndApproveUserAccess(
+                    $user->id,
+                    $targetSystem,
+                    $user->email
+                );
+
+                if ($accessResult['status'] === 'multiple_matches') {
+                    return response()->json($accessResult);
+                } else if ($accessResult['status'] === 'approved') {
+                    // Generate token and return redirect URL
+                    $token = $this->ssoService->generateSSOToken(
+                        $user->id,
+                        $targetSystem
+                    );
+
+                    $systems = $this->ssoService->getAvailableSystems();
+                    $targetUrl = $systems[$targetSystem]['url'];
+                    $redirectUrl = "{$targetUrl}/sso/callback?token={$token}";
+
+                    return response()->json([
+                        'status' => 'approved',
+                        'redirect_url' => $redirectUrl
+                    ]);
+                } else {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => $accessResult['message'] ?? 'Access denied'
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('AJAX redirect error: ' . $e->getMessage());
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ]);
+            }
+        }
+
+        // Quick debug response
+        if ($request->get('debug')) {
+            return response()->json([
+                'authenticated' => Auth::check(),
+                'user' => Auth::check() ? Auth::user()->toArray() : null,
+                'system' => $targetSystem,
+                'systems_available' => array_keys($this->ssoService->getAvailableSystems())
+            ]);
+        }
+
         if (!Auth::check()) {
             Log::error('User not authenticated in redirectToSystem');
             return redirect()->route('login')->with('error', 'Please login first.');
@@ -140,6 +192,15 @@ class SSOAuthController extends Controller
         try {
             Log::info('Access result received', ['status' => $accessResult['status']]);
 
+            // Get target system URL once for all cases
+            $systems = $this->ssoService->getAvailableSystems();
+
+            if (!isset($systems[$targetSystem])) {
+                Log::error('System not found!', ['requested' => $targetSystem]);
+                return redirect()->route('dashboard')
+                    ->with('error', 'Invalid system selected');
+            }
+
             if ($accessResult['status'] === 'approved') {
                 Log::info('Access approved, generating token...');
 
@@ -149,17 +210,8 @@ class SSOAuthController extends Controller
                     $targetSystem
                 );
 
-                // Get target system URL
-                $systems = $this->ssoService->getAvailableSystems();
-
                 Log::info('Available systems', ['systems' => array_keys($systems)]);
                 Log::info('Target system requested', ['system' => $targetSystem]);
-
-                if (!isset($systems[$targetSystem])) {
-                    Log::error('System not found!', ['requested' => $targetSystem]);
-                    return redirect()->route('dashboard')
-                        ->with('error', 'Invalid system selected');
-                }
 
                 $targetUrl = $systems[$targetSystem]['url'];
                 Log::info('Target URL resolved', ['url' => $targetUrl]);
@@ -173,6 +225,16 @@ class SSOAuthController extends Controller
                     'systemName' => $systems[$targetSystem]['name'],
                     'redirectUrl' => $redirectUrl
                 ]);
+            } else if ($accessResult['status'] === 'multiple_matches') {
+                // Show account selection modal
+                return view('auth.account-selection', [
+                    'system' => $systems[$targetSystem],
+                    'matches' => $accessResult['matches'],
+                    'system_name' => $targetSystem,
+                    'sso_name' => $accessResult['sso_name'],
+                    'sso_user_id' => $user->id,
+                    'message' => $accessResult['message']
+                ]);
             } else {
                 // Debug logging
                 Log::warning('Access not approved', [
@@ -183,7 +245,8 @@ class SSOAuthController extends Controller
                 // Show pending approval page
                 return redirect()->route('sso.pending.approval', [
                     'system' => $targetSystem,
-                    'email' => $user->email
+                    'email' => $user->email,
+                    'searched_name' => $user->name
                 ])->with('warning', $accessResult['message']);
             }
         } catch (\Exception $e) {
@@ -204,11 +267,13 @@ class SSOAuthController extends Controller
     {
         $systemName = $request->get('system');
         $email = $request->get('email');
+        $searchedName = $request->get('searched_name');
         $systems = $this->ssoService->getAvailableSystems();
 
         return view('auth.pending-approval', [
             'system' => $systems[$systemName] ?? null,
-            'email' => $email
+            'email' => $email,
+            'searched_name' => $searchedName
         ]);
     }
 

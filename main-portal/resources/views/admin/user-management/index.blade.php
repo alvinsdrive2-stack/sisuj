@@ -10,11 +10,18 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-
         <!-- Tailwind CSS -->
         <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- AlpineJS x-cloak styling -->
+        <style>
+            [x-cloak] { display: none !important; }
+        </style>
+
+        <!-- Scripts -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Font Awesome -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <!-- Alpine.js -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     </head>
@@ -25,172 +32,262 @@
             <!-- Page Heading -->
             <header class="bg-white shadow">
                 <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                    <h1 class="text-2xl font-bold text-gray-900">👥 User Management</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        User Management
+                    </h1>
                     <p class="mt-1 text-sm text-gray-600">Manage users across all LSP Gatensi systems</p>
                 </div>
             </header>
 
             <!-- Page Content -->
             <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                <!-- Check User Section -->
-                <div class="bg-white rounded-lg shadow mb-6 p-6">
-                    <h2 class="text-lg font-semibold mb-4">🔍 Check User Email</h2>
-                    <div class="flex gap-4">
-                        <input
-                            type="email"
-                            x-model="checkEmail"
-                            @keyup.enter="checkUser()"
-                            placeholder="Enter email to check..."
-                            class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                        <button
-                            @click="checkUser()"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                            Check
-                        </button>
-                    </div>
 
-                    <!-- Results -->
-                    <div x-show="checkResults" class="mt-4" x-transition>
-                        <template x-for="(result, system) in checkResults" :key="system">
-                            <div class="flex items-center justify-between p-3 mb-2 rounded-lg"
-                                 :class="result.found ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
-                                <div class="flex items-center">
-                                    <span class="font-semibold capitalize" x-text="system + ':'"></span>
-                                    <span class="ml-2" x-text="result.found ? '✅ Found' : '❌ Not Found'"></span>
-                                    <template x-if="result.found">
-                                        <span class="ml-2 text-sm text-gray-600" x-text="'(ID: ' + result.user.id + ', Role: ' + result.user.role + ')'"></span>
-                                    </template>
-                                </div>
-                                <template x-if="!result.found && result.user">
-                                    <button
-                                        @click="openCreateModal(system)"
-                                        class="px-4 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-                                        Create User
-                                    </button>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Systems Tabs -->
+                <!-- Management Tabs -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="border-b border-gray-200">
                         <nav class="flex -mb-px">
-                            <template x-for="system in systems" :key="system">
+                            <template x-for="tab in managementTabs" :key="tab.key">
                                 <button
-                                    @click="activeSystem = system"
-                                    :disabled="loading"
-                                    :class="activeSystem === system ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                                    class="py-2 px-6 border-b-2 font-medium text-sm capitalize relative">
+                                    @click="activeTab = tab.key"
+                                    :class="activeTab === tab.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                                    class="py-3 px-6 border-b-2 font-medium text-sm">
                                     <div class="flex items-center">
-                                        <span x-text="system === 'all' ? '🌐' : system === 'balai' ? '🏢' : system === 'reguler' ? '👤' : system === 'fg' ? '⚡' : '🔧'"></span>
-                                        <span class="ml-2" x-text="system === 'all' ? 'All Systems' : system"></span>
-                                        <span class="ml-2 px-2 py-1 text-xs rounded-full"
-                                              :class="activeSystem === system ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'"
-                                              x-text="systemStats[system] || '...'"></span>
-                                        <div x-show="loading && activeSystem === system" class="ml-2">
-                                            <div class="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                        </div>
+                                        <i :class="tab.icon"></i>
+                                        <span class="ml-2" x-text="tab.label"></span>
+                                        <span x-show="tab.count !== undefined" class="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600" x-text="tab.count"></span>
                                     </div>
                                 </button>
                             </template>
                         </nav>
                     </div>
 
-                    <!-- System Content -->
-                    <div class="p-6 relative">
-                        <!-- Search Bar -->
-                        <div class="mb-4 flex justify-between">
-                            <div class="flex-1 max-w-md">
-                                <input
-                                    type="text"
-                                    x-model="search"
-                                    @keyup.debounce="loadUsers()"
-                                    placeholder="Search users..."
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
+                    <!-- Tab Content -->
+                    <div class="p-6">
+                        <!-- SSO Users Tab (Pindah ke atas) -->
+                        <div x-show="activeTab === 'sso'" x-cloak>
+
+                            <!-- Search and Filters -->
+                            <div class="mb-4 flex justify-between items-center">
+                                <div class="flex gap-4 items-center">
+                                    <div class="flex-1 max-w-md">
+                                        <input
+                                            type="text"
+                                            x-model="ssoSearch"
+                                            @keyup.debounce="loadSSOUsers()"
+                                            placeholder="Search SSO users..."
+                                            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                    </div>
+                                    <select
+                                        x-model="ssoStatusFilter"
+                                        @change="loadSSOUsers()"
+                                        class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="all">All Status</option>
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="flex gap-2">
+                                    <!-- Add Main User Button -->
+                                    <button
+                                        @click="openAddMainUserModal()"
+                                        class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm">
+                                        <i class="fas fa-user-plus mr-2"></i>Add Main User
+                                    </button>
+                                </div>
                             </div>
-                            <button
-                                @click="activeSystem !== 'all' && openCreateModal(activeSystem)"
-                                :disabled="activeSystem === 'all'"
-                                :class="activeSystem === 'all' ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'hover:bg-green-700 bg-green-600'"
-                                class="ml-4 px-4 py-2 text-white rounded-md">
-                                + Create New User
-                            </button>
+
+                            <!-- SSO Users Table -->
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <template x-for="user in ssoUsers.data" :key="user.id">
+                                            <tr @click="openEditUserModal(user)" class="hover:bg-gray-50 cursor-pointer transition-colors duration-150">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" x-text="user.name"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="user.email"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <span
+                                                        class="px-2 py-1 text-xs rounded-full"
+                                                        :class="user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                                                        x-text="user.is_active ? 'Active' : 'Inactive'">
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="user.role || 'user'"></span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'"></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!ssoUsers.data || ssoUsers.data.length === 0">
+                                            <td colspan="5" class="px-6 py-8 text-center text-sm text-gray-500">
+                                                No SSO users found
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
 
-                        <!-- Users Table Container -->
-                        <div class="relative">
-                            <!-- Loading Overlay -->
-                            <div x-show="loading" class="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center z-10 min-h-[200px]">
-                                <div class="flex items-center space-x-2">
-                                    <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                                    <span class="text-gray-600">Loading users...</span>
+                        <!-- Browse Users Tab -->
+                        <div x-show="activeTab === 'browse'" x-cloak>
+                            <!-- Database Selection -->
+                            <div class="border-b border-gray-200 mb-6">
+                                <h3 class="text-sm font-medium text-gray-700 mb-3">Select Database:</h3>
+                                <div class="grid grid-cols-5 gap-3">
+                                    <template x-for="system in systems" :key="system">
+                                        <button
+                                            @click="switchDatabase(system)"
+                                            :class="activeSystem === system ? 'bg-blue-600 text-white border-blue-600 shadow-lg transform -translate-y-0.5' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'"
+                                            class="relative p-4 border-2 rounded-lg transition-all duration-200 text-center">
+                                            <div class="flex flex-col items-center space-y-2">
+                                                <!-- Icon -->
+                                                <div class="text-2xl">
+                                                    <i :class="system === 'all' ? 'fas fa-globe' : system === 'balai' ? 'fas fa-building' : system === 'reguler' ? 'fas fa-users' : system === 'fg' ? 'fas fa-bolt' : 'fas fa-wrench'" :class="activeSystem === system ? 'text-gray-100' : 'text-gray-600'"></i>
+                                                </div>
+
+                                                <!-- Database Name -->
+                                                <div class="font-semibold text-sm">
+                                                    <span x-text="system === 'all' ? 'All Databases' : system.toUpperCase()"></span>
+                                                </div>
+
+                                                <!-- User Count -->
+                                                <div class="text-xs"
+                                                     :class="activeSystem === system ? 'text-blue-100' : 'text-gray-500'">
+                                                    <span x-text="systemStats[system] || '...'"></span>
+                                                    <span x-text="system === 'all' ? ' users' : ' users'"></span>
+                                                </div>
+
+                                                <!-- Active Indicator -->
+                                                <div x-show="activeSystem === system" class="absolute -top-2 -right-2 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+                                            </div>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Search and Actions -->
+                            <div class="mb-4">
+                                <!-- Current Database Info -->
+                                <div x-show="activeSystem !== 'all'" class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="flex items-center">
+                                        <i :class="activeSystem === 'balai' ? 'fas fa-building' : activeSystem === 'reguler' ? 'fas fa-users' : activeSystem === 'fg' ? 'fas fa-bolt' : 'fas fa-wrench'" class="text-lg mr-2"></i>
+                                        <div>
+                                            <span class="font-semibold text-blue-800" x-text="activeSystem.toUpperCase()"></span>
+                                            <span class="text-blue-600"> Database</span>
+                                            <span class="text-sm text-blue-600 ml-2">(<span x-text="systemStats[activeSystem] || '...'"></span> users)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-between items-center">
+                                    <div class="flex gap-4 items-center">
+                                        <div class="flex-1 max-w-md">
+                                            <input
+                                                type="text"
+                                                x-model="search"
+                                                @keyup.debounce="loadUsers()"
+                                                :placeholder="activeSystem === 'all' ? 'Search across all databases...' : 'Search in ' + activeSystem.toUpperCase() + ' database...'"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                        </div>
+                                        <div x-show="selectedBrowseUsers.length > 0" class="text-sm text-gray-600">
+                                            Selected: <span x-text="selectedBrowseUsers.length" class="font-semibold text-blue-600"></span> users
+                                        </div>
+                                    </div>
+                                <div class="flex gap-2">
+                                    <button
+                                        x-show="selectedBrowseUsers.length > 0"
+                                        @click="openBulkNameModal()"
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">
+                                        <i class="fas fa-edit mr-2"></i>Update Names (<span x-text="selectedBrowseUsers.length"></span>)
+                                    </button>
+                                    <button
+                                        @click="activeSystem !== 'all' && openCreateModal(activeSystem)"
+                                        :disabled="activeSystem === 'all'"
+                                        :class="activeSystem === 'all' ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'hover:bg-green-700 bg-green-600'"
+                                        class="px-4 py-2 text-white rounded-md text-sm">
+                                        <i class="fas fa-plus mr-2"></i>Create User
+                                    </button>
+                                    <button
+                                        @click="activeTab = 'import'"
+                                        class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 text-sm">
+                                        <i class="fas fa-download mr-2"></i>Import Users
+                                    </button>
                                 </div>
                             </div>
 
                             <!-- Users Table -->
-                            <div class="overflow-x-auto" :class="{ 'opacity-50': loading }">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" x-show="activeSystem === 'all'">System</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <template x-for="user in users.data" :key="user.id + '_' + (user.system || activeSystem)">
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="user.id"></td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="user.name"></td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="user.email"></td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="user.role"></span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-show="activeSystem === 'all'">
-                                                <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800" x-text="user.system_display || user.system || activeSystem"></span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'"></td>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left">
+                                                <input
+                                                    type="checkbox"
+                                                    @change="toggleSelectAllBrowse($event)"
+                                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Database</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                                         </tr>
-                                    </template>
-                                    <tr x-show="users.data === undefined || users.data.length === 0">
-                                        <td :colspan="activeSystem === 'all' ? '6' : '5'" class="px-6 py-8 text-center text-sm text-gray-500">
-                                            No users found
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <template x-for="user in users.data" :key="user.id + '_' + (user.system || activeSystem)">
+                                            <tr class="hover:bg-gray-50" :class="activeSystem === 'all' ? 'border-l-4' : ''" :style="activeSystem === 'all' ? 'border-color: ' + (user.system === 'balai' ? '#3B82F6' : user.system === 'reguler' ? '#10B981' : user.system === 'fg' ? '#F59E0B' : '#EF4444') : ''">
+                                                <td class="px-6 py-4">
+                                                    <input
+                                                        type="checkbox"
+                                                        :value="JSON.stringify({id: user.id, system: user.system || activeSystem, user_id: user.id})"
+                                                        x-model="selectedBrowseUsers"
+                                                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="user.id"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" x-text="user.name"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm" x-text="user.email"></td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800" x-text="user.role"></span>
+                                                </td>
+                                                <!-- System Column - Always visible for clarity -->
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                    <div class="flex items-center space-x-2">
+                                                        <i :class="user.system === 'balai' ? 'fas fa-building' : user.system === 'reguler' ? 'fas fa-users' : user.system === 'fg' ? 'fas fa-bolt' : 'fas fa-wrench'" class="text-lg"></i>
+                                                        <span
+                                                            class="px-2 py-1 text-xs rounded-full font-semibold"
+                                                            :class="user.system === 'balai' ? 'bg-blue-100 text-blue-800' : user.system === 'reguler' ? 'bg-green-100 text-green-800' : user.system === 'fg' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'"
+                                                            x-text="(user.system_display || user.system || activeSystem).toUpperCase()">
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'"></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="users.data === undefined || users.data.length === 0">
+                                            <td colspan="7" class="px-6 py-8 text-center text-sm text-gray-500">
+                                                No users found
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
 
-                        <!-- Pagination -->
-                        <div class="mt-4 flex items-center justify-between" x-show="users.last_page > 1">
-                            <div class="text-sm text-gray-700">
-                                Showing <span x-text="users.from"></span> to <span x-text="users.to"></span> of <span x-text="users.total"></span> results
-                            </div>
-                            <div class="flex gap-2">
-                                <button
-                                    @click="changePage(users.current_page - 1)"
-                                    :disabled="users.current_page === 1"
-                                    class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">
-                                    Previous
-                                </button>
-                                <button
-                                    @click="changePage(users.current_page + 1)"
-                                    :disabled="users.current_page === users.last_page"
-                                    class="px-3 py-1 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50">
-                                    Next
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  
+                      </div>  <!-- Tab Content Container -->
+
+                  </div>  <!-- Main Content Area -->
             </main>
         </div>
 
@@ -281,20 +378,910 @@
                 </div>
             </div>
         </div>
+
+        <!-- Mass Update Modal -->
+        <div x-show="showMassUpdateModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showMassUpdateModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-bolt mr-2"></i>Mass Update Users
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Update <span x-text="selectedSSOUsers.length" class="font-semibold"></span> selected users</p>
+
+                    <form @submit.prevent="performMassUpdate()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Operation</label>
+                            <select
+                                x-model="massUpdateForm.operation"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Operation</option>
+                                <option value="activate">Activate Users</option>
+                                <option value="deactivate">Deactivate Users</option>
+                                <option value="delete">Delete Users</option>
+                                <option value="update_role">Update Role</option>
+                                <option value="reset_password">Reset Password</option>
+                            </select>
+                        </div>
+
+                        <div x-show="massUpdateForm.operation === 'update_role'" class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Role</label>
+                            <input
+                                type="text"
+                                x-model="massUpdateForm.new_role"
+                                placeholder="Enter new role..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div x-show="massUpdateForm.operation === 'reset_password'" class="mb-4">
+                            <label class="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    x-model="massUpdateForm.send_email"
+                                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">Send password reset email</span>
+                            </label>
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                @click="showMassUpdateModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="massUpdateLoading"
+                                class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50">
+                                <span x-show="!massUpdateLoading">Update Users</span>
+                                <span x-show="massUpdateLoading">Updating...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    
+        <!-- Add Main User Modal -->
+        <div x-show="showAddMainUserModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showAddMainUserModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-user-plus mr-2"></i>Add New Main User
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Create a new SSO user account</p>
+
+                    <form @submit.prevent="performAddMainUser()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    x-model="addMainUserForm.name"
+                                    @input="searchUserNames($event.target.value)"
+                                    @focus="searchUserNames($event.target.value)"
+                                    @click.stop
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Type to search or enter custom name...">
+
+                                <!-- Autocomplete Dropdown -->
+                                <div x-show="searchResults.length > 0 && showUserSearchDropdown"
+                                     @click.away="showUserSearchDropdown = false"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 transform scale-95"
+                                     x-transition:enter-end="opacity-100 transform scale-100"
+                                     class="absolute z-20 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-80 overflow-hidden">
+                                    <!-- Header -->
+                                    <div class="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <i class="fas fa-search mr-1"></i>
+                                            <span x-text="searchResults.length"></span> User(s) Found
+                                        </p>
+                                    </div>
+
+                                    <!-- Results Container -->
+                                    <div class="max-h-64 overflow-y-auto">
+                                        <template x-for="(result, index) in searchResults" :key="'search-' + index">
+                                            <div @click="selectUser(result)"
+                                                 class="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-150 border-l-4 hover:border-l-blue-500"
+                                                 :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'">
+
+                                                <!-- Name Section -->
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center">
+                                                            <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center mr-3 text-white text-sm font-bold">
+                                                                <span x-text="result.name.charAt(0).toUpperCase()"></span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors"
+                                                                     x-text="result.name"></div>
+                                                                <div class="text-xs text-gray-500 mt-0.5">
+                                                                    <i class="fas fa-database mr-1"></i>
+                                                                    Available in <span x-text="result.systems.length" /> system(s)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-gray-400 group-hover:text-blue-500 transition-colors">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Systems Section -->
+                                                <div class="mt-3 flex flex-wrap gap-1.5" x-show="result.systems.length > 0">
+                                                    <template x-for="system in result.systems" :key="system.name">
+                                                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-150"
+                                                             :class="system.name === 'balai' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                                                                        system.name === 'reguler' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                                                                        system.name === 'fg' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
+                                                                        'bg-gradient-to-r from-red-500 to-red-600 text-white'">
+                                                            <i class="fas fa-server mr-1 text-xs"></i>
+                                                            <span x-text="system.display" class="font-bold"></span>
+                                                            <span class="ml-1 opacity-90" x-text="'• ' + system.role"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+
+                                        <!-- No Results State (handled by empty array) -->
+                                    </div>
+
+                                    <!-- Footer -->
+                                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-200">
+                                        <p class="text-xs text-gray-500 italic">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Click to select or continue typing for more results
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Search for existing users from all databases or enter a custom name</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                                type="email"
+                                x-model="addMainUserForm.email"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input
+                                type="password"
+                                x-model="addMainUserForm.password"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input
+                                type="password"
+                                x-model="addMainUserForm.password_confirmation"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                            <select
+                                x-model="addMainUserForm.role"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                @click="showAddMainUserModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="addMainUserLoading"
+                                class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50">
+                                <span x-show="!addMainUserLoading">Create User</span>
+                                <span x-show="addMainUserLoading">Creating...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Names Modal for SSO Users -->
+        <div x-show="showUpdateNamesModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showUpdateNamesModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-edit mr-2"></i>Update Names
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Update names for <span x-text="selectedSSOUsers.length" class="font-semibold"></span> selected users</p>
+
+                    <div x-show="updateNamesResults.length === 0">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">New Name</label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    x-model="updateNamesForm.new_name"
+                                    @input="searchUserNames($event.target.value)"
+                                    @focus="searchUserNames($event.target.value)"
+                                    @click.stop
+                                    required
+                                    placeholder="Type to search or enter new name..."
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                                <!-- Autocomplete Dropdown -->
+                                <div x-show="searchResults.length > 0 && showUserSearchDropdown"
+                                     @click.away="showUserSearchDropdown = false"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 transform scale-95"
+                                     x-transition:enter-end="opacity-100 transform scale-100"
+                                     class="absolute z-20 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-80 overflow-hidden">
+                                    <!-- Header -->
+                                    <div class="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <i class="fas fa-search mr-1"></i>
+                                            <span x-text="searchResults.length"></span> User(s) Found
+                                        </p>
+                                    </div>
+
+                                    <!-- Results Container -->
+                                    <div class="max-h-64 overflow-y-auto">
+                                        <template x-for="(result, index) in searchResults" :key="'search-' + index">
+                                            <div @click="selectUserForUpdate(result)"
+                                                 class="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-150 border-l-4 hover:border-l-blue-500"
+                                                 :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'">
+
+                                                <!-- Name Section -->
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center">
+                                                            <div class="w-8 h-8 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center mr-3 text-white text-sm font-bold">
+                                                                <span x-text="result.name.charAt(0).toUpperCase()"></span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="font-semibold text-gray-800 group-hover:text-indigo-600 transition-colors"
+                                                                     x-text="result.name"></div>
+                                                                <div class="text-xs text-gray-500 mt-0.5">
+                                                                    <i class="fas fa-database mr-1"></i>
+                                                                    Available in <span x-text="result.systems.length" /> system(s)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Systems Section -->
+                                                <div class="mt-3 flex flex-wrap gap-1.5" x-show="result.systems.length > 0">
+                                                    <template x-for="system in result.systems" :key="system.name">
+                                                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-150"
+                                                             :class="system.name === 'balai' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                                                                        system.name === 'reguler' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                                                                        system.name === 'fg' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
+                                                                        'bg-gradient-to-r from-red-500 to-red-600 text-white'">
+                                                            <i class="fas fa-server mr-1 text-xs"></i>
+                                                            <span x-text="system.display" class="font-bold"></span>
+                                                            <span class="ml-1 opacity-90" x-text="'• ' + system.role"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Footer -->
+                                    <div class="px-4 py-2 bg-gray-50 border-t border-gray-200">
+                                        <p class="text-xs text-gray-500 italic">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Click to select or continue typing for more results
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Search for existing names from all databases or enter a custom name</p>
+                        </div>
+                    </div>
+
+                    <!-- Results Display -->
+                    <div x-show="updateNamesResults.length > 0" class="mb-4 max-h-60 overflow-y-auto">
+                        <h4 class="font-semibold mb-2">Update Results:</h4>
+                        <div class="space-y-2">
+                            <template x-for="result in updateNamesResults" :key="result.id">
+                                <div class="p-3 rounded border"
+                                     :class="result.status === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                                    <div class="text-sm">
+                                        <div class="font-medium" x-text="result.email"></div>
+                                        <div class="text-xs text-gray-600">
+                                            <span class="line-through" x-text="result.old_name"></span>
+                                            <span class="mx-2">→</span>
+                                            <span class="text-green-600" x-text="result.new_name"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            @click="showUpdateNamesModal = false; updateNamesResults = []"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            <span x-show="updateNamesResults.length === 0">Cancel</span>
+                            <span x-show="updateNamesResults.length > 0">Close</span>
+                        </button>
+                        <button
+                            x-show="updateNamesResults.length === 0"
+                            @click="performUpdateNames()"
+                            :disabled="updateNamesLoading"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
+                            <span x-show="!updateNamesLoading">Update Names</span>
+                            <span x-show="updateNamesLoading">Updating...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Main Account Modal -->
+        <div x-show="showCreateMainAccountModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showCreateMainAccountModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold mb-4">👤 Create Main Account</h3>
+                    <p class="text-sm text-gray-600 mb-4">Create main SSO account for <span x-text="selectedTargetUser?.name" class="font-semibold"></span></p>
+
+                    <form @submit.prevent="performCreateMainAccount()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input
+                                type="email"
+                                x-model="createMainAccountForm.email"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                                type="text"
+                                x-model="createMainAccountForm.name"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input
+                                type="password"
+                                x-model="createMainAccountForm.password"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input
+                                type="password"
+                                x-model="createMainAccountForm.password_confirmation"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                @click="showCreateMainAccountModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="createMainAccountLoading"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
+                                <span x-show="!createMainAccountLoading">Create Account</span>
+                                <span x-show="createMainAccountLoading">Creating...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Name Update Modal -->
+        <div x-show="showBulkNameModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75" @click="showBulkNameModal = false"></div>
+
+                <div class="relative bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-edit mr-2"></i>Bulk Update Names for SSO Standardization
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Update names for <span x-text="selectedBrowseUsers.length" class="font-semibold"></span> selected users to improve SSO name matching</p>
+
+                    <form @submit.prevent="performBulkNameUpdate()">
+                        <div x-show="bulkNameResults.length === 0">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">New Name</label>
+                                <input
+                                    type="text"
+                                    x-model="bulkNameForm.new_name"
+                                    required
+                                    placeholder="Enter the standardized name..."
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <p class="mt-1 text-xs text-gray-500">This name will be applied to all selected users</p>
+                            </div>
+
+                            <!-- Preview Selected Users -->
+                            <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                                <h4 class="font-medium text-sm mb-2">Selected Users:</h4>
+                                <div class="max-h-32 overflow-y-auto space-y-1">
+                                    <template x-for="userStr in selectedBrowseUsers.slice(0, 10)" :key="userStr">
+                                        <div class="flex justify-between text-xs">
+                                            <template x="const user = JSON.parse(userStr);">
+                                                <span x-text="user.system.toUpperCase() + ' - ID: ' + user.user_id"></span>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <div x-show="selectedBrowseUsers.length > 10" class="text-xs text-gray-500">
+                                        ... and <span x-text="selectedBrowseUsers.length - 10"></span> more
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h4 class="font-medium text-sm mb-2">Update Locations:</h4>
+
+                                <!-- SSO Update -->
+                                <div class="mb-3">
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            x-model="bulkNameForm.update_sso"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-700">Update names in SSO system</span>
+                                    </label>
+                                </div>
+
+                                <!-- Target Systems Update -->
+                                <div class="mb-3">
+                                    <label class="flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            x-model="bulkNameForm.update_target_systems"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2 text-sm text-gray-700">Update names in target systems</span>
+                                    </label>
+                                </div>
+
+                                <!-- System Selection -->
+                                <div x-show="bulkNameForm.update_target_systems" class="ml-6 space-y-2">
+                                    <label class="flex items-center text-sm">
+                                        <input
+                                            type="checkbox"
+                                            value="balai"
+                                            x-model="bulkNameForm.target_systems"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2">Balai</span>
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input
+                                            type="checkbox"
+                                            value="reguler"
+                                            x-model="bulkNameForm.target_systems"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2">Reguler</span>
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input
+                                            type="checkbox"
+                                            value="fg"
+                                            x-model="bulkNameForm.target_systems"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2">FG</span>
+                                    </label>
+                                    <label class="flex items-center text-sm">
+                                        <input
+                                            type="checkbox"
+                                            value="tuk"
+                                            x-model="bulkNameForm.target_systems"
+                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                        <span class="ml-2">TUK</span>
+                                    </label>
+                                    <p class="text-xs text-gray-500">Only users from selected systems will be updated</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Update Results -->
+                        <div x-show="bulkNameResults.length > 0" class="mb-4 max-h-96 overflow-y-auto">
+                            <h4 class="font-semibold mb-2">Update Results:</h4>
+                            <div class="space-y-2">
+                                <template x-for="result in bulkNameResults" :key="result.system + '_' + result.target_user_id">
+                                    <div class="p-3 rounded border"
+                                         :class="result.status === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center mb-1">
+                                                    <span x-text="result.status === 'success' ? '✅' : '❌'" class="mr-2"></span>
+                                                    <span class="font-medium text-sm" x-text="result.system.toUpperCase()"></span>
+                                                    <span class="text-xs text-gray-500 ml-2" x-text="'ID: ' + result.target_user_id"></span>
+                                                </div>
+                                                <div class="text-xs text-gray-600 mb-1">
+                                                    <span x-text="result.target_email"></span>
+                                                </div>
+                                                <div class="text-xs">
+                                                    <span class="line-through text-gray-500" x-text="result.old_name"></span>
+                                                    <span class="mx-2">→</span>
+                                                    <span class="font-medium text-green-600" x-text="result.new_name"></span>
+                                                </div>
+                                                <div x-show="result.updates.length > 0" class="mt-1 text-xs text-blue-600">
+                                                    Updates: <span x-text="result.updates.join(', ')"></span>
+                                                </div>
+                                                <div x-show="result.status === 'error'" class="mt-1 text-xs text-red-600">
+                                                    Error: <span x-text="result.message"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3">
+                            <button
+                                type="button"
+                                @click="showBulkNameModal = false; bulkNameResults = []"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                <span x-show="bulkNameResults.length === 0">Cancel</span>
+                                <span x-show="bulkNameResults.length > 0">Close</span>
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="bulkNameLoading || bulkNameResults.length > 0"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50">
+                                <span x-show="!bulkNameLoading">Update Names</span>
+                                <span x-show="bulkNameLoading">Updating...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Edit User Floating Modal -->
+        <div x-show="showEditUserModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 overflow-y-auto"
+             style="display: none;">
+            <!-- Overlay -->
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black bg-opacity-50" @click="showEditUserModal = false"></div>
+
+                <!-- Modal Content -->
+                <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 my-8"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform scale-95"
+                     x-transition:enter-end="opacity-100 transform scale-100">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mr-4">
+                                <i class="fas fa-user-edit text-white text-lg"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">Edit User</h3>
+                                <p class="text-sm text-gray-500">Update user information</p>
+                            </div>
+                        </div>
+                        
+                    </div>
+
+                    <!-- Form -->
+                    <form @submit.prevent="updateUser()">
+                        <!-- User ID Display -->
+                        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                            <p class="text-sm text-gray-600">User ID: <span class="font-semibold text-gray-800" x-text="editUserForm.id"></span></p>
+                        </div>
+
+                        <!-- Name Field with Autocomplete -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user mr-1"></i>Name
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    x-model="editUserForm.name"
+                                    @input="searchUserNames($event.target.value)"
+                                    @focus="searchUserNames($event.target.value)"
+                                    @click.stop
+                                    required
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
+                                <!-- Reuse the same autocomplete dropdown -->
+                                <div x-show="searchResults.length > 0 && showUserSearchDropdown"
+                                     @click.away="showUserSearchDropdown = false"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 transform scale-95"
+                                     x-transition:enter-end="opacity-100 transform scale-100"
+                                     class="absolute z-20 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 max-h-80 overflow-hidden">
+                                    <!-- Header -->
+                                    <div class="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                                        <p class="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            <i class="fas fa-search mr-1"></i>
+                                            <span x-text="searchResults.length"></span> User(s) Found
+                                        </p>
+                                    </div>
+
+                                    <!-- Results Container -->
+                                    <div class="max-h-64 overflow-y-auto">
+                                        <template x-for="(result, index) in searchResults" :key="'edit-search-' + index">
+                                            <div @click="selectUserForEdit(result)"
+                                                 class="group px-4 py-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-all duration-150 border-l-4 hover:border-l-blue-500"
+                                                 :class="index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'">
+                                                <div class="flex items-center justify-between">
+                                                    <div class="flex-1">
+                                                        <div class="flex items-center">
+                                                            <div class="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center mr-3 text-white text-sm font-bold">
+                                                                <span x-text="result.name.charAt(0).toUpperCase()"></span>
+                                                            </div>
+                                                            <div>
+                                                                <div class="font-semibold text-gray-800 group-hover:text-purple-600 transition-colors"
+                                                                     x-text="result.name"></div>
+                                                                <div class="text-xs text-gray-500 mt-0.5">
+                                                                    <i class="fas fa-database mr-1"></i>
+                                                                    Available in <span x-text="result.systems.length" /> system(s)
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-gray-400 group-hover:text-purple-500 transition-colors">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-3 flex flex-wrap gap-1.5" x-show="result.systems.length > 0">
+                                                    <template x-for="system in result.systems" :key="system.name">
+                                                        <div class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium transition-all duration-150"
+                                                             :class="system.name === 'balai' ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' :
+                                                                        system.name === 'reguler' ? 'bg-gradient-to-r from-green-500 to-green-600 text-white' :
+                                                                        system.name === 'fg' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white' :
+                                                                        'bg-gradient-to-r from-red-500 to-red-600 text-white'">
+                                                            <i class="fas fa-server mr-1 text-xs"></i>
+                                                            <span x-text="system.display" class="font-bold"></span>
+                                                            <span class="ml-1 opacity-90" x-text="'• ' + system.role"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-1"></i>Email
+                            </label>
+                            <input
+                                type="email"
+                                x-model="editUserForm.email"
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Password Update Section -->
+                        <div class="mb-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    <i class="fas fa-lock mr-1"></i>Password
+                                </label>
+                                <button type="button" @click="editUserForm.showPassword = !editUserForm.showPassword"
+                                        class="text-xs text-blue-600 hover:text-blue-700">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    <span x-text="editUserForm.showPassword ? 'Hide' : 'Show'"></span>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-2">Leave blank to keep current password</p>
+                            <div x-show="!editUserForm.showPassword">
+                                <input
+                                    type="password"
+                                    placeholder="••••••••"
+                                    disabled
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                            </div>
+                            <div x-show="editUserForm.showPassword" x-transition>
+                                <input
+                                    type="password"
+                                    x-model="editUserForm.password"
+                                    placeholder="Enter new password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2">
+                                <input
+                                    type="password"
+                                    x-model="editUserForm.password_confirmation"
+                                    placeholder="Confirm new password"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Role Field -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-user-tag mr-1"></i>Role
+                            </label>
+                            <select
+                                x-model="editUserForm.role"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+
+                        <!-- Status Field -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-toggle-on mr-1"></i>Status
+                            </label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        x-model="editUserForm.status"
+                                        value="active"
+                                        class="mr-2 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-gray-700">Active</span>
+                                </label>
+                                <label class="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        x-model="editUserForm.status"
+                                        value="inactive"
+                                        class="mr-2 text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-gray-700">Inactive</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex justify-between items-center pt-4 border-t border-gray-200">
+                            <button
+                                type="button"
+                                @click="deleteUser()"
+                                :disabled="editUserLoading"
+                                class="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 disabled:opacity-50 transition-all duration-150 flex items-center">
+                                <i class="fas fa-trash mr-2"></i>
+                                Delete User
+                            </button>
+                                <button
+                                    type="submit"
+                                    :disabled="editUserLoading"
+                                    class="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-150 flex items-center">
+                                    <i class="fas fa-save mr-2" x-show="!editUserLoading"></i>
+                                    <i class="fas fa-spinner fa-spin mr-2" x-show="editUserLoading"></i>
+                                    <span x-show="!editUserLoading">Save Changes</span>
+                                    <span x-show="editUserLoading">Saving...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    <!-- Include UI Components -->
+    <x-ui.alert />
+    <x-ui.confirm-dialog />
+
     </body>
 
     <script>
         function userManagement() {
             return {
+                // Tab management
+                managementTabs: [
+                    { key: 'sso', label: 'SSO Users', icon: 'fas fa-shield-halved' },
+                    { key: 'browse', label: 'Browse Users', icon: 'fas fa-users' }
+                ],
+                activeTab: 'sso',
+
+                // Browse users
                 systems: ['all', 'balai', 'reguler', 'fg', 'tuk'],
                 activeSystem: 'all',
-                checkEmail: '',
-                checkResults: null,
                 users: { data: [] },
                 search: '',
                 systemStats: {},
                 loading: false,
+                selectedBrowseUsers: [],
+
+                // SSO users
+                ssoUsers: { data: [] },
+                ssoSearch: '',
+                ssoStatusFilter: 'all',
+
+                // Modals
                 showCreateModal: false,
+                showMassUpdateModal: false,
+                showImportModal: false,
+                showCreateMainAccountModal: false,
+
+                // Form data
                 createSystem: '',
                 systemRoles: [],
                 createLoading: false,
@@ -306,59 +1293,152 @@
                     username: ''
                 },
 
+                massUpdateLoading: false,
+                massUpdateForm: {
+                    operation: '',
+                    new_role: '',
+                    send_email: false
+                },
+
+                importLoading: false,
+                importForm: {
+                    default_password: '',
+                    create_password: false
+                },
+                importResults: [],
+
+                // Bulk name update
+                showBulkNameModal: false,
+                bulkNameLoading: false,
+                bulkNameForm: {
+                    new_name: '',
+                    update_sso: false,
+                    update_target_systems: false,
+                    target_systems: []
+                },
+                bulkNameResults: [],
+
+                // Create main account modal
+                selectedTargetUser: null,
+                createMainAccountLoading: false,
+                createMainAccountForm: {
+                    email: '',
+                    name: '',
+                    password: '',
+                    password_confirmation: ''
+                },
+
+                // Add Main User modal
+                showAddMainUserModal: false,
+                addMainUserLoading: false,
+                addMainUserForm: {
+                    name: '',
+                    email: '',
+                    password: '',
+                    password_confirmation: '',
+                    role: 'user'
+                },
+
+                
+                // Autocomplete search
+                searchResults: [],
+                showUserSearchDropdown: false,
+                searchTimeout: null,
+
+                // Edit User modal
+                showEditUserModal: false,
+                editUserLoading: false,
+                editUserForm: {
+                    id: null,
+                    name: '',
+                    email: '',
+                    role: 'user',
+                    status: 'active',
+                    password: '',
+                    password_confirmation: '',
+                    showPassword: false
+                },
+
                 init() {
+                    console.log('Initializing user management...');
                     this.loadUsers();
                     this.loadSystemStats();
-                },
+                    this.loadSSOUsers();
 
-                watch: {
-                    activeSystem(newSystem, oldSystem) {
-                        if (newSystem !== oldSystem) {
-                            this.search = ''; // Clear search when switching tabs
-                            this.loadUsers();
+                    // Add click outside listener
+                    document.addEventListener('click', this.handleClickOutside.bind(this));
+
+                    // Debug: Watch for tab changes
+                    this.$watch('activeTab', (value) => {
+                        console.log('Active tab changed to:', value);
+                        if (value === 'sso') {
+                            console.log('SSO Users data:', this.ssoUsers);
                         }
-                    }
+                    });
                 },
 
-                async checkUser() {
-                    if (!this.checkEmail) return;
-
-                    try {
-                        const response = await fetch('/admin/users/check', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({ email: this.checkEmail })
-                        });
-
-                        this.checkResults = await response.json();
-                    } catch (error) {
-                        alert('Error checking user');
+                
+                switchDatabase(system) {
+                    console.log('Switching to system:', system, 'from:', this.activeSystem);
+                    if (system !== this.activeSystem) {
+                        this.activeSystem = system;
+                        this.search = ''; // Clear search when switching databases
+                        this.selectedBrowseUsers = []; // Clear selection when switching
+                        console.log('Loading users for system:', this.activeSystem);
+                        this.loadUsers();
                     }
                 },
 
                 async loadUsers() {
-                    this.loading = true;
                     try {
+                        console.log('Loading users for:', this.activeSystem, 'search:', this.search);
                         const response = await fetch(`/admin/users/${this.activeSystem}?search=${this.search}`);
-                        this.users = await response.json();
+                        const data = await response.json();
+                        console.log('Received data:', data);
+                        this.users = data;
                     } catch (error) {
-                        console.error('Error loading users');
+                        console.error('Error loading users:', error);
                         this.users = { data: [] };
-                    } finally {
-                        this.loading = false;
                     }
                 },
 
+                async loadSSOUsers() {
+                    try {
+                        console.log('Loading SSO users...');
+                        const params = new URLSearchParams({
+                            search: this.ssoSearch,
+                            per_page: 25
+                        });
+
+                        if (this.ssoStatusFilter !== 'all') {
+                            params.append('status', this.ssoStatusFilter);
+                        }
+
+                        console.log('Fetching from:', `/admin/sso-users?${params}`);
+                        const response = await fetch(`/admin/sso-users?${params}`);
+
+                        if (!response.ok) {
+                            console.error('Response not ok:', response.status, response.statusText);
+                            this.ssoUsers = { data: [] };
+                            return;
+                        }
+
+                        const data = await response.json();
+                        console.log('SSO Users data:', data);
+                        this.ssoUsers = data;
+                    } catch (error) {
+                        console.error('Error loading SSO users:', error);
+                        this.ssoUsers = { data: [] };
+                    }
+                },
+
+        
                 async loadSystemStats() {
-                    // Calculate total for "All" tab
                     let totalUsers = 0;
 
                     for (const system of this.systems) {
                         if (system === 'all') {
-                            this.systemStats[system] = '∑'; // Show sigma symbol for all
+                            this.systemStats[system] = '∑';
                             continue;
                         }
 
@@ -372,7 +1452,6 @@
                         }
                     }
 
-                    // Update total count for All tab
                     this.systemStats['all'] = totalUsers;
                 },
 
@@ -380,14 +1459,13 @@
                     this.createSystem = system;
                     this.showCreateModal = true;
                     this.createUserForm = {
-                        email: this.checkEmail || '',
+                        email: '',
                         name: '',
                         role: '',
                         password: '',
                         username: ''
                     };
 
-                    // Load roles for this system
                     try {
                         const response = await fetch(`/admin/system-info/${system}`);
                         const data = await response.json();
@@ -416,26 +1494,484 @@
                         const result = await response.json();
 
                         if (result.success) {
-                            alert('User created successfully!');
+                            showAlert('User created successfully!', 'success');
                             this.showCreateModal = false;
                             this.loadUsers();
                             this.loadSystemStats();
-                            if (this.checkEmail) {
-                                this.checkUser();
-                            }
                         } else {
-                            alert('Error: ' + result.message);
+                            showAlert('Error: ' + result.message, 'error');
                         }
                     } catch (error) {
-                        alert('Error creating user');
+                        showAlert('Error creating user', 'error');
                     } finally {
                         this.createLoading = false;
                     }
                 },
 
-                changePage(page) {
-                    // TODO: Implement pagination
-                    console.log('Change to page:', page);
+                toggleSelectAllImport(event) {
+                    if (event.target.checked) {
+                        this.selectedImportUsers = this.importUsers
+                            .filter(user => user.can_import)
+                            .map(user => JSON.stringify(user));
+                    } else {
+                        this.selectedImportUsers = [];
+                    }
+                },
+
+                selectAllImportUsers() {
+                    this.selectedImportUsers = this.importUsers
+                        .filter(user => user.can_import)
+                        .map(user => JSON.stringify(user));
+                },
+
+                openMassUpdateModal() {
+                    this.massUpdateForm = {
+                        operation: '',
+                        new_role: '',
+                        send_email: false
+                    };
+                    this.showMassUpdateModal = true;
+                },
+
+                async performMassUpdate() {
+                    this.massUpdateLoading = true;
+
+                    try {
+                        const response = await fetch('/admin/mass-update', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                users: this.selectedSSOUsers.map(id => ({ id })),
+                                operation: this.massUpdateForm.operation,
+                                new_role: this.massUpdateForm.new_role,
+                                send_email: this.massUpdateForm.send_email
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert(`Mass update completed: ${result.summary.successful} successful, ${result.summary.errors} errors`, 'success');
+                            this.showMassUpdateModal = false;
+                            this.selectedSSOUsers = [];
+                            this.loadSSOUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error performing mass update', 'error');
+                    } finally {
+                        this.massUpdateLoading = false;
+                    }
+                },
+
+                openImportModal() {
+                    this.importResults = [];
+                    this.importForm = {
+                        default_password: '',
+                        create_password: false
+                    };
+                    this.showImportModal = true;
+                },
+
+                async performImport() {
+                    this.importLoading = true;
+
+                    try {
+                        const usersToImport = this.selectedImportUsers.map(userStr => JSON.parse(userStr));
+
+                        const response = await fetch('/admin/import-users', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                users: usersToImport,
+                                create_password: this.importForm.create_password,
+                                default_password: this.importForm.default_password
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.importResults = result.results;
+                            this.selectedImportUsers = [];
+                            this.loadImportUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error importing users', 'error');
+                    } finally {
+                        this.importLoading = false;
+                    }
+                },
+
+                openCreateMainAccountModal(user) {
+                    this.selectedTargetUser = user;
+                    this.createMainAccountForm = {
+                        email: user.email,
+                        name: user.name,
+                        password: '',
+                        password_confirmation: ''
+                    };
+                    this.showCreateMainAccountModal = true;
+                },
+
+                async performCreateMainAccount() {
+                    if (this.createMainAccountForm.password !== this.createMainAccountForm.password_confirmation) {
+                        showAlert('Passwords do not match', 'warning');
+                        return;
+                    }
+
+                    this.createMainAccountLoading = true;
+
+                    try {
+                        const response = await fetch('/admin/create-main-account', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                system: this.selectedTargetUser.system,
+                                user_id: this.selectedTargetUser.id,
+                                ...this.createMainAccountForm
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert('Main account created successfully!', 'success');
+                            this.showCreateMainAccountModal = false;
+                            this.loadImportUsers();
+                            this.loadSSOUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error creating main account', 'error');
+                    } finally {
+                        this.createMainAccountLoading = false;
+                    }
+                },
+
+                // Bulk name update functions
+                toggleSelectAllBrowse(event) {
+                    if (event.target.checked) {
+                        this.selectedBrowseUsers = this.users.data.map(user =>
+                            JSON.stringify({id: user.id, system: user.system || this.activeSystem, user_id: user.id})
+                        );
+                    } else {
+                        this.selectedBrowseUsers = [];
+                    }
+                },
+
+                openBulkNameModal() {
+                    this.bulkNameResults = [];
+                    this.bulkNameForm = {
+                        new_name: '',
+                        update_sso: true,
+                        update_target_systems: true,
+                        target_systems: ['balai', 'reguler', 'fg', 'tuk']
+                    };
+                    this.showBulkNameModal = true;
+                },
+
+                // Add Main User functions
+                openAddMainUserModal() {
+                    this.addMainUserForm = {
+                        name: '',
+                        email: '',
+                        password: '',
+                        password_confirmation: '',
+                        role: 'user'
+                    };
+                    this.showAddMainUserModal = true;
+                },
+
+                async performAddMainUser() {
+                    if (this.addMainUserForm.password !== this.addMainUserForm.password_confirmation) {
+                        showAlert('Passwords do not match', 'warning');
+                        return;
+                    }
+
+                    this.addMainUserLoading = true;
+
+                    try {
+                        const response = await fetch('/admin/add-main-user', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(this.addMainUserForm)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert('Main user created successfully!', 'success');
+                            this.showAddMainUserModal = false;
+                            this.loadSSOUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error creating main user', 'error');
+                    } finally {
+                        this.addMainUserLoading = false;
+                    }
+                },
+
+                // Update Names functions for SSO users
+                openUpdateNamesModal() {
+                    this.updateNamesResults = [];
+                    this.updateNamesForm = {
+                        new_name: ''
+                    };
+                    this.showUpdateNamesModal = true;
+                },
+
+                // Autocomplete search functions
+                searchUserNames(query) {
+                    // Clear previous timeout
+                    if (this.searchTimeout) {
+                        clearTimeout(this.searchTimeout);
+                    }
+
+                    // Hide dropdown if query is too short
+                    if (query.length < 2) {
+                        this.showUserSearchDropdown = false;
+                        this.searchResults = [];
+                        return;
+                    }
+
+                    // Set a timeout to avoid too many requests
+                    this.searchTimeout = setTimeout(async () => {
+                        try {
+                            const response = await fetch(`/admin/search-users-across-systems?query=${encodeURIComponent(query)}`);
+                            const results = await response.json();
+                            this.searchResults = results;
+                            this.showUserSearchDropdown = true;
+                        } catch (error) {
+                            console.error('Error searching users:', error);
+                            this.searchResults = [];
+                        }
+                    }, 300);
+                },
+
+                selectUser(user) {
+                    // Check if name already exists in SSO
+                    fetch('/admin/check-sso-name-exists', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ name: user.name })
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.exists) {
+                            showAlert('This name already exists in the SSO system. Please choose a different name.', 'warning');
+                            return;
+                        }
+                        this.addMainUserForm.name = user.name;
+                        // Don't auto-fill email - let user enter it manually
+                    })
+                    .catch(error => {
+                        console.error('Error checking name:', error);
+                        this.addMainUserForm.name = user.name;
+                    })
+                    .finally(() => {
+                        this.showUserSearchDropdown = false;
+                        this.searchResults = [];
+                    });
+                },
+
+                selectUserForUpdate(user) {
+                    this.updateNamesForm.new_name = user.name;
+                    this.showUserSearchDropdown = false;
+                    this.searchResults = [];
+                },
+
+                selectUserForEdit(user) {
+                    this.editUserForm.name = user.name;
+                    this.showUserSearchDropdown = false;
+                    this.searchResults = [];
+                },
+
+                // Edit User functions
+                openEditUserModal(user) {
+                    this.editUserForm = {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role || 'user',
+                        status: user.is_active ? 'active' : 'inactive',
+                        password: '',
+                        password_confirmation: '',
+                        showPassword: false
+                    };
+                    this.showEditUserModal = true;
+                },
+
+                async updateUser() {
+                    this.editUserLoading = true;
+
+                    try {
+                        const response = await fetch(`/admin/sso-users/${this.editUserForm.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(this.editUserForm)
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert('User updated successfully!', 'success');
+                            this.showEditUserModal = false;
+                            this.loadSSOUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error updating user', 'error');
+                    } finally {
+                        this.editUserLoading = false;
+                    }
+                },
+
+                async deleteUser() {
+                    const self = this;
+                    showConfirm(
+                        'Delete User',
+                        'Are you sure you want to delete this user? This action cannot be undone.',
+                        () => {
+                            self.editUserLoading = true;
+
+                            fetch(`/admin/sso-users/${self.editUserForm.id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    showAlert('User deleted successfully!', 'success');
+                                    self.showEditUserModal = false;
+                                    self.loadSSOUsers();
+                                } else {
+                                    showAlert('Error: ' + result.message, 'error');
+                                }
+                            })
+                            .catch(error => {
+                                showAlert('Error deleting user', 'error');
+                            })
+                            .finally(() => {
+                                self.editUserLoading = false;
+                            });
+                        },
+                        {
+                            type: 'danger',
+                            confirmText: 'Delete',
+                            cancelText: 'Cancel'
+                        }
+                    );
+                },
+
+                // Close dropdown when clicking outside
+                handleClickOutside(event) {
+                    if (!event.target.closest('.relative')) {
+                        this.showUserSearchDropdown = false;
+                    }
+                },
+
+                async performUpdateNames() {
+                    if (!this.updateNamesForm.new_name) {
+                        showAlert('Please enter a new name', 'warning');
+                        return;
+                    }
+
+                    this.updateNamesLoading = true;
+
+                    try {
+                        const response = await fetch('/admin/update-sso-user-names', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                users: this.selectedSSOUsers,
+                                new_name: this.updateNamesForm.new_name
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.updateNamesResults = result.results;
+                            this.selectedSSOUsers = [];
+                            this.loadSSOUsers();
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error updating names', 'error');
+                    } finally {
+                        this.updateNamesLoading = false;
+                    }
+                },
+
+                async performBulkNameUpdate() {
+                    this.bulkNameLoading = true;
+
+                    try {
+                        const usersToUpdate = this.selectedBrowseUsers.map(userStr => JSON.parse(userStr));
+
+                        const response = await fetch('/admin/bulk-update-names', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({
+                                users: usersToUpdate,
+                                ...this.bulkNameForm
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.bulkNameResults = result.results;
+                            this.selectedBrowseUsers = [];
+                            this.loadUsers();
+
+                            // Reload SSO users if they were updated
+                            if (this.bulkNameForm.update_sso) {
+                                this.loadSSOUsers();
+                            }
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error performing bulk name update', 'error');
+                    } finally {
+                        this.bulkNameLoading = false;
+                    }
                 }
             }
         }

@@ -27,12 +27,29 @@
             <!-- Logo/Icon Section -->
             <div class="flex justify-center mb-8">
                 <div class="relative">
-                    <div class="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <svg class="w-10 h-10 text-indigo-600 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <!-- Rotating Logo -->
+                    <img src="{{ asset('logo2.png') }}"
+                         alt="LSP Gatensi Logo"
+                         class="w-24 h-24 animate-spin-slow rounded-full shadow-lg">
+
+                    <!-- Pulsing Ring Around Logo -->
+                    <div class="absolute inset-0 rounded-full border-4 border-indigo-200 animate-ping"></div>
+
+                    <!-- Status Indicator -->
+                    <div class="absolute bottom-0 right-0 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
+                        <svg class="w-4 h-4 text-white animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                         </svg>
                     </div>
-                    <div class="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full border-4 border-white"></div>
+                </div>
+            </div>
+
+            <!-- Loading Dots Animation -->
+            <div class="flex justify-center mb-6">
+                <div class="flex space-x-2">
+                    <div class="w-3 h-3 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                    <div class="w-3 h-3 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                    <div class="w-3 h-3 bg-indigo-600 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
                 </div>
             </div>
 
@@ -45,18 +62,34 @@
                     Mohon tunggu sebentar, kami sedang mengamankan koneksi Anda
                 </p>
 
-                <!-- Progress Bar -->
-                <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
-                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-1000"
+                <!-- Enhanced Progress Bar -->
+                <div class="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-3 rounded-full transition-all duration-1000 relative"
                          style="width: 0%"
-                         id="progress-bar"></div>
+                         id="progress-bar">
+                        <!-- Shimmer Effect -->
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                    </div>
                 </div>
 
-                <!-- Status Messages -->
-                <div class="space-y-2 text-sm text-gray-600" id="status-messages">
-                    <div class="fade-in">✓ Membuat token aman...</div>
-                    <div class="opacity-50">→ Memverifikasi identitas...</div>
-                    <div class="opacity-50">→ Mengarahkan ke sistem...</div>
+                <!-- Enhanced Status Messages -->
+                <div class="space-y-3 text-sm text-gray-600" id="status-messages">
+                    <div class="fade-in flex items-center justify-start">
+                        <svg class="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="font-medium">Token SSO berhasil dibuat</span>
+                    </div>
+                    <div class="opacity-50 flex items-center justify-start">
+                        <div class="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>Memverifikasi identitas pengguna</span>
+                    </div>
+                    <div class="opacity-50 flex items-center justify-start">
+                        <svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                        <span>Mengarahkan ke {{ $systemName }}</span>
+                    </div>
                 </div>
             </div>
 

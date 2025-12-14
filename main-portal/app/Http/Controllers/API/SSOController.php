@@ -33,9 +33,12 @@ class SSOController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'email' => $verification['sso_user']->email,
-                'name' => $verification['user_data']->name ?? $verification['sso_user']->name,
-                'role' => $verification['user_data']->role ?? null,
+                'sso_user' => [
+                    'id' => $verification['sso_user']->id,
+                    'email' => $verification['sso_user']->email,
+                    'name' => $verification['sso_user']->name
+                ],
+                'user_data' => $verification['user_data'],
                 'system' => $verification['system']
             ]
         ]);

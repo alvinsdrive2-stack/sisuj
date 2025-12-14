@@ -46,8 +46,4 @@
         </div>
     </form>
 
-    <div class="mt-6 text-center text-sm text-gray-600">
-        <p>Auto-approval jika email sudah terdaftar di sistem target</p>
-        <p>Hubungi administrator jika memerlukan akses ke sistem tertentu</p>
-    </div>
 </x-guest-layout>

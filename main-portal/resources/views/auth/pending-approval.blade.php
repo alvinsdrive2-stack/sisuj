@@ -13,12 +13,26 @@
                     </svg>
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium text-yellow-800">Email tidak ditemukan di {{ $system['name'] }}</h3>
+                    <h3 class="text-sm font-medium text-yellow-800">Nama tidak ditemukan di {{ $system['name'] }}</h3>
                     <div class="mt-2 text-sm text-yellow-700">
-                        <p>Email <strong>{{ $email }}</strong> tidak terdaftar di sistem {{ $system['name'] }}.</p>
+                        <p>Nama <strong>{{ $searched_name ?? 'User' }}</strong> tidak cocok dengan user yang terdaftar di sistem {{ $system['name'] }}.</p>
+                        <p class="mt-1">Email: <strong>{{ $email }}</strong></p>
                         <p class="mt-1">Silakan hubungi administrator untuk mendapatkan akses.</p>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
+            <h3 class="text-sm font-medium text-blue-800 mb-2">💡 Cara Kerja Pencocokan Nama</h3>
+            <div class="text-sm text-blue-700">
+                <p class="mb-2">Sistem akan mencoba mencocokkan nama Anda dengan beberapa metode:</p>
+                <ul class="list-disc list-inside space-y-1 ml-2">
+                    <li><strong>Nama Persis</strong> - Sama persis case-sensitive</li>
+                    <li><strong>Nama Mirip</strong> - Abaikan kapital, spasi, dan gelar (Sdr, Bapak, dll)</li>
+                    <li><strong>Sebagian Nama</strong> - Jika nama Anda mengandung atau terkandung dalam nama database</li>
+                    <li><strong>Kemiripan Kata</strong> - Jika beberapa kata nama cocok</li>
+                </ul>
             </div>
         </div>
 
@@ -34,7 +48,11 @@
                     <dd class="mt-1 text-sm text-gray-900">{{ $system['description'] }}</dd>
                 </div>
                 <div>
-                    <dt class="text-sm font-medium text-gray-500">Email yang digunakan</dt>
+                    <dt class="text-sm font-medium text-gray-500">Nama yang dicari</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ $searched_name ?? 'Tidak diketahui' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Email</dt>
                     <dd class="mt-1 text-sm text-gray-900">{{ $email }}</dd>
                 </div>
                 <div>
