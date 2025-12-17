@@ -43,4 +43,35 @@ class SSOController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Handle SSO logout from external systems
+     */
+    public function logout(Request $request)
+    {
+        $fromSystem = $request->get('from');
+        $message = 'Logged out successfully';
+
+        if ($fromSystem) {
+            $systemNames = [
+                'balai' => 'Sistem Balai',
+                'reguler' => 'Sistem Reguler',
+                'suisei' => 'Sistem Suisei',
+                'tuk' => 'Sistem Verifikasi TUK'
+            ];
+
+            if (isset($systemNames[$fromSystem])) {
+                $message = "Anda telah logout dari {$systemNames[$fromSystem]}";
+            }
+        }
+
+        // Clear any SSO sessions if needed
+        // ...
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'redirect_url' => route('login') . ($fromSystem ? "?from={$fromSystem}" : '')
+        ]);
+    }
 }

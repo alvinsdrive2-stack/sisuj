@@ -25,6 +25,19 @@ class SSOAuthController extends Controller
      */
     public function showLoginForm()
     {
+        // Jika user sudah login dan mendapatkan logout notification
+        if (Auth::check() && request()->has('logout_from')) {
+            // Get system name from request
+            $systemName = request()->get('system_name', 'Sistem');
+
+            // Show loading redirect page
+            return view('auth.logout-loading', [
+                'systemName' => $systemName,
+                'redirectUrl' => route('dashboard')
+            ]);
+        }
+
+        // Normal login flow
         $systems = $this->ssoService->getAvailableSystems();
         return view('auth.login', compact('systems'));
     }
@@ -53,15 +66,11 @@ class SSOAuthController extends Controller
         // Find existing SSO user
         $ssoUser = SSOUser::where('email', $request->email)->first();
 
-        // If user doesn't exist, create new one
+        // If user doesn't exist, return error
         if (!$ssoUser) {
-            $ssoUser = SSOUser::create([
-                'email' => $request->email,
-                'name' => explode('@', $request->email)[0], // Default name from email
-                'password' => Hash::make($request->password),
-                'status' => 'active',
-                'role' => 'user' // Default role for new users
-            ]);
+            return back()->withErrors([
+                'email' => 'Email tidak terdaftar dalam sistem. Silakan hubungi administrator.'
+            ])->withInput($request->except('password'));
         }
 
         // Verify password
@@ -280,10 +289,29 @@ class SSOAuthController extends Controller
     /**
      * Handle logout
      */
-    public function logout()
+    public function logout(Request $request)
     {
+        $fromSystem = $request->get('from');
+        $message = 'Logged out successfully';
+
+        if ($fromSystem) {
+            $systemNames = [
+                'balai' => 'Sistem Balai',
+                'reguler' => 'Sistem Reguler',
+                'suisei' => 'Sistem Suisei',
+                'tuk' => 'Sistem Verifikasi TUK'
+            ];
+
+            if (isset($systemNames[$fromSystem])) {
+                $message = "Anda telah logout dari {$systemNames[$fromSystem]}";
+            }
+        }
+
         Auth::logout();
+        session()->invalidate();
+        session()->regenerateToken();
+
         return redirect()->route('login')
-            ->with('success', 'Logged out successfully');
+            ->with('success', $message);
     }
 }

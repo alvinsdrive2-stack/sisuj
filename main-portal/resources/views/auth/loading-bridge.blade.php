@@ -28,7 +28,7 @@
             <div class="flex justify-center mb-8">
                 <div class="relative">
                     <!-- Rotating Logo -->
-                    <img src="{{ asset('logo2.png') }}"
+                    <img src="{{ asset('favicon.png') }}"
                          alt="LSP Gatensi Logo"
                          class="w-24 h-24 animate-spin-slow rounded-full shadow-lg">
 

@@ -1,3 +1,76 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom styles for navbar */
+@layer components {
+    /* Prevent layout shift during navigation */
+    .navbar-stable {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        will-change: transform;
+        transform: translateZ(0);
+        backface-visibility: hidden;
+    }
+
+    /* Logo container with fixed dimensions - smaller size */
+    .logo-fixed {
+        width: 110px;
+        height: auto;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    /* Smooth transitions for navigation */
+    .nav-link {
+        @apply transition-colors duration-200 ease-in-out;
+    }
+
+    /* Ensure navbar is always visible during transitions */
+    nav {
+        opacity: 1 !important;
+        animation: none !important;
+    }
+}
+
+/* Ensure navbar stays visible during page transitions */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Prevent shifting when content loads */
+.main-container {
+    min-height: calc(100vh - 64px);
+}
+
+/* Smooth page transitions */
+.page-transition {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Page transition animations */
+.page-transition-enter {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Preserve navbar position during transitions */
+.navbar-preserve {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+}
+
+/* Body padding to account for fixed navbar */
+.body-with-navbar {
+    padding-top: 64px;
+}

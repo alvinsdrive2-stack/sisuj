@@ -110,9 +110,9 @@
             </div>
         `;
 
-        // Store callbacks
-        dialogEl.dataset.confirmCallback = onConfirm.toString();
-        dialogEl.dataset.cancelCallback = config.onCancel ? config.onCancel.toString() : '';
+        // Store callbacks as functions
+        dialogEl.confirmCallback = onConfirm;
+        dialogEl.cancelCallback = config.onCancel;
 
         // Add to container
         dialogContainer.appendChild(dialogEl);
@@ -143,15 +143,15 @@
 
         setTimeout(() => {
             // Execute callback
-            if (confirmed && dialogEl.dataset.confirmCallback) {
+            if (confirmed && dialogEl.confirmCallback) {
                 try {
-                    eval('(' + dialogEl.dataset.confirmCallback + ')()');
+                    dialogEl.confirmCallback();
                 } catch (e) {
                     console.error('Error executing confirm callback:', e);
                 }
-            } else if (!confirmed && dialogEl.dataset.cancelCallback) {
+            } else if (!confirmed && dialogEl.cancelCallback) {
                 try {
-                    eval('(' + dialogEl.dataset.cancelCallback + ')()');
+                    dialogEl.cancelCallback();
                 } catch (e) {
                     console.error('Error executing cancel callback:', e);
                 }

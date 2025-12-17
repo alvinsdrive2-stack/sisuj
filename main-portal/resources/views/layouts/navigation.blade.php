@@ -1,12 +1,104 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+<nav x-data="{ open: false, sidebarOpen: false }" class="bg-white border-b border-gray-100 navbar-stable navbar-preserve relative">
+    <!-- Sidebar Toggle Button -->
+    <button @click="sidebarOpen = !sidebarOpen" class="fixed left-0 top-1/2 transform -translate-y-1/2 z-50 bg-blue-600 text-white p-2 rounded-r-lg hover:bg-blue-700 transition-all duration-200 shadow-lg">
+        <i :class="sidebarOpen ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-sm"></i>
+    </button>
+
+    <!-- Collapsed Sidebar -->
+    <div x-show="sidebarOpen"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 -translate-x-full"
+         x-transition:enter-end="opacity-100 translate-x-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-x-0"
+         x-transition:leave-end="opacity-0 -translate-x-full"
+         class="fixed left-0 top-0 h-full w-64 bg-white shadow-2xl z-40 border-r border-gray-200">
+        <!-- Sidebar Content -->
+        <div class="p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold mr-3">
+                    <i class="fas fa-globe"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800">Portal Sistem</h3>
+            </div>
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Terintegrasi</h4>
+
+            <!-- Menu Items -->
+            <div class="space-y-2">
+                <div class="group">
+                    <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-database text-blue-600 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Database Balai</p>
+                                <p class="text-xs text-gray-500">98 users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="group">
+                    <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-users text-green-600 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Database Reguler</p>
+                                <p class="text-xs text-gray-500">380 users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="group">
+                    <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-bolt text-amber-600 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Database FG/Suisei</p>
+                                <p class="text-xs text-gray-500">64 users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="group">
+                    <div class="px-4 py-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center">
+                            <i class="fas fa-wrench text-red-600 mr-3"></i>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">Database TUK</p>
+                                <p class="text-xs text-gray-500">92 users</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="mt-8 pt-6 border-t border-gray-200">
+                <div class="text-xs text-gray-500 mb-2">Total Users</div>
+                <div class="text-2xl font-bold text-gray-800">545</div>
+                <div class="text-xs text-gray-500 mt-1">Across all systems</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay to close sidebar -->
+    <div x-show="sidebarOpen"
+         @click="sidebarOpen = false"
+         x-transition:enter="transition-opacity ease-linear duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-300"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 bg-black bg-opacity-50 z-30"></div>
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                    <a href="{{ route('dashboard') }}" class="logo-fixed logo-container">
+                        <x-application-logo class="block" />
                     </a>
                 </div>
 

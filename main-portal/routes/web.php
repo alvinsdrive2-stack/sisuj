@@ -8,9 +8,10 @@ use App\Http\Controllers\SSOAuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
-// SSO Routes
+// SSO Routes - allow both guest and auth untuk menerima logout notification
+Route::get('/', [SSOAuthController::class, 'showLoginForm'])->name('login');
+
 Route::middleware('guest')->group(function () {
-    Route::get('/', [SSOAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [SSOAuthController::class, 'login'])
          ->middleware('readonly.db')
          ->name('login.submit');
@@ -70,6 +71,10 @@ Route::middleware('auth')->group(function () {
             ->name('users.sso.update');
         Route::delete('/sso-users/{id}', [UserManagementController::class, 'deleteSSOUser'])
             ->name('users.sso.delete');
+        Route::post('/delete-users', [UserManagementController::class, 'deleteUsers'])
+            ->name('users.delete');
+        Route::put('/update-user/{id}', [UserManagementController::class, 'updateUser'])
+            ->name('users.update');
         Route::post('/check-sso-name-exists', [UserManagementController::class, 'checkSSONameExists'])
             ->name('users.check.name');
 
@@ -100,5 +105,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Logout routes
+    Route::get('/logout', [SSOAuthController::class, 'logout'])->name('logout.get');
     Route::post('/logout', [SSOAuthController::class, 'logout'])->name('logout');
 });

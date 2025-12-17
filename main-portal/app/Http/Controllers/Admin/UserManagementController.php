@@ -989,33 +989,256 @@ class UserManagementController extends Controller
     }
 
     /**
+     * Update user in target system
+     */
+    public function updateUser(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'system' => 'required|in:balai,reguler,suisei,tuk',
+                'name' => 'required|string|max:255',
+                'email' => 'required|email',
+                'role' => 'required|in:user,admin,super_admin',
+                'changePassword' => 'boolean',
+                'password' => 'required_if:changePassword,true|min:6',
+                'password_confirmation' => 'required_if:changePassword,true|same:password'
+            ]);
+
+            $system = $request->system;
+            $connection = $this->getSystemConnection($system);
+
+            if (!$connection) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid system specified'
+                ], 400);
+            }
+
+            Log::info("Updating user {$id} in {$system}");
+
+            // Check if user exists
+            $existingUser = DB::connection($connection)
+                ->table('users')
+                ->where('id', $id)
+                ->first();
+
+            if (!$existingUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found in the system'
+                ], 404);
+            }
+
+            // Prepare update data
+            $updateData = [
+                'name' => $request->name,
+                'email' => $request->email,
+                'role' => $request->role,
+                'updated_at' => now()
+            ];
+
+            // Add password if it needs to be changed
+            if ($request->changePassword) {
+                $updateData['password'] = Hash::make($request->password);
+            }
+
+            // Update the user
+            DB::connection($connection)
+                ->table('users')
+                ->where('id', $id)
+                ->update($updateData);
+
+            Log::info("Successfully updated user in {$system}: ID={$id}, Name={$request->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User updated successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Update user failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete users from target system
+     */
+    public function deleteUsers(Request $request)
+    {
+        try {
+            $request->validate([
+                'system' => 'required|in:balai,reguler,suisei,tuk',
+                'users' => 'required|array|min:1',
+                'users.*.id' => 'required|integer'
+            ]);
+
+            $system = $request->system;
+            $usersToDelete = $request->users;
+            $connection = $this->getSystemConnection($system);
+
+            if (!$connection) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid system specified'
+                ], 400);
+            }
+
+            Log::info("Attempting to delete " . count($usersToDelete) . " users from {$system}");
+
+            $deletedCount = 0;
+            $errors = [];
+
+            foreach ($usersToDelete as $user) {
+                try {
+                    // Check if user exists in the system
+                    $existingUser = DB::connection($connection)
+                        ->table('users')
+                        ->where('id', $user['id'])
+                        ->first();
+
+                    if (!$existingUser) {
+                        $errors[] = "User ID {$user['id']} not found in {$system}";
+                        continue;
+                    }
+
+                    // Delete the user
+                    DB::connection($connection)
+                        ->table('users')
+                        ->where('id', $user['id'])
+                        ->delete();
+
+                    Log::info("Deleted user from {$system}: ID={$user['id']}, Email={$existingUser->email}");
+                    $deletedCount++;
+
+                } catch (\Exception $e) {
+                    $error = "Failed to delete user ID {$user['id']}: " . $e->getMessage();
+                    Log::error($error);
+                    $errors[] = $error;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully deleted {$deletedCount} users from {$system}",
+                'deleted_count' => $deletedCount,
+                'errors' => $errors,
+                'total_attempted' => count($usersToDelete)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Delete users operation failed: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete users: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get database connection for a system
+     */
+    private function getSystemConnection($system)
+    {
+        $connections = [
+            'balai' => 'mysql_balai',
+            'reguler' => 'mysql_reguler',
+            'suisei' => 'mysql_fg',
+            'tuk' => 'mysql_tuk'
+        ];
+
+        return $connections[$system] ?? null;
+    }
+
+    /**
      * Delete SSO user
      */
     public function deleteSSOUser($id)
     {
         try {
+            Log::info("Attempting to delete SSO user with ID: " . $id);
+
             $ssoUser = SSOUser::find($id);
 
             if (!$ssoUser) {
+                Log::warning("SSO User not found with ID: " . $id);
                 return response()->json([
                     'success' => false,
                     'message' => 'User not found'
                 ], 404);
             }
 
+            Log::info("Found SSO user: " . $ssoUser->email);
+
+            // Get all systems where user has access
+            $userSystems = SSOUserSystem::where('sso_user_id', $id)
+                ->where('system_user_id', '!=', null)
+                ->get();
+
+            $errors = [];
+            $deletedFromSystems = [];
+
+            // Delete user from each target system
+            foreach ($userSystems as $userSystem) {
+                $systemName = $userSystem->system_name;
+                $systemUserId = $userSystem->system_user_id;
+                $connection = $this->getSystemConnection($systemName);
+
+                if ($connection) {
+                    try {
+                        // Check if user exists in target system
+                        $targetUser = DB::connection($connection)
+                            ->table('users')
+                            ->where('id', $systemUserId)
+                            ->first();
+
+                        if ($targetUser) {
+                            // Delete from target system
+                            DB::connection($connection)
+                                ->table('users')
+                                ->where('id', $systemUserId)
+                                ->delete();
+
+                            $deletedFromSystems[] = $systemName;
+                            Log::info("Deleted user from {$systemName}: ID={$systemUserId}, Email={$targetUser->email}");
+                        }
+                    } catch (\Exception $e) {
+                        $errors[] = "Failed to delete from {$systemName}: " . $e->getMessage();
+                        Log::error("Failed to delete from {$systemName}: " . $e->getMessage());
+                    }
+                }
+            }
+
             // Delete related user systems
             SSOUserSystem::where('sso_user_id', $id)->delete();
+            Log::info("Deleted user systems for user ID: " . $id);
 
-            // Delete the user
+            // Delete the SSO user
             $ssoUser->delete();
+            Log::info("Successfully deleted SSO user: " . $ssoUser->email);
+
+            $message = "SSO user deleted successfully";
+            if (!empty($deletedFromSystems)) {
+                $message .= ". Also deleted from: " . implode(', ', array_map('strtoupper', $deletedFromSystems));
+            }
+
+            if (!empty($errors)) {
+                $message .= ". Some errors occurred: " . implode('; ', $errors);
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'User deleted successfully'
+                'message' => $message,
+                'deleted_from_systems' => $deletedFromSystems,
+                'errors' => $errors
             ]);
 
         } catch (\Exception $e) {
             Log::error("Delete SSO user failed: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
