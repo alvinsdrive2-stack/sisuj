@@ -284,7 +284,6 @@ export default function DashboardAsesiPage() {
                     </div>
                   ))}
                 </div>
-
                 <Button
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
@@ -294,9 +293,7 @@ export default function DashboardAsesiPage() {
                     } else if (kegiatan?.tahap === "2") {
                       // TODO: Navigate to asesmen page
                       toast("Halaman asesmen belum tersedia", "info")
-                    } else {
-                      navigate("/asesi/documents")
-                    }
+                    }else{}
                   }}
                 >
                   {buttonText}

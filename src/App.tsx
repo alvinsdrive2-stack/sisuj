@@ -34,6 +34,15 @@ import ListAsesiAsesor from './pages/asesor/ListAsesiAsesor'
 // Asesi Pages
 import DashboardAsesiPage from './pages/asesi/DashboardAsesiPage'
 import PraAsesmenPage from './pages/asesi/PraAsesmenPage'
+import Apl01Page from './pages/asesi/Apl01Page'
+import Apl02Page from './pages/asesi/Apl02Page'
+import Apl02SuccessPage from './pages/asesi/Apl02SuccessPage'
+import Mapa01Page from './pages/asesi/Mapa01Page'
+import Mapa02Page from './pages/asesi/Mapa02Page'
+import FrAk07Page from './pages/asesi/FrAk07Page'
+import FrAk04Page from './pages/asesi/FrAk04Page'
+import K3AsesmenPage from './pages/asesi/K3AsesmenPage'
+import FrAk01Page from './pages/asesi/FrAk01Page'
 
 function App() {
   return (
@@ -166,6 +175,78 @@ function App() {
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <PraAsesmenPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/apl01"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Apl01Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/apl02"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Apl02Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/apl02/success"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Apl02SuccessPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/mapa01"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Mapa01Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/mapa02"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Mapa02Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/fr-ak-07"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <FrAk07Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/fr-ak-04"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <FrAk04Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/k3-asesmen"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <K3AsesmenPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/:kegiatanId/fr-ak-01"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <FrAk01Page />
               </ProtectedRoute>
             }
           />

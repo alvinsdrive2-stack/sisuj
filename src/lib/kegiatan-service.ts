@@ -43,6 +43,7 @@ export interface KegiatanResponse {
 // Kegiatan Asesor Response (single object with jadwal_id)
 export interface KegiatanAsesor {
   jadwal_id: string
+  id_izin?: string
   nama_kegiatan: string
   tuk_id: string
   asesor_id: string
