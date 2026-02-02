@@ -13,7 +13,8 @@ export default function FrAk01Page() {
   }
 
   const handleSave = () => {
-    // TODO: Implement save logic
+    // TODO: Implement save logic with kegiatanId
+    void kegiatanId // Prevent unused variable warning
     navigate("/asesi/dashboard")
   }
 

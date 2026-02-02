@@ -50,11 +50,6 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
     }
   }
 
-  const getLineColor = (stepNumber: number) => {
-    const status = getStepStatus(stepNumber)
-    return status === 'completed' || status === 'active' ? '#0066cc' : '#ddd'
-  }
-
   return (
     <div style={{
       position: 'sticky',

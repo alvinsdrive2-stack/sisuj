@@ -97,8 +97,9 @@ export function Toaster() {
 }
 
 export function toast(message: string, type: ToastType = "info") {
+  const id = Math.random().toString(36).substring(2, 9)
   const event = new CustomEvent<Toast>("toast", {
-    detail: { message, type }
+    detail: { id, message, type }
   })
   // @ts-ignore
   window.dispatchEvent(event)

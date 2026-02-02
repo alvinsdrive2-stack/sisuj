@@ -50,7 +50,7 @@ export default function DashboardAsesiPage() {
   console.log("User data:", user)
   console.log("==============================")
 
-  const [, setCurrentTime] = useState(new Date())
+  const [, _setCurrentTime] = useState(new Date()) // Clock state reserved for future use
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,

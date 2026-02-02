@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, FileCheck, Clock, CheckCircle2, ChevronRight } from "lucide-react"
+import { Calendar, Users, Clock, CheckCircle2, ChevronRight } from "lucide-react"
 import { useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useNavigate } from "react-router-dom"
@@ -14,7 +14,7 @@ export default function DashboardAsesor() {
   console.log('error:', error)
   console.log('kegiatan:', kegiatan)
 
-  const asesorStats = [
+  const _asesorStats = [
     {
       title: "Jadwal Mendatang",
       value: isLoading ? "..." : (kegiatan ? "1" : "0"),
@@ -44,8 +44,10 @@ export default function DashboardAsesor() {
       bgColor: "bg-amber-50"
     }
   ]
+  // Prevent unused variable warnings - data reserved for future UI
+  void _asesorStats.length
 
-  const pendingAssessments = [
+  const _pendingAssessments = [
     {
       id: 1,
       asesiName: "John Doe",
@@ -74,12 +76,16 @@ export default function DashboardAsesor() {
       nextStep: "APL02 Form"
     }
   ]
+  // Prevent unused variable warning - data reserved for future UI
+  void _pendingAssessments.length
 
-  const recentCompleted = [
+  const _recentCompleted = [
     { id: 1, asesi: "Ahmad Fauzi", scheme: "Teknisi Jaringan", score: "Kompeten", date: "18 Jan 2025" },
     { id: 2, asesi: "Dewi Lestari", scheme: "Administrasi", score: "Kompeten", date: "17 Jan 2025" },
     { id: 3, asesi: "Budi Santoso", scheme: "Digital Marketing", score: "Belum Kompeten", date: "16 Jan 2025" }
   ]
+  // Prevent unused variable warning - data reserved for future UI
+  void _recentCompleted.length
 
   return (
     <div className="space-y-6">

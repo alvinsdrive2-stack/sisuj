@@ -147,7 +147,9 @@ export default function PraAsesmenPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
         <div className="text-center">
-          <SimpleSpinner size="lg" className="mx-auto mb-4" style={{ color: '#666' }} />
+          <div style={{ color: '#666' }}>
+            <SimpleSpinner size="lg" className="mx-auto mb-4" />
+          </div>
           <p style={{ color: '#666' }}>Memuat data...</p>
         </div>
       </div>

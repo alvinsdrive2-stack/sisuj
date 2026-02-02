@@ -9,7 +9,7 @@ export default function DashboardAdminTUK() {
   const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanAdminTUK()
 
-  const adminTukStats = [
+  const _adminTukStats = [
     {
       title: "Kegiatan Terjadwal",
       value: isLoading ? "..." : kegiatans.length.toString(),
@@ -43,6 +43,8 @@ export default function DashboardAdminTUK() {
       bgColor: "bg-emerald-50"
     }
   ]
+  // Prevent unused variable warning - stats reserved for future UI
+  void _adminTukStats.length
 
   const getStatusBadge = (isStarted: string, isStartedPraAsesmen: string) => {
     // is_started = "0" → Belum Mulai

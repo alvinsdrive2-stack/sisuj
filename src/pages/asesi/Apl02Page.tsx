@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -72,7 +72,7 @@ export default function Apl02Page() {
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [idIzin, setIdIzin] = useState<string | null>(null)
+  const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, string[]>>({})
@@ -284,7 +284,9 @@ export default function Apl02Page() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
         <div className="text-center">
-          <SimpleSpinner size="lg" className="mx-auto mb-4" style={{ color: '#666' }} />
+          <div style={{ color: '#666' }}>
+            <SimpleSpinner size="lg" className="mx-auto mb-4" />
+          </div>
           <p style={{ color: '#666' }}>Memuat data APL 02...</p>
         </div>
       </div>
@@ -573,7 +575,6 @@ export default function Apl02Page() {
                     const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
                     const isCheckedK = kukChecklist[kukId] === 'K'
                     const isCheckedBK = kukChecklist[kukId] === 'BK'
-                    const buktiValue = kukBukti[kukId] || ''
 
                     return (
                       <tr key={kuk.no_kuk}>

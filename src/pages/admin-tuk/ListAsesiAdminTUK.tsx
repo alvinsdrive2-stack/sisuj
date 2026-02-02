@@ -80,7 +80,7 @@ export default function ListAsesiAdminTUK() {
   const navigate = useNavigate()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
-  const [kegiatanLoading, setKegiatanLoading] = useState(true)
+  const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [startingPraAsesmen, setStartingPraAsesmen] = useState(false)
   const [startingAsesmen, setStartingAsesmen] = useState(false)
 

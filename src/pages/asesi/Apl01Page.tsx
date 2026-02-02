@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
-import { XCircle, ArrowLeft } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { toast } from "@/components/ui/toast"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -83,28 +81,18 @@ interface ApiResponse {
   }
 }
 
-// Format tanggal: 21-Juli-2000
-function formatDateIndo(dateString: string): string {
-  const date = new Date(dateString)
-  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
-  const day = date.getDate()
-  const month = months[date.getMonth()]
-  const year = date.getFullYear()
-  return `${day}-${month}-${year}`
-}
-
 export default function Apl01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const [dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
-  const [dataPekerjaan, setDataPekerjaan] = useState<DataPekerjaan | null>(null)
+  const [_dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
+  const [_dataPekerjaan, setDataPekerjaan] = useState<DataPekerjaan | null>(null)
   const [dataSertifikasi, setDataSertifikasi] = useState<DataSertifikasi | null>(null)
   const [dataUnitKompetensi, setDataUnitKompetensi] = useState<UnitKompetensi[]>([])
   const [buktiPersyaratan, setBuktiPersyaratan] = useState<BuktiPersyaratan[]>([])
   const [buktiAdministratif, setBuktiAdministratif] = useState<BuktiAdministratif[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSaving, _setIsSaving] = useState(false) // Setter unused until POST is implemented
   const [idIzin, setIdIzin] = useState<string | null>(null)
   const [skkni, setSkkni] = useState<string>("")
 
@@ -218,7 +206,8 @@ export default function Apl01Page() {
   }, [kegiatan])
 
   const handleSave = async () => {
-    // Langsung navigasi ke APL 02 tanpa POST dulu
+    // TODO: Implement actual save logic with setIsSaving(true/false)
+    // For now, just navigate without saving
     navigate(`/asesi/praasesmen/${idIzin}/apl02`)
   }
 
@@ -226,7 +215,9 @@ export default function Apl01Page() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
         <div className="text-center">
-          <SimpleSpinner size="lg" className="mx-auto mb-4" style={{ color: '#666' }} />
+          <div style={{ color: '#666' }}>
+            <SimpleSpinner size="lg" className="mx-auto mb-4" />
+          </div>
           <p style={{ color: '#666' }}>Memuat data APL 01...</p>
         </div>
       </div>
