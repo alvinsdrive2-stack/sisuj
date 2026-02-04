@@ -13,10 +13,10 @@ const steps: Step[] = [
   { number: 3, label: 'APL 02' },
   { number: 4, label: 'MAPA 01' },
   { number: 5, label: 'MAPA 02' },
-  { number: 6, label: 'FR.AK.07' },
-  { number: 7, label: 'FR.AK.04' },
+  { number: 6, label: 'AK.07' },
+  { number: 7, label: 'AK.04' },
   { number: 8, label: 'K3' },
-  { number: 9, label: 'FR.AK.01' },
+  { number: 9, label: 'AK.01' },
   { number: 10, label: 'Selesai' },
 ]
 

@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(tr:*)",
+      "Bash(lynx:*)",
+      "Bash(awk:*)",
+      "Bash(cat:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

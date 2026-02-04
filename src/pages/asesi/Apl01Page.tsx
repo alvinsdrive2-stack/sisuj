@@ -124,6 +124,9 @@ export default function Apl01Page() {
   })
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("access_token")

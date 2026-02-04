@@ -37,6 +37,7 @@ import PraAsesmenPage from './pages/asesi/PraAsesmenPage'
 import Apl01Page from './pages/asesi/Apl01Page'
 import Apl02Page from './pages/asesi/Apl02Page'
 import Apl02SuccessPage from './pages/asesi/Apl02SuccessPage'
+import Ak01SuccessPage from './pages/asesi/Ak01SuccessPage'
 import Mapa01Page from './pages/asesi/Mapa01Page'
 import Mapa02Page from './pages/asesi/Mapa02Page'
 import FrAk07Page from './pages/asesi/FrAk07Page'
@@ -203,7 +204,7 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/mapa01"
+            path="/asesi/praasesmen/:idIzin/mapa01"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <Mapa01Page />
@@ -211,7 +212,7 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/mapa02"
+            path="/asesi/praasesmen/:idIzin/mapa02"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <Mapa02Page />
@@ -219,7 +220,7 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/fr-ak-07"
+            path="/asesi/praasesmen/:idIzin/fr-ak-07"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <FrAk07Page />
@@ -227,7 +228,7 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/fr-ak-04"
+            path="/asesi/praasesmen/:idIzin/fr-ak-04"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <FrAk04Page />
@@ -235,7 +236,7 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/k3-asesmen"
+            path="/asesi/praasesmen/:idIzin/k3-asesmen"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <K3AsesmenPage />
@@ -243,10 +244,18 @@ function App() {
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/fr-ak-01"
+            path="/asesi/praasesmen/:idIzin/fr-ak-01"
             element={
               <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
                 <FrAk01Page />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen/ak01-success"
+            element={
+              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+                <Ak01SuccessPage />
               </ProtectedRoute>
             }
           />

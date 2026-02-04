@@ -151,6 +151,9 @@ export default function Apl02Page() {
   }
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("access_token")
@@ -271,8 +274,8 @@ export default function Apl02Page() {
         uploadedFiles: uploadedFiles.map(f => ({ name: f.name })),
       })
 
-      // Navigate to success page
-      navigate(`/asesi/praasesmen/${kegiatan?.jadwal_id}/apl02/success`)
+      // Navigate directly to MAPA 01
+      navigate(`/asesi/praasesmen/${_idIzin}/mapa01`)
     } catch (error) {
       console.error("Error:", error)
     } finally {

@@ -1,0 +1,399 @@
+/**
+ * MAPA 01 Styles - 1:1 dengan PDF
+ * Font: Arial
+ * Size based on A4 paper proportions
+ */
+
+/* Main Container */
+.mapa01-container {
+  width: 100%;
+  max-width: 210mm; /* A4 width */
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 12px;
+  color: #000;
+  box-sizing: border-box;
+}
+
+/* Title */
+.mapa01-title {
+  text-align: center;
+  margin-bottom: 16px;
+  margin-top: 20px;
+}
+
+.mapa01-title h2 {
+  font-size: 16px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Header Table */
+.mapa01-header-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.mapa01-header-table td {
+  padding: 6px 10px;
+  vertical-align: middle;
+  border: none;
+  background: #fff;
+}
+
+.mapa01-header-table td.label {
+  font-weight: bold;
+}
+
+.mapa01-header-table td.label-sub {
+  font-weight: bold;
+  text-align: center;
+  width: 10%;
+}
+
+/* Section Number */
+.mapa01-section-number {
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 16px;
+}
+
+/* Subsection Number */
+.mapa01-subsection-number {
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: 12px;
+}
+
+/* Checkbox Container */
+.mapa01-checkbox-container {
+  background: #fff;
+  border: 1px solid #000;
+  padding: 10px 15px;
+  margin-bottom: 16px;
+}
+
+.mapa01-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mapa01-checkbox-item:last-child {
+  margin-bottom: 0;
+}
+
+.mapa01-checkbox-item input[type="checkbox"] {
+  margin-top: 2px;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.mapa01-checkbox-item span {
+  font-size: 12px;
+  color: #000;
+  line-height: 1.5;
+}
+
+/* Inline Checkbox */
+.mapa01-inline-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mapa01-inline-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+.mapa01-inline-checkbox span {
+  font-size: 12px;
+  color: #000;
+}
+
+/* Checkbox Group */
+.mapa01-checkbox-group {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 12px;
+}
+
+/* Section 2 - Kelompok Kerja */
+.mapa01-kelompok-container {
+  margin-bottom: 24px;
+}
+
+.mapa01-kelompok-header {
+  background: #fff;
+  border: 1px solid #000;
+  margin-bottom: 0;
+}
+
+.mapa01-kelompok-title {
+  padding: 8px 12px;
+  border-bottom: 1px solid #000;
+}
+
+.mapa01-kelompok-title span {
+  font-size: 13px;
+  font-weight: bold;
+  color: #000;
+}
+
+/* Units Table */
+.mapa01-units-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.mapa01-units-table thead th {
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: center;
+  background: #fff;
+  font-weight: bold;
+}
+
+.mapa01-units-table th.code-col {
+  width: 10%;
+}
+
+.mapa01-units-table th.title-col {
+  text-align: left;
+}
+
+.mapa01-units-table td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+  background: #fff;
+}
+
+.mapa01-unit-code {
+  text-align: center;
+  font-weight: bold;
+}
+
+.mapa01-unit-title {
+  font-weight: bold;
+}
+
+.mapa01-unit-question-label {
+  font-weight: bold;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.mapa01-unit-question-content {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Nested Table for Methods */
+.mapa01-methods-table {
+  width: 100%;
+  font-size: 11px;
+}
+
+.mapa01-methods-table td {
+  padding: 4px 0;
+  vertical-align: top;
+  background: #fff;
+}
+
+.mapa01-methods-table td.label {
+  font-weight: bold;
+  width: 30%;
+}
+
+.mapa01-methods-title {
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.mapa01-methods-list {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Section 3 - Modifikasi */
+.mapa01-modifikasi-container {
+  background: #fff;
+  border: 1px solid #000;
+  padding: 12px 15px;
+  margin-bottom: 16px;
+}
+
+.mapa01-modifikasi-item {
+  margin-bottom: 12px;
+}
+
+.mapa01-modifikasi-item:last-child {
+  margin-bottom: 0;
+}
+
+.mapa01-modifikasi-label {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.mapa01-modifikasi-content {
+  margin-left: 20px;
+  font-size: 12px;
+}
+
+.mapa01-modifikasi-line {
+  margin-bottom: 4px;
+}
+
+.mapa01-modifikasi-italic {
+  font-size: 11px;
+  font-style: italic;
+  margin-top: 12px;
+}
+
+/* Confirmation Table */
+.mapa01-confirm-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.mapa01-confirm-table thead tr {
+  background: #f0f0f0;
+}
+
+.mapa01-confirm-table th,
+.mapa01-confirm-table td {
+  border: 1px solid #000;
+  padding: 8px;
+  background: #fff;
+}
+
+.mapa01-confirm-table th {
+  text-align: left;
+}
+
+.mapa01-confirm-table th.checkbox-col {
+  width: 80px;
+  text-align: center;
+}
+
+.mapa01-confirm-table td.checkbox-col {
+  text-align: center;
+}
+
+.mapa01-confirm-table input[type="checkbox"] {
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+}
+
+/* Signature Table */
+.mapa01-signature-table {
+  width: 100%;
+  font-size: 12px;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.mapa01-signature-table thead tr {
+  background: #f0f0f0;
+}
+
+.mapa01-signature-table th,
+.mapa01-signature-table td {
+  border: 1px solid #000;
+  padding: 8px;
+  text-align: center;
+  background: #fff;
+}
+
+.mapa01-signature-table th {
+  font-weight: bold;
+}
+
+.mapa01-signature-table th.text-left {
+  text-align: left;
+}
+
+.mapa01-signature-table th.no-col {
+  width: 50px;
+}
+
+.mapa01-signature-table input[type="text"] {
+  width: 100%;
+  max-width: 150px;
+  border: 1px solid #ccc;
+  padding: 4px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+/* Actions */
+.mapa01-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.mapa01-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  transition: all 0.2s ease;
+}
+
+.mapa01-btn:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.mapa01-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mapa01-btn-primary {
+  background: #0066cc;
+  color: #fff;
+  border: none;
+}
+
+.mapa01-btn-primary:hover:not(:disabled) {
+  background: #0052a3;
+}
+
+/* Utilities */
+.mapa01-ml-20 {
+  margin-left: 20px;
+}
+
+.mapa01-mb-8 {
+  margin-bottom: 8px;
+}
+
+.mapa01-mb-12 {
+  margin-bottom: 12px;
+}
+
+.mapa01-mb-16 {
+  margin-bottom: 16px;
+}

@@ -1,62 +1,26 @@
 import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
-import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 
-export default function Apl02SuccessPage() {
+export default function Ak01SuccessPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan } = useKegiatanAsesi()
-  const { kegiatanId } = useParams<{ kegiatanId: string }>()
   const [countdown, setCountdown] = useState(3)
-  const [fetchedIdIzin, setFetchedIdIzin] = useState<string | null>(null)
+
+  const handleBackToDashboard = () => {
+    navigate("/asesi/dashboard")
+  }
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0)
 
-    // Fetch idIzin from list-asesi
-    const fetchIdIzin = async () => {
-      if (!kegiatan?.jadwal_id) return
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            setFetchedIdIzin(listResult.list_asesi[0].id_izin)
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching idIzin:", error)
-      }
-    }
-
-    fetchIdIzin()
-  }, [kegiatan])
-
-  const handleBackToDashboard = () => {
-    // Navigate with idIzin
-    if (fetchedIdIzin) {
-      navigate(`/asesi/praasesmen/${fetchedIdIzin}/mapa01`)
-    }
-  }
-
-  useEffect(() => {
     // Auto redirect after 3 seconds
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          // Use timeout to avoid navigate during render
           setTimeout(() => handleBackToDashboard(), 0)
           return 0
         }
@@ -65,7 +29,7 @@ export default function Apl02SuccessPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [fetchedIdIzin])
+  }, [])
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -80,7 +44,7 @@ export default function Apl02SuccessPage() {
             <span>/</span>
             <span>Pra-Asesmen</span>
             <span>/</span>
-            <span>FR APL 02</span>
+            <span>FR.AK.01</span>
             <span>/</span>
             <span>Selesai</span>
           </div>
@@ -105,13 +69,14 @@ export default function Apl02SuccessPage() {
           </svg>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
-            Data Berhasil Disimpan
+            Pra-Asesmen Selesai
           </h2>
           <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px', lineHeight: '1.6' }}>
-            Terima kasih telah mengisi formulir APL 02 (Asesmen Mandiri). Data Anda telah tersimpan dengan baik.
+            Terima kasih! Seluruh formulir Pra-Asesmen telah Anda lengkapi.<br />
+            Data Anda akan direview oleh asesor sebelum pelaksanaan asesmen.
           </p>
           <p style={{ fontSize: '12px', color: '#999', marginBottom: '30px' }}>
-            Mengalihkan ke MAPA 01 dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...
+            Mengalihkan ke Dashboard dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...
           </p>
 
           <button
@@ -140,7 +105,7 @@ export default function Apl02SuccessPage() {
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
-            Lanjut ke MAPA 01 Sekarang
+            Kembali ke Dashboard Sekarang
           </button>
         </div>
       </div>

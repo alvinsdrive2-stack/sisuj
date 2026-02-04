@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 export default function K3AsesmenPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatanId } = useParams()
+  const { idIzin } = useParams()
 
   const handleBack = () => {
     navigate(-1)
@@ -14,7 +14,7 @@ export default function K3AsesmenPage() {
 
   const handleSave = () => {
     // TODO: Implement save logic
-    navigate(`/asesi/praasesmen/${kegiatanId}/fr-ak-01`)
+    navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
   }
 
   return (

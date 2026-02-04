@@ -1,0 +1,27 @@
+interface CheckboxGroupProps {
+  items: string[]
+  ml?: number
+}
+
+/**
+ * Reusable checkbox group component
+ * Used for static checkbox sections in the form
+ */
+export function CheckboxGroup({ items, ml = 0 }: CheckboxGroupProps) {
+  return (
+    <div style={{
+      background: '#fff',
+      border: '1px solid #000',
+      padding: '10px 15px',
+      marginBottom: '16px',
+      marginLeft: ml ? `${ml}px` : 0
+    }}>
+      {items.map((item, idx) => (
+        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
+          <input type="checkbox" style={{ marginTop: '2px', cursor: 'pointer' }} />
+          <span style={{ fontSize: '12px', color: '#000' }}>{item}</span>
+        </div>
+      ))}
+    </div>
+  )
+}

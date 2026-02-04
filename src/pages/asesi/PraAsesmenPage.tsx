@@ -58,6 +58,9 @@ export default function PraAsesmenPage() {
   const [zoom, setZoom] = useState(1)
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("access_token")
