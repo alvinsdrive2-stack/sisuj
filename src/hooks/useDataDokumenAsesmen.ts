@@ -1,0 +1,149 @@
+import { useState, useEffect } from "react"
+
+interface Asesor {
+  id: number
+  nama: string
+  noreg: string
+}
+
+interface DataDokumenAsesmenData {
+  jabatan_kerja: string
+  nomor_skema: string
+  tuk: string
+  id_asesor_1: number
+  id_asesor_2: number
+  nama_asesi: string
+  asesor_1: string
+  asesor_2: string
+  noreg_asesor_1: string
+  noreg_asesor_2: string
+  tanggal_uji: string
+  tanggal_selesai: string | null
+  jenis_kelas: string
+}
+
+interface DataDokumenAsesmenResponse {
+  message: string
+  data: DataDokumenAsesmenData
+}
+
+interface UseDataDokumenAsesmenResult {
+  jabatanKerja: string
+  nomorSkema: string
+  tuk: string
+  asesorList: Asesor[]
+  namaAsesor: string
+  namaAsesi: string
+  idAsesor1: number | null
+  idAsesor2: number | null
+  tanggalUji: string
+  tanggalSelesai: string | null
+  jenisKelas: string
+  isLoading: boolean
+  error: string | null
+}
+
+export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokumenAsesmenResult {
+  const [data, setData] = useState<{
+    jabatanKerja: string
+    nomorSkema: string
+    tuk: string
+    asesorList: Asesor[]
+    namaAsesor: string
+    namaAsesi: string
+    idAsesor1: number | null
+    idAsesor2: number | null
+    tanggalUji: string
+    tanggalSelesai: string | null
+    jenisKelas: string
+  }>({
+    jabatanKerja: '',
+    nomorSkema: '',
+    tuk: '',
+    asesorList: [],
+    namaAsesor: '',
+    namaAsesi: '',
+    idAsesor1: null,
+    idAsesor2: null,
+    tanggalUji: '',
+    tanggalSelesai: null,
+    jenisKelas: '',
+  })
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!idIzin) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${idIzin}/data-dokumen`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result: DataDokumenAsesmenResponse = await response.json()
+          if (result.message === "Success" && result.data) {
+            // Build asesor list dynamically
+            const asesorList: Asesor[] = []
+
+            if (result.data.asesor_1 && result.data.id_asesor_1) {
+              asesorList.push({
+                id: result.data.id_asesor_1,
+                nama: result.data.asesor_1,
+                noreg: result.data.noreg_asesor_1 || '',
+              })
+            }
+
+            if (result.data.asesor_2 && result.data.id_asesor_2) {
+              asesorList.push({
+                id: result.data.id_asesor_2,
+                nama: result.data.asesor_2,
+                noreg: result.data.noreg_asesor_2 || '',
+              })
+            }
+
+            // Combine asesor names for backward compatibility
+            const namaAsesor = asesorList.map(a => a.nama).join(', ')
+
+            setData({
+              jabatanKerja: result.data.jabatan_kerja || '',
+              nomorSkema: result.data.nomor_skema || '',
+              tuk: result.data.tuk || '',
+              asesorList,
+              namaAsesor,
+              namaAsesi: result.data.nama_asesi || '',
+              idAsesor1: result.data.id_asesor_1 || null,
+              idAsesor2: result.data.id_asesor_2 || null,
+              tanggalUji: result.data.tanggal_uji || '',
+              tanggalSelesai: result.data.tanggal_selesai,
+              jenisKelas: result.data.jenis_kelas || '',
+            })
+          }
+        } else {
+          console.warn(`Data Dokumen Asesmen API returned ${response.status}`)
+        }
+      } catch (err) {
+        console.error("Error fetching data dokumen asesmen:", err)
+        setError(err instanceof Error ? err.message : "Unknown error")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [idIzin])
+
+  return {
+    ...data,
+    isLoading,
+    error,
+  }
+}

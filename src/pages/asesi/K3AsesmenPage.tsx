@@ -1,20 +1,86 @@
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
+
+interface K3Response {
+  message: string
+  data: {
+    file: string
+  }
+}
 
 export default function K3AsesmenPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { idIzin } = useParams()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [agreedChecklist, setAgreedChecklist] = useState(false)
+
+  useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
+
+    const fetchPdfUrl = async () => {
+      try {
+        const token = localStorage.getItem("access_token")
+
+        // If no idIzin, we'll use the base endpoint
+        const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/file-k3`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result: K3Response = await response.json()
+          if (result.message === "Success" && result.data?.file) {
+            setPdfUrl(result.data.file)
+          }
+        } else {
+          console.warn(`K3 API returned ${response.status}`)
+        }
+      } catch (error) {
+        console.error("Error fetching K3 PDF:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchPdfUrl()
+  }, [idIzin])
 
   const handleBack = () => {
     navigate(-1)
   }
 
-  const handleSave = () => {
-    // TODO: Implement save logic
-    navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
+  const handleSave = async () => {
+    if (!agreedChecklist) {
+      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // TODO: POST data to backend if needed
+      await new Promise(resolve => setTimeout(resolve, 500))
+      navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
+    } catch (error) {
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  if (isLoading) {
+    return <FullPageLoader text="Memuat dokumen K3 Asesmen..." />
   }
 
   return (
@@ -39,27 +105,58 @@ export default function K3AsesmenPage() {
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>
-          <p style={{ fontSize: '13px', color: '#666' }}>Isi atau lengkapi data K3 Asesmen di bawah ini</p>
+          <p style={{ fontSize: '13px', color: '#666' }}>Baca dan pahami dokumen K3 Asesmen di bawah ini</p>
         </div>
 
-        {/* Content */}
-        <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '8px', padding: '40px', textAlign: 'center', marginBottom: '20px' }}>
-          <p style={{ fontSize: '14px', color: '#666' }}>K3 Asesmen sedang dalam pengembangan</p>
+        {/* PDF Viewer */}
+        {pdfUrl ? (
+          <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', overflow: 'hidden' }}>
+            <iframe
+              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0&view=fitH`}
+              style={{
+                width: '100%',
+                height: '800px',
+                border: 'none'
+              }}
+              title="K3 Asesmen PDF"
+            />
+          </div>
+        ) : (
+          <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', padding: '40px', textAlign: 'center', marginBottom: '20px' }}>
+            <p style={{ fontSize: '14px', color: '#666' }}>Dokumen K3 Asesmen tidak tersedia</p>
+          </div>
+        )}
+
+        {/* Agreement Checklist */}
+        <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={agreedChecklist}
+              onChange={(e) => setAgreedChecklist(e.target.checked)}
+              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+            />
+            <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
+              <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah membaca, memahami, dan menyetujui dokumen K3 Asesmen ini dengan sebenar-benarnya.
+            </span>
+          </label>
         </div>
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button
             onClick={handleBack}
-            style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '13px', cursor: 'pointer' }}
+            disabled={isSaving}
+            style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '13px', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.5 : 1 }}
           >
             Kembali
           </button>
           <button
             onClick={handleSave}
-            style={{ padding: '8px 16px', background: '#0066cc', color: '#fff', fontSize: '13px', cursor: 'pointer', border: 'none' }}
+            disabled={isSaving || !agreedChecklist}
+            style={{ padding: '8px 16px', background: agreedChecklist ? '#0066cc' : '#999', color: '#fff', fontSize: '13px', cursor: isSaving || !agreedChecklist ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving || !agreedChecklist ? 0.5 : 1 }}
           >
-            Simpan & Lanjut
+            {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
           </button>
         </div>
       </AsesiLayout>

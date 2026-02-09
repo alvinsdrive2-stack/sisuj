@@ -20,26 +20,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cek auth status saat mount
   useEffect(() => {
-    const token = authService.getToken()
-    const userData = authService.getUserData()
+    const initAuth = async () => {
+      const token = authService.getToken()
 
-    console.log("=== AUTH CONTEXT MOUNT ===")
-    console.log("Token:", token)
-    console.log("UserData from localStorage:", userData)
-    console.log("===========================")
+      if (token) {
+        try {
+          // Fetch fresh user data from API to get latest fields (including noreg)
+          const userData = await authService.getCurrentUser()
+          authService.saveUserData(userData)
+          setUser(userData)
+        } catch (error) {
+          console.error('[AuthContext] Failed to fetch user data:', error)
+          // Fallback to localStorage if API fails
+          const cachedUserData = authService.getUserData()
+          if (cachedUserData) {
+            setUser(cachedUserData)
+          }
+        }
+      }
 
-    if (token && userData) {
-      setUser(userData)
+      setIsLoading(false)
     }
-    setIsLoading(false)
+
+    initAuth()
   }, [])
 
   const login = async (credentials: LoginRequest): Promise<CurrentUser> => {
     const response = await authService.login(credentials)
-
-    console.log("=== LOGIN RESPONSE ===")
-    console.log("Full response:", response)
-    console.log("======================")
 
     // Simpan token dulu
     authService.saveToken(response.data.access_token)
@@ -47,9 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fetch full user data dari /auth/me
     try {
       const userData = await authService.getCurrentUser()
-      console.log("=== USER DATA FROM /auth/me ===")
-      console.log("UserData:", userData)
-      console.log("==========================")
 
       authService.saveUserData(userData)
       setUser(userData)

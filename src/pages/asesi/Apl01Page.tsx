@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import React, { useState, useEffect } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
-import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { kegiatanService } from "@/lib/kegiatan-service"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface DataPribadi {
   nama: string
@@ -25,7 +27,7 @@ interface DataPekerjaan {
   perusahaan: string
   jabatan: string
   alamat_kantor: string | null
-  kode_pos: string | null
+  kode_pos: number | null
   telepon_kantor: string | null
   fax: string | null
   email_kantor: string | null
@@ -84,7 +86,13 @@ interface ApiResponse {
 export default function Apl01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan } = useKegiatanAsesi()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+
+  const { asesorList } = useDataDokumenPraAsesmen(idIzin)
+
   const [_dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
   const [_dataPekerjaan, setDataPekerjaan] = useState<DataPekerjaan | null>(null)
   const [dataSertifikasi, setDataSertifikasi] = useState<DataSertifikasi | null>(null)
@@ -92,8 +100,7 @@ export default function Apl01Page() {
   const [buktiPersyaratan, setBuktiPersyaratan] = useState<BuktiPersyaratan[]>([])
   const [buktiAdministratif, setBuktiAdministratif] = useState<BuktiAdministratif[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, _setIsSaving] = useState(false) // Setter unused until POST is implemented
-  const [idIzin, setIdIzin] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false) // Setter unused until POST is implemented
   const [skkni, setSkkni] = useState<string>("")
 
   // Form state for data pribadi
@@ -117,7 +124,7 @@ export default function Apl01Page() {
     perusahaan: "",
     jabatan: "",
     alamat_kantor: "",
-    kode_pos: "",
+    kode_pos: null,
     telepon_kantor: "",
     fax: "",
     email_kantor: ""
@@ -131,39 +138,13 @@ export default function Apl01Page() {
       try {
         const token = localStorage.getItem("access_token")
 
-        if (!kegiatan?.jadwal_id) {
-          console.error("No jadwal_id found in kegiatan")
+        if (!idIzin) {
           setIsLoading(false)
           return
         }
 
-        // Fetch id_izin dari list-asesi endpoint
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        let fetchedIdIzin: string | null = null
-
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            // Ambil id_izin dari asesi pertama (seharusnya asesi yang sedang login)
-            fetchedIdIzin = listResult.list_asesi[0].id_izin
-            setIdIzin(fetchedIdIzin)
-          }
-        }
-
-        if (!fetchedIdIzin) {
-          console.error("No id_izin found in list-asesi response")
-          setIsLoading(false)
-          return
-        }
-
-        // Fetch APL 01 data pakai id_izin
-        const apl01Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/apl01`, {
+        // Fetch APL 01 data
+        const apl01Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${idIzin}/apl01`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -194,37 +175,46 @@ export default function Apl01Page() {
             }
           }
         }
-        // If API fails (404, 500, etc), continue with empty form
       } catch (error) {
-        console.error("Error fetching APL 01:", error)
-        // Continue with empty form, don't show toast error
+        // Continue with empty form
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (kegiatan) {
+    if (idIzin) {
       fetchData()
+    } else {
+      setIsLoading(false)
     }
-  }, [kegiatan])
+  }, [idIzin])
 
   const handleSave = async () => {
-    // TODO: Implement actual save logic with setIsSaving(true/false)
-    // For now, just navigate without saving
-    navigate(`/asesi/praasesmen/${idIzin}/apl02`)
+    const targetIdIzin = idIzin || user?.id_izin
+    if (!targetIdIzin) {
+      return
+    }
+
+    // Jika asesor, langsung navigate tanpa save
+    if (isAsesor) {
+      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      return
+    }
+
+    // Asesi - save data pekerjaan dulu
+    try {
+      setIsSaving(true)
+      await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
+      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
-        <div className="text-center">
-          <div style={{ color: '#666' }}>
-            <SimpleSpinner size="lg" className="mx-auto mb-4" />
-          </div>
-          <p style={{ color: '#666' }}>Memuat data APL 01...</p>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data APL 01..." />
   }
 
   return (
@@ -250,6 +240,15 @@ export default function Apl01Page() {
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>
               <p style={{ fontSize: '13px', color: '#666' }}>Isi atau lengkapi data formulir APL 01 di bawah ini</p>
+            </div>
+
+            
+            <div style={{  padding: '4px ', marginBottom: '5px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>Bagian 1 :  Rincian Data Pemohon Sertifikasi</span>
+            </div>
+            <div style={{  padding: '2px 12px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '16px', color: '#000', }}>Pada bagian ini, cantumkan data pribadi, data pendidikan formal serta data pekerjaan 
+anda pada saat ini.</span>
             </div>
 
             {/* A. DATA PRIBADI */}
@@ -405,7 +404,8 @@ export default function Apl01Page() {
                   type="text"
                   value={formDataPekerjaan.perusahaan}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, perusahaan: e.target.value })}
-                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase' }}
+                  disabled={isAsesor || isSaving}
+                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>
             </tr>
@@ -416,7 +416,8 @@ export default function Apl01Page() {
                   type="text"
                   value={formDataPekerjaan.jabatan}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, jabatan: e.target.value })}
-                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase' }}
+                  disabled={isAsesor || isSaving}
+                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>
             </tr>
@@ -426,8 +427,9 @@ export default function Apl01Page() {
                 <textarea
                   value={formDataPekerjaan.alamat_kantor || ""}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, alamat_kantor: e.target.value })}
+                  disabled={isAsesor || isSaving}
                   rows={3}
-                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', textTransform: 'uppercase' }}
+                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>
             </tr>
@@ -443,29 +445,42 @@ export default function Apl01Page() {
                           type="text"
                           value={formDataPekerjaan.telepon_kantor || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, telepon_kantor: e.target.value })}
-                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase' }}
+                          disabled={isAsesor || isSaving}
+                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
-                      <td style={{ width: '40px', padding: '2px', textTransform: 'uppercase' }}>Fax</td>
+                      <td style={{ width: '40px', textTransform: 'uppercase', padding: '6px 8px'  }}>Fax</td>
                       <td style={{ padding: '2px' }}>
                         <input
                           type="text"
                           value={formDataPekerjaan.fax || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, fax: e.target.value })}
-                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase' }}
+                          disabled={isAsesor || isSaving}
+                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
                     </tr>
                     <tr>
                       <td style={{ width: '50px', padding: '2px', textTransform: 'uppercase' }}>Email</td>
-                      <td colSpan={3} style={{ padding: '2px' }}>
+                      <td  style={{ padding: '2px' }}>
                         <input
                           type="email"
                           value={formDataPekerjaan.email_kantor || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, email_kantor: e.target.value })}
-                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase' }}
+                          disabled={isAsesor || isSaving}
+                          style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
+                      <td style={{ width: '200px', background: '#fff', padding: '6px 8px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Kode Pos</td>
+              <td style={{ verticalAlign: 'middle' }}>
+                <input
+                  type="number"
+                  value={formDataPekerjaan.kode_pos || ""}
+                  onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, kode_pos: e.target.value ? parseInt(e.target.value) : null })}
+                  disabled={isAsesor || isSaving}
+                  style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
+                />
+              </td>
                     </tr>
                   </tbody>
                 </table>
@@ -473,11 +488,13 @@ export default function Apl01Page() {
             </tr>
           </tbody>
         </table>
-
-        {/* C. DATA SERTIFIKASI */}
-        <div style={{  padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>C. DATA SERTIFIKASI</span>
-        </div>
+        <div style={{  padding: '4px ', marginBottom: '5px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>Bagian  2 :  Data Sertifikasi</span>
+            </div>
+            <div style={{  padding: '2px 12px', marginBottom: '10px' }}>
+              <span style={{ fontSize: '16px', color: '#000', }}>Tuliskan Judul dan Nomor Skema Sertifikasi serta Daftar Unit Kompetensi sesuai kemasan pada skema sertifikasi yang anda ajukan untuk mendapatkan pengakuan sesuai dengan latar belakang pendidikan, pelatihan serta pengalaman kerja yang anda miliki.</span>
+            </div>
+            
 
         <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '14px', color: '#000', marginBottom: '20px' }}>
           <tbody>
@@ -508,7 +525,9 @@ export default function Apl01Page() {
                     </td>
                   )}
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" checked={option.checked} disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={option.checked} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>{option.label}</td>
                 </tr>
@@ -520,31 +539,41 @@ export default function Apl01Page() {
                     Tujuan Asesmen
                   </td>
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Sertifikasi</td>
                 </tr>
                 <tr>
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Sertifikasi Ulang</td>
                 </tr>
                 <tr>
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Pengakuan Kompetensi Terkini (PKT)</td>
                 </tr>
                 <tr>
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Rekognisi pembelajaran lampau</td>
                 </tr>
                 <tr>
                   <td style={{ width: '10%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ width: '65%', border: '1px solid #000', padding: '8px 10px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Lainnya:</td>
                 </tr>
@@ -555,7 +584,7 @@ export default function Apl01Page() {
 
         {/* D. DAFTAR UNIT KOMPETENSI */}
         <div style={{  padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>D. DAFTAR UNIT KOMPETENSI</span>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>DAFTAR UNIT KOMPETENSI</span>
         </div>
 
         <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
@@ -588,10 +617,12 @@ export default function Apl01Page() {
             )}
           </tbody>
         </table>
-
+        <div style={{  padding: '4px ', marginBottom: '5px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>Bagian  3  :  Bukti Kelengkapan  Pemohon </span>
+            </div>
         {/* E. BUKTI PERSYARATAN */}
         <div style={{  padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>E. BUKTI PERSYARATAN</span>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>A. BUKTI PERSYARATAN</span>
         </div>
 
         <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
@@ -614,13 +645,19 @@ export default function Apl01Page() {
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{bukti.no}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -631,10 +668,10 @@ export default function Apl01Page() {
             )}
           </tbody>
         </table>
-
+        
         {/* F. BUKTI ADMINISTRATIF */}
         <div style={{ padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>F. BUKTI ADMINISTRATIF</span>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>B. BUKTI ADMINISTRATIF</span>
         </div>
 
         <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
@@ -657,13 +694,19 @@ export default function Apl01Page() {
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{bukti.no}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                    <input type="checkbox" disabled style={{ cursor: 'not-allowed' }} />
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -675,22 +718,91 @@ export default function Apl01Page() {
           </tbody>
         </table>
 
-        {/* G. CATATAN */}
+        {/* G. CATATAN / REKOMENDASI */}
         <div style={{ padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>G. CATATAN</span>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>G. CATATAN / REKOMENDASI</span>
         </div>
 
         <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
+            {/* Rekomendasi & Pemohon Row 1 */}
             <tr>
-              <td style={{ border: '1px solid #f0f0f0', padding: '8px' }}>
-                <textarea
-                  placeholder="Tulis catatan di sini..."
-                  rows={5}
-                  style={{ width: '100%', padding: '6px 8px', border: '1px solid #808080', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', textTransform: 'uppercase' }}
-                />
+              <td rowSpan={3} style={{ width: '60%', border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
+                <span style={{ fontWeight: 'bold' }}>Rekomendasi (diisi oleh LSP):</span><br /><br />
+                Berdasarkan ketentuan persyaratan dasar,<br />
+                maka pemohon:<br /><br />
+                <span style={{ fontWeight: 'bold' }}>Diterima/ Tidak diterima</span> *) sebagai peserta
+                sertifikasi<br /><br />
+                * coret yang tidak sesuai
               </td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Pemohon :</td>
             </tr>
+            {/* Pemohon Row 2 */}
+            <tr>
+              <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
+              <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>{formDataPribadi.nama?.toUpperCase() || ''}</td>
+            </tr>
+            {/* Pemohon Row 3 - Signature */}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan /<br />Tanggal</td>
+              <td style={{ height: '140px', border: '1px solid #000', padding: '8px' }}></td>
+            </tr>
+
+            {/* Catatan & Admin Row 1 */}
+            {asesorList.length > 0 ? (
+              // Dynamic Asesor List
+              asesorList.map((asesor, idx) => (
+                <React.Fragment key={asesor.id}>
+                  {idx === 0 && (
+                    <tr>
+                      <td rowSpan={asesorList.length * 4} style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
+                        <span style={{ fontWeight: 'bold' }}>Catatan :</span>
+                      </td>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Admin / Asesor:</td>
+                    </tr>
+                  )}
+                  {idx > 0 && (
+                    <tr>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor:</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>Nama</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan / tanggal</td>
+                    <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
+                  </tr>
+                </React.Fragment>
+              ))
+            ) : (
+              // Static Admin (fallback)
+              <>
+                <tr>
+                  <td rowSpan={4} style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
+                    <span style={{ fontWeight: 'bold' }}>Catatan :</span>
+                  </td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Admin:</td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan / tanggal</td>
+                  <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
 

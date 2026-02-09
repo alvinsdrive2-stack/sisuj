@@ -8,15 +8,22 @@ export default function Apl02SuccessPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const { kegiatanId } = useParams<{ kegiatanId: string }>()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [countdown, setCountdown] = useState(3)
-  const [fetchedIdIzin, setFetchedIdIzin] = useState<string | null>(null)
+  const [actualIdIzin, setActualIdIzin] = useState<string | null>(null)
 
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0)
 
-    // Fetch idIzin from list-asesi
+    // For asesor, use idIzin from URL directly
+    if (isAsesor && idIzinFromUrl) {
+      setActualIdIzin(idIzinFromUrl)
+      return
+    }
+
+    // For asesi, fetch idIzin from list-asesi
     const fetchIdIzin = async () => {
       if (!kegiatan?.jadwal_id) return
 
@@ -32,21 +39,21 @@ export default function Apl02SuccessPage() {
         if (listAsesiResponse.ok) {
           const listResult = await listAsesiResponse.json()
           if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            setFetchedIdIzin(listResult.list_asesi[0].id_izin)
+            setActualIdIzin(listResult.list_asesi[0].id_izin)
           }
         }
       } catch (error) {
-        console.error("Error fetching idIzin:", error)
+        // Silently handle error
       }
     }
 
     fetchIdIzin()
-  }, [kegiatan])
+  }, [kegiatan, isAsesor, idIzinFromUrl])
 
   const handleBackToDashboard = () => {
     // Navigate with idIzin
-    if (fetchedIdIzin) {
-      navigate(`/asesi/praasesmen/${fetchedIdIzin}/mapa01`)
+    if (actualIdIzin) {
+      navigate(`/asesi/praasesmen/${actualIdIzin}/mapa01`)
     }
   }
 
@@ -65,7 +72,7 @@ export default function Apl02SuccessPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [fetchedIdIzin])
+  }, [actualIdIzin])
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

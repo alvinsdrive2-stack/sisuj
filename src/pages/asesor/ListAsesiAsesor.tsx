@@ -82,6 +82,11 @@ export default function ListAsesiAsesor() {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
 
+  console.log('[DEBUG] ListAsesiAsesor - jadwalId:', jadwalId)
+  console.log('[DEBUG] ListAsesiAsesor - asesiList:', asesiList)
+  console.log('[DEBUG] ListAsesiAsesor - asesiLoading:', asesiLoading)
+  console.log('[DEBUG] ListAsesiAsesor - error:', error)
+
   // Fetch kegiatan detail
   useEffect(() => {
     const fetchKegiatan = async () => {
@@ -129,7 +134,7 @@ export default function ListAsesiAsesor() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
-                {kegiatan.is_started === "0" && (
+                {kegiatan.is_started_praasesmen === "0" && (
                   <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                     Belum Mulai
                   </Badge>

@@ -35,12 +35,15 @@ export interface CurrentUser {
     guard_name: string
     permissions: string[]
   }
+  id_izin?: string
 }
 
 export interface MeResponse {
+  message: string
   data: {
     user: CurrentUser
     role: CurrentUser['role']
+    id_izin: string
   }
 }
 
@@ -135,8 +138,8 @@ class AuthService {
     }
 
     const result: MeResponse = await response.json()
-    // Attach role to user object
-    return { ...result.data.user, role: result.data.role }
+    // Attach role and id_izin to user object
+    return { ...result.data.user, role: result.data.role, id_izin: result.data.id_izin }
   }
 
   // Logout from API

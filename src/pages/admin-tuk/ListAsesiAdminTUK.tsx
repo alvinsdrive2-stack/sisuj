@@ -160,7 +160,7 @@ export default function ListAsesiAdminTUK() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
-                {kegiatan.is_started === "0" && (
+                {kegiatan.is_started_praasesmen === "0" && (
                   <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                     Belum Mulai
                   </Badge>
@@ -247,7 +247,7 @@ export default function ListAsesiAdminTUK() {
               )}
 
               {/* Start Button - based on is_started and is_started_praasesmen */}
-              {kegiatan?.is_started === "0" && (
+              {kegiatan?.is_started_praasesmen === "0" && (
                 <Button
                   onClick={handleStartPraAsesmen}
                   disabled={startingPraAsesmen}

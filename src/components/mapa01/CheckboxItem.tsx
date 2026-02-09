@@ -2,6 +2,7 @@
  * CheckboxItem.tsx
  * Simple checkbox with label component
  */
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface CheckboxItemProps {
   text: string
@@ -11,16 +12,16 @@ interface CheckboxItemProps {
 export function CheckboxItem({ text, inline = false }: CheckboxItemProps) {
   if (inline) {
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-        <input type="checkbox" style={{ cursor: 'pointer', width: '14px', height: '14px' }} />
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+        <CustomCheckbox checked={false} onChange={() => {}} style={{ pointerEvents: 'none' }} />
         <span style={{ fontSize: '12px', color: '#000' }}>{text}</span>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px' }}>
-      <input type="checkbox" style={{ cursor: 'pointer', width: '14px', height: '14px', marginTop: '2px' }} />
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px', cursor: 'pointer', userSelect: 'none' }}>
+      <CustomCheckbox checked={false} onChange={() => {}} style={{ pointerEvents: 'none' }} />
       <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.4' }}>{text}</span>
     </div>
   )

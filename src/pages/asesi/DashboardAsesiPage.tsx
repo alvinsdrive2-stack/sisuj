@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -9,15 +9,12 @@ import {
   Calendar,
   Clock,
   MapPin,
-  FileText,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
   BookOpen,
   Award,
   Timer,
   ChevronRight,
-  Play,
   FileCheck
 } from "lucide-react"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -31,11 +28,44 @@ export default function DashboardAsesiPage() {
   const { kegiatan, isLoading, error } = useKegiatanAsesi()
   const navigate = useNavigate()
   const [showPage, setShowPage] = useState(false)
+  const [idIzin, setIdIzin] = useState<string | null>(null)
+
+  // Fetch id_izin from list-asesi
+  useEffect(() => {
+    const fetchIdIzin = async () => {
+      if (!kegiatan?.jadwal_id || !user?.name) return
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
+          if (matchedAsesi?.id_izin) {
+            console.log("Found matching asesi:", matchedAsesi)
+            setIdIzin(matchedAsesi.id_izin)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching id_izin:", error)
+      }
+    }
+
+    fetchIdIzin()
+  }, [kegiatan?.jadwal_id, user?.name])
 
   // Debug logging
   console.log("=== ASESI DASHBOARD DEBUG ===")
   console.log("User data:", user)
   console.log("kegiatan:", kegiatan)
+  console.log("kegiatan?.jadwal_id:", kegiatan?.jadwal_id)
+  console.log("id_izin from list-asesi:", idIzin)
   console.log("isLoading:", isLoading)
   console.log("error:", error)
   console.log("==============================")
@@ -125,16 +155,33 @@ export default function DashboardAsesiPage() {
           venue: "-",
           address: "-"
         },
-        assessor: {
-          name: "-",
-          nip: "-",
-          license: "-"
-        },
+        assessors: [],
         status: "none"
       }
     }
 
     const tanggalUji = new Date(kegiatan.tanggal_uji)
+
+    // Handle multiple assessors - check if asesor is array or has multiple fields
+    const assessors = []
+
+    // Add first asesor if exists
+    if (kegiatan.asesor?.nama) {
+      assessors.push({
+        name: kegiatan.asesor.nama,
+        nip: kegiatan.asesor.noreg || "-",
+        license: kegiatan.asesor.noreg || "-"
+      })
+    }
+
+    // Add second asesor if exists (asesor2)
+    if (kegiatan.asesor2?.nama) {
+      assessors.push({
+        name: kegiatan.asesor2.nama,
+        nip: kegiatan.asesor2.noreg || "-",
+        license: kegiatan.asesor2.noreg || "-"
+      })
+    }
 
     return {
       scheme: kegiatan.skema.nama,
@@ -149,11 +196,7 @@ export default function DashboardAsesiPage() {
         venue: kegiatan.tuk.nama,
         address: kegiatan.tuk.alamat
       },
-      assessor: {
-        name: kegiatan.asesor?.nama || "-",
-        nip: kegiatan.asesor?.noreg || "-",
-        license: kegiatan.asesor?.noreg || "-"
-      },
+      assessors,
       status: kegiatan.is_started === "1" ? "in-progress" : "scheduled"
     }
   }, [kegiatan])
@@ -171,19 +214,6 @@ export default function DashboardAsesiPage() {
     return totalSeconds < 900 // 15 minutes = 900 seconds
   }
 
-  const checkListData = useMemo(() => [
-    { id: 1, text: "APL 01 - Permohonan Sertifikasi", completed: true },
-    { id: 2, text: "APL 02 - Rekaman Asesor", completed: true },
-    { id: 3, text: "Dokumen Pendukung (5/8)", completed: false },
-    { id: 4, text: "Pra Asesmen", completed: false },
-    { id: 5, text: "Asesmen Kompetensi", completed: false }
-  ], [])
-
-  const quickActions = useMemo(() => [
-    { id: 1, title: "Lengkapi Profil", icon: Play, desc: "Update data diri Anda", href: "/asesi/profile" },
-    { id: 2, title: "Upload Dokumen", icon: FileText, desc: "Lengkapi dokumen persyaratan", href: "/asesi/documents" },
-    { id: 3, title: "Materi Ujian", icon: BookOpen, desc: "Pelajari materi ujian", href: "#" }
-  ], [])
 
   // Memoize button text to prevent flickering - use stable state
   const [buttonText, setButtonText] = useState("Lihat Persiapan")
@@ -198,9 +228,9 @@ export default function DashboardAsesiPage() {
     const currentTimeToEnter = isExamTime(countdown)
     if (currentTimeToEnter) {
       setIsButtonLocked(true)
-      if (kegiatan?.tahap === "1") {
+      if (kegiatan?.is_started_praasesmen === "1") {
         setButtonText("Masuk Pra-Asesmen")
-      } else if (kegiatan?.tahap === "2") {
+      } else if (kegiatan?.is_started === "1") {
         setButtonText("Masuk Asesmen")
       } else {
         setButtonText("Masuk ke Ujian")
@@ -242,7 +272,7 @@ export default function DashboardAsesiPage() {
         </Card>
 
         {/* Countdown Banner - Big Container */}
-        <Card className="shadow-2xl animate-scale-in overflow-hidden">
+        <Card className="animate-scale-in overflow-hidden">
           <div className="bg-gradient-to-r from-primary to-primary/90 text-white p-8 relative">
             <div className="absolute inset-0 animate-shimmer"></div>
             <div className="relative">
@@ -288,12 +318,17 @@ export default function DashboardAsesiPage() {
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
                   onClick={() => {
+                    console.log("Navigating with id_izin:", idIzin)
+                    if (!idIzin) {
+                      toast("ID Izin tidak ditemukan", "error")
+                      return
+                    }
                     if (kegiatan?.tahap === "1") {
-                      navigate("/asesi/praasesmen")
-                    } else if (kegiatan?.tahap === "2") {
-                      // TODO: Navigate to asesmen page
-                      toast("Halaman asesmen belum tersedia", "info")
-                    }else{}
+                      navigate(`/asesi/praasesmen`)
+                    }
+                    if (kegiatan?.tahap === "2") {
+                      navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+                    }
                   }}
                 >
                   {buttonText}
@@ -372,75 +407,64 @@ export default function DashboardAsesiPage() {
               </CardContent>
             </Card>
 
+            
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+            
             {/* Assessor Info */}
             <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
+
               <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <FileCheck className="w-6 h-6 text-primary" />
                   Informasi Asesor
                 </CardTitle>
               </CardHeader>
+
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                      AR
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-slate-800">{examData.assessor.name}</h4>
-                    <p className="text-sm text-muted-foreground">NIP: {examData.assessor.nip}</p>
-                    <Badge variant="info" className="mt-2">
-                      <Award className="w-3 h-3 mr-1" />
-                      No. Lisensi: {examData.assessor.license}
-                    </Badge>
+                
+                {examData.assessors.length > 0 ? (
+                  <div className="space-y-4">
+                    {examData.assessors.map((assessor, index) => {
+                      const initials = assessor.name
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .substring(0, 2)
+
+                      return (
+                        <div key={index} className="flex items-center gap-4 mb-10">
+                          <div className="relative">
+                            <Avatar className="w-16 h-16">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <Badge variant="default" className="absolute -top-1 -left-1 text-xs px-3 py-1">
+                              {index + 1}
+                            </Badge>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-slate-800">{assessor.name}</h4>
+                            <Badge variant="info" className="mt-2">
+                              <Award className="w-3 h-3 mr-1" />
+                              No. Lisensi: {assessor.license}
+                            </Badge>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <Button variant="outline" size="sm">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Profil Asesor
-                  </Button>
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Belum ada informasi asesor</p>
+                )}
+
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              <CardHeader>
-                <CardTitle className="text-slate-800">Aksi Cepat</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {quickActions.map((action) => (
-                  <Button key={action.id} className="w-full justify-start" variant="default">
-                    <action.icon className="w-4 h-4 mr-2" />
-                    {action.title}
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Checklist Progress */}
-            <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <CardHeader>
-                <CardTitle className="text-slate-800">Status Persiapan</CardTitle>
-                <CardDescription>Progress persiapan ujian</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {checkListData.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${item.completed ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                      {item.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
-                    </div>
-                    <span className={`text-sm ${item.completed ? 'text-slate-700' : 'text-slate-500'}`}>
-                      {item.text}
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
+            <br />
             {/* Help Card */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-lg animate-slide-up" style={{ animationDelay: "0.5s" }}>
               <CardContent className="p-6 text-center">

@@ -21,6 +21,13 @@ const steps: Step[] = [
 ]
 
 export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorProps) {
+  // Get the class name for the step circle based on status
+  const getStepCircleClassName = (status: string) => {
+    if (status === 'active') {
+      return 'animate-blue-pulse'
+    }
+    return ''
+  }
   const getStepStatus = (stepNumber: number) => {
     if (stepNumber < currentStep) return 'completed'
     if (stepNumber === currentStep) return 'active'
@@ -54,20 +61,21 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
     <div style={{
       position: 'sticky',
       top: '80px',
-      width: '160px',
+      width: '180px',
       flexShrink: 0
     }}>
-      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#333', marginBottom: '12px', textTransform: 'uppercase' }}>
+      <br/>
+      <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
         Proses Pra-Asesmen
       </div>
       <div style={{ position: 'relative' }}>
         {/* Vertical Line */}
         <div style={{
           position: 'absolute',
-          left: '11px',
-          top: '8px',
-          bottom: '8px',
-          width: '2px',
+          left: '14px',
+          top: '12px',
+          bottom: '12px',
+          width: '3px',
           background: '#ddd'
         }}></div>
 
@@ -77,34 +85,35 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
           const style = getStepStyle(status)
 
           return (
-            <div key={step.number} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: index < steps.length - 1 ? '16px' : '0', position: 'relative' }}>
+            <div key={step.number} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: index < steps.length - 1 ? '24px' : '0', position: 'relative' }}>
               {/* Step Circle */}
-              <div style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                background: style.background,
-                color: style.iconColor,
-                border: '2px solid',
-                borderColor: status === 'completed' ? '#4caf50' : style.borderColor,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '11px',
-                fontWeight: status === 'pending' ? 'normal' : 'bold',
-                flexShrink: 0,
-                zIndex: 1,
-                boxShadow: status === 'active' ? '0 0 0 4px rgba(0,102,204,0.2)' : 'none'
-              }}>
+              <div
+                className={getStepCircleClassName(status)}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  borderRadius: '50%',
+                  background: style.background,
+                  color: style.iconColor,
+                  border: '3px solid',
+                  borderColor: status === 'completed' ? '#4caf50' : style.borderColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '15px',
+                  fontWeight: status === 'pending' ? 'normal' : 'bold',
+                  flexShrink: 0,
+                  zIndex: 1,
+                }}>
                 {status === 'completed' ? '\u2713' : step.number}
               </div>
               {/* Label */}
               <span style={{
-                marginLeft: '10px',
-                fontSize: '12px',
-                color: '#666',
+                marginLeft: '14px',
+                fontSize: '14px',
+                color: '#333',
                 fontWeight: status === 'pending' ? 'normal' : '600',
-                paddingTop: '2px'
+                paddingTop: '6px'
               }}>
                 {step.label}
               </span>
@@ -112,10 +121,10 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
               {status !== 'pending' && index < steps.length - 1 && (
                 <div style={{
                   position: 'absolute',
-                  left: '11px',
-                  top: '24px',
-                  width: '2px',
-                  height: 'calc(100% - 24px)',
+                  left: '18px',
+                  top: '36px',
+                  width: '3px',
+                  height: 'calc(100% - 36px)',
                   background: '#0066cc',
                   zIndex: 0
                 }}></div>

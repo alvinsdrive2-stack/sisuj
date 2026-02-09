@@ -16,8 +16,8 @@ interface Mapa01Props {
 }
 
 export function Mapa01({
-  judul = 'TEKNISI JEMBATAN RANGKA BAJA',
-  nomor = 'SKEMA-26/LSP-GKK/2022',
+  judul = '',
+  nomor = '',
   kelompokKerja = []
 }: Mapa01Props) {
   return (

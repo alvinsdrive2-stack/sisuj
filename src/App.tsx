@@ -2,6 +2,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/auth-context'
 import { ThemeProvider } from './contexts/theme-context'
 import ProtectedRoute from './components/ProtectedRoute'
+import {
+  AdminLSPRoute,
+  AdminTUKRoute,
+  AsesorRoute,
+  AsesiRoute,
+  KomtekRoute,
+  DirekturLSPRoute,
+  ManajerSertifikasiRoute,
+  AsesiOrAsesorRoute,
+} from './components/RoleRoute'
+import PublicRoute from './components/PublicRoute'
+import DefaultRoute from './components/DefaultRoute'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardLayout from './components/DashboardLayout'
@@ -30,10 +42,19 @@ import ListAsesiAdminTUK from './pages/admin-tuk/ListAsesiAdminTUK'
 // Asesor Pages
 import DashboardAsesor from './pages/asesor/DashboardAsesor'
 import ListAsesiAsesor from './pages/asesor/ListAsesiAsesor'
+import AsesiPage from './pages/asesor/AsesiPage'
 
 // Asesi Pages
 import DashboardAsesiPage from './pages/asesi/DashboardAsesiPage'
 import PraAsesmenPage from './pages/asesi/PraAsesmenPage'
+import AsesmenPage from './pages/asesi/AsesmenPage'
+import Ia04aPage from './pages/asesi/asesmen/Ia04aPage'
+import UploadTugasPage from './pages/asesi/asesmen/UploadTugasPage'
+import Ia04bPage from './pages/asesi/asesmen/Ia04bPage'
+import Ia05Page from './pages/asesi/asesmen/Ia05Page'
+import Ak02Page from './pages/asesi/asesmen/Ak02Page'
+import Ak03Page from './pages/asesi/asesmen/Ak03Page'
+import AsesmenSelesaiPage from './pages/asesi/asesmen/AsesmenSelesaiPage'
 import Apl01Page from './pages/asesi/Apl01Page'
 import Apl02Page from './pages/asesi/Apl02Page'
 import Apl02SuccessPage from './pages/asesi/Apl02SuccessPage'
@@ -53,13 +74,20 @@ function App() {
         <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
 
           {/* Protected Routes - Admin LSP */}
           <Route
             path="/admin-lsp/*"
             element={
-              <ProtectedRoute requiredPermissions={["view_all_assessment_status"]}>
+              <AdminLSPRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="dashboard" element={<DashboardAdminLSP />} />
@@ -69,7 +97,7 @@ function App() {
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </AdminLSPRoute>
             }
           />
 
@@ -77,7 +105,7 @@ function App() {
           <Route
             path="/direktur/*"
             element={
-              <ProtectedRoute requiredPermissions={["sign_document"]}>
+              <DirekturLSPRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganDirektur />} />
@@ -86,7 +114,7 @@ function App() {
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </DirekturLSPRoute>
             }
           />
 
@@ -94,7 +122,7 @@ function App() {
           <Route
             path="/komtek/*"
             element={
-              <ProtectedRoute requiredPermissions={["sign_document"]}>
+              <KomtekRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganKomtek />} />
@@ -103,7 +131,7 @@ function App() {
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </KomtekRoute>
             }
           />
 
@@ -111,7 +139,7 @@ function App() {
           <Route
             path="/manajer/*"
             element={
-              <ProtectedRoute requiredPermissions={["monitor_assessment"]}>
+              <ManajerSertifikasiRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="dashboard" element={<DashboardManajer />} />
@@ -120,7 +148,7 @@ function App() {
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </ManajerSertifikasiRoute>
             }
           />
 
@@ -128,7 +156,7 @@ function App() {
           <Route
             path="/admin-tuk/*"
             element={
-              <ProtectedRoute requiredPermissions={["verify_personal_documents"]}>
+              <AdminTUKRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="dashboard" element={<DashboardAdminTUK />} />
@@ -139,7 +167,7 @@ function App() {
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </AdminTUKRoute>
             }
           />
 
@@ -147,18 +175,18 @@ function App() {
           <Route
             path="/asesor/*"
             element={
-              <ProtectedRoute requiredPermissions={["view_assigned_assesi"]}>
+              <AsesorRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="dashboard" element={<DashboardAsesor />} />
                     <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
                     <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
                     <Route path="assessment" element={<div className="p-4"><h2 className="text-xl font-bold">Penilaian</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="asesi" element={<div className="p-4"><h2 className="text-xl font-bold">Daftar Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="asesi" element={<AsesiPage />} />
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </AsesorRoute>
             }
           />
 
@@ -166,103 +194,169 @@ function App() {
           <Route
             path="/asesi/dashboard"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiRoute>
                 <DashboardAsesiPage />
-              </ProtectedRoute>
+              </AsesiRoute>
             }
           />
           <Route
             path="/asesi/praasesmen"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <PraAsesmenPage />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/apl01"
+            path="/asesi/praasesmen/:idIzin/apl01"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Apl01Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/apl02"
+            path="/asesi/praasesmen/:idIzin/apl02"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Apl02Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
-            path="/asesi/praasesmen/:kegiatanId/apl02/success"
+            path="/asesi/praasesmen/:idIzin/apl02/success"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Apl02SuccessPage />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/mapa01"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Mapa01Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/mapa02"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Mapa02Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/fr-ak-07"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <FrAk07Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/fr-ak-04"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <FrAk04Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/k3-asesmen"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <K3AsesmenPage />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/:idIzin/fr-ak-01"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <FrAk01Page />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/praasesmen/ak01-success"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiOrAsesorRoute>
                 <Ak01SuccessPage />
-              </ProtectedRoute>
+              </AsesiOrAsesorRoute>
+            }
+          />
+
+          {/* Asesmen Routes */}
+          <Route
+            path="/asesi/asesmen"
+            element={
+              <AsesiOrAsesorRoute>
+                <AsesmenPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia04a"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia04aPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/upload-tugas"
+            element={
+              <AsesiOrAsesorRoute>
+                <UploadTugasPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia04b"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia04bPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia05"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia05Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ak02"
+            element={
+              <AsesorRoute>
+                <Ak02Page />
+              </AsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ak03"
+            element={
+              <AsesorRoute>
+                <Ak03Page />
+              </AsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/selesai"
+            element={
+              <AsesiOrAsesorRoute>
+                <AsesmenSelesaiPage />
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/*"
             element={
-              <ProtectedRoute requiredPermissions={["confirm_personal_data"]}>
+              <AsesiRoute>
                 <DashboardLayout>
                   <Routes>
                     <Route path="profile" element={<div className="p-4"><h2 className="text-xl font-bold">Profil Saya</h2><p className="text-slate-600">Coming soon...</p></div>} />
@@ -271,7 +365,7 @@ function App() {
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>
-              </ProtectedRoute>
+              </AsesiRoute>
             }
           />
 
@@ -286,7 +380,7 @@ function App() {
           />
 
           {/* Default Route */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<DefaultRoute />} />
         </Routes>
       </Router>
     </ThemeProvider>

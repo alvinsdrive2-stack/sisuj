@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import logo from "@/assets/logo.png"
+import logo from "@/assets/favicon.png"
 
 // Preload logo immediately when module loads
 const logoImg = new Image()
@@ -49,12 +49,23 @@ export function LoadingSpinner({ size = 'md', text, className = '' }: LoadingSpi
 }
 
 // Full page loading overlay
-export function FullPageLoader({ text = 'Memuat...' }: { text?: string }) {
+export function FullPageLoader({ text = 'Memuat...', show = true }: { text?: string; show?: boolean }) {
   const [logoLoaded, setLogoLoaded] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
+  const [isFadingOut, setIsFadingOut] = useState(false)
 
   useEffect(() => {
+    if (!show) {
+      // Start fade out when show becomes false
+      setIsFadingOut(true)
+      const fadeTimer = setTimeout(() => {
+        setShowLoader(false)
+      }, 300) // Match animation duration
+      return () => clearTimeout(fadeTimer)
+    }
+
     // Show loader immediately
+    setIsFadingOut(false)
     const showTimer = setTimeout(() => setShowLoader(true), 50)
 
     // Check if logo already cached
@@ -65,14 +76,14 @@ export function FullPageLoader({ text = 'Memuat...' }: { text?: string }) {
     }
 
     return () => clearTimeout(showTimer)
-  }, [])
+  }, [show])
 
   if (!showLoader) {
     return null
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-md animate-fade-in">
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-white/90 backdrop-blur-md animate-fade-in ${isFadingOut ? 'animate-fade-out' : ''}`}>
       <div className="flex flex-col items-center gap-6">
         {/* Branded spinner - always show rings, logo when loaded */}
         <div className="relative w-20 h-20">

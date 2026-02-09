@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -54,8 +54,10 @@ export default function PraAsesmenPage() {
   const [data, setData] = useState<PersonalData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { kegiatan } = useKegiatanAsesi()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -82,7 +84,6 @@ export default function PraAsesmenPage() {
           throw new Error("Data tidak ditemukan")
         }
       } catch (error) {
-        console.error("Error fetching data:", error)
         toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
       } finally {
         setIsLoading(false)
@@ -93,6 +94,12 @@ export default function PraAsesmenPage() {
   }, [])
 
   const handleConfirm = async () => {
+    // For asesor, skip the list-asesi fetch and navigate directly
+    if (isAsesor && idIzinFromUrl) {
+      navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
+      return
+    }
+
     if (!kegiatan) {
       toast("Tidak ada kegiatan aktif", "error")
       return
@@ -112,17 +119,18 @@ export default function PraAsesmenPage() {
       if (listAsesiResponse.ok) {
         const listResult = await listAsesiResponse.json()
         if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-          // Ambil id_izin dari asesi pertama (seharusnya asesi yang sedang login)
-          const fetchedIdIzin = listResult.list_asesi[0].id_izin
-          navigate(`/asesi/praasesmen/${fetchedIdIzin}/apl01`)
-          return
+          // Cari asesi yang namanya match dengan user yang login
+          const matchedAsesi = listResult.list_asesi.find((a: any) => a.nama === user?.name)
+          if (matchedAsesi?.id_izin) {
+            navigate(`/asesi/praasesmen/${matchedAsesi.id_izin}/apl01`)
+            return
+          }
         }
       }
 
       // Fallback: jika tidak ada id_izin, gunakan jadwal_id
       navigate(`/asesi/praasesmen/${kegiatan.jadwal_id}/apl01`)
     } catch (error) {
-      console.error("Error fetching id_izin:", error)
       toast("Gagal mengambil data kegiatan", "error")
     }
   }
@@ -147,16 +155,7 @@ export default function PraAsesmenPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
-        <div className="text-center">
-          <div style={{ color: '#666' }}>
-            <SimpleSpinner size="lg" className="mx-auto mb-4" />
-          </div>
-          <p style={{ color: '#666' }}>Memuat data...</p>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data..." />
   }
 
   if (!data) {
@@ -195,6 +194,9 @@ export default function PraAsesmenPage() {
           </div>
         </div>
       </div>
+
+      {/* Step Indicator */}
+      
 
       <AsesiLayout currentStep={1}>
         {/* Title */}

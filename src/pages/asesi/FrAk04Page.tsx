@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface Referensi {
   id: number
   nama: string
+  jawaban: boolean
 }
 
 interface Kelompok {
@@ -18,23 +21,28 @@ interface Kelompok {
   referensis: Referensi[]
 }
 
-interface Ak04DataItem {
-  kelompok: Kelompok
+interface Ak04Data {
+  kelompoks: Kelompok[]
+  alasan: string
 }
 
 interface ApiResponse {
   message: string
-  data: Ak04DataItem[]
+  data: Ak04Data
 }
 
-type AnswerType = 'ya' | 'tidak' | null
+type AnswerType = boolean | null
 
 export default function FrAk04Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const { idIzin } = useParams<{ idIzin: string }>()
-  const [ak04Data, setAk04Data] = useState<Ak04DataItem[] | null>(null)
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -52,7 +60,7 @@ export default function FrAk04Page() {
         // Use idIzin from URL params
         let actualIdIzin = idIzin
 
-        if (!actualIdIzin && kegiatan?.jadwal_id) {
+        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
           // Fetch id_izin from list-asesi endpoint if not in URL
           const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
@@ -70,7 +78,6 @@ export default function FrAk04Page() {
         }
 
         if (!actualIdIzin) {
-          console.error("No id_izin found")
           setIsLoading(false)
           return
         }
@@ -87,25 +94,42 @@ export default function FrAk04Page() {
           const result: ApiResponse = await ak04Response.json()
           if (result.message === "Success") {
             setAk04Data(result.data)
+
+            // Load existing answers from API
+            const initialAnswers: Record<number, AnswerType> = {}
+            result.data.kelompoks.forEach(kelompok => {
+              kelompok.referensis.forEach(ref => {
+                initialAnswers[ref.id] = ref.jawaban
+              })
+            })
+            setAnswers(initialAnswers)
+
+            // Load existing alasan
+            if (result.data.alasan) {
+              setAlasanBanding(result.data.alasan)
+            }
           }
         } else {
           console.warn(`AK04 API returned ${ak04Response.status}`)
         }
       } catch (error) {
-        console.error("Error fetching AK 04:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [idIzin, kegiatan])
+    if (isAsesor && idIzin) {
+      fetchData()
+    } else if (kegiatan) {
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
   }
 
-  const handleAnswerChange = (refId: number, value: AnswerType) => {
+  const handleAnswerChange = (refId: number, value: boolean) => {
     setAnswers(prev => {
       const current = prev[refId]
       if (current === value) {
@@ -117,6 +141,21 @@ export default function FrAk04Page() {
     })
   }
 
+  const handleCellClick = (refId: number) => {
+    setAnswers(prev => {
+      const current = prev[refId]
+      // Toggle: null -> true -> false -> null
+      if (current === undefined || current === null) {
+        return { ...prev, [refId]: true }
+      } else if (current === true) {
+        return { ...prev, [refId]: false }
+      } else {
+        const { [refId]: _, ...rest } = prev
+        return rest
+      }
+    })
+  }
+
   const handleSave = async () => {
     if (!agreedChecklist) {
       alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
@@ -125,16 +164,11 @@ export default function FrAk04Page() {
 
     setIsSaving(true)
     try {
-      // TODO: POST data to backend
-      console.log("Submitting AK04 data:", {
-        answers,
-        alasanBanding,
-      })
-
       // Get actual idIzin
       let actualIdIzin = idIzin
-      if (!actualIdIzin && kegiatan?.jadwal_id) {
-        const token = localStorage.getItem("access_token")
+      const token = localStorage.getItem("access_token")
+
+      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
         const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
@@ -149,28 +183,55 @@ export default function FrAk04Page() {
         }
       }
 
-      navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+      if (!actualIdIzin) {
+        alert("ID Izin tidak ditemukan")
+        return
+      }
+
+      // Prepare answers array
+      const kelompokId = ak04Data?.kelompoks?.[0]?.id || 1
+      const answersArray = Object.entries(answers).map(([referensiId, jawaban]) => ({
+        referensi_id: Number(referensiId),
+        kelompok_id: kelompokId,
+        jawaban: jawaban === true
+      }))
+
+      const payload = {
+        answers: answersArray,
+        alasan: alasanBanding
+      }
+
+      // POST to backend
+      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak04`, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.message === "AK04 successfully submitted") {
+          navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+        } else {
+          alert("Gagal menyimpan data: " + (result.message || "Unknown error"))
+        }
+      } else {
+        alert("Gagal menyimpan data. Status: " + response.status)
+      }
     } catch (error) {
-      console.error("Error:", error)
+      console.error("Error saving AK04:", error)
+      alert("Terjadi kesalahan saat menyimpan data")
     } finally {
       setIsSaving(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-        <DashboardNavbar userName={user?.name} />
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center">
-            <div style={{ color: '#666' }}>
-              <SimpleSpinner size="lg" className="mx-auto mb-4" />
-            </div>
-            <p style={{ color: '#666' }}>Memuat data AK 04...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data AK 04..." />
   }
 
   return (
@@ -206,13 +267,20 @@ export default function FrAk04Page() {
               {/* Nama Asesi */}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '25%' }}>Nama Asesi</td>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {user?.name || ''}</td>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {namaAsesi?.toUpperCase() || user?.name.toUpperCase() || ''}</td>
               </tr>
 
               {/* Nama Asesor */}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Nama Asesor</td>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: </td>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>:
+                  {asesorList.map((asesor, idx) => (
+                    <span key={asesor.id}>
+                      {idx > 0 && ', '}
+                      {asesor.nama?.toUpperCase() || ''}
+                    </span>
+                  ))}
+                </td>
               </tr>
 
               {/* Tanggal Asesmen */}
@@ -220,7 +288,7 @@ export default function FrAk04Page() {
                 <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Tanggal Asesmen</td>
                 <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {new Date().toLocaleDateString('id-ID')}</td>
               </tr>
-
+              <br />
               {/* Header Row */}
               <tr>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
@@ -231,27 +299,29 @@ export default function FrAk04Page() {
               </tr>
 
               {/* Questions */}
-              {ak04Data?.[0]?.kelompok.referensis.map((ref) => {
+              {ak04Data?.kelompoks?.[0]?.referensis.map((ref) => {
                 const answer = answers[ref.id]
 
                 return (
                   <tr key={ref.id}>
-                    <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    <td
+                      colSpan={2}
+                      style={{ border: '1px solid #000', padding: '6px 8px', cursor: 'pointer' }}
+                      onClick={() => handleCellClick(ref.id)}
+                    >
                       {ref.nama}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={answer === 'ya'}
-                        onChange={() => handleAnswerChange(ref.id, 'ya')}
+                    <td style={{ border: '1px solid #000', padding: '6px 30px', textAlign: 'center' }}>
+                      <CustomCheckbox
+                        checked={answer === true}
+                        onChange={() => handleAnswerChange(ref.id, true)}
                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                       />
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                      <input
-                        type="checkbox"
-                        checked={answer === 'tidak'}
-                        onChange={() => handleAnswerChange(ref.id, 'tidak')}
+                    <td style={{ border: '1px solid #000', padding: '6px 30px', textAlign: 'center' }}>
+                      <CustomCheckbox
+                        checked={answer === false}
+                        onChange={() => handleAnswerChange(ref.id, false)}
                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                       />
                     </td>
@@ -264,8 +334,8 @@ export default function FrAk04Page() {
                 <td colSpan={4} style={{ border: '1px solid #000', padding: '8px' }}>
                   Banding ini diajukan atas Keputusan Asesmen yang dibuat terhadap Skema Sertifikasi (Kualifikasi/Klaster/Okupasi) berikut :
                   <br /><br />
-                  Skema Sertifikasi : Teknisi Jembatan Rangka Baja<br />
-                  No. Skema Sertifikasi : SKEMA-26/LSP-GKK/2022
+                  Skema Sertifikasi : {jabatanKerja?.toUpperCase() || ''}<br />
+                  No. Skema Sertifikasi : {nomorSkema?.toUpperCase() || ''}
                 </td>
               </tr>
 
@@ -300,8 +370,8 @@ export default function FrAk04Page() {
               {/* Tanda Tangan */}
               <tr>
                 <td colSpan={4} style={{ border: '1px solid #000', padding: '8px', height: '80px' }}>
-                  Tanda tangan Asesi : .............................................<br /><br />
-                  Tanggal : .......................................................
+                  Tanda tangan Asesi : {namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}<br /><br />
+                  Tanggal : {new Date().toLocaleDateString('id-ID')}
                 </td>
               </tr>
             </tbody>

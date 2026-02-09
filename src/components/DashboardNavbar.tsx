@@ -52,13 +52,9 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
         {/* Top Bar - Logo, Desktop Right Section, Mobile Toggle */}
         <div className="flex items-center justify-between h-full">
           {/* Left: Logo */}
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden bg-white shadow-md">
-              <img src={logo} alt="LSP Gatensi Logo" className="w-7 h-7 object-contain" />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-primary">LSP Gatensi</h1>
-              <p className="text-[10px] text-slate-500">Sistem Uji Kompetensi</p>
+          <div className="flex items-center">
+            <div className="w-36 h-36 flex items-center justify-center overflow-hidden">
+              <img src={logo} alt="LSP Gatensi Logo" className="w-36 h-36 object-contain" />
             </div>
           </div>
 

@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface Referensi {
   id: number
   nama: string | null
+  jawaban?: boolean | string | null
 }
 
 interface Kategori {
@@ -43,13 +46,18 @@ export default function FrAk07Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const { idIzin } = useParams<{ idIzin: string }>()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [adjustmentSelection, setAdjustmentSelection] = useState<Record<string, AdjustmentType>>({})
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
+  const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -62,7 +70,7 @@ export default function FrAk07Page() {
         // Use idIzin from URL params
         let actualIdIzin = idIzin
 
-        if (!actualIdIzin && kegiatan?.jadwal_id) {
+        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
           // Fetch id_izin from list-asesi endpoint if not in URL
           const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
@@ -80,7 +88,6 @@ export default function FrAk07Page() {
         }
 
         if (!actualIdIzin) {
-          console.error("No id_izin found")
           setIsLoading(false)
           return
         }
@@ -97,19 +104,57 @@ export default function FrAk07Page() {
           const result: ApiResponse = await ak07Response.json()
           if (result.message === "Success") {
             setAk07Data(result.data)
+
+            // Debug: log data to see jawaban values
+            console.log('[AK07] Loaded data:', result.data)
+
+            // Set textAnswers from API (for string jawaban)
+            const newTextAnswers: Record<number, string> = {}
+            result.data.forEach(item => {
+              item.kelompok.kategoris.forEach(kategori => {
+                kategori.referensis.forEach(ref => {
+                  console.log('[AK07] Ref:', ref.id, 'jawaban:', ref.jawaban)
+                  if (typeof ref.jawaban === 'string' && ref.jawaban) {
+                    newTextAnswers[ref.id] = ref.jawaban
+                  }
+                })
+              })
+            })
+            setTextAnswers(newTextAnswers)
+
+            // Set selectedReferences from API (for boolean jawaban: true)
+            const newSelectedReferences: SelectedReferences = {}
+            result.data.forEach(item => {
+              item.kelompok.kategoris.forEach(kategori => {
+                if (kategori.id) {
+                  const key = `${kategori.id}_${item.kelompok.id}`
+                  const refIds = kategori.referensis
+                    .filter(ref => ref.jawaban === true)
+                    .map(ref => ref.id)
+                  if (refIds.length > 0) {
+                    newSelectedReferences[key] = new Set(refIds)
+                  }
+                }
+              })
+            })
+            setSelectedReferences(newSelectedReferences)
+            console.log('[AK07] Initialized selectedReferences:', newSelectedReferences)
           }
         } else {
           console.warn(`AK07 API returned ${ak07Response.status}`)
         }
       } catch (error) {
-        console.error("Error fetching AK 07:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [idIzin, kegiatan])
+    if (isAsesor && idIzin) {
+      fetchData()
+    } else if (kegiatan) {
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
@@ -149,8 +194,21 @@ export default function FrAk07Page() {
   }
 
   const isReferenceChecked = (kategoriId: number | null, kelompokId: number, refId: number) => {
+    // Cek dari selectedReferences dulu (user input)
     const key = `${kategoriId}_${kelompokId}`
-    return selectedReferences[key]?.has(refId) || false
+    // Hanya pakai selectedReferences jika key-nya ada (user sudah interact)
+    if (key in selectedReferences) {
+      return selectedReferences[key].has(refId)
+    }
+
+    // Kalau nggak ada di user selection, cek dari API data
+    const ref = ak07Data
+      ?.find(d => d.kelompok.id === kelompokId)
+      ?.kelompok.kategoris
+      .find(k => k.id === kategoriId)
+      ?.referensis.find(r => r.id === refId)
+
+    return ref?.jawaban === true
   }
 
   const handleSave = async () => {
@@ -159,15 +217,8 @@ export default function FrAk07Page() {
       return
     }
 
-    setIsSaving(true)
-    try {
-      // TODO: POST data to backend
-      console.log("Submitting AK07 data:", {
-        adjustmentSelection,
-        selectedReferences,
-      })
-
-      // Get actual idIzin
+    // Jika asesor, langsung navigate tanpa save
+    if (isAsesor) {
       let actualIdIzin = idIzin
       if (!actualIdIzin && kegiatan?.jadwal_id) {
         const token = localStorage.getItem("access_token")
@@ -184,29 +235,145 @@ export default function FrAk07Page() {
           }
         }
       }
+      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      return
+    }
+
+    // Asesi - save data dulu
+    let actualIdIzin = idIzin
+    if (!actualIdIzin && kegiatan?.jadwal_id) {
+      const token = localStorage.getItem("access_token")
+      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (listAsesiResponse.ok) {
+        const listResult = await listAsesiResponse.json()
+        if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+          actualIdIzin = listResult.list_asesi[0].id_izin
+        }
+      }
+    }
+
+    if (!actualIdIzin) {
+      alert("ID Izin tidak ditemukan")
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Build answers array
+      const answers: Array<{ referensi_id: number; kelompok_id: number; value: boolean | string }> = []
+
+      if (!ak07Data) {
+        throw new Error("Data AK07 tidak tersedia")
+      }
+
+      // Kelompok 4 (Potensi Asesi) - boolean
+      const potensiAsesiData = ak07Data.find(d => d.kelompok.urut === 1)
+      if (potensiAsesiData) {
+        const key = `${potensiAsesiData.kelompok.kategoris[0]?.id || null}_${potensiAsesiData.kelompok.id}`
+        const selectedRefs = selectedReferences[key] || new Set<number>()
+
+        potensiAsesiData.kelompok.kategoris[0]?.referensis.forEach(ref => {
+          answers.push({
+            referensi_id: ref.id,
+            kelompok_id: potensiAsesiData.kelompok.id,
+            value: selectedRefs.has(ref.id)
+          })
+        })
+      }
+
+      // Kelompok 5 (Modifikasi) - boolean
+      const modifikasiData = ak07Data.find(d => d.kelompok.urut === 2)
+      if (modifikasiData) {
+        modifikasiData.kelompok.kategoris.forEach(kategori => {
+          if (!kategori.id) return
+
+          const key = `${kategori.id}_${modifikasiData.kelompok.id}`
+          const adjustment = adjustmentSelection[key]
+
+          // Get all selected references for this kategori
+          const selectedRefs = selectedReferences[key] || new Set<number>()
+
+          kategori.referensis.forEach(ref => {
+            // If adjustment is 'ya', selected refs get true, others get false
+            // If adjustment is 'tidak', all get false
+            // If no adjustment selected, use selectedRefs (true if in set)
+            let value: boolean
+            if (adjustment === 'ya') {
+              value = selectedRefs.has(ref.id)
+            } else if (adjustment === 'tidak') {
+              value = false
+            } else {
+              value = selectedRefs.has(ref.id)
+            }
+
+            answers.push({
+              referensi_id: ref.id,
+              kelompok_id: modifikasiData.kelompok.id,
+              value
+            })
+          })
+        })
+      }
+
+      // Kelompok 6 (Rekaman Rencana Asesmen) - string/text
+      const rencanaAsesmenData = ak07Data.find(d => d.kelompok.urut === 3)
+      if (rencanaAsesmenData) {
+        rencanaAsesmenData.kelompok.kategoris[0]?.referensis.forEach(ref => {
+          const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
+          answers.push({
+            referensi_id: ref.id,
+            kelompok_id: rencanaAsesmenData.kelompok.id,
+            value: textValue
+          })
+        })
+      }
+
+      // Kelompok 7 (Hasil Penyesuaian) - string/text
+      const hasilPenyesuaianData = ak07Data.find(d => d.kelompok.urut === 4)
+      if (hasilPenyesuaianData) {
+        hasilPenyesuaianData.kelompok.kategoris[0]?.referensis.forEach(ref => {
+          if (!ref.nama) return // Skip null nama
+          const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
+          answers.push({
+            referensi_id: ref.id,
+            kelompok_id: hasilPenyesuaianData.kelompok.id,
+            value: textValue
+          })
+        })
+      }
+
+      // POST to backend
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak07`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ answers }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: "Gagal menyimpan data AK07" }))
+        throw new Error(error.message || "Gagal menyimpan data AK07")
+      }
 
       navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
     } catch (error) {
-      console.error("Error:", error)
+      alert(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
     } finally {
       setIsSaving(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-        <DashboardNavbar userName={user?.name} />
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center">
-            <div style={{ color: '#666' }}>
-              <SimpleSpinner size="lg" className="mx-auto mb-4" />
-            </div>
-            <p style={{ color: '#666' }}>Memuat data AK 07...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data AK 07..." />
   }
 
   // Group data by kelompok
@@ -236,7 +403,7 @@ export default function FrAk07Page() {
       <AsesiLayout currentStep={6}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
-          <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+          <div style={{ marginBottom: '16px', textAlign: 'left' }}>
             <h1 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>
               FR.AK.07 - FORMULIR PENYESUAIAN ASESMEN
             </h1>
@@ -249,31 +416,38 @@ export default function FrAk07Page() {
               <tr>
                 <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
                   Skema Sertifikasi<br />
-                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(KKNI/Okupasi/Klaster)</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Teknisi Jembatan Rangka Baja</td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{jabatanKerja?.toUpperCase() || ''}</td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nomor</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px' }}>SKEMA-26/LSP-GKK/2022</td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{nomorSkema?.toUpperCase() || ''}</td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>Sewaktu/Tempat Kerja/Mandiri*</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}></td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                  {asesorList.map((asesor, idx) => (
+                    <span key={asesor.id}>
+                      {idx > 0 && ', '}
+                      {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                    </span>
+                  ))}
+                </td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{user?.name || ''}</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{namaAsesi || user?.name || ''}</td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Tanggal</td>
@@ -307,24 +481,29 @@ export default function FrAk07Page() {
 
           {/* Potensi Asesi */}
           {potensiAsesiData && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', width: '20%', fontWeight: 'bold', verticalAlign: 'top' }}>
                     Potensi Asesi
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                    {potensiAsesiData.kelompok.kategoris[0]?.referensis.map((ref) => (
-                      <label key={ref.id} style={{ display: 'block', marginBottom: '4px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={isReferenceChecked(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)}
-                          onChange={() => handleReferenceChange(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)}
-                          style={{ marginRight: '8px', cursor: 'pointer' }}
-                        />
-                        {ref.nama}
-                      </label>
-                    ))}
+                    {potensiAsesiData.kelompok.kategoris[0]?.referensis.map((ref) => {
+                      const isChecked = isReferenceChecked(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)
+
+                      return (
+                        <div key={ref.id} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '6px' }}>
+                          <div style={{ marginRight: '10px' }}>
+                            <CustomCheckbox
+                              checked={isChecked}
+                              onChange={() => !isAsesor && !isSaving && handleReferenceChange(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)}
+                              disabled={isAsesor || isSaving}
+                            />
+                          </div>
+                          <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
+                        </div>
+                      )
+                    })}
                   </td>
                 </tr>
               </tbody>
@@ -333,20 +512,20 @@ export default function FrAk07Page() {
 
           {/* Bagian A - Mengidentifikasi Persyaratan Modifikasi */}
           {modifikasiData && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', background: '#c00000', color: '#fff' }}>Mengidentifikasi Persyaratan Modifikasi dan Kontekstualisasi</th>
-                  <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', textAlign: 'center' }}>Diperlukan penyesuaian**</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff' }}>Keterangan</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff', fontSize: '14px' }}>No</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', background: '#c00000', color: '#fff', fontSize: '14px' }}>Mengidentifikasi Persyaratan Modifikasi dan Kontekstualisasi</th>
+                  <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Diperlukan penyesuaian**</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontSize: '14px' }}>Keterangan</th>
                 </tr>
                 <tr>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0' }}></th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0' }}></th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center' }}>Ya</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center' }}>Tidak</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0' }}></th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center', fontSize: '14px' }}>Ya</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
                 </tr>
 
                 {modifikasiData.kelompok.kategoris.map((kategori, kategoriIndex) => {
@@ -359,33 +538,36 @@ export default function FrAk07Page() {
                       <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{kategori.urut || kategoriIndex + 1}</td>
                       <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{kategori.nama}</td>
                       <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
+                        <CustomCheckbox
                           checked={selectedAdjustment === 'ya'}
-                          onChange={() => handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'ya')}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          onChange={() => !isAsesor && !isSaving && handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'ya')}
+                          disabled={isAsesor || isSaving}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                        <input
-                          type="checkbox"
+                        <CustomCheckbox
                           checked={selectedAdjustment === 'tidak'}
-                          onChange={() => handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'tidak')}
-                          style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          onChange={() => !isAsesor && !isSaving && handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'tidak')}
+                          disabled={isAsesor || isSaving}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                        {kategori.referensis.filter(r => r.nama).map((ref) => (
-                          <label key={ref.id} style={{ display: 'block', marginBottom: '4px', cursor: 'pointer' }}>
-                            <input
-                              type="checkbox"
-                              checked={isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)}
-                              onChange={() => handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
-                              style={{ marginRight: '8px', cursor: 'pointer' }}
-                            />
-                            {ref.nama}
-                          </label>
-                        ))}
+                        {kategori.referensis.filter(r => r.nama).map((ref) => {
+                          const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
+
+                          return (
+                            <div key={ref.id} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '6px', border: '1px solid #000', borderRadius: '4px', padding: '6px', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'pointer' }} onClick={() => !isAsesor && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}>
+                              <div style={{ marginRight: '10px' }}>
+                                <CustomCheckbox
+                                  checked={isChecked}
+                                  onChange={() => !isAsesor && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                                  disabled={isAsesor || isSaving}
+                                />
+                              </div>
+                              <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
+                            </div>
+                          )
+                        })}
                       </td>
                     </tr>
                   )
@@ -396,21 +578,25 @@ export default function FrAk07Page() {
 
           {/* Rekaman Rencana Asesmen */}
           {rencanaAsesmenData && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
-                    <div style={{ marginBottom: '8px' }}>Rekaman Rencana Asesmen:</div>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>Rekaman Rencana Asesmen:</div>
                     {rencanaAsesmenData.kelompok.kategoris[0]?.referensis.map((ref) => (
-                      <label key={ref.id} style={{ display: 'block', marginBottom: '8px', cursor: 'pointer', marginLeft: '20px' }}>
-                        <input
-                          type="checkbox"
-                          checked={isReferenceChecked(rencanaAsesmenData.kelompok.kategoris[0]?.id || null, rencanaAsesmenData.kelompok.id, ref.id)}
-                          onChange={() => handleReferenceChange(rencanaAsesmenData.kelompok.kategoris[0]?.id || null, rencanaAsesmenData.kelompok.id, ref.id)}
-                          style={{ marginRight: '8px', cursor: 'pointer' }}
+                      <div key={ref.id} style={{ marginBottom: '8px', marginLeft: '20px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
+                          {ref.nama}
+                        </label>
+                        <textarea
+                          value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
+                          onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
+                          disabled={isAsesor || isSaving}
+                          rows={2}
+                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
+                          placeholder="Isi jawaban di sini..."
                         />
-                        {ref.nama}
-                      </label>
+                      </div>
                     ))}
                   </td>
                 </tr>
@@ -420,23 +606,24 @@ export default function FrAk07Page() {
 
           {/* Hasil Penyesuaian */}
           {hasilPenyesuaianData && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>
-                    <div style={{ marginBottom: '12px' }}>A. Hasil Penyesuaian yang wajar dan beralasan disepakati menggunakan:</div>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>
+                    <div style={{ marginBottom: '12px', fontSize: '14px' }}>A. Hasil Penyesuaian yang wajar dan beralasan disepakati menggunakan:</div>
                     {hasilPenyesuaianData.kelompok.kategoris[0]?.referensis.filter(r => r.nama).map((ref) => (
                       <div key={ref.id} style={{ marginBottom: '12px', marginLeft: '20px' }}>
-                        <label style={{ cursor: 'pointer' }}>
-                          <input
-                            type="checkbox"
-                            checked={isReferenceChecked(hasilPenyesuaianData.kelompok.kategoris[0]?.id || null, hasilPenyesuaianData.kelompok.id, ref.id)}
-                            onChange={() => handleReferenceChange(hasilPenyesuaianData.kelompok.kategoris[0]?.id || null, hasilPenyesuaianData.kelompok.id, ref.id)}
-                            style={{ marginRight: '8px', cursor: 'pointer' }}
-                          />
+                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
                           {ref.nama}
                         </label>
-                        <div style={{ marginLeft: '28px', marginTop: '4px', minHeight: '40px', border: '1px solid #ccc', padding: '4px' }}></div>
+                        <textarea
+                          value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
+                          onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
+                          disabled={isAsesor || isSaving}
+                          rows={2}
+                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
+                          placeholder="Isi jawaban di sini..."
+                        />
                       </div>
                     ))}
                   </td>
@@ -448,18 +635,32 @@ export default function FrAk07Page() {
           {/* Tanda Tangan */}
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
             <tbody>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '80px' }}>
-                  <div>Nama Asesor :</div>
-                </td>
-                <td style={{ border: '1px solid #000', padding: '8px', width: '50%' }}>
-                  <div>Tanggal dan Tanda Tangan Asesor :</div>
-                </td>
-              </tr>
+              {asesorList.length > 0 ? (
+                asesorList.map((asesor) => (
+                  <tr key={asesor.id}>
+                    <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '80px' }}>
+                      <div>Nama Asesor : {asesor.nama?.toUpperCase() || ''}</div>
+                      {asesor.noreg && <div>No. Reg : {asesor.noreg}</div>}
+                    </td>
+                    <td style={{ border: '1px solid #000', padding: '8px', width: '50%' }}>
+                      <div>Tanggal dan Tanda Tangan Asesor :</div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '80px' }}>
+                    <div>Nama Asesor : {namaAsesor?.toUpperCase() || ''}</div>
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%' }}>
+                    <div>Tanggal dan Tanda Tangan Asesor :</div>
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '8px', height: '80px' }}>
                   <div>Nama Asesi :</div>
-                  <div>{user?.name || ''}</div>
+                  <div>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</div>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '8px' }}>
                   <div>Tanggal dan Tanda Tangan Asesi :</div>
@@ -471,10 +672,9 @@ export default function FrAk07Page() {
           {/* Agreement Checklist */}
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
+              <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
                 style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>

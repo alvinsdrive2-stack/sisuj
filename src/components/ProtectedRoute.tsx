@@ -1,20 +1,23 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { Permission, getRoleConfig } from "@/lib/rbac-config"
+import { Permission, getRoleConfig, UserRole } from "@/lib/rbac-config"
+import ForbiddenPage from "./ForbiddenPage"
 
 interface ProtectedRouteProps {
   children: React.ReactNode
   requiredPermissions?: Permission[]
   requiredRoles?: string[]
   requireAll?: boolean // If true, user needs ALL permissions. If false, needs ANY
+  allowAsesorWithNoreg?: boolean // If true, allow asesor with noreg to bypass permission check
 }
 
 export default function ProtectedRoute({
   children,
   requiredPermissions = [],
   requiredRoles = [],
-  requireAll = false
+  requireAll = false,
+  allowAsesorWithNoreg = false
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth()
 
@@ -26,17 +29,41 @@ export default function ProtectedRoute({
     return <Navigate to="/login" replace />
   }
 
+  const userRoleName = user?.role?.name as UserRole | undefined
+
+  // Get default route for redirect
+  const getDefaultRoute = (role?: UserRole): string => {
+    const defaultRoutes: Record<UserRole, string> = {
+      "superadmin": "/superadmin/dashboard",
+      "Admin LSP": "/admin-lsp/dashboard",
+      "Direktur LSP": "/direktur/tandatangan",
+      "Manajer Sertifikasi": "/manajer/dashboard",
+      "Admin TUK": "/admin-tuk/dashboard",
+      "Asesor": "/asesor/dashboard",
+      "Asesi": "/asesi/dashboard",
+      "Komtek": "/komtek/tandatangan"
+    }
+
+    if (role && defaultRoutes[role]) {
+      return defaultRoutes[role]
+    }
+    return "/dashboard"
+  }
+
   // Check role-based access
   if (requiredRoles.length > 0 && user?.role?.name) {
-    const userRoleName = user.role.name
-    if (!requiredRoles.includes(userRoleName)) {
-      return <AccessDenied />
+    if (!requiredRoles.includes(user.role.name)) {
+      return <ForbiddenPage redirectPath={getDefaultRoute(userRoleName)} />
     }
   }
 
   // Check permissions if specified
   if (requiredPermissions.length > 0 && user) {
-    const userRoleName = user.role?.name
+    // Allow asesor with noreg to access if enabled (case insensitive)
+    if (allowAsesorWithNoreg && userRoleName?.toLowerCase() === 'asesor' && user.noreg) {
+      return <>{children}</>
+    }
+
     const roleConfiguration = userRoleName ? getRoleConfig(userRoleName) : null
 
     // Use role permissions from config instead of API (since API returns empty)
@@ -47,31 +74,9 @@ export default function ProtectedRoute({
       : requiredPermissions.some(p => userPermissions.includes(p))
 
     if (!hasAccess) {
-      return <AccessDenied />
+      return <ForbiddenPage redirectPath={getDefaultRoute(userRoleName)} />
     }
   }
 
   return <>{children}</>
-}
-
-function AccessDenied() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold text-slate-800 mb-2">Akses Ditolak</h1>
-        <p className="text-slate-600 mb-4">Anda tidak memiliki izin untuk mengakses halaman ini.</p>
-        <button
-          onClick={() => window.history.back()}
-          className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          Kembali
-        </button>
-      </div>
-    </div>
-  )
 }

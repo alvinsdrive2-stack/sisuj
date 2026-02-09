@@ -1,15 +1,24 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
+import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
 
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [countdown, setCountdown] = useState(3)
 
+  // Step 10 (Selesai) for AK01 Success
+  const currentStep = 10
+
   const handleBackToDashboard = () => {
-    navigate("/asesi/dashboard")
+    if (user?.role?.name?.toLowerCase() === "asesor") {
+      navigate("/asesor/asesi")
+    } else {
+      navigate("/asesi/dashboard")
+    }
   }
 
   useEffect(() => {
@@ -51,9 +60,10 @@ export default function Ak01SuccessPage() {
         </div>
       </div>
 
-      <div style={{ padding: '40px 20px', maxWidth: '600px', margin: '0 auto' }}>
+      <ModularAsesiLayout currentStep={currentStep} steps={PRAASESMEN_STEPS}>
+        <div>
         {/* Success Card */}
-        <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '8px', padding: '40px', textAlign: 'center' }}>
+        <div style={{ width: '100%', background: '#fff', border: '1px solid #000', padding: '40px', textAlign: 'center' }}>
           <style>{`
             @keyframes stroke { 100% { stroke-dashoffset: 0; } }
             @keyframes scale { 0%, 100% { transform: none; } 50% { transform: scale3d(1.1, 1.1, 1); } }
@@ -108,7 +118,8 @@ export default function Ak01SuccessPage() {
             Kembali ke Dashboard Sekarang
           </button>
         </div>
-      </div>
+        </div>
+      </ModularAsesiLayout>
     </div>
   )
 }

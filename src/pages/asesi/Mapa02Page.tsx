@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumen } from "@/hooks/useDataDokumen"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface Unit {
   id_unit: number
@@ -49,12 +51,16 @@ export default function Mapa02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const { idIzin } = useParams<{ idIzin: string }>()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const { jabatanKerja, nomorSkema } = useDataDokumen(idIzin)
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const [selectedInstrument, setSelectedInstrument] = useState<Record<string, Set<number>>>({})
+  const [selectedPotensi, setSelectedPotensi] = useState<Record<number, number>>({})
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -67,7 +73,7 @@ export default function Mapa02Page() {
         // Use idIzin from URL params
         let actualIdIzin = idIzin
 
-        if (!actualIdIzin && kegiatan?.jadwal_id) {
+        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
           // Fetch id_izin from list-asesi endpoint if not in URL
           const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
@@ -85,7 +91,6 @@ export default function Mapa02Page() {
         }
 
         if (!actualIdIzin) {
-          console.error("No id_izin found")
           setIsLoading(false)
           return
         }
@@ -102,62 +107,54 @@ export default function Mapa02Page() {
           const result: ApiResponse = await mapa02Response.json()
           if (result.message === "Success") {
             setMapaData(result.data)
-            // Initialize selected instrument with default values
-            const initialSelected: Record<string, Set<number>> = {}
+            // Initialize selected potensi with default values
+            // isdefault indicates which column (1-5) is pre-selected for each reference
+            const initialSelected: Record<number, number> = {}
             result.data.referensi_form.forEach(refForm => {
               if (refForm.kategori === "MAPA02_1") {
                 refForm.referensis.forEach(ref => {
                   if (ref.isdefault === 1) {
-                    if (!initialSelected[refForm.kategori]) {
-                      initialSelected[refForm.kategori] = new Set()
-                    }
-                    initialSelected[refForm.kategori].add(ref.id)
+                    initialSelected[ref.id] = 1 // Default to column 1
                   }
                 })
               }
             })
-            setSelectedInstrument(initialSelected)
+            setSelectedPotensi(initialSelected)
           }
         } else {
           console.warn(`MAPA02 API returned ${mapa02Response.status}`)
         }
       } catch (error) {
-        console.error("Error fetching MAPA 02:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchData()
-  }, [idIzin, kegiatan])
+    if (isAsesor && idIzin) {
+      fetchData()
+    } else if (kegiatan) {
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
   }
 
-  const handleCheckboxChange = (kategori: string, refId: number, kelompokIndex: number) => {
-    setSelectedInstrument(prev => {
-      const key = `${kategori}_${kelompokIndex + 1}`
-      const newSet = new Set(prev[key] || prev[kategori] || new Set())
-
-      if (newSet.has(refId)) {
-        newSet.delete(refId)
-      } else {
-        newSet.add(refId)
-      }
-
-      if (newSet.size === 0) {
-        const { [key]: _, ...rest } = prev
+  const handleCheckboxChange = (_kategori: string, refId: number, _kelompokIndex: number, potensi: number) => {
+    setSelectedPotensi(prev => {
+      // If clicking the same potensi that's already selected, uncheck it
+      if (prev[refId] === potensi) {
+        const { [refId]: _, ...rest } = prev
         return rest
       }
-
-      return { ...prev, [key]: newSet }
+      // Otherwise, set the new potensi for this refId
+      return { ...prev, [refId]: potensi }
     })
   }
 
-  const isChecked = (kategori: string, refId: number, kelompokIndex: number) => {
-    const key = `${kategori}_${kelompokIndex + 1}`
-    return selectedInstrument[key]?.has(refId) || selectedInstrument[kategori]?.has(refId) || false
+  const isChecked = (_kategori: string, refId: number, _kelompokIndex: number, potensi: number) => {
+    return selectedPotensi[refId] === potensi
   }
 
   const handleSave = async () => {
@@ -169,13 +166,10 @@ export default function Mapa02Page() {
     setIsSaving(true)
     try {
       // TODO: POST data to backend
-      console.log("Submitting MAPA02 data:", {
-        selectedInstrument,
-      })
 
       // Get actual idIzin
       let actualIdIzin = idIzin
-      if (!actualIdIzin && kegiatan?.jadwal_id) {
+      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
         const token = localStorage.getItem("access_token")
         const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
@@ -193,29 +187,16 @@ export default function Mapa02Page() {
 
       navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
     } catch (error) {
-      console.error("Error:", error)
     } finally {
       setIsSaving(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-        <DashboardNavbar userName={user?.name} />
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center">
-            <div style={{ color: '#666' }}>
-              <SimpleSpinner size="lg" className="mx-auto mb-4" />
-            </div>
-            <p style={{ color: '#666' }}>Memuat data MAPA 02...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data MAPA 02..." />
   }
 
-  const referensiMAPA02 = mapaData?.referensi_form.find(r => r.kategori === "MAPA02_1" || r.kategori === "MAPA02-1")
+  const referensiMAPA02 = mapaData?.referensi_form.find(r => r.kategori === "MAPA02_1")
   const keteranganReferensi = mapaData?.referensi_form.find(r => r.kategori === "MAPA02-1")
 
   return (
@@ -239,7 +220,7 @@ export default function Mapa02Page() {
       <AsesiLayout currentStep={5}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
-          <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+          <div style={{ marginBottom: '16px', textAlign: 'left' }}>
             <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>
               {mapaData?.kelompok_kerja.nama_dokumen || 'FR. MAPA.02 - FORMULIR MAPA 02'}
             </h1>
@@ -252,27 +233,22 @@ export default function Mapa02Page() {
                 <tr>
                   <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold' }}>
                     Skema Sertifikasi<br />
-                    (KKNI/Okupasi/Klaster)
+                    (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Judul</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TEKNISI JEMBATAN RANGKA BAJA</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>{jabatanKerja.toUpperCase() || ''}</td>
                 </tr>
                 <tr>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Nomor</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>{mapaData.kelompok_kerja.kode || 'SKEMA-26/LSP-GKK/2022'}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>{nomorSkema.toUpperCase() || mapaData?.kelompok_kerja.kode || ''}</td>
                 </tr>
               </tbody>
             </table>
           )}
 
-          {/* Keterangan Table */}
-          {keteranganReferensi && (
-            <div style={{ background: '#fff9e6', border: '1px solid #e6b800', marginBottom: '16px', padding: '12px', fontSize: '11px' }}>
-              <div dangerouslySetInnerHTML={{ __html: keteranganReferensi.referensis[0]?.nama || '' }} />
-            </div>
-          )}
+          
 
           {/* Kelompok Pekerjaan Tables with Instrumen Asesmen */}
           {mapaData?.kelompok_kerja.kelompok_kerja.map((kelompok, kelompokIndex) => (
@@ -281,8 +257,8 @@ export default function Mapa02Page() {
               <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
                 <tbody>
                   <tr>
-                    <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '20%', verticalAlign: 'top', background: '#f0f0f0' }}>
-                      Kelompok<br />Pekerjaan {kelompok.urut}
+                    <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
+                      {kelompok.nama}
                     </th>
                     <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
                     <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
@@ -303,14 +279,15 @@ export default function Mapa02Page() {
                   ))}
                 </tbody>
               </table>
+              <br />
 
               {/* Instrumen Asesmen Table */}
               {referensiMAPA02 && (
                 <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
                   <tbody>
                     <tr>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>Instrumen Asesmen</th>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
                       <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                         Potensi Asesi **
                       </th>
@@ -331,12 +308,15 @@ export default function Mapa02Page() {
                           {ref.nama}
                         </td>
                         {[1, 2, 3, 4, 5].map((potensi) => (
-                          <td key={potensi} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                            <input
-                              type="checkbox"
-                              checked={isChecked("MAPA02_1", ref.id, kelompokIndex)}
-                              onChange={() => handleCheckboxChange("MAPA02_1", ref.id, kelompokIndex)}
-                              style={{ width: '14px', height: '14px', cursor: 'pointer' }}
+                          <td
+                            key={potensi}
+                            onClick={() => handleCheckboxChange("MAPA02_1", ref.id, kelompokIndex, potensi)}
+                            style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                          >
+                            <CustomCheckbox
+                              checked={isChecked("MAPA02_1", ref.id, kelompokIndex, potensi)}
+                              onChange={() => {}}
+                              style={{ pointerEvents: 'none' }}
                             />
                           </td>
                         ))}
@@ -348,21 +328,26 @@ export default function Mapa02Page() {
             </div>
           ))}
 
+          
+          {/* Keterangan Table */}
+          {keteranganReferensi && (
+            <div style={{ background: '#ffffff', border: '1px solid #6f6f6f', marginBottom: '16px', padding: '12px', fontSize: '14px' }}>
+              <div dangerouslySetInnerHTML={{ __html: keteranganReferensi.referensis[0]?.nama || '' }} />
+            </div>
+          )}
           {/* Agreement Checklist */}
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
+              <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
+                style={{ marginTop: '2px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen MAPA 02 (Matriks Pengembangan dan Penilaian Asesmen) ini dengan sebenar-benarnya.
               </span>
             </label>
           </div>
-
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button

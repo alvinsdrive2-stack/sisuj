@@ -46,9 +46,9 @@ export default function DashboardAdminTUK() {
   // Prevent unused variable warning - stats reserved for future UI
   void _adminTukStats.length
 
-  const getStatusBadge = (isStarted: string, isStartedPraAsesmen: string) => {
+  const getStatusBadge = (_isStarted: string, isStartedPraAsesmen: string) => {
     // is_started = "0" → Belum Mulai
-    if (isStarted === "0") {
+    if (isStartedPraAsesmen === "0") {
       return (
         <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
           Belum Mulai

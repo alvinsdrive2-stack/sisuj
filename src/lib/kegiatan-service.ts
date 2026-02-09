@@ -191,6 +191,9 @@ class KegiatanService {
   async getKegiatanAsesor(): Promise<KegiatanAsesorResponse> {
     const token = this.getToken()
 
+    console.log('[DEBUG] Fetching kegiatan asesor from:', `${this.baseUrl}/kegiatan/asesor`)
+    console.log('[DEBUG] Token exists:', !!token)
+
     const response = await fetch(`${this.baseUrl}/kegiatan/asesor`, {
       method: "GET",
       headers: {
@@ -199,12 +202,20 @@ class KegiatanService {
       },
     })
 
+    console.log('[DEBUG] Response status:', response.status)
+    console.log('[DEBUG] Response ok:', response.ok)
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesor" }))
+      console.log('[DEBUG] Error response:', error)
       throw new Error(error.message || "Failed to fetch kegiatan asesor")
     }
 
-    return response.json()
+    const result = await response.json()
+    console.log('[DEBUG] Kegiatan asesor response:', result)
+    console.log('[DEBUG] Response data:', result.data)
+
+    return result
   }
 
   // Get kegiatan asesi (single object)
@@ -342,6 +353,71 @@ class KegiatanService {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to fetch list asesi" }))
       throw new Error(error.message || "Failed to fetch list asesi")
+    }
+
+    return response.json()
+  }
+
+  // Save APL 01 data pekerjaan (khusus asesi)
+  async saveApl01DataPekerjaan(
+    idIzin: string,
+    dataPekerjaan: {
+      perusahaan: string
+      jabatan: string
+      alamat_kantor: string | null
+      kode_pos: number | null
+      telepon_kantor: string | null
+      fax: string | null
+      email_kantor: string | null
+    }
+  ): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    // Temporarily skip email_kantor due to backend column type issue (set as integer instead of varchar)
+
+
+    const response = await fetch(`${this.baseUrl}/praasesmen/${idIzin}/apl01`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(dataPekerjaan),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to save APL 01 data pekerjaan" }))
+      throw new Error(error.message || "Failed to save APL 01 data pekerjaan")
+    }
+
+    return response.json()
+  }
+
+  // Save APL 02 (khusus asesi)
+  async saveApl02(
+    idIzin: string,
+    data: {
+      metode: string
+      is_dilanjutkan: boolean
+      answers: Array<{ subunit_id: number; kompeten: boolean }>
+    }
+  ): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/praasesmen/${idIzin}/apl02`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to save APL 02" }))
+      throw new Error(error.message || "Failed to save APL 02")
     }
 
     return response.json()

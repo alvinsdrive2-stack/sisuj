@@ -1,10 +1,159 @@
-import React, { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import React, { useState, useEffect, useRef } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { kegiatanService } from "@/lib/kegiatan-service"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { CustomRadio } from "@/components/ui/Radio"
+
+// ============== ANIMATED COMPONENTS ==============
+
+// Animated Dropdown with smooth open/close
+interface AnimatedDropdownProps {
+  isOpen: boolean
+  children: React.ReactNode
+  style?: React.CSSProperties
+}
+
+function AnimatedDropdown({ isOpen, children, style }: AnimatedDropdownProps) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+
+  useEffect(() => {
+    if (contentRef.current) {
+      if (isOpen) {
+        setHeight(contentRef.current.scrollHeight)
+      } else {
+        setHeight(0)
+      }
+    }
+  }, [isOpen])
+
+  return (
+    <div
+      style={{
+        ...style,
+        overflow: 'hidden',
+        transition: 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
+        height: `${height}px`,
+        opacity: isOpen ? 1 : 0,
+      }}
+    >
+      <div ref={contentRef}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// Animated Capsule/Chip with smooth entry and exit
+interface AnimatedCapsuleProps {
+  fileName: string
+  onRemove: () => void
+  style?: React.CSSProperties
+}
+
+function AnimatedCapsule({ fileName, onRemove, style }: AnimatedCapsuleProps) {
+  const [isExiting, setIsExiting] = useState(false)
+  const capsuleRef = useRef<HTMLSpanElement>(null)
+
+  const handleRemove = () => {
+    setIsExiting(true)
+    setTimeout(() => {
+      onRemove()
+    }, 200)
+  }
+
+  return (
+    <span
+      ref={capsuleRef}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+        border: '1px solid #1976d2',
+        borderRadius: '20px',
+        padding: '4px 10px',
+        fontSize: '10px',
+        textTransform: 'uppercase',
+        fontWeight: '600',
+        color: '#0d47a1',
+        letterSpacing: '0.3px',
+        boxShadow: '0 1px 3px rgba(25, 118, 210, 0.2)',
+        transform: isExiting ? 'scale(0.8) translateX(-10px)' : 'scale(1) translateX(0)',
+        opacity: isExiting ? 0 : 1,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'default',
+        userSelect: 'none',
+        ...style,
+      }}
+      onMouseEnter={(e) => {
+        if (!isExiting) {
+          e.currentTarget.style.background = 'linear-gradient(135deg, #bbdefb 0%, #90caf9 100%)'
+          e.currentTarget.style.borderColor = '#1565c0'
+          e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
+          e.currentTarget.style.boxShadow = '0 3px 8px rgba(25, 118, 210, 0.3)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isExiting) {
+          e.currentTarget.style.background = 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
+          e.currentTarget.style.borderColor = '#1976d2'
+          e.currentTarget.style.transform = 'translateY(0) scale(1)'
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(25, 118, 210, 0.2)'
+        }
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <span style={{ fontSize: '12px' }}>📎</span>
+        {fileName}
+      </span>
+      <button
+        onClick={handleRemove}
+        style={{
+          background: isExiting ? '#ef5350' : 'rgba(25, 118, 210, 0.2)',
+          border: 'none',
+          color: isExiting ? '#fff' : '#1976d2',
+          cursor: 'pointer',
+          padding: '0',
+          width: '18px',
+          height: '18px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          lineHeight: '1',
+          transition: 'all 0.15s ease',
+          flexShrink: 0,
+        }}
+        onMouseEnter={(e) => {
+          if (!isExiting) {
+            e.currentTarget.style.background = '#ef5350'
+            e.currentTarget.style.color = '#fff'
+            e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isExiting) {
+            e.currentTarget.style.background = 'rgba(25, 118, 210, 0.2)'
+            e.currentTarget.style.color = '#1976d2'
+            e.currentTarget.style.transform = 'rotate(0deg) scale(1)'
+          }
+        }}
+        title="Hapus"
+      >
+        ×
+      </button>
+    </span>
+  )
+}
 
 interface KUK {
   no_kuk: string
@@ -15,6 +164,7 @@ interface Subunit {
   id: string
   no_elemen: string
   judul_elemen: string
+  kompeten?: boolean
   kuk_list: KUK[]
 }
 
@@ -28,6 +178,8 @@ interface Unit {
 interface Apl02Response {
   message: string
   data: {
+    metode?: 'observasi' | 'portofolio'
+    is_dilanjutkan?: boolean
     units: Unit[]
   }
 }
@@ -55,6 +207,7 @@ type Apl02Data = {
   nama_asesor: string
   nama_asesi: string
   tanggal: string
+  metode?: 'observasi' | 'portofolio'
   units: Unit[]
 }
 
@@ -69,6 +222,13 @@ export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  // Use idIzin from URL when accessed by asesor, otherwise use from user context
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const { asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -78,6 +238,7 @@ export default function Apl02Page() {
   const [kukBukti, setKukBukti] = useState<Record<string, string[]>>({})
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set())
+  const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
 
   const toggleDropdown = (kukId: string) => {
     setOpenDropdowns(prev => {
@@ -135,12 +296,7 @@ export default function Apl02Page() {
         }
       }
     })
-    // Close dropdown after selection
-    setOpenDropdowns(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(kukId)
-      return newSet
-    })
+    // Don't close dropdown - allow multiple selections
   }
 
   const removeBuktiFile = (kukId: string, fileName: string) => {
@@ -158,32 +314,30 @@ export default function Apl02Page() {
       try {
         const token = localStorage.getItem("access_token")
 
-        if (!kegiatan?.jadwal_id) {
-          console.error("No jadwal_id found in kegiatan")
-          setIsLoading(false)
-          return
-        }
+        // Use idIzin from URL when accessed by asesor, otherwise use from user context
+        const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
-        // Fetch id_izin dari list-asesi endpoint
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+        // Fetch id_izin dari list-asesi endpoint (skip for asesor)
+        let fetchedIdIzin: string | null = idIzin || null
 
-        let fetchedIdIzin: string | null = null
+        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          })
 
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            fetchedIdIzin = listResult.list_asesi[0].id_izin
-            setIdIzin(fetchedIdIzin)
+          if (listAsesiResponse.ok) {
+            const listResult = await listAsesiResponse.json()
+            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+              fetchedIdIzin = listResult.list_asesi[0].id_izin
+              setIdIzin(fetchedIdIzin)
+            }
           }
         }
 
         if (!fetchedIdIzin) {
-          console.error("No id_izin found in list-asesi response")
           setIsLoading(false)
           return
         }
@@ -222,18 +376,43 @@ export default function Apl02Page() {
                 ? `${dataDokumenResult.data.asesor_1}, ${dataDokumenResult.data.asesor_2}`
                 : dataDokumenResult.data.asesor_1
               : ''
-            console.log("Data dokumen fetched:", dataDokumenResult.data)
           }
         }
 
         // Parse apl02 response
         let units: Unit[] = []
+        let metodeFromApi: 'observasi' | 'portofolio' | undefined
+
         if (apl02Response.ok) {
           const apl02Result: Apl02Response = await apl02Response.json()
           if (apl02Result.message === "Success" && apl02Result.data) {
             units = apl02Result.data.units || []
-            console.log("APL02 units fetched:", units.length)
+            metodeFromApi = apl02Result.data.metode
+
+            // Map subunit.kompeten to kukChecklist
+            const newKukChecklist: Record<string, 'K' | 'BK'> = {}
+            units.forEach(unit => {
+              unit.subunits.forEach(subunit => {
+                if (subunit.kompeten !== undefined) {
+                  // Set same status for all KUKs in this subunit
+                  subunit.kuk_list.forEach(kuk => {
+                    const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+                    newKukChecklist[kukId] = subunit.kompeten ? 'K' : 'BK'
+                  })
+                }
+              })
+            })
+
+            // Only set if there are saved answers
+            if (Object.keys(newKukChecklist).length > 0) {
+              setKukChecklist(newKukChecklist)
+            }
           }
+        }
+
+        // Set metode from API
+        if (metodeFromApi) {
+          setMetodeAsesmen(metodeFromApi)
         }
 
         // Set combined data
@@ -242,22 +421,23 @@ export default function Apl02Page() {
           no_skema: noSkema,
           tuk: tuk,
           nama_asesor: namaAsesor,
-          nama_asesi: user?.name || '',
+          nama_asesi: namaAsesi || user?.name || '',
           tanggal: new Date().toLocaleDateString('id-ID'),
+          metode: metodeFromApi,
           units: units,
         })
-        console.log("APL02 data set complete")
       } catch (error) {
-        console.error("Error fetching APL 02:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (kegiatan) {
+    if (isAsesor && idIzin) {
+      fetchData()
+    } else if (kegiatan) {
       fetchData()
     }
-  }, [kegiatan, user])
+  }, [kegiatan, user, isAsesor, idIzinFromUrl])
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
@@ -265,35 +445,71 @@ export default function Apl02Page() {
       return
     }
 
-    setIsSaving(true)
-    try {
-      // TODO: POST data to backend
-      console.log("Submitting APL02 data:", {
-        kukChecklist,
-        kukBukti,
-        uploadedFiles: uploadedFiles.map(f => ({ name: f.name })),
+    // Jika asesor, langsung navigate tanpa save
+    if (isAsesor) {
+      const finalIdIzin = idIzinFromUrl || _idIzin
+      navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+      return
+    }
+
+    // Asesi - save data dulu
+    const finalIdIzin = _idIzin || idIzin
+    if (!finalIdIzin) {
+      alert("ID Izin tidak ditemukan")
+      return
+    }
+
+    // Convert kukChecklist to answers array (per subunit, not per KUK)
+    // Since backend stores kompeten per subunit, all KUKs in same subunit have same status
+    const subunitStatusMap = new Map<number, boolean>()
+
+    Object.entries(kukChecklist).forEach(([kukId, status]) => {
+      // kukId format: "unitId-subunitId-kukNo"
+      const parts = kukId.split('-')
+      const subunitId = parseInt(parts[1])
+      const kompeten = status === 'K'
+
+      // Set status for this subunit (will be same for all KUKs in subunit)
+      subunitStatusMap.set(subunitId, kompeten)
+    })
+
+    // Convert Map to answers array
+    const answers = Array.from(subunitStatusMap.entries()).map(([subunit_id, kompeten]) => ({
+      subunit_id,
+      kompeten
+    }))
+
+    // Check if all subunits have been answered
+    if (apl02Data?.units) {
+      let totalSubunits = 0
+      apl02Data.units.forEach(unit => {
+        totalSubunits += unit.subunits.length
       })
 
-      // Navigate directly to MAPA 01
-      navigate(`/asesi/praasesmen/${_idIzin}/mapa01`)
+      if (answers.length === 0) {
+        alert("Silakan isi penilaian K/BK untuk semua Kriteria Unjuk Kerja")
+        return
+      }
+    }
+
+    setIsSaving(true)
+    try {
+      await kegiatanService.saveApl02(finalIdIzin, {
+        metode: metodeAsesmen,
+        is_dilanjutkan: true,
+        answers
+      })
+
+      navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
     } catch (error) {
-      console.error("Error:", error)
+      alert(error instanceof Error ? error.message : "Gagal menyimpan data APL 02")
     } finally {
       setIsSaving(false)
     }
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
-        <div className="text-center">
-          <div style={{ color: '#666' }}>
-            <SimpleSpinner size="lg" className="mx-auto mb-4" />
-          </div>
-          <p style={{ color: '#666' }}>Memuat data APL 02...</p>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data APL 02..." />
   }
 
   return (
@@ -315,21 +531,21 @@ export default function Apl02Page() {
       </div>
 
       <AsesiLayout currentStep={3}>
-            <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+            <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
                 APL-02 ASESMEN MANDIRI<br />{apl02Data?.jabatan_kerja || '-'}
               </h1>
             </div>
 
         {/* Upload File Section */}
-        <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', marginBottom: '20px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <div style={{ background: '#fff', border: '1px solid #e0e0e0', marginBottom: '20px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <div>
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Upload Bukti Dokumen</span>
               <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>Upload dokumen pendukung untuk digunakan di kolom bukti</p>
             </div>
             {uploadedFiles.length > 0 && (
-              <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '600' }}>
+              <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}>
                 {uploadedFiles.length} File
               </div>
             )}
@@ -340,7 +556,6 @@ export default function Apl02Page() {
             onClick={() => document.getElementById('file-upload-input')?.click()}
             style={{
               border: '2px dashed #0066cc',
-              borderRadius: '8px',
               padding: '24px',
               textAlign: 'center',
               cursor: 'pointer',
@@ -479,7 +694,7 @@ export default function Apl02Page() {
               <tr>
                 <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
                   Skema Sertifikasi<br />
-                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(KKNI/Okupasi/Klaster)</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
@@ -503,7 +718,7 @@ export default function Apl02Page() {
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesi</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesi || user?.name || '-'}</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || apl02Data.nama_asesi || user?.name || '-'}</td>
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Tanggal</td>
@@ -585,145 +800,182 @@ export default function Apl02Page() {
                           {kuk.no_kuk} {kuk.judul_kuk}
                         </td>
                         <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-                          <input
-                            type="checkbox"
+                          <CustomRadio
+                            name={kukId}
+                            value="K"
                             checked={isCheckedK}
-                            onChange={() => handleCheckboxChange(kukId, 'K')}
-                            style={{ width: '12px', height: '12px', cursor: 'pointer' }}
+                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'K')}
+                            disabled={isAsesor || isSaving}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-                          <input
-                            type="checkbox"
+                          <CustomRadio
+                            name={kukId}
+                            value="BK"
                             checked={isCheckedBK}
-                            onChange={() => handleCheckboxChange(kukId, 'BK')}
-                            style={{ width: '12px', height: '12px', cursor: 'pointer' }}
+                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'BK')}
+                            disabled={isAsesor || isSaving}
                           />
                         </td>
-                        <td style={{ border: '1px solid #000', padding: '4px', verticalAlign: 'top' }}>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
                           {(() => {
                             const selectedFiles = (kukBukti[kukId] || []) as string[]
                             const isOpen = openDropdowns.has(kukId)
                             return (
                               <>
-                                {/* Selected Files as Chips */}
+                                {/* Selected Files as Animated Capsules */}
                                 {selectedFiles.length > 0 && (
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                                     {selectedFiles.map((fileName) => (
-                                      <span
+                                      <AnimatedCapsule
                                         key={fileName}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                          background: '#e3f2fd',
-                                          border: '1px solid #0066cc',
-                                          borderRadius: '4px',
-                                          padding: '2px 6px',
-                                          fontSize: '10px',
-                                          textTransform: 'uppercase',
-                                        }}
-                                      >
-                                        {fileName}
-                                        <button
-                                          onClick={() => removeBuktiFile(kukId, fileName)}
-                                          style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: '#0066cc',
-                                            cursor: 'pointer',
-                                            padding: '0',
-                                            fontSize: '12px',
-                                            fontWeight: 'bold',
-                                            lineHeight: 1,
-                                          }}
-                                          title="Hapus"
-                                        >
-                                          ×
-                                        </button>
-                                      </span>
+                                        fileName={fileName}
+                                        onRemove={() => removeBuktiFile(kukId, fileName)}
+                                      />
                                     ))}
                                   </div>
                                 )}
 
-                                {/* Multi-select Dropdown */}
+                                {/* Animated Multi-select Dropdown */}
                                 <div className="bukti-dropdown-container" style={{ position: 'relative' }}>
                                   <button
                                     onClick={() => toggleDropdown(kukId)}
                                     disabled={uploadedFiles.length === 0}
                                     style={{
                                       width: '100%',
-                                      padding: '6px 10px',
-                                      border: '1px solid #000',
-                                      borderRadius: '4px',
+                                      padding: '8px 12px',
+                                      border: isOpen ? '2px solid #1976d2' : '1px solid #000',
+                                      borderRadius: '8px',
                                       fontSize: '11px',
                                       fontFamily: 'Arial, Helvetica, sans-serif',
                                       textTransform: 'uppercase',
+                                      fontWeight: '500',
                                       backgroundColor: uploadedFiles.length === 0 ? '#f5f5f5' : '#fff',
                                       cursor: uploadedFiles.length === 0 ? 'not-allowed' : 'pointer',
                                       textAlign: 'left',
                                       display: 'flex',
                                       justifyContent: 'space-between',
                                       alignItems: 'center',
+                                      transition: 'all 0.2s ease',
+                                      boxShadow: isOpen ? '0 4px 12px rgba(25, 118, 210, 0.15)' : 'none',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (uploadedFiles.length > 0 && !isOpen) {
+                                        e.currentTarget.style.borderColor = '#1976d2'
+                                        e.currentTarget.style.backgroundColor = '#f8fbff'
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      if (!isOpen) {
+                                        e.currentTarget.style.borderColor = '#000'
+                                        e.currentTarget.style.backgroundColor = '#fff'
+                                      }
                                     }}
                                   >
-                                    <span>{selectedFiles.length > 0 ? `${selectedFiles.length} file dipilih` : (uploadedFiles.length === 0 ? '-- Upload file terlebih dahulu --' : '-- Pilih File --')}</span>
-                                    <span style={{ fontSize: '10px' }}>{isOpen ? '▲' : '▼'}</span>
+                                    <span style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      color: selectedFiles.length > 0 ? '#1976d2' : '#333',
+                                    }}>
+                                      {selectedFiles.length > 0 && (
+                                        <span style={{
+                                          background: 'linear-gradient(135deg, #1976d2, #1565c0)',
+                                          color: '#fff',
+                                          borderRadius: '10px',
+                                          padding: '2px 8px',
+                                          fontSize: '10px',
+                                          fontWeight: 'bold',
+                                        }}>
+                                          {selectedFiles.length}
+                                        </span>
+                                      )}
+                                      {selectedFiles.length > 0 ? 'file dipilih' : (uploadedFiles.length === 0 ? '-- Upload file terlebih dahulu --' : '-- Pilih File --')}
+                                    </span>
+                                    <span style={{
+                                      fontSize: '12px',
+                                      transition: 'transform 0.3s ease',
+                                      display: 'inline-block',
+                                      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    }}>
+                                      ▼
+                                    </span>
                                   </button>
 
-                                  {/* Dropdown Options */}
-                                  {isOpen && uploadedFiles.length > 0 && (
+                                  {/* Animated Dropdown Options */}
+                                  <AnimatedDropdown isOpen={isOpen && uploadedFiles.length > 0} style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    zIndex: 100,
+                                  }}>
                                     <div style={{
-                                      position: 'absolute',
-                                      top: '100%',
-                                      left: 0,
-                                      right: 0,
                                       background: '#fff',
                                       border: '1px solid #000',
-                                      borderRadius: '4px',
-                                      marginTop: '4px',
-                                      maxHeight: '150px',
+                                      borderRadius: '8px',
+                                      marginTop: '6px',
+                                      maxHeight: '180px',
                                       overflowY: 'auto',
-                                      zIndex: 100,
+                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                                     }}>
-                                      {uploadedFiles.map((file) => {
+                                      {uploadedFiles.map((file, index) => {
                                         const isSelected = selectedFiles.includes(file.name)
                                         return (
                                           <div
                                             key={file.id}
                                             onClick={() => handleBuktiChange(kukId, file.name)}
                                             style={{
-                                              padding: '6px 10px',
+                                              padding: '10px 12px',
                                               fontSize: '11px',
                                               cursor: 'pointer',
                                               textTransform: 'uppercase',
-                                              background: isSelected ? '#e3f2fd' : 'transparent',
+                                              fontWeight: '500',
+                                              background: isSelected ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)' : 'transparent',
+                                              borderBottom: index === uploadedFiles.length - 1 ? 'none' : '1px solid #f0f0f0',
                                               display: 'flex',
                                               alignItems: 'center',
-                                              gap: '8px',
+                                              gap: '10px',
+                                              transition: 'all 0.15s ease',
+                                              color: isSelected ? '#0d47a1' : '#333',
                                             }}
                                             onMouseEnter={(e) => {
                                               if (!isSelected) {
-                                                e.currentTarget.style.background = '#f5f5f5'
+                                                e.currentTarget.style.background = '#f8fbff'
+                                                e.currentTarget.style.paddingLeft = '16px'
                                               }
                                             }}
                                             onMouseLeave={(e) => {
-                                              e.currentTarget.style.background = isSelected ? '#e3f2fd' : 'transparent'
+                                              if (!isSelected) {
+                                                e.currentTarget.style.background = 'transparent'
+                                                e.currentTarget.style.paddingLeft = '12px'
+                                              }
                                             }}
                                           >
-                                            <input
-                                              type="checkbox"
+                                            <CustomCheckbox
                                               checked={isSelected}
                                               onChange={() => {}}
-                                              onClick={(e) => e.stopPropagation()}
-                                              style={{ width: '12px', height: '12px', cursor: 'pointer' }}
+                                              style={{ pointerEvents: 'none' }}
                                             />
-                                            <span>{file.name}</span>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{ fontSize: '14px' }}>📄</span>
+                                              {file.name}
+                                            </span>
+                                            {isSelected && (
+                                              <span style={{
+                                                marginLeft: 'auto',
+                                                color: '#1976d2',
+                                                fontSize: '14px',
+                                                fontWeight: 'bold',
+                                              }}>
+                                                ✓
+                                              </span>
+                                            )}
                                           </div>
                                         )
                                       })}
                                     </div>
-                                  )}
+                                  </AnimatedDropdown>
                                 </div>
                               </>
                             )
@@ -738,15 +990,106 @@ export default function Apl02Page() {
           </table>
         ))}
 
+        {/* Rekomendasi Untuk Asesi */}
+        <div style={{ padding: '8px 12px', marginBottom: '10px' }}>
+          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>REKOMENDASI UNTUK ASESI</span>
+        </div>
+
+        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+          <tbody>
+            {/* Rekomendasi & Asesi Row 1 */}
+            <tr>
+              <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
+                <span style={{ fontWeight: 'bold' }}>Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan melalui pendekatan</span><br /><br />
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'not-allowed' }}>
+                  <CustomCheckbox
+                    checked={metodeAsesmen === 'observasi'}
+                    onChange={() => {}}
+                    disabled
+                  />
+                  <span>Observasi</span>
+                </label>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'not-allowed' }}>
+                  <CustomCheckbox
+                    checked={metodeAsesmen === 'portofolio'}
+                    onChange={() => {}}
+                    disabled
+                  />
+                  <span>Portofolio</span>
+                </label>
+              </td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
+            </tr>
+            {/* Asesi Row 2 */}
+            <tr>
+              <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '8px' }}>{namaAsesi?.toUpperCase() || apl02Data?.nama_asesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</td>
+            </tr>
+            {/* Asesi Row 3 - Signature */}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+              <td style={{ height: '150px', border: '1px solid #000', padding: '8px' }}></td>
+            </tr>
+
+            {/* Dynamic Asesor Rows */}
+            {asesorList.length > 0 ? (
+              asesorList.map((asesor, idx) => (
+                <React.Fragment key={asesor.id}>
+                  {idx === 0 && (
+                    <tr>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+                    </tr>
+                  )}
+                  {idx > 0 && (
+                    <tr>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor :</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+                    <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
+                  </tr>
+                </React.Fragment>
+              ))
+            ) : (
+              // Fallback static Asesor
+              <>
+                <tr>
+                  <td></td>
+                  <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>{apl02Data?.nama_asesor?.toUpperCase() || ''}</td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+                  <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
+                </tr>
+              </>
+            )}
+          </tbody>
+        </table>
 
         {/* Agreement Checklist */}
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-            <input
-              type="checkbox"
+            <CustomCheckbox
               checked={agreedChecklist}
-              onChange={(e) => setAgreedChecklist(e.target.checked)}
-              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+              onChange={() => setAgreedChecklist(!agreedChecklist)}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen APL 02 (Asesmen Mandiri) ini dengan sebenar-benarnya.

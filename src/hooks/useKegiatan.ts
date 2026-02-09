@@ -123,13 +123,28 @@ export function useKegiatanAsesi() {
     const fetchKegiatanAsesi = async () => {
       setIsLoading(true)
       setError(null)
+
+      // Skip fetching for asesor role (they access via different flow)
+      const token = localStorage.getItem("access_token")
+      if (token) {
+        try {
+          // Check if user is asesor by decoding JWT
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          const role = payload?.role?.name?.toLowerCase?.() || ''
+
+          if (role === 'asesor') {
+            setIsLoading(false)
+            return
+          }
+        } catch (e) {
+          // If token parsing fails, continue with fetch
+        }
+      }
+
       try {
         const response = await kegiatanService.getKegiatanAsesi()
-        console.log('Kegiatan Asesi Response:', response)
-        console.log('Kegiatan Asesi Data:', response.data)
         setKegiatanRef.current?.(response.data)
       } catch (err) {
-        console.error('Error fetching kegiatan asesi:', err)
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
       } finally {
         setIsLoading(false)

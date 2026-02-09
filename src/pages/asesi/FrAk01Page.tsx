@@ -4,6 +4,8 @@ import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useEffect, useState } from "react"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface BuktiAsesmen {
   id: number
@@ -30,7 +32,10 @@ export default function FrAk01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
-  const { idIzin } = useParams()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
   const [buktiList, setBuktiList] = useState<BuktiAsesmen[]>([])
   const [formData, setFormData] = useState<Ak01Data>({
@@ -38,6 +43,7 @@ export default function FrAk01Page() {
   })
   const [loading, setLoading] = useState(true)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(actualIdIzin)
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -50,7 +56,7 @@ export default function FrAk01Page() {
         // Use idIzin from URL params or fetch from list-asesi
         let fetchedIdIzin = idIzin
 
-        if (!fetchedIdIzin && kegiatan?.jadwal_id) {
+        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
           const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
@@ -68,7 +74,6 @@ export default function FrAk01Page() {
         }
 
         if (!fetchedIdIzin) {
-          console.error("No id_izin found")
           setLoading(false)
           return
         }
@@ -88,13 +93,16 @@ export default function FrAk01Page() {
         // TODO: Fetch existing AK01 data if any
         setLoading(false)
       } catch (error) {
-        console.error("Error fetching data:", error)
         setLoading(false)
       }
     }
 
-    fetchData()
-  }, [idIzin, kegiatan])
+    if (isAsesor && idIzin) {
+      fetchData()
+    } else if (kegiatan) {
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
@@ -117,12 +125,7 @@ export default function FrAk01Page() {
   }
 
   if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <DashboardNavbar userName={user?.name} />
-        <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data..." />
   }
 
   return (
@@ -164,33 +167,44 @@ export default function FrAk01Page() {
             {/* Skema Sertifikasi */}
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
-                Skema Sertifikasi<br />(KKNI/Okupasi/Klaster)
+                Skema Sertifikasi<br />(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
               </td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.skemaJudul || '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{jabatanKerja?.toUpperCase() || formData.skemaJudul || '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nomor</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.skemaNomor || '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{nomorSkema?.toUpperCase() || formData.skemaNomor || '-'}</td>
             </tr>
 
             {/* Identitas */}
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.tuk || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tuk || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.namaAsesor || '-'}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                {asesorList.length > 0 ? (
+                  asesorList.map((asesor, idx) => (
+                    <span key={asesor.id}>
+                      {idx > 0 && ', '}
+                      {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                    </span>
+                  ))
+                ) : (
+                  namaAsesor?.toUpperCase() || formData.namaAsesor || '-'
+                )}
+              </td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.namaAsesi || user?.name || '-'}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || formData.namaAsesi || '-'}</td>
             </tr>
 
             {/* Bukti yang akan dikumpulkan */}
@@ -202,7 +216,6 @@ export default function FrAk01Page() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <tbody>
                     {buktiList.map((bukti, index) => {
-                      const isFirstColumn = index % 2 === 0
                       const isFirstInRow = index % 2 === 0
                       return (
                         <tr key={bukti.id}>
@@ -261,7 +274,7 @@ export default function FrAk01Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{formData.tukPelaksanaan || ''}</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tukPelaksanaan || ''}</td>
             </tr>
 
             {/* Pernyataan Asesor */}

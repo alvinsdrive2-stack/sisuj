@@ -120,7 +120,7 @@ export default function DashboardAsesor() {
             {kegiatan && (
               <div
                 className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary cursor-pointer transition-all hover:shadow-md bg-white dark:bg-slate-800"
-                onClick={() => navigate(`/asesor/list-asesi/${kegiatan.jadwal_id}`)}
+                onClick={() => navigate(`/asesor/asesi`)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
@@ -129,17 +129,17 @@ export default function DashboardAsesor() {
                     <p className="text-xs text-slate-500">{kegiatan.tuk.alamat}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {kegiatan.is_started === "0" && (
+                    {kegiatan.is_started_praasesmen === "0" && kegiatan.tahap === "0" && (
                       <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                         Belum Mulai
                       </Badge>
                     )}
-                    {kegiatan.is_started_praasesmen === "1" && (
+                    {kegiatan.is_started_praasesmen === "1" && kegiatan.tahap === "1" && (
                       <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
                         Pra-Asesmen
                       </Badge>
                     )}
-                    {kegiatan.is_started === "1" && (
+                    {kegiatan.is_started === "1" && kegiatan.tahap === "2" && (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
                         Asesmen
                       </Badge>

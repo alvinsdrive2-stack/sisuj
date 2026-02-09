@@ -1,3 +1,5 @@
+import { CustomCheckbox } from "@/components/ui/Checkbox"
+
 interface CheckboxGroupProps {
   items: string[]
   ml?: number
@@ -17,8 +19,8 @@ export function CheckboxGroup({ items, ml = 0 }: CheckboxGroupProps) {
       marginLeft: ml ? `${ml}px` : 0
     }}>
       {items.map((item, idx) => (
-        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '6px' }}>
-          <input type="checkbox" style={{ marginTop: '2px', cursor: 'pointer' }} />
+        <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '6px', cursor: 'pointer', userSelect: 'none' }}>
+          <CustomCheckbox checked={false} onChange={() => {}} style={{ pointerEvents: 'none' }} />
           <span style={{ fontSize: '12px', color: '#000' }}>{item}</span>
         </div>
       ))}
