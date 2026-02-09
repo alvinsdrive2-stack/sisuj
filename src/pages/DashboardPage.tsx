@@ -20,9 +20,11 @@ import {
   Play,
   FileCheck
 } from "lucide-react"
+import { PulsingIcon } from "@/components/ui/PulsingIcon"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import logo from "@/assets/logo.png"
-import bgImage from "@/assets/bg.webp"
+import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function DashboardPage() {
@@ -116,7 +118,12 @@ export default function DashboardPage() {
   ]
 
   return (
-    <div className={`min-h-screen relative transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`} style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <>
+      {/* Video Background with Crossfade */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
+
+      {/* Main Content */}
+      <div className={`min-h-screen relative transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
 
       {/* Header */}
       <DashboardNavbar userName={examData.participant.name} />
@@ -143,7 +150,7 @@ export default function DashboardPage() {
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                 <div className="text-center lg:text-left">
                   <div className="flex items-center gap-3 mb-3">
-                    <Timer className="w-8 h-8 animate-pulse" />
+                    <PulsingIcon icon={Timer} className="w-8 h-8" autoHide={false} />
                     <h3 className="text-2xl font-bold">Ujian Akan Dimulai Dalam</h3>
                   </div>
                   <p className="text-white/80">Pastikan semua persiapan sudah lengkap</p>
@@ -365,5 +372,6 @@ export default function DashboardPage() {
         </div>
       </footer>
     </div>
+    </>
   )
 }

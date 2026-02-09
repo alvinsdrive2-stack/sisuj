@@ -6,7 +6,8 @@ import DashboardSidebar from "./DashboardSidebar"
 import DashboardNavbar from "./DashboardNavbar"
 import { getRoleConfig } from "@/lib/rbac-config"
 import { PulseLogo } from "@/components/ui/loading-spinner"
-import bgImage from "@/assets/bg.webp"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
+import loopVideo from "@/assets/Sequence 01.mp4"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -46,9 +47,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <PulseLogo text="Memuat..." />
-      </div>
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <div className="min-h-screen flex items-center justify-center">
+          <PulseLogo text="Memuat..." />
+        </div>
+      </>
     )
   }
 
@@ -57,7 +61,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <>
+      {/* Video Background */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
+
+      <div className="min-h-screen flex flex-col">
       {/* DashboardNavbar - Fixed at top */}
       <DashboardNavbar userName={user?.name || "User"} />
 
@@ -81,5 +89,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </main>
       </div>
     </div>
+    </>
   )
 }

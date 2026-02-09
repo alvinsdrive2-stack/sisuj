@@ -302,7 +302,7 @@ export default function Ia05Page() {
                 <tr>
                   <td className="kuk" style={{
                     background: isQuestionAnswered(soal.id) ? '#d58a94' : '#d58a94',
-                    color: isQuestionAnswered(soal.id) ? '#fff' : '#000',
+                    color: isQuestionAnswered(soal.id) ? '#000' : '#000',
                     width: '160px',
                     textAlign: 'center',
                     border: '1px solid #000',

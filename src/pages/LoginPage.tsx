@@ -7,13 +7,13 @@ import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getRoleConfig } from "@/lib/rbac-config"
 import favicon from "@/assets/favicon.png"
-import bgImage from "@/assets/bg.webp"
+import loopVideo from "@/assets/Sequence 01.mp4"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 
 // Preload dashboard images
 const preloadDashboardImages = () => {
   const images = [
     favicon,
-    bgImage,
   ]
 
   images.forEach(src => {
@@ -76,15 +76,8 @@ export default function LoginPage() {
 
   return (
     <div className={`min-h-screen relative flex items-center justify-center transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
-      {/* Blurred Background Image */}
-      <div className="absolute inset-0 overflow-hidden">
-        <img
-          src={bgImage}
-          alt="LSP Gatensi"
-          className="w-full h-full object-cover blur-sm scale-100"
-        />
-        <div className="solid"/>
-      </div>
+      {/* Video Background */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
 
       {/* Centered Login Form */}
       <div className="relative z-10 w-full max-w-[480px]">

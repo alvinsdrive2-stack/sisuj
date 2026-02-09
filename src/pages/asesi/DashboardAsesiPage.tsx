@@ -17,8 +17,10 @@ import {
   ChevronRight,
   FileCheck
 } from "lucide-react"
+import { PulsingIcon } from "@/components/ui/PulsingIcon"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import DashboardNavbar from "@/components/DashboardNavbar"
-import bgImage from "@/assets/bg.webp"
+import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { toast } from "@/components/ui/toast"
@@ -90,8 +92,8 @@ export default function DashboardAsesiPage() {
   })
 
   useEffect(() => {
-    // Skip if no kegiatan or exam already started
-    if (!kegiatan?.tanggal_uji || kegiatan?.is_started === "1") {
+    // Skip if no exam date
+    if (!kegiatan?.tanggal_uji) {
       return
     }
 
@@ -138,7 +140,7 @@ export default function DashboardAsesiPage() {
 
     const timer = setInterval(updateCountdown, interval)
     return () => clearInterval(timer)
-  }, [kegiatan?.tanggal_uji, kegiatan?.is_started])
+  }, [kegiatan?.tanggal_uji])
 
   const examData = useMemo(() => {
     if (!kegiatan) {
@@ -183,6 +185,30 @@ export default function DashboardAsesiPage() {
       })
     }
 
+    // Determine phase
+    let phase: {
+      title: string
+      variant: "default" | "secondary"
+      color: string
+    } = {
+      title: "Belum Dimulai",
+      variant: "secondary",
+      color: "text-slate-600"
+    }
+    if (kegiatan.tahap === "1") {
+      phase = {
+        title: "Pra-Asesmen",
+        variant: "default",
+        color: "text-primary"
+      }
+    } else if (kegiatan.tahap === "2") {
+      phase = {
+        title: "Asesmen",
+        variant: "default",
+        color: "text-emerald-600"
+      }
+    }
+
     return {
       scheme: kegiatan.skema.nama,
       schemeCode: `SK-${kegiatan.skema_id}`,
@@ -190,6 +216,7 @@ export default function DashboardAsesiPage() {
         title: "Unit Kompetensi",
         code: kegiatan.skema_id
       },
+      phase,
       schedule: {
         date: tanggalUji.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
         time: `${tanggalUji.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
@@ -240,16 +267,8 @@ export default function DashboardAsesiPage() {
 
   return (
     <>
-      {/* Fixed Background */}
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }}
-      />
+      {/* Fixed Background - Looping Video with Crossfade */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
 
       {/* Main Content */}
       <div className={`min-h-screen relative transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
@@ -279,9 +298,11 @@ export default function DashboardAsesiPage() {
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                 <div className="text-center lg:text-left">
                   <div className="flex items-center gap-3 mb-3">
-                    <Timer className="w-8 h-8 animate-pulse" />
+                    <PulsingIcon icon={Timer} className="w-8 h-8" autoHide={false} />
                     <h3 className="text-2xl font-bold">
-                      {countdown.isLate ? "Telat" : "Ujian Akan Dimulai Dalam"}
+                      {countdown.isLate && examData.phase?.title === "Asesmen" ? "Waktu Pengerjaan Asesi Telah Dimulai" :
+                       countdown.isLate ? "Ayo Kerjakan Ujian Waktu Sudah Berjalan" :
+                       "Ujian Akan Dimulai Dalam"}
                     </h3>
                   </div>
                   <p className="text-white/80">
@@ -361,11 +382,16 @@ export default function DashboardAsesiPage() {
 
                   <Separator />
 
-                  {/* Unit Info */}
+                  {/* Phase Info */}
                   <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-                    <p className="text-sm text-muted-foreground mb-1">Unit Kompetensi</p>
-                    <h4 className="font-semibold text-slate-800 mb-1">{examData.unit.title}</h4>
-                    <p className="text-sm text-muted-foreground">Kode: {examData.unit.code}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Fase Ujian</p>
+                    <div className="flex items-center gap-2 font-bold">
+                        {examData.phase?.title}
+                      <span className={`text-xs font-semibold ${examData.phase?.color}`}>
+                        {examData.phase?.title === "Belum Dimulai" && "Menunggu jadwal"}
+                        {examData.phase?.title === "Pra-Asesmen" && "Persiapan dokumen"}
+                      </span>
+                    </div>
                   </div>
 
                   <Separator />
@@ -448,7 +474,7 @@ export default function DashboardAsesiPage() {
                             </Badge>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-lg font-semibold text-slate-800">{assessor.name}</h4>
+                            <h4 className="text-lg font-semibold text-slate-800">{assessor.name.toUpperCase()}</h4>
                             <Badge variant="info" className="mt-2">
                               <Award className="w-3 h-3 mr-1" />
                               No. Lisensi: {assessor.license}
@@ -464,7 +490,6 @@ export default function DashboardAsesiPage() {
 
               </CardContent>
             </Card>
-            <br />
             {/* Help Card */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-lg animate-slide-up" style={{ animationDelay: "0.5s" }}>
               <CardContent className="p-6 text-center">
