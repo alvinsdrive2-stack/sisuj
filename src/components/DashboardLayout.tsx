@@ -83,7 +83,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6">
-          <div className={`bg-white/90 dark:bg-slate-800/90 dark:text-slate-100 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-slate-700 p-6 min-h-[calc(100vh-120px)] transition-all duration-300 ${showContent ? 'page-enter opacity-100' : 'opacity-0'}`}>
+          <div className={`bg-white/95 dark:bg-slate-800 dark:text-slate-100 rounded-2xl backdrop-blur-sm shadow-xl border border-white dark:border-slate-700 p-6 min-h-[calc(100vh-120px)] transition-all duration-300 ${showContent ? 'page-enter opacity-100' : 'opacity-0'}`}>
             {children}
           </div>
         </main>

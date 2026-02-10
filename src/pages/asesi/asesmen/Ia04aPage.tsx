@@ -3,10 +3,12 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface Unit {
   id_unit: number
@@ -147,11 +149,13 @@ export default function Ia04aPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
-  const { role: asesorRole, isAsesor1: _isAsesor1, isAsesor2: _isAsesor2 } = useAsesorRole(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { showSuccess, showWarning } = useToast()
 
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [umpanBalik, setUmpanBalik] = useState('')
 
   // Get dynamic steps based on asesor role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -203,12 +207,53 @@ export default function Ia04aPage() {
     fetchData()
   }, [id, authLoading, user])
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!agreedChecklist) {
-      alert('Silakan centang pernyataan terlebih dahulu')
+      showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
-    navigate(`/asesi/asesmen/${id}/upload-tugas`)
+
+    // If asesor_1, save umpan balik first
+    if (isAsesor && isAsesor1 && umpanBalik.trim()) {
+      try {
+        const token = localStorage.getItem("access_token")
+
+        // Find the first soal_id from the data
+        const soalId = ia04aData?.soal[0]?.id
+
+        if (!soalId) {
+          console.error("No soal_id found")
+        } else {
+          const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
+            method: 'POST',
+            headers: {
+              "Accept": "application/json",
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              soal_id: soalId,
+              jawaban: umpanBalik,
+            }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log("Umpan balik saved:", result)
+            showSuccess('Umpan balik berhasil disimpan!')
+          } else {
+            console.error('Failed to save umpan balik:', response.status)
+          }
+        }
+      } catch (err) {
+        console.error('Error saving umpan balik:', err)
+      }
+    }
+
+    showSuccess('IA 04.A berhasil disimpan!')
+    setTimeout(() => {
+      navigate(`/asesi/asesmen/${id}/upload-tugas`)
+    }, 500)
   }
 
   if (isLoading) {
@@ -433,15 +478,35 @@ export default function Ia04aPage() {
           </tbody>
         </table>
 
+        {/* Umpan Balik Asesor untuk Asesi - Only for asesor_1 */}
+        {isAsesor && isAsesor1 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
+            <tbody>
+              <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+                <td>UMPAN BALIK ASESOR UNTUK ASESI</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  <textarea
+                    value={umpanBalik}
+                    onChange={(e) => setUmpanBalik(e.target.value)}
+                    style={{ width: '100%', height: '100px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
+                    placeholder="Tuliskan umpan balik untuk asesi..."
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
+              <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>

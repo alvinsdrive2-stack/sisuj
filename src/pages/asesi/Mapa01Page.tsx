@@ -4,6 +4,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -55,6 +56,7 @@ export default function Mapa01Page() {
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, tuk: _tuk } = useDataDokumenAsesmen(idIzin || "")
+  const { showSuccess, showError, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isLoading, setIsLoading] = useState(true)
@@ -138,7 +140,7 @@ export default function Mapa01Page() {
 
   const handleSave = async () => {
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
@@ -146,7 +148,10 @@ export default function Mapa01Page() {
     // TODO: Implement actual save logic with API
     setTimeout(() => {
       setIsSaving(false)
-      navigate(`/asesi/praasesmen/${actualIdIzin}/mapa02`)
+      showSuccess('MAPA 01 berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/mapa02`)
+      }, 500)
     }, 500)
   }
 
@@ -165,8 +170,7 @@ export default function Mapa01Page() {
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
+        logging: false
       })
 
       const imgData = canvas.toDataURL('image/png', 1.0)
@@ -205,10 +209,10 @@ export default function Mapa01Page() {
       const fileName = `MAPA01_${jabatanKerja?.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`
       pdf.save(fileName)
 
-      alert('PDF berhasil diunduh!')
+      showSuccess('PDF berhasil diunduh!')
     } catch (error) {
       console.error('Error exporting PDF:', error)
-      alert('Gagal mengunduh PDF. Silakan coba lagi.')
+      showError('Gagal mengunduh PDF. Silakan coba lagi.')
     } finally {
       // Remove exporting class
       document.body.classList.remove('exporting-pdf')
@@ -240,9 +244,6 @@ export default function Mapa01Page() {
 
       <AsesiLayout currentStep={4}>
         {/* A4 Size Indicator */}
-        <div style={{ textAlign: 'center', padding: '10px 0', fontSize: '12px', color: '#999' }}>
-          📄 Ukuran Tampilan: A4 (210mm × 297mm) - Sesuai dengan PDF
-        </div>
         <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', background: '#f5f5f5' }}>
           <div className="mapa01-container">
             <div id="mapa01-content" ref={contentRef}>

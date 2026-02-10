@@ -4,6 +4,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumen } from "@/hooks/useDataDokumen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -56,6 +57,7 @@ export default function Mapa02Page() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema } = useDataDokumen(idIzin)
+  const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -159,7 +161,7 @@ export default function Mapa02Page() {
 
   const handleSave = async () => {
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
@@ -185,7 +187,10 @@ export default function Mapa02Page() {
         }
       }
 
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
+      showSuccess('MAPA 02 berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
+      }, 500)
     } catch (error) {
     } finally {
       setIsSaving(false)

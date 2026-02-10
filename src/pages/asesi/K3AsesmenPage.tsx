@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface K3Response {
@@ -19,6 +20,7 @@ export default function K3AsesmenPage() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const { showSuccess, showWarning } = useToast()
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -64,7 +66,7 @@ export default function K3AsesmenPage() {
 
   const handleSave = async () => {
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
       return
     }
 
@@ -72,7 +74,10 @@ export default function K3AsesmenPage() {
     try {
       // TODO: POST data to backend if needed
       await new Promise(resolve => setTimeout(resolve, 500))
-      navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
+      showSuccess('K3 Asesmen berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
+      }, 500)
     } catch (error) {
     } finally {
       setIsSaving(false)

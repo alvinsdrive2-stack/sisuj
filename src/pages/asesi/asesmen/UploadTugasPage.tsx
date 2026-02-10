@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
@@ -25,6 +26,7 @@ export default function UploadTugasPage() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { asesorList } = useDataDokumenAsesmen(id)
+  const { showSuccess, showError } = useToast()
 
   // Check if user is an asesor (view-only mode)
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -86,14 +88,14 @@ export default function UploadTugasPage() {
       const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase()
 
       if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-        alert('Format file tidak didukung. Gunakan PDF, PPT, PPTX, JPG, atau PNG.')
+        showError('Format file tidak didukung. Gunakan PDF, PPT, PPTX, JPG, atau PNG.')
         return
       }
 
       // Validate file size (max 10MB)
       const maxSize = 10 * 1024 * 1024 // 10MB
       if (file.size > maxSize) {
-        alert('Ukuran file terlalu besar. Maksimal 10MB.')
+        showError('Ukuran file terlalu besar. Maksimal 10MB.')
         return
       }
 
@@ -122,16 +124,17 @@ export default function UploadTugasPage() {
         const result: UploadResponse = await response.json()
         setUploadedFiles([...uploadedFiles, result.data])
         setSelectedFile(null)
+        showSuccess('File berhasil diupload!')
         // Reset file input
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
         if (fileInput) fileInput.value = ''
       } else {
         const error = await response.json()
-        alert(error.message || 'Gagal mengupload file')
+        showError(error.message || 'Gagal mengupload file')
       }
     } catch (error) {
       console.error("Error uploading file:", error)
-      alert('Terjadi kesalahan saat mengupload file')
+      showError('Terjadi kesalahan saat mengupload file')
     } finally {
       setIsUploading(false)
     }
@@ -156,6 +159,7 @@ export default function UploadTugasPage() {
         if (previewFile?.id === fileId) {
           setPreviewFile(null)
         }
+        showSuccess('File berhasil dihapus!')
       }
     } catch (error) {
       console.error("Error deleting file:", error)

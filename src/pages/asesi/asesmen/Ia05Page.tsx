@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
@@ -65,6 +66,7 @@ export default function Ia05Page() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1 } = useDataDokumenAsesmen(id)
+  const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -131,12 +133,12 @@ export default function Ia05Page() {
 
   const handleSubmit = async () => {
     if (!ia05Data) {
-      alert('Data belum dimuat.')
+      showWarning('Data belum dimuat.')
       return
     }
 
     if (!id) {
-      alert('ID tidak ditemukan.')
+      showWarning('ID tidak ditemukan.')
       return
     }
 
@@ -168,54 +170,37 @@ export default function Ia05Page() {
       })
 
       if (response.ok) {
+        showSuccess('IA 05 berhasil disimpan!')
         // Navigate to next step based on asesmenSteps
         const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
         const nextStep = asesmenSteps[currentStepIndex + 1]
         if (nextStep) {
           if (nextStep.href.includes('ak02')) {
-            navigate(`/asesi/asesmen/${id}/ak02`)
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
           } else if (nextStep.href.includes('ak03')) {
-            navigate(`/asesi/asesmen/${id}/ak03`)
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 500)
           } else if (nextStep.href.includes('selesai')) {
-            navigate(`/asesi/asesmen/${id}/selesai`)
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
           } else {
             const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-            navigate(nextPath)
+            setTimeout(() => navigate(nextPath), 500)
           }
         } else {
-          navigate(`/asesi/asesmen/${id}/selesai`)
+          setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
         }
       } else {
         const result = await response.json()
-        alert(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
+        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
       }
     } catch (error) {
       console.error('Error saving IA05:', error)
-      alert('Gagal menyimpan data. Silakan coba lagi.')
+      showError('Gagal menyimpan data. Silakan coba lagi.')
     } finally {
       setIsSaving(false)
     }
   }
 
   const isQuestionAnswered = (soalId: number) => answers[soalId]
-
-  // Calculate score
-  const calculateScore = () => {
-    if (!ia05Data) return { correct: 0, total: 0, percentage: 0 }
-    let correct = 0
-    ia05Data.soal.forEach(soal => {
-      if (answers[soal.id] === soal.kunci_jawaban) {
-        correct++
-      }
-    })
-    return {
-      correct,
-      total: ia05Data.soal.length,
-      percentage: Math.round((correct / ia05Data.soal.length) * 100)
-    }
-  }
-
-  const score = calculateScore()
 
   if (isLoading) {
     return <FullPageLoader text="Memuat data IA.05..." />
@@ -410,22 +395,22 @@ export default function Ia05Page() {
 
                   return (
                     <tr key={`grading-${soal.id}`}>
-                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>{soal.no}</td>
-                      <td style={{ border: '1px solid #000', padding: '5px' }}>
+                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center', backgroundColor: '#fff' }}>{soal.no}</td>
+                      <td style={{ border: '1px solid #000', padding: '5px', backgroundColor: '#fff' }}>
                         {soal.jawaban_asesi ? (
                           <span>{soal.jawaban_asesi} - {String(soal[`jawab_${soal.jawaban_asesi.toLowerCase()}` as keyof Soal] || '')}</span>
                         ) : (
                           <span style={{ color: '#999', fontStyle: 'italic' }}>Belum dijawab</span>
                         )}
                       </td>
-                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center',backgroundColor: '#fff' }}>
                         <CustomCheckbox
                           checked={hasAnswer && isCorrect}
                           onChange={() => {}}
                           disabled={true}
                         />
                       </td>
-                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
+                      <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center',backgroundColor: '#fff' }}>
                         <CustomCheckbox
                           checked={hasAnswer && !isCorrect}
                           onChange={() => {}}
@@ -437,17 +422,7 @@ export default function Ia05Page() {
                 })}
 
                 {/* Summary Row */}
-                <tr style={{ background: '#f5f5f5', fontWeight: 'bold' }}>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '5px', textAlign: 'right' }}>
-                    Total:
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
-                    {score.correct}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '5px', textAlign: 'center' }}>
-                    {score.total - score.correct}
-                  </td>
-                </tr>
+                
               </tbody>
             </table>
           </div>
@@ -459,11 +434,11 @@ export default function Ia05Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
           <thead>
             <tr style={{ background: '#f0f0f0' }}>
-              <th style={{ width: '140', border: '1px solid #000', padding: '6px' }}>Status</th>
-              <th style={{ width: '40', border: '1px solid #000', padding: '6px' }}>No</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Nama</th>
-              <th style={{ width: '180', border: '1px solid #000', padding: '6px' }}>Nomor MET</th>
-              <th style={{ width: '180', border: '1px solid #000', padding: '6px' }}>Tanda Tangan Dan Tanggal</th>
+              <th style={{ width: '140', border: '1px solid #000', padding: '6px',backgroundColor: '#fff' }}>Status</th>
+              <th style={{ width: '40', border: '1px solid #000', padding: '6px',backgroundColor: '#fff' }}>No</th>
+              <th style={{ border: '1px solid #000', padding: '6px',backgroundColor: '#fff' }}>Nama</th>
+              <th style={{ width: '180', border: '1px solid #000', padding: '6px',backgroundColor: '#fff' }}>Nomor MET</th>
+              <th style={{ width: '180', border: '1px solid #000', padding: '6px',backgroundColor: '#fff' }}>Tanda Tangan Dan Tanggal</th>
             </tr>
           </thead>
           <tbody>

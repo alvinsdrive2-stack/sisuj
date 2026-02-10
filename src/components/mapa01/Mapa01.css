@@ -490,13 +490,11 @@
 /* PDF Export Styles */
 #mapa01-content {
   padding: 20px;
-  background: #fff;
   /* A4 size at 96 DPI: 794px x 1123px */
   width: 794px;
   min-height: 1123px;
   margin: 0 auto;
   box-sizing: border-box;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .mapa01-container {

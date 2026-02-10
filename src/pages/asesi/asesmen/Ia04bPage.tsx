@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -53,6 +54,7 @@ export default function Ia04bPage() {
   const { id } = useParams<{ id?: string }>()
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, idAsesor1 } = useDataDokumenAsesmen(id)
   const { role: asesorRole } = useAsesorRole(id)
+  const { showSuccess, showError, showWarning } = useToast()
 
   const [ia04bData, setIa04bData] = useState<Ia04bResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -194,17 +196,17 @@ export default function Ia04bPage() {
 
   const handleSave = async () => {
     if (!agreedChecklist) {
-      alert('Silakan centang pernyataan terlebih dahulu.')
+      showWarning('Silakan centang pernyataan terlebih dahulu.')
       return
     }
 
     if (!ia04bData) {
-      alert('Data belum dimuat.')
+      showWarning('Data belum dimuat.')
       return
     }
 
     if (!id) {
-      alert('ID tidak ditemukan.')
+      showWarning('ID tidak ditemukan.')
       return
     }
 
@@ -235,7 +237,7 @@ export default function Ia04bPage() {
 
       if (!response.ok) {
         const result = await response.json()
-        alert(`Gagal menyimpan jawaban: ${result.message || 'Terjadi kesalahan'}`)
+        showError(`Gagal menyimpan jawaban: ${result.message || 'Terjadi kesalahan'}`)
         setIsSaving(false)
         return
       }
@@ -244,26 +246,27 @@ export default function Ia04bPage() {
       if (isAsesor) {
         const nilaiSuccess = await saveNilaiIA04B()
         if (!nilaiSuccess) {
-          alert('Gagal menyimpan nilai evaluasi. Silakan coba lagi.')
+          showError('Gagal menyimpan nilai evaluasi. Silakan coba lagi.')
           setIsSaving(false)
           return
         }
       }
 
       // 3. Navigate to next step
+      showSuccess('IA 04.B berhasil disimpan!')
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
 
       if (isAsesor && nextStep?.href.includes('ia05')) {
         // Asesor goes to IA.05
-        navigate(`/asesi/asesmen/${id}/ia05`)
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 500)
       } else if (isAsesor) {
-        navigate(`/asesi/asesmen/${id}/ak03`)
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 500)
       } else {
-        navigate(`/asesi/asesmen/${id}/ia05`)
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 500)
       }
     } catch (error) {
-      alert('Gagal menyimpan data. Silakan coba lagi.')
+      showError('Gagal menyimpan data. Silakan coba lagi.')
     } finally {
       setIsSaving(false)
     }

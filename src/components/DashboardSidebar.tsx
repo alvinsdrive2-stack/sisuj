@@ -39,7 +39,7 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
         `}
       >
         {/* Sidebar Container */}
-        <div className="flex flex-col h-full bg-white border-r border-slate-200/50">
+        <div className="flex flex-col h-full bg-white/90 border-r border-slate-200/50  backdrop-blur-sm">
           
 
           {/* Navigation */}

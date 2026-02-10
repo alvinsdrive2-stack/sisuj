@@ -37,17 +37,19 @@ export const ASESMEN_STEPS_ASESOR_1: StepConfig[] = [
   { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
-// Asesmen Steps for Asesor 2 (without AK.02)
+// Asesmen Steps for Asesor 2 (without AK.03)
 export const ASESMEN_STEPS_ASESOR_2: StepConfig[] = [
   { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
   { number: 2, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
   { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
   { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
-  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 6, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Default asesmen steps (backward compatibility)

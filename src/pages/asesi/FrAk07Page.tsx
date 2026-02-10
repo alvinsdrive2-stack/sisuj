@@ -4,8 +4,10 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 
 interface Referensi {
@@ -39,8 +41,7 @@ interface ApiResponse {
   data: Ak07DataItem[]
 }
 
-type AdjustmentType = 'ya' | 'tidak' | null
-type SelectedReferences = Record<string, Set<number>>
+type SelectedReferences = Record<string, Set<number> | null>
 
 export default function FrAk07Page() {
   const navigate = useNavigate()
@@ -48,14 +49,18 @@ export default function FrAk07Page() {
   const { kegiatan } = useKegiatanAsesi()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const { isAsesor1 } = useAsesorRole(idIzinFromUrl)
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { showSuccess, showError, showWarning } = useToast()
+
+  // Other sections: asesi and asesor_1 can edit, asesor_2 cannot
+  const isFormDisabled = isAsesor && !isAsesor1
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const [adjustmentSelection, setAdjustmentSelection] = useState<Record<string, AdjustmentType>>({})
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
 
@@ -160,23 +165,11 @@ export default function FrAk07Page() {
     navigate(-1)
   }
 
-  const handleAdjustmentChange = (kategoriId: number | null, kelompokId: number, value: AdjustmentType) => {
-    const key = `${kategoriId}_${kelompokId}`
-    setAdjustmentSelection(prev => {
-      const current = prev[key]
-      if (current === value) {
-        // Uncheck if clicking the same value
-        const { [key]: _, ...rest } = prev
-        return rest
-      }
-      return { ...prev, [key]: value }
-    })
-  }
-
   const handleReferenceChange = (kategoriId: number | null, kelompokId: number, refId: number) => {
     const key = `${kategoriId}_${kelompokId}`
     setSelectedReferences(prev => {
-      const newSet = new Set(prev[key] || new Set())
+      const currentSet = prev[key] || new Set()
+      const newSet = new Set(currentSet)
 
       if (newSet.has(refId)) {
         newSet.delete(refId)
@@ -184,21 +177,17 @@ export default function FrAk07Page() {
         newSet.add(refId)
       }
 
-      if (newSet.size === 0) {
-        const { [key]: _, ...rest } = prev
-        return rest
-      }
-
-      return { ...prev, [key]: newSet }
+      // Simpan null jika set kosong (user sudah interact tapi tidak ada yang dipilih)
+      return { ...prev, [key]: newSet.size === 0 ? null : newSet }
     })
   }
 
   const isReferenceChecked = (kategoriId: number | null, kelompokId: number, refId: number) => {
     // Cek dari selectedReferences dulu (user input)
     const key = `${kategoriId}_${kelompokId}`
-    // Hanya pakai selectedReferences jika key-nya ada (user sudah interact)
+    // Jika key ada di selectedReferences (user sudah interact), pakai nilai itu
     if (key in selectedReferences) {
-      return selectedReferences[key].has(refId)
+      return selectedReferences[key]?.has(refId) || false
     }
 
     // Kalau nggak ada di user selection, cek dari API data
@@ -208,17 +197,18 @@ export default function FrAk07Page() {
       .find(k => k.id === kategoriId)
       ?.referensis.find(r => r.id === refId)
 
+    // Return true/false based on API data
     return ref?.jawaban === true
   }
 
   const handleSave = async () => {
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
-    // Jika asesor, langsung navigate tanpa save
-    if (isAsesor) {
+    // Jika form disabled (asesor_2), langsung navigate tanpa save
+    if (isFormDisabled) {
       let actualIdIzin = idIzin
       if (!actualIdIzin && kegiatan?.jadwal_id) {
         const token = localStorage.getItem("access_token")
@@ -239,7 +229,7 @@ export default function FrAk07Page() {
       return
     }
 
-    // Asesi - save data dulu
+    // Asesi dan asesor_1 - save data dulu
     let actualIdIzin = idIzin
     if (!actualIdIzin && kegiatan?.jadwal_id) {
       const token = localStorage.getItem("access_token")
@@ -258,7 +248,7 @@ export default function FrAk07Page() {
     }
 
     if (!actualIdIzin) {
-      alert("ID Izin tidak ditemukan")
+      showWarning("ID Izin tidak ditemukan")
       return
     }
 
@@ -271,50 +261,31 @@ export default function FrAk07Page() {
         throw new Error("Data AK07 tidak tersedia")
       }
 
-      // Kelompok 4 (Potensi Asesi) - boolean
+      // Kelompok 4 (Potensi Asesi) - boolean per item
       const potensiAsesiData = ak07Data.find(d => d.kelompok.urut === 1)
       if (potensiAsesiData) {
-        const key = `${potensiAsesiData.kelompok.kategoris[0]?.id || null}_${potensiAsesiData.kelompok.id}`
-        const selectedRefs = selectedReferences[key] || new Set<number>()
-
-        potensiAsesiData.kelompok.kategoris[0]?.referensis.forEach(ref => {
-          answers.push({
-            referensi_id: ref.id,
-            kelompok_id: potensiAsesiData.kelompok.id,
-            value: selectedRefs.has(ref.id)
+        potensiAsesiData.kelompok.kategoris.forEach(kategori => {
+          kategori.referensis.forEach(ref => {
+            const isChecked = isReferenceChecked(kategori.id, potensiAsesiData.kelompok.id, ref.id)
+            answers.push({
+              referensi_id: ref.id,
+              kelompok_id: potensiAsesiData.kelompok.id,
+              value: isChecked
+            })
           })
         })
       }
 
-      // Kelompok 5 (Modifikasi) - boolean
+      // Kelompok 5 (Modifikasi) - boolean per item
       const modifikasiData = ak07Data.find(d => d.kelompok.urut === 2)
       if (modifikasiData) {
         modifikasiData.kelompok.kategoris.forEach(kategori => {
-          if (!kategori.id) return
-
-          const key = `${kategori.id}_${modifikasiData.kelompok.id}`
-          const adjustment = adjustmentSelection[key]
-
-          // Get all selected references for this kategori
-          const selectedRefs = selectedReferences[key] || new Set<number>()
-
           kategori.referensis.forEach(ref => {
-            // If adjustment is 'ya', selected refs get true, others get false
-            // If adjustment is 'tidak', all get false
-            // If no adjustment selected, use selectedRefs (true if in set)
-            let value: boolean
-            if (adjustment === 'ya') {
-              value = selectedRefs.has(ref.id)
-            } else if (adjustment === 'tidak') {
-              value = false
-            } else {
-              value = selectedRefs.has(ref.id)
-            }
-
+            const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
             answers.push({
               referensi_id: ref.id,
               kelompok_id: modifikasiData.kelompok.id,
-              value
+              value: isChecked
             })
           })
         })
@@ -364,9 +335,12 @@ export default function FrAk07Page() {
         throw new Error(error.message || "Gagal menyimpan data AK07")
       }
 
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      showSuccess('FR AK 07 berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      }, 500)
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
+      showError(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
     } finally {
       setIsSaving(false)
     }
@@ -496,8 +470,8 @@ export default function FrAk07Page() {
                           <div style={{ marginRight: '10px' }}>
                             <CustomCheckbox
                               checked={isChecked}
-                              onChange={() => !isAsesor && !isSaving && handleReferenceChange(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)}
-                              disabled={isAsesor || isSaving}
+                              disabled={true}
+                              onChange={() => {}}
                             />
                           </div>
                           <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
@@ -517,60 +491,52 @@ export default function FrAk07Page() {
                 <tr>
                   <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff', fontSize: '14px' }}>No</th>
                   <th style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', background: '#c00000', color: '#fff', fontSize: '14px' }}>Mengidentifikasi Persyaratan Modifikasi dan Kontekstualisasi</th>
-                  <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Diperlukan penyesuaian**</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Ya</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
                   <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontSize: '14px' }}>Keterangan</th>
-                </tr>
-                <tr>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center', fontSize: '14px' }}>Ya</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#f0f0f0', fontSize: '14px' }}></th>
                 </tr>
 
                 {modifikasiData.kelompok.kategoris.map((kategori, kategoriIndex) => {
                   if (!kategori.nama) return null
-                  const key = `${kategori.id}_${modifikasiData.kelompok.id}`
-                  const selectedAdjustment = adjustmentSelection[key]
 
-                  return (
-                    <tr key={kategori.id || kategoriIndex}>
-                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{kategori.urut || kategoriIndex + 1}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{kategori.nama}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                        <CustomCheckbox
-                          checked={selectedAdjustment === 'ya'}
-                          onChange={() => !isAsesor && !isSaving && handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'ya')}
-                          disabled={isAsesor || isSaving}
-                        />
-                      </td>
-                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                        <CustomCheckbox
-                          checked={selectedAdjustment === 'tidak'}
-                          onChange={() => !isAsesor && !isSaving && handleAdjustmentChange(kategori.id, modifikasiData.kelompok.id, 'tidak')}
-                          disabled={isAsesor || isSaving}
-                        />
-                      </td>
-                      <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                        {kategori.referensis.filter(r => r.nama).map((ref) => {
-                          const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
+                  const filteredReferensis = kategori.referensis.filter(r => r.nama)
 
-                          return (
-                            <div key={ref.id} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '6px', border: '1px solid #000', borderRadius: '4px', padding: '6px', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'pointer' }} onClick={() => !isAsesor && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}>
-                              <div style={{ marginRight: '10px' }}>
-                                <CustomCheckbox
-                                  checked={isChecked}
-                                  onChange={() => !isAsesor && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
-                                  disabled={isAsesor || isSaving}
-                                />
-                              </div>
-                              <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
-                            </div>
-                          )
-                        })}
-                      </td>
-                    </tr>
-                  )
+                  return filteredReferensis.map((ref, refIdx) => {
+                    const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
+                    const isFirstRow = refIdx === 0
+
+                    return (
+                      <tr key={`${kategori.id || kategoriIndex}-${ref.id}`}>
+                        {isFirstRow && (
+                          <>
+                            <td rowSpan={filteredReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', verticalAlign: 'top' }}>
+                              {kategori.urut || kategoriIndex + 1}
+                            </td>
+                            <td rowSpan={filteredReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
+                              {kategori.nama}
+                            </td>
+                          </>
+                        )}
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
+                          <CustomCheckbox
+                            checked={isChecked}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                            disabled={isFormDisabled || isSaving}
+                          />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
+                          <CustomCheckbox
+                            checked={!isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                            disabled={isFormDisabled || isSaving}
+                          />
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none', fontSize: '14px' }}>
+                          {ref.nama}
+                        </td>
+                      </tr>
+                    )
+                  })
                 })}
               </tbody>
             </table>
@@ -591,9 +557,9 @@ export default function FrAk07Page() {
                         <textarea
                           value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
-                          disabled={isAsesor || isSaving}
+                          disabled={isFormDisabled || isSaving}
                           rows={2}
-                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
+                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff' }}
                           placeholder="Isi jawaban di sini..."
                         />
                       </div>
@@ -619,9 +585,9 @@ export default function FrAk07Page() {
                         <textarea
                           value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
-                          disabled={isAsesor || isSaving}
+                          disabled={isFormDisabled || isSaving}
                           rows={2}
-                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
+                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff' }}
                           placeholder="Isi jawaban di sini..."
                         />
                       </div>

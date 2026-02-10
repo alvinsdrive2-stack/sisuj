@@ -4,6 +4,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -42,12 +43,16 @@ export default function FrAk04Page() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
+
+  // Only asesi can edit this form
+  const isFormDisabled = isAsesor
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -130,6 +135,7 @@ export default function FrAk04Page() {
   }
 
   const handleAnswerChange = (refId: number, value: boolean) => {
+    if (isFormDisabled) return
     setAnswers(prev => {
       const current = prev[refId]
       if (current === value) {
@@ -142,6 +148,7 @@ export default function FrAk04Page() {
   }
 
   const handleCellClick = (refId: number) => {
+    if (isFormDisabled) return
     setAnswers(prev => {
       const current = prev[refId]
       // Toggle: null -> true -> false -> null
@@ -157,8 +164,35 @@ export default function FrAk04Page() {
   }
 
   const handleSave = async () => {
+    // Asesor just navigate without validation/saving
+    if (isFormDisabled) {
+      let actualIdIzin = idIzin
+      const token = localStorage.getItem("access_token")
+
+      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+            actualIdIzin = listResult.list_asesi[0].id_izin
+          }
+        }
+      }
+
+      if (actualIdIzin) {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+      }
+      return
+    }
+
+    // Asesi - validate and save
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
@@ -184,7 +218,7 @@ export default function FrAk04Page() {
       }
 
       if (!actualIdIzin) {
-        alert("ID Izin tidak ditemukan")
+        showWarning("ID Izin tidak ditemukan")
         return
       }
 
@@ -215,16 +249,19 @@ export default function FrAk04Page() {
       if (response.ok) {
         const result = await response.json()
         if (result.message === "AK04 successfully submitted") {
-          navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+          showSuccess('FR AK 04 berhasil disimpan!')
+          setTimeout(() => {
+            navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+          }, 500)
         } else {
-          alert("Gagal menyimpan data: " + (result.message || "Unknown error"))
+          showError("Gagal menyimpan data: " + (result.message || "Unknown error"))
         }
       } else {
-        alert("Gagal menyimpan data. Status: " + response.status)
+        showError("Gagal menyimpan data. Status: " + response.status)
       }
     } catch (error) {
       console.error("Error saving AK04:", error)
-      alert("Terjadi kesalahan saat menyimpan data")
+      showError("Terjadi kesalahan saat menyimpan data")
     } finally {
       setIsSaving(false)
     }
@@ -306,7 +343,7 @@ export default function FrAk04Page() {
                   <tr key={ref.id}>
                     <td
                       colSpan={2}
-                      style={{ border: '1px solid #000', padding: '6px 8px', cursor: 'pointer' }}
+                      style={{ border: '1px solid #000', padding: '6px 8px', cursor: isFormDisabled ? 'default' : 'pointer' }}
                       onClick={() => handleCellClick(ref.id)}
                     >
                       {ref.nama}
@@ -315,14 +352,16 @@ export default function FrAk04Page() {
                       <CustomCheckbox
                         checked={answer === true}
                         onChange={() => handleAnswerChange(ref.id, true)}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        disabled={isFormDisabled}
+                        style={{ width: '18px', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px 30px', textAlign: 'center' }}>
                       <CustomCheckbox
                         checked={answer === false}
                         onChange={() => handleAnswerChange(ref.id, false)}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                        disabled={isFormDisabled}
+                        style={{ width: '18px', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                   </tr>
@@ -332,7 +371,7 @@ export default function FrAk04Page() {
               {/* Skema Sertifikasi Info */}
               <tr>
                 <td colSpan={4} style={{ border: '1px solid #000', padding: '8px' }}>
-                  Banding ini diajukan atas Keputusan Asesmen yang dibuat terhadap Skema Sertifikasi (Kualifikasi/Klaster/Okupasi) berikut :
+                  Banding ini diajukan atas Keputusan Asesmen yang dibuat terhadap Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶ berikut :
                   <br /><br />
                   Skema Sertifikasi : {jabatanKerja?.toUpperCase() || ''}<br />
                   No. Skema Sertifikasi : {nomorSkema?.toUpperCase() || ''}
@@ -346,6 +385,7 @@ export default function FrAk04Page() {
                   <textarea
                     value={alasanBanding}
                     onChange={(e) => setAlasanBanding(e.target.value)}
+                    disabled={isFormDisabled}
                     placeholder="Tuliskan alasan banding..."
                     style={{
                       width: '100%',
@@ -354,7 +394,9 @@ export default function FrAk04Page() {
                       padding: '8px',
                       fontSize: '13px',
                       fontFamily: 'Arial, Helvetica, sans-serif',
-                      resize: 'vertical'
+                      resize: 'vertical',
+                      cursor: isFormDisabled ? 'not-allowed' : 'text',
+                      background: isFormDisabled ? '#f5f5f5' : '#fff'
                     }}
                   />
                 </td>
@@ -379,12 +421,13 @@ export default function FrAk04Page() {
 
           {/* Agreement Checklist */}
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: isFormDisabled ? 'default' : 'pointer' }}>
               <input
                 type="checkbox"
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+                onChange={(e) => !isFormDisabled && setAgreedChecklist(e.target.checked)}
+                disabled={isFormDisabled}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.
@@ -403,10 +446,10 @@ export default function FrAk04Page() {
             </button>
             <button
               onClick={handleSave}
-              disabled={isSaving || !agreedChecklist}
-              style={{ padding: '8px 16px', background: agreedChecklist ? '#0066cc' : '#999', color: '#fff', fontSize: '13px', cursor: isSaving || !agreedChecklist ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving || !agreedChecklist ? 0.5 : 1 }}
+              disabled={isSaving || (!isFormDisabled && !agreedChecklist)}
+              style={{ padding: '8px 16px', background: (isFormDisabled || agreedChecklist) ? '#0066cc' : '#999', color: '#fff', fontSize: '13px', cursor: isSaving || (!isFormDisabled && !agreedChecklist) ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving || (!isFormDisabled && !agreedChecklist) ? 0.5 : 1 }}
             >
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+              {isSaving ? "Menyimpan..." : (isFormDisabled ? "Lanjut" : "Simpan & Lanjut")}
             </button>
           </div>
         </div>

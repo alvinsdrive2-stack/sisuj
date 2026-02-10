@@ -1,63 +1,27 @@
 import React, { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { File, Trash2, Check, FileImage, FileType } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
-import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { CustomRadio } from "@/components/ui/Radio"
 
 // ============== ANIMATED COMPONENTS ==============
 
-// Animated Dropdown with smooth open/close
-interface AnimatedDropdownProps {
-  isOpen: boolean
-  children: React.ReactNode
-  style?: React.CSSProperties
-}
-
-function AnimatedDropdown({ isOpen, children, style }: AnimatedDropdownProps) {
-  const contentRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(0)
-
-  useEffect(() => {
-    if (contentRef.current) {
-      if (isOpen) {
-        setHeight(contentRef.current.scrollHeight)
-      } else {
-        setHeight(0)
-      }
-    }
-  }, [isOpen])
-
-  return (
-    <div
-      style={{
-        ...style,
-        overflow: 'hidden',
-        transition: 'height 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
-        height: `${height}px`,
-        opacity: isOpen ? 1 : 0,
-      }}
-    >
-      <div ref={contentRef}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
 // Animated Capsule/Chip with smooth entry and exit
 interface AnimatedCapsuleProps {
   fileName: string
   onRemove: () => void
+  isExcluded?: boolean // For API files that are excluded
   style?: React.CSSProperties
 }
 
-function AnimatedCapsule({ fileName, onRemove, style }: AnimatedCapsuleProps) {
+function AnimatedCapsule({ fileName, onRemove, isExcluded, style }: AnimatedCapsuleProps) {
   const [isExiting, setIsExiting] = useState(false)
   const capsuleRef = useRef<HTMLSpanElement>(null)
 
@@ -74,19 +38,18 @@ function AnimatedCapsule({ fileName, onRemove, style }: AnimatedCapsuleProps) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '6px',
-        background: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
-        border: '1px solid #1976d2',
-        borderRadius: '20px',
-        padding: '4px 10px',
-        fontSize: '10px',
-        textTransform: 'uppercase',
-        fontWeight: '600',
-        color: '#0d47a1',
-        letterSpacing: '0.3px',
-        boxShadow: '0 1px 3px rgba(25, 118, 210, 0.2)',
-        transform: isExiting ? 'scale(0.8) translateX(-10px)' : 'scale(1) translateX(0)',
-        opacity: isExiting ? 0 : 1,
+        gap: '8px',
+        height: '38px',
+        background: isExcluded ? '#fee' : '#f5f5f5',
+        border: isExcluded ? '1px solid #fca5a5' : '1px solid #ddd',
+        borderRadius: '6px',
+        padding: '0 12px',
+        fontSize: '12px',
+        fontWeight: '500',
+        color: isExcluded ? '#991b1b' : '#333',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
+        opacity: isExiting ? 0 : (isExcluded ? 0.6 : 1),
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         cursor: 'default',
         userSelect: 'none',
@@ -94,64 +57,341 @@ function AnimatedCapsule({ fileName, onRemove, style }: AnimatedCapsuleProps) {
       }}
       onMouseEnter={(e) => {
         if (!isExiting) {
-          e.currentTarget.style.background = 'linear-gradient(135deg, #bbdefb 0%, #90caf9 100%)'
-          e.currentTarget.style.borderColor = '#1565c0'
-          e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'
-          e.currentTarget.style.boxShadow = '0 3px 8px rgba(25, 118, 210, 0.3)'
+          e.currentTarget.style.background = isExcluded ? '#fecaca' : '#eee'
+          e.currentTarget.style.borderColor = isExcluded ? '#f87171' : '#ccc'
         }
       }}
       onMouseLeave={(e) => {
         if (!isExiting) {
-          e.currentTarget.style.background = 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
-          e.currentTarget.style.borderColor = '#1976d2'
-          e.currentTarget.style.transform = 'translateY(0) scale(1)'
-          e.currentTarget.style.boxShadow = '0 1px 3px rgba(25, 118, 210, 0.2)'
+          e.currentTarget.style.background = isExcluded ? '#fee' : '#f5f5f5'
+          e.currentTarget.style.borderColor = isExcluded ? '#fca5a5' : '#ddd'
         }
       }}
     >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        <span style={{ fontSize: '12px' }}>📎</span>
-        {fileName}
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <File size={14} style={{ color: isExcluded ? '#dc2626' : '#666' }} />
+        <span style={{
+          maxWidth: '200px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {fileName}
+        </span>
       </span>
       <button
         onClick={handleRemove}
         style={{
-          background: isExiting ? '#ef5350' : 'rgba(25, 118, 210, 0.2)',
+          background: 'transparent',
           border: 'none',
-          color: isExiting ? '#fff' : '#1976d2',
+          color: isExcluded ? '#dc2626' : '#999',
           cursor: 'pointer',
           padding: '0',
-          width: '18px',
-          height: '18px',
-          borderRadius: '50%',
+          width: '24px',
+          height: '24px',
+          borderRadius: '4px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '14px',
-          fontWeight: 'bold',
-          lineHeight: '1',
           transition: 'all 0.15s ease',
           flexShrink: 0,
         }}
         onMouseEnter={(e) => {
           if (!isExiting) {
-            e.currentTarget.style.background = '#ef5350'
+            e.currentTarget.style.background = isExcluded ? '#dc2626' : '#dc2626'
             e.currentTarget.style.color = '#fff'
-            e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)'
           }
         }}
         onMouseLeave={(e) => {
           if (!isExiting) {
-            e.currentTarget.style.background = 'rgba(25, 118, 210, 0.2)'
-            e.currentTarget.style.color = '#1976d2'
-            e.currentTarget.style.transform = 'rotate(0deg) scale(1)'
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = isExcluded ? '#dc2626' : '#999'
           }
         }}
-        title="Hapus"
+        title={isExcluded ? 'Sertakan kembali' : 'Hapus dari jawaban'}
       >
-        ×
+        {isExcluded ? <Check size={12} /> : <Trash2 size={12} />}
       </button>
     </span>
+  )
+}
+
+// Server File Capsule with delete button for uploaded files
+interface ServerFileCapsuleProps {
+  file: { id: number; name: string; path: string }
+  onDelete: (fileId: number) => void
+  disabled?: boolean
+}
+
+function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps) {
+  const [isExiting, setIsExiting] = useState(false)
+
+  const handleDelete = () => {
+    if (disabled) return
+    if (confirm(`Hapus file "${file.name}" dari server?`)) {
+      setIsExiting(true)
+      setTimeout(() => {
+        onDelete(file.id)
+      }, 200)
+    }
+  }
+
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        height: '38px',
+        background: '#f5f5f5',
+        border: '1px solid #ddd',
+        borderRadius: '6px',
+        padding: '0 12px',
+        fontSize: '12px',
+        fontWeight: '500',
+        color: '#333',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
+        opacity: isExiting ? 0 : 1,
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: 'default',
+        userSelect: 'none',
+      }}
+      onMouseEnter={(e) => {
+        if (!isExiting) {
+          e.currentTarget.style.background = '#eee'
+          e.currentTarget.style.borderColor = '#ccc'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isExiting) {
+          e.currentTarget.style.background = '#f5f5f5'
+          e.currentTarget.style.borderColor = '#ddd'
+        }
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {getFileIcon(file.name || '')}
+        <span style={{
+          maxWidth: '200px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}>
+          {file.name || 'Unknown file'}
+        </span>
+      </span>
+      {!disabled && (
+        <button
+          onClick={handleDelete}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: '#999',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            padding: '0',
+            width: '24px',
+            height: '24px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!isExiting && !disabled) {
+              e.currentTarget.style.background = '#dc2626'
+              e.currentTarget.style.color = '#fff'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isExiting) {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = '#999'
+            }
+          }}
+          title="Hapus file dari server"
+        >
+          <Trash2 size={12} />
+        </button>
+      )}
+    </span>
+  )
+}
+
+// Helper function to get file icon based on extension
+function getFileIcon(fileName: string): React.ReactNode {
+  if (!fileName) return <File size={14} style={{ color: '#666' }} />
+  const ext = fileName.split('.').pop()?.toLowerCase()
+  if (ext === 'pdf') return <FileType size={14} style={{ color: '#dc2626' }} />
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return <FileImage size={14} style={{ color: '#059669' }} />
+  if (['doc', 'docx'].includes(ext || '')) return <FileType size={14} style={{ color: '#2563eb' }} />
+  return <File size={14} style={{ color: '#666' }} />
+}
+
+// Bukti Dropdown Component with its own state (no full page re-render)
+interface BuktiDropdownProps {
+  kukId: string
+  uploadedFiles: Array<{ id: number; name: string; path: string }>
+  selectedFileIds: number[]
+  onSelectFile: (kukId: string, fileId: number) => void
+  disabled?: boolean
+}
+
+function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, disabled }: BuktiDropdownProps) {
+  const [isOpen, setIsOpen] = React.useState(false)
+  const dropdownRef = React.useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    if (!isOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isOpen])
+
+  return (
+    <div className="bukti-dropdown-container" ref={dropdownRef} style={{ position: 'relative' }}>
+      <button
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled || uploadedFiles.length === 0}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          border: isOpen ? '1px solid #999' : '1px solid #ddd',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontWeight: '500',
+          backgroundColor: (disabled || uploadedFiles.length === 0) ? '#f5f5f5' : '#fff',
+          cursor: (disabled || uploadedFiles.length === 0) ? 'not-allowed' : 'pointer',
+          textAlign: 'left',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          transition: 'all 0.2s ease',
+          color: '#333',
+        }}
+        onMouseEnter={(e) => {
+          if (!disabled && uploadedFiles.length > 0 && !isOpen) {
+            e.currentTarget.style.borderColor = '#999'
+            e.currentTarget.style.backgroundColor = '#f9f9f9'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isOpen) {
+            e.currentTarget.style.borderColor = '#ddd'
+            e.currentTarget.style.backgroundColor = (disabled || uploadedFiles.length === 0) ? '#f5f5f5' : '#fff'
+          }
+        }}
+      >
+        <span style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+        }}>
+          {selectedFileIds.length > 0 && (
+            <span style={{
+              background: '#666',
+              color: '#fff',
+              borderRadius: '10px',
+              padding: '2px 8px',
+              fontSize: '11px',
+              fontWeight: '600',
+            }}>
+              {selectedFileIds.length}
+            </span>
+          )}
+          {selectedFileIds.length > 0 ? 'file dipilih' : (uploadedFiles.length === 0 ? '-- Upload file terlebih dahulu --' : '-- Pilih File --')}
+        </span>
+        <span style={{
+          transition: 'transform 0.3s ease',
+          display: 'inline-block',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+        }}>
+          ▼
+        </span>
+      </button>
+
+      {isOpen && uploadedFiles.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          background: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: '6px',
+          marginTop: '4px',
+          maxHeight: '180px',
+          overflowY: 'auto',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }}>
+          {uploadedFiles.map((file, index) => {
+            const isSelected = selectedFileIds.includes(file.id)
+            return (
+              <div
+                key={file.id}
+                onClick={() => {
+                  onSelectFile(kukId, file.id)
+                  setIsOpen(false)
+                }}
+                style={{
+                  padding: '8px 12px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  background: isSelected ? '#e8e8e8' : 'transparent',
+                  borderBottom: index === uploadedFiles.length - 1 ? 'none' : '1px solid #eee',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  transition: 'all 0.15s ease',
+                  color: '#333',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = '#f5f5f5'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.background = 'transparent'
+                  }
+                }}
+              >
+                <CustomCheckbox
+                  checked={isSelected}
+                  onChange={() => {}}
+                  style={{ pointerEvents: 'none' }}
+                />
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {getFileIcon(file.name || '')}
+                  <span>{file.name || 'Unknown file'}</span>
+                </span>
+                {isSelected && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    color: '#666',
+                  }}>
+                    <Check size={16} />
+                  </span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -160,12 +400,19 @@ interface KUK {
   judul_kuk: string
 }
 
+interface File {
+  id: number
+  name: string
+  path: string
+}
+
 interface Subunit {
   id: string
   no_elemen: string
   judul_elemen: string
   kompeten?: boolean
   kuk_list: KUK[]
+  files: File[]
 }
 
 interface Unit {
@@ -211,13 +458,6 @@ type Apl02Data = {
   units: Unit[]
 }
 
-interface UploadedFile {
-  id: string
-  name: string
-  kukId: string
-  file: File
-}
-
 export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -228,44 +468,18 @@ export default function Apl02Page() {
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { showSuccess, showError, showWarning } = useToast()
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-  const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
-  const [kukBukti, setKukBukti] = useState<Record<string, string[]>>({})
+  const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string }>>([])
+  const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK'>>({})
+  const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const [openDropdowns, setOpenDropdowns] = useState<Set<string>>(new Set())
+  const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
-
-  const toggleDropdown = (kukId: string) => {
-    setOpenDropdowns(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(kukId)) {
-        newSet.delete(kukId)
-      } else {
-        newSet.add(kukId)
-      }
-      return newSet
-    })
-  }
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement
-      if (!target.closest('.bukti-dropdown-container')) {
-        setOpenDropdowns(new Set())
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
 
   const handleCheckboxChange = (kukId: string, value: 'K' | 'BK') => {
     setKukChecklist(prev => {
@@ -279,31 +493,73 @@ export default function Apl02Page() {
     })
   }
 
-  const handleBuktiChange = (kukId: string, fileName: string) => {
+  const handleBuktiChange = (kukId: string, fileId: number) => {
     setKukBukti(prev => {
       const currentFiles = prev[kukId] || []
-      if (currentFiles.includes(fileName)) {
+      if (currentFiles.includes(fileId)) {
         // Remove file if already selected
         return {
           ...prev,
-          [kukId]: currentFiles.filter(f => f !== fileName)
+          [kukId]: currentFiles.filter(f => f !== fileId)
         }
       } else {
         // Add file to selection
         return {
           ...prev,
-          [kukId]: [...currentFiles, fileName]
+          [kukId]: [...currentFiles, fileId]
         }
       }
     })
-    // Don't close dropdown - allow multiple selections
   }
 
-  const removeBuktiFile = (kukId: string, fileName: string) => {
+  const removeBuktiFile = (kukId: string, fileId: number) => {
     setKukBukti(prev => ({
       ...prev,
-      [kukId]: (prev[kukId] || []).filter(f => f !== fileName)
+      [kukId]: (prev[kukId] || []).filter(f => f !== fileId)
     }))
+  }
+
+  const deleteFile = async (fileId: number) => {
+    try {
+      const token = localStorage.getItem("access_token")
+
+      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/apl02/files/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        // Remove from uploadedFilesInfo
+        setUploadedFilesInfo(prev => prev.filter(f => f.id !== fileId))
+        // Remove from all kukBukti selections
+        setKukBukti(prev => {
+          const newKukBukti = { ...prev }
+          Object.keys(newKukBukti).forEach(kukId => {
+            newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
+          })
+          return newKukBukti
+        })
+        showSuccess('File berhasil dihapus')
+      } else if (response.status === 404) {
+        // File not found on server - remove from local state anyway
+        setUploadedFilesInfo(prev => prev.filter(f => f.id !== fileId))
+        setKukBukti(prev => {
+          const newKukBukti = { ...prev }
+          Object.keys(newKukBukti).forEach(kukId => {
+            newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
+          })
+          return newKukBukti
+        })
+      } else {
+        showError('Gagal menghapus file')
+      }
+    } catch (error) {
+      console.error("Error deleting file:", error)
+      showError('Terjadi kesalahan saat menghapus file')
+    }
   }
 
   useEffect(() => {
@@ -342,8 +598,8 @@ export default function Apl02Page() {
           return
         }
 
-        // Fetch both data-dokumen and apl02 in parallel
-        const [dataDokumenResponse, apl02Response] = await Promise.all([
+        // Fetch data-dokumen, apl02, and files in parallel
+        const [dataDokumenResponse, apl02Response, filesResponse] = await Promise.all([
           fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/data-dokumen`, {
             headers: {
               "Accept": "application/json",
@@ -351,6 +607,12 @@ export default function Apl02Page() {
             },
           }),
           fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/apl02`, {
+            headers: {
+              "Accept": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+          }),
+          fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/apl02/files`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -410,6 +672,14 @@ export default function Apl02Page() {
           }
         }
 
+        // Parse files response
+        if (filesResponse.ok) {
+          const filesResult = await filesResponse.json()
+          if (filesResult.message === "Success" && filesResult.data) {
+            setUploadedFilesInfo(filesResult.data)
+          }
+        }
+
         // Set metode from API
         if (metodeFromApi) {
           setMetodeAsesmen(metodeFromApi)
@@ -441,7 +711,7 @@ export default function Apl02Page() {
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
-      alert("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
@@ -455,28 +725,56 @@ export default function Apl02Page() {
     // Asesi - save data dulu
     const finalIdIzin = _idIzin || idIzin
     if (!finalIdIzin) {
-      alert("ID Izin tidak ditemukan")
+      showWarning("ID Izin tidak ditemukan")
       return
     }
 
-    // Convert kukChecklist to answers array (per subunit, not per KUK)
-    // Since backend stores kompeten per subunit, all KUKs in same subunit have same status
-    const subunitStatusMap = new Map<number, boolean>()
+    // Convert kukChecklist to answers array (per subunit)
+    // First, collect all KUK data grouped by subunit
+    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number> }>()
 
     Object.entries(kukChecklist).forEach(([kukId, status]) => {
       // kukId format: "unitId-subunitId-kukNo"
       const parts = kukId.split('-')
       const subunitId = parseInt(parts[1])
-      const kompeten = status === 'K'
 
-      // Set status for this subunit (will be same for all KUKs in subunit)
-      subunitStatusMap.set(subunitId, kompeten)
+      if (!subunitDataMap.has(subunitId)) {
+        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set() })
+      }
+
+      const data = subunitDataMap.get(subunitId)!
+      data.statuses.push(status)
+
+      // Add user-selected file IDs (filter out excluded API files)
+      const fileIds = kukBukti[kukId] || []
+      fileIds.forEach(id => {
+        if (!excludedApiFileIds.has(id)) {
+          data.allFileIds.add(id)
+        }
+      })
     })
 
-    // Convert Map to answers array
-    const answers = Array.from(subunitStatusMap.entries()).map(([subunit_id, kompeten]) => ({
-      subunit_id,
-      kompeten
+    // Also include API files from subunits that are NOT excluded
+    apl02Data?.units.forEach(unit => {
+      unit.subunits.forEach(subunit => {
+        const subunitId = parseInt(subunit.id)
+        if (subunitDataMap.has(subunitId)) {
+          const data = subunitDataMap.get(subunitId)!
+          subunit.files.forEach(file => {
+            if (!excludedApiFileIds.has(file.id)) {
+              data.allFileIds.add(file.id)
+            }
+          })
+        }
+      })
+    })
+
+    // Convert to answers array format
+    // kompeten = true if ALL KUKs in subunit are 'K'
+    const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
+      subunit_id: subunitId,
+      kompeten: data.statuses.every(s => s === 'K'),
+      file_ids: Array.from(data.allFileIds)
     }))
 
     // Check if all subunits have been answered
@@ -487,22 +785,39 @@ export default function Apl02Page() {
       })
 
       if (answers.length === 0) {
-        alert("Silakan isi penilaian K/BK untuk semua Kriteria Unjuk Kerja")
+        showWarning("Silakan isi penilaian K/BK untuk semua Kriteria Unjuk Kerja")
         return
       }
     }
 
     setIsSaving(true)
     try {
-      await kegiatanService.saveApl02(finalIdIzin, {
-        metode: metodeAsesmen,
-        is_dilanjutkan: true,
-        answers
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02`, {
+        method: 'POST',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          metode: metodeAsesmen,
+          is_dilanjutkan: true,
+          answers
+        }),
       })
 
-      navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+      if (response.ok) {
+        showSuccess('APL 02 berhasil disimpan!')
+        setTimeout(() => {
+          navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+        }, 500)
+      } else {
+        showError('Gagal menyimpan data APL 02')
+      }
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Gagal menyimpan data APL 02")
+      console.error('Error saving APL02:', error)
+      showError(error instanceof Error ? error.message : "Gagal menyimpan data APL 02")
     } finally {
       setIsSaving(false)
     }
@@ -544,9 +859,9 @@ export default function Apl02Page() {
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Upload Bukti Dokumen</span>
               <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>Upload dokumen pendukung untuk digunakan di kolom bukti</p>
             </div>
-            {uploadedFiles.length > 0 && (
+            {uploadedFilesInfo.length > 0 && (
               <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '6px 12px', fontSize: '12px', fontWeight: '600' }}>
-                {uploadedFiles.length} File
+                {uploadedFilesInfo.length} File
               </div>
             )}
           </div>
@@ -588,92 +903,71 @@ export default function Apl02Page() {
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             multiple
             style={{ display: 'none' }}
-            onChange={(e) => {
+            onChange={async (e) => {
               const files = e.target.files
               if (files && files.length > 0) {
-                Array.from(files).forEach(file => {
-                  const newFile: UploadedFile = {
-                    id: Date.now().toString() + Math.random(),
-                    name: file.name,
-                    kukId: '',
-                    file,
+                try {
+                  const token = localStorage.getItem("access_token")
+                  const finalIdIzin = _idIzin || idIzin
+
+                  if (!finalIdIzin) {
+                    showWarning("ID Izin tidak ditemukan")
+                    return
                   }
-                  setUploadedFiles(prev => [...prev, newFile])
-                })
+
+                  // Upload files to server
+                  const formData = new FormData()
+                  Array.from(files).forEach(file => {
+                    formData.append('files[]', file)
+                  })
+
+                  const uploadResponse = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02/files`, {
+                    method: 'POST',
+                    headers: {
+                      "Accept": "application/json",
+                      "Authorization": `Bearer ${token}`,
+                    },
+                    body: formData,
+                  })
+
+                  if (uploadResponse.ok) {
+                    const uploadResult = await uploadResponse.json()
+                    if (uploadResult.message === "Files uploaded" && uploadResult.files) {
+                      // Map server response to our format (original_name -> name)
+                      const mappedFiles = uploadResult.files.map((f: any) => ({
+                        id: f.id,
+                        name: f.original_name || f.name,
+                        path: f.path
+                      }))
+                      setUploadedFilesInfo(prev => [...prev, ...mappedFiles])
+                      showSuccess(`${mappedFiles.length} file berhasil diupload`)
+                    }
+                  } else {
+                    showError('Gagal upload file')
+                  }
+                } catch (error) {
+                  console.error('Error uploading files:', error)
+                  showError('Terjadi kesalahan saat upload file')
+                }
               }
               e.target.value = ''
             }}
           />
 
           {/* Uploaded Files List */}
-          {uploadedFiles.length > 0 && (
+          {uploadedFilesInfo.length > 0 && (
             <div style={{ marginTop: '16px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', color: '#333', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                File yang Diupload
+                File yang Diupload ({uploadedFilesInfo.length})
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>
-                {uploadedFiles.map((uploadedFile) => (
-                  <div
-                    key={uploadedFile.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 12px',
-                      background: '#fafafa',
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f0f0f0'
-                      e.currentTarget.style.borderColor = '#d0d0d0'
-                      e.currentTarget.style.transform = 'translateY(-1px)'
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#fafafa'
-                      e.currentTarget.style.borderColor = '#e0e0e0'
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    <div style={{ fontSize: '20px' }}>📄</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ color: '#333', fontWeight: '500', textTransform: 'uppercase', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {uploadedFile.name}
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setUploadedFiles(prev => prev.filter(f => f.id !== uploadedFile.id))
-                      }}
-                      style={{
-                        padding: '6px 10px',
-                        background: '#ef4444',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        fontSize: '10px',
-                        cursor: 'pointer',
-                        textTransform: 'uppercase',
-                        fontWeight: '600',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#dc2626'
-                        e.currentTarget.style.transform = 'scale(1.05)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#ef4444'
-                        e.currentTarget.style.transform = 'scale(1)'
-                      }}
-                    >
-                      Hapus
-                    </button>
-                  </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                {uploadedFilesInfo.map((file) => (
+                  <ServerFileCapsule
+                    key={file.id}
+                    file={file}
+                    onDelete={deleteFile}
+                    disabled={isAsesor || isSaving}
+                  />
                 ))}
               </div>
             </div>
@@ -819,164 +1113,64 @@ export default function Apl02Page() {
                         </td>
                         <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
                           {(() => {
-                            const selectedFiles = (kukBukti[kukId] || []) as string[]
-                            const isOpen = openDropdowns.has(kukId)
+                            const selectedFileIds = kukBukti[kukId] || []
+
+                            // Get API files (from subunit.files) and user-uploaded files
+                            const apiFiles = subunit.files || []
+                            const userUploadedFiles = selectedFileIds
+                              .map(id => uploadedFilesInfo.find(f => f.id === id))
+                              .filter((f): f is { id: number; name: string; path: string } => f !== undefined)
+
                             return (
                               <>
-                                {/* Selected Files as Animated Capsules */}
-                                {selectedFiles.length > 0 && (
+                                {/* API Files as Static Capsules (can be excluded) */}
+                                {apiFiles.length > 0 && (
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                    {selectedFiles.map((fileName) => (
+                                    {apiFiles.map((file) => {
+                                      const isExcluded = excludedApiFileIds.has(file.id)
+                                      return (
+                                        <AnimatedCapsule
+                                          key={file.id}
+                                          fileName={file.name}
+                                          isExcluded={isExcluded}
+                                          onRemove={() => {
+                                            setExcludedApiFileIds(prev => {
+                                              const newSet = new Set(prev)
+                                              if (newSet.has(file.id)) {
+                                                newSet.delete(file.id)
+                                              } else {
+                                                newSet.add(file.id)
+                                              }
+                                              return newSet
+                                            })
+                                          }}
+                                        />
+                                      )
+                                    })}
+                                  </div>
+                                )}
+
+                                {/* User-selected Files as Animated Capsules (can be removed) */}
+                                {userUploadedFiles.length > 0 && (
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                                    {userUploadedFiles.map((file) => (
                                       <AnimatedCapsule
-                                        key={fileName}
-                                        fileName={fileName}
-                                        onRemove={() => removeBuktiFile(kukId, fileName)}
+                                        key={file.id}
+                                        fileName={file.name}
+                                        onRemove={() => removeBuktiFile(kukId, file.id)}
                                       />
                                     ))}
                                   </div>
                                 )}
 
-                                {/* Animated Multi-select Dropdown */}
-                                <div className="bukti-dropdown-container" style={{ position: 'relative' }}>
-                                  <button
-                                    onClick={() => toggleDropdown(kukId)}
-                                    disabled={uploadedFiles.length === 0}
-                                    style={{
-                                      width: '100%',
-                                      padding: '8px 12px',
-                                      border: isOpen ? '2px solid #1976d2' : '1px solid #000',
-                                      borderRadius: '8px',
-                                      fontSize: '11px',
-                                      fontFamily: 'Arial, Helvetica, sans-serif',
-                                      textTransform: 'uppercase',
-                                      fontWeight: '500',
-                                      backgroundColor: uploadedFiles.length === 0 ? '#f5f5f5' : '#fff',
-                                      cursor: uploadedFiles.length === 0 ? 'not-allowed' : 'pointer',
-                                      textAlign: 'left',
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      transition: 'all 0.2s ease',
-                                      boxShadow: isOpen ? '0 4px 12px rgba(25, 118, 210, 0.15)' : 'none',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      if (uploadedFiles.length > 0 && !isOpen) {
-                                        e.currentTarget.style.borderColor = '#1976d2'
-                                        e.currentTarget.style.backgroundColor = '#f8fbff'
-                                      }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      if (!isOpen) {
-                                        e.currentTarget.style.borderColor = '#000'
-                                        e.currentTarget.style.backgroundColor = '#fff'
-                                      }
-                                    }}
-                                  >
-                                    <span style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '6px',
-                                      color: selectedFiles.length > 0 ? '#1976d2' : '#333',
-                                    }}>
-                                      {selectedFiles.length > 0 && (
-                                        <span style={{
-                                          background: 'linear-gradient(135deg, #1976d2, #1565c0)',
-                                          color: '#fff',
-                                          borderRadius: '10px',
-                                          padding: '2px 8px',
-                                          fontSize: '10px',
-                                          fontWeight: 'bold',
-                                        }}>
-                                          {selectedFiles.length}
-                                        </span>
-                                      )}
-                                      {selectedFiles.length > 0 ? 'file dipilih' : (uploadedFiles.length === 0 ? '-- Upload file terlebih dahulu --' : '-- Pilih File --')}
-                                    </span>
-                                    <span style={{
-                                      fontSize: '12px',
-                                      transition: 'transform 0.3s ease',
-                                      display: 'inline-block',
-                                      transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                                    }}>
-                                      ▼
-                                    </span>
-                                  </button>
-
-                                  {/* Animated Dropdown Options */}
-                                  <AnimatedDropdown isOpen={isOpen && uploadedFiles.length > 0} style={{
-                                    position: 'absolute',
-                                    top: '100%',
-                                    left: 0,
-                                    right: 0,
-                                    zIndex: 100,
-                                  }}>
-                                    <div style={{
-                                      background: '#fff',
-                                      border: '1px solid #000',
-                                      borderRadius: '8px',
-                                      marginTop: '6px',
-                                      maxHeight: '180px',
-                                      overflowY: 'auto',
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                                    }}>
-                                      {uploadedFiles.map((file, index) => {
-                                        const isSelected = selectedFiles.includes(file.name)
-                                        return (
-                                          <div
-                                            key={file.id}
-                                            onClick={() => handleBuktiChange(kukId, file.name)}
-                                            style={{
-                                              padding: '10px 12px',
-                                              fontSize: '11px',
-                                              cursor: 'pointer',
-                                              textTransform: 'uppercase',
-                                              fontWeight: '500',
-                                              background: isSelected ? 'linear-gradient(135deg, #e3f2fd, #bbdefb)' : 'transparent',
-                                              borderBottom: index === uploadedFiles.length - 1 ? 'none' : '1px solid #f0f0f0',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: '10px',
-                                              transition: 'all 0.15s ease',
-                                              color: isSelected ? '#0d47a1' : '#333',
-                                            }}
-                                            onMouseEnter={(e) => {
-                                              if (!isSelected) {
-                                                e.currentTarget.style.background = '#f8fbff'
-                                                e.currentTarget.style.paddingLeft = '16px'
-                                              }
-                                            }}
-                                            onMouseLeave={(e) => {
-                                              if (!isSelected) {
-                                                e.currentTarget.style.background = 'transparent'
-                                                e.currentTarget.style.paddingLeft = '12px'
-                                              }
-                                            }}
-                                          >
-                                            <CustomCheckbox
-                                              checked={isSelected}
-                                              onChange={() => {}}
-                                              style={{ pointerEvents: 'none' }}
-                                            />
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                              <span style={{ fontSize: '14px' }}>📄</span>
-                                              {file.name}
-                                            </span>
-                                            {isSelected && (
-                                              <span style={{
-                                                marginLeft: 'auto',
-                                                color: '#1976d2',
-                                                fontSize: '14px',
-                                                fontWeight: 'bold',
-                                              }}>
-                                                ✓
-                                              </span>
-                                            )}
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
-                                  </AnimatedDropdown>
-                                </div>
+                                {/* Bukti Dropdown - no delay, uses own state */}
+                                <BuktiDropdown
+                                  kukId={kukId}
+                                  uploadedFiles={uploadedFilesInfo}
+                                  selectedFileIds={selectedFileIds}
+                                  onSelectFile={handleBuktiChange}
+                                  disabled={isAsesor || isSaving}
+                                />
                               </>
                             )
                           })()}

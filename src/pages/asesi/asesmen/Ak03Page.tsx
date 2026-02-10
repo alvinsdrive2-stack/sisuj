@@ -1,10 +1,22 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
+
+interface SoalAPI {
+  id: number
+  no: string
+  jenis: string
+  soal: string
+  is_kompeten: boolean
+  catatan: string
+}
 
 interface FeedbackItem {
   id: number
@@ -14,56 +26,90 @@ interface FeedbackItem {
   catatan: string
 }
 
+interface Ak03Response {
+  message: string
+  data: {
+    soal: SoalAPI[]
+  }
+}
+
 export default function Ak03Page() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole } = useAsesorRole(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, 0)
 
+  // Disable form if asesor but not asesor_1 (only asesor_1 can fill)
+  const isFormDisabled = isAsesor && !isAsesor1
+
   // Form state
-  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([
-    {
-      id: 1,
-      pertanyaan: 'Saya mendapatkan penjelasan yang cukup memadai mengenai proses asesmen/uji kompetensi',
-      ya: false,
-      tidak: false,
-      catatan: ''
-    },
-    {
-      id: 2,
-      pertanyaan: 'Saya diberikan kesempatan untuk mempelajari standar kompetensi yang akan diuji dan menilai diri sendiri terhadap pencapaiannya',
-      ya: false,
-      tidak: false,
-      catatan: ''
-    },
-    {
-      id: 3,
-      pertanyaan: 'Asesor memberikan kesempatan untuk mendiskusikan/menegosiasikan metoda, instrumen dan sumber asesmen serta jadwal asesmen',
-      ya: false,
-      tidak: false,
-      catatan: ''
-    },
-    {
-      id: 4,
-      pertanyaan: 'Asesor berusaha menggali seluruh bukti pendukung yang sesuai dengan latar belakang pelatihan dan pengalaman yang saya miliki',
-      ya: false,
-      tidak: false,
-      catatan: ''
-    },
-    {
-      id: 5,
-      pertanyaan: 'Saya sepenuhnya diberikan kesempatan untuk mendemonstrasikan kompetensi yang saya miliki selama asesmen',
-      ya: false,
-      tidak: false,
-      catatan: ''
-    }
-  ])
+  const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
   const [catatanUmum, setCatatanUmum] = useState('')
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch soal data
+  useEffect(() => {
+    const fetchData = async () => {
+      // Wait for auth to load
+      if (authLoading) {
+        return
+      }
+
+      if (!id) {
+        console.error("No id_izin found")
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak03`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result: Ak03Response = await response.json()
+          if (result.message === "Success" && result.data?.soal) {
+            // Transform API data to FeedbackItem format
+            const items: FeedbackItem[] = result.data.soal.map((soal) => ({
+              id: soal.id,
+              pertanyaan: soal.soal,
+              ya: soal.is_kompeten || false,
+              tidak: !soal.is_kompeten,
+              catatan: soal.catatan || '',
+            }))
+            setFeedbackItems(items)
+          }
+        } else {
+          console.warn(`AK03 API returned ${response.status}`)
+        }
+      } catch (err) {
+        console.error("Error fetching AK03:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [id, authLoading])
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        <DashboardNavbar userName={user?.name} />
+        <FullPageLoader text="Memuat data AK.03..." />
+      </div>
+    )
+  }
 
   const handleFeedbackChange = (id: number, field: 'ya' | 'tidak') => {
     setFeedbackItems(prev => prev.map(item => {
@@ -93,6 +139,54 @@ export default function Ak03Page() {
       return `/asesi/asesmen/${id}/ak02`
     } else {
       return `/asesi/asesmen/${id}/ia05`
+    }
+  }
+
+  // Handle save - POST to API
+  const handleSave = async () => {
+    if (!agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu')
+      return
+    }
+
+    if (!id) {
+      showWarning('ID tidak ditemukan')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem("access_token")
+
+      // Prepare answers array
+      const answers = feedbackItems.map((item) => ({
+        soal_id: item.id,
+        is_kompeten: item.ya,
+        catatan: item.catatan,
+      }))
+
+      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak03`, {
+        method: 'POST',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ answers }),
+      })
+
+      if (response.ok) {
+        showSuccess('AK 03 berhasil disimpan!')
+        setTimeout(() => {
+          // Navigate to AK06 (asesor_1 only, asesor_2 skips AK03)
+          navigate(`/asesi/asesmen/${id}/ak06`)
+        }, 500)
+      } else {
+        console.error('Failed to save AK03:', response.status)
+        showError('Gagal menyimpan data. Silakan coba lagi.')
+      }
+    } catch (err) {
+      console.error('Error saving AK03:', err)
+      showError('Terjadi kesalahan. Silakan coba lagi.')
     }
   }
 
@@ -142,25 +236,24 @@ export default function Ak03Page() {
               <tr key={item.id}>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>{item.pertanyaan}</td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
-                  <input
-                    type="checkbox"
+                  <CustomCheckbox
                     checked={item.ya}
                     onChange={() => handleFeedbackChange(item.id, 'ya')}
-                    style={{ cursor: 'pointer' }}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
-                  <input
-                    type="checkbox"
+                  <CustomCheckbox
                     checked={item.tidak}
                     onChange={() => handleFeedbackChange(item.id, 'tidak')}
-                    style={{ cursor: 'pointer' }}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
                   <textarea
                     value={item.catatan}
                     onChange={(e) => handleCatatanChange(item.id, e.target.value)}
+                    disabled={isFormDisabled}
                     style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
                     placeholder="Tuliskan catatan..."
                   />
@@ -173,6 +266,7 @@ export default function Ak03Page() {
                 <textarea
                   value={catatanUmum}
                   onChange={(e) => setCatatanUmum(e.target.value)}
+                  disabled={isFormDisabled}
                   style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
                   placeholder="Tuliskan catatan umum..."
                 />
@@ -186,11 +280,10 @@ export default function Ak03Page() {
           {/* Pernyataan Checkbox */}
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
+              <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                style={{ marginTop: '2px', cursor: 'pointer' }}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
+                style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
                 Saya menyatakan dengan sebenar-benarnya bahwa umpan balik yang saya berikan adalah jujur dan sesuai dengan pengalaman saya selama proses asesmen.
@@ -215,11 +308,7 @@ export default function Ak03Page() {
               Kembali
             </button>
             <button
-              onClick={() => {
-                if (!agreedChecklist) return
-                // Navigate to selesai
-                navigate(`/asesi/asesmen/${id}/selesai`)
-              }}
+              onClick={handleSave}
               disabled={!agreedChecklist}
               style={{
                 padding: '8px 16px',

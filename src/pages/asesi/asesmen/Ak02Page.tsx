@@ -1,12 +1,26 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 
+interface UnitKompetensiAPI {
+  id: number
+  kode: string
+  nama: string
+  observasi: boolean
+  portofolio: boolean
+  pertanyaan_wawancara: boolean
+  pertanyaan_lisan: boolean
+  pertanyaan_tertulis: boolean
+  proyek_kerja: boolean
+}
 
 interface UnitKompetensi {
   id: number
@@ -14,46 +28,127 @@ interface UnitKompetensi {
   nama: string
 }
 
+interface Ak02Response {
+  message: string
+  data: {
+    data_unit_kompetensi: UnitKompetensiAPI[]
+    is_kompeten: boolean
+    tindak_lanjut: string
+    komentar: string
+  }
+}
+
 interface EvidenceCheck {
   observasi: boolean
   portofolio: boolean
-  pihak_ketiga: boolean
-  lisan: boolean
-  tertulis: boolean
-  proyek: boolean
+  pertanyaan_wawancara: boolean
+  pertanyaan_lisan: boolean
+  pertanyaan_tertulis: boolean
+  proyek_kerja: boolean
 }
 
 export default function Ak02Page() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole } = useAsesorRole(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
+  // Disable form if asesor_2 (only asesor_1 can fill)
+  const isFormDisabled = isAsesor && !isAsesor1
+
   // Form state
   const [evidenceChecks, setEvidenceChecks] = useState<Record<number, EvidenceCheck>>({})
-  const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
+  const [isKompeten, setIsKompeten] = useState<boolean | null>(null)
   const [tindakLanjut, setTindakLanjut] = useState('')
   const [komentar, setKomentar] = useState('')
   const [agreedChecklist, setAgreedChecklist] = useState(false)
 
-  // Mock unit kompetensi data - will be replaced with API data
-  const unitKompetensi: UnitKompetensi[] = [
-    {
-      id: 1,
-      kode: 'F.421120.001.01',
-      nama: 'Menerapkan Peraturan Perundang-Undangan dan Sistem Manajemen Keselamatan dan Kesehatan Kerja dan Lingkungan (SMK3-L) pada Kegiatan Pemasangan Jembatan Rangka Baja'
-    },
-    {
-      id: 2,
-      kode: 'F.421120.007.01',
-      nama: 'Membuat Laporan Hasil Pelaksanaan Pemasangan Jembatan Rangka Baja'
+  // Unit kompetensi state
+  const [unitKompetensi, setUnitKompetensi] = useState<UnitKompetensi[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Fetch unit kompetensi data
+  useEffect(() => {
+    const fetchData = async () => {
+      // Wait for auth to load
+      if (authLoading) {
+        return
+      }
+
+      if (!id) {
+        console.error("No id_izin found")
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak02`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result: Ak02Response = await response.json()
+          if (result.message === "Success" && result.data?.data_unit_kompetensi) {
+            // Transform API data and set evidenceChecks
+            const units: UnitKompetensi[] = []
+            const checks: Record<number, EvidenceCheck> = {}
+
+            result.data.data_unit_kompetensi.forEach((unit) => {
+              units.push({
+                id: unit.id,
+                kode: unit.kode,
+                nama: unit.nama,
+              })
+
+              checks[unit.id] = {
+                observasi: unit.observasi,
+                portofolio: unit.portofolio,
+                pertanyaan_wawancara: unit.pertanyaan_wawancara,
+                pertanyaan_lisan: unit.pertanyaan_lisan,
+                pertanyaan_tertulis: unit.pertanyaan_tertulis,
+                proyek_kerja: unit.proyek_kerja,
+              }
+            })
+
+            setUnitKompetensi(units)
+            setEvidenceChecks(checks)
+
+            // Set other fields from API
+            setIsKompeten(result.data.is_kompeten ?? null)
+            setTindakLanjut(result.data.tindak_lanjut || '')
+            setKomentar(result.data.komentar || '')
+          }
+        } else {
+          console.warn(`Unit Kompetensi AK02 API returned ${response.status}`)
+        }
+      } catch (err) {
+        console.error("Error fetching unit kompetensi AK02:", err)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  ]
+
+    fetchData()
+  }, [id, authLoading])
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        <DashboardNavbar userName={user?.name} />
+        <FullPageLoader text="Memuat data AK.02..." />
+      </div>
+    )
+  }
 
   const handleEvidenceChange = (unitId: number, field: keyof EvidenceCheck) => {
     setEvidenceChecks(prev => ({
@@ -96,22 +191,22 @@ export default function Ak02Page() {
             <tr>
               <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
               <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
-              <td style={{ width: '3%', border: '1px solid #000', padding: '6px' }}>:</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px',textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nomor</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{nomorSkema || '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>TUK</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{tuk || '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
                 {asesorList.map((asesor, idx) => (
                   <span key={asesor.id}>
@@ -123,16 +218,16 @@ export default function Ak02Page() {
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || '-'}</td>
             </tr>
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Tanggal Asesmen</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Mulai :</td>
+              <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Mulai :</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}></td>
             </tr>
             <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Selesai :</td>
+              <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Selesai :</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}></td>
             </tr>
           </tbody>
@@ -149,7 +244,7 @@ export default function Ak02Page() {
               <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Unit kompetensi</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Observasi demonstrasi</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Portofolio</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Pernyataan pihak ketiga / wawancara</th>
+              <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan wawancara</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan lisan</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan tertulis</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Proyek kerja</th>
@@ -162,51 +257,45 @@ export default function Ak02Page() {
                   {unit.nama}
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
+                  <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.observasi || false}
                     onChange={() => handleEvidenceChange(unit.id, 'observasi')}
-                    style={{ cursor: 'pointer' }}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
+                  <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.portofolio || false}
                     onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
-                    style={{ cursor: 'pointer' }}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
-                    checked={evidenceChecks[unit.id]?.pihak_ketiga || false}
-                    onChange={() => handleEvidenceChange(unit.id, 'pihak_ketiga')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.pertanyaan_wawancara || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_wawancara')}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
-                    checked={evidenceChecks[unit.id]?.lisan || false}
-                    onChange={() => handleEvidenceChange(unit.id, 'lisan')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.pertanyaan_lisan || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_lisan')}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
-                    checked={evidenceChecks[unit.id]?.tertulis || false}
-                    onChange={() => handleEvidenceChange(unit.id, 'tertulis')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.pertanyaan_tertulis || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_tertulis')}
+                    disabled={isFormDisabled}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <input
-                    type="checkbox"
-                    checked={evidenceChecks[unit.id]?.proyek || false}
-                    onChange={() => handleEvidenceChange(unit.id, 'proyek')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.proyek_kerja || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'proyek_kerja')}
+                    disabled={isFormDisabled}
                   />
                 </td>
               </tr>
@@ -216,20 +305,18 @@ export default function Ak02Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}><b>Rekomendasi hasil asesmen</b></td>
               <td colSpan={6} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={rekomendasi === 'kompeten'}
-                    onChange={() => setRekomendasi(rekomendasi === 'kompeten' ? null : 'kompeten')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={isKompeten === true}
+                    onChange={() => setIsKompeten(isKompeten === true ? null : true)}
+                    disabled={isFormDisabled}
                   />
                   Kompeten
                 </label>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={rekomendasi === 'belum_kompeten'}
-                    onChange={() => setRekomendasi(rekomendasi === 'belum_kompeten' ? null : 'belum_kompeten')}
-                    style={{ cursor: 'pointer' }}
+                  <CustomCheckbox
+                    checked={isKompeten === false}
+                    onChange={() => setIsKompeten(isKompeten === false ? null : false)}
+                    disabled={isFormDisabled}
                   />
                   Belum kompeten
                 </label>
@@ -245,6 +332,7 @@ export default function Ak02Page() {
                 <textarea
                   value={tindakLanjut}
                   onChange={(e) => setTindakLanjut(e.target.value)}
+                  disabled={isFormDisabled}
                   style={{ width: '100%', height: '70px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
                   placeholder="Tuliskan tindak lanjut..."
                 />
@@ -257,6 +345,7 @@ export default function Ak02Page() {
                 <textarea
                   value={komentar}
                   onChange={(e) => setKomentar(e.target.value)}
+                  disabled={isFormDisabled}
                   style={{ width: '100%', height: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
                   placeholder="Tuliskan komentar..."
                 />
@@ -321,12 +410,12 @@ export default function Ak02Page() {
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-              <input
-                type="checkbox"
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: isFormDisabled ? 'default' : 'pointer' }}>
+              <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                style={{ marginTop: '2px', cursor: 'pointer' }}
+                onChange={() => !isFormDisabled && setAgreedChecklist(!agreedChecklist)}
+                disabled={isFormDisabled}
+                style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
                 Saya menyatakan dengan sebenar-benarnya bahwa hasil frageman antara asesor ini telah saya isi dengan jujur dan dapat dipertanggungjawabkan.
@@ -337,7 +426,16 @@ export default function Ak02Page() {
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button
-              onClick={() => navigate(`/asesi/asesmen/${id}/ia05`)}
+              onClick={() => {
+                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
+                const prevStep = asesmenSteps[currentStepIndex - 1]
+                if (prevStep) {
+                  const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                  navigate(prevPath)
+                } else {
+                  navigate(`/asesi/asesmen/${id}/ia05`)
+                }
+              }}
               style={{
                 padding: '8px 16px',
                 border: '1px solid #999',
@@ -351,32 +449,84 @@ export default function Ak02Page() {
               Kembali
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!agreedChecklist) {
-                  alert('Silakan centang pernyataan terlebih dahulu')
+                  showWarning('Silakan centang pernyataan terlebih dahulu')
                   return
                 }
-                // Find current step (AK.02) and navigate to next step
-                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
-                const nextStep = asesmenSteps[currentStepIndex + 1]
-                if (nextStep) {
-                  const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                  navigate(nextPath)
-                } else {
-                  navigate(`/asesi/asesmen/${id}/selesai`)
+
+                if (isKompeten === null) {
+                  showWarning('Silakan pilih rekomendasi (Kompeten / Belum kompeten)')
+                  return
+                }
+
+                if (!id) {
+                  showWarning('ID tidak ditemukan')
+                  return
+                }
+
+                try {
+                  const token = localStorage.getItem("access_token")
+
+                  // Prepare answers array
+                  const answers = unitKompetensi.map((unit) => ({
+                    id_unit_kompetensi: unit.id,
+                    observasi: evidenceChecks[unit.id]?.observasi || false,
+                    portofolio: evidenceChecks[unit.id]?.portofolio || false,
+                    pertanyaan_wawancara: evidenceChecks[unit.id]?.pertanyaan_wawancara || false,
+                    pertanyaan_lisan: evidenceChecks[unit.id]?.pertanyaan_lisan || false,
+                    pertanyaan_tertulis: evidenceChecks[unit.id]?.pertanyaan_tertulis || false,
+                    proyek_kerja: evidenceChecks[unit.id]?.proyek_kerja || false,
+                  }))
+
+                  const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak02`, {
+                    method: 'POST',
+                    headers: {
+                      "Accept": "application/json",
+                      "Authorization": `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      answers,
+                      is_kompeten: isKompeten,
+                      tindak_lanjut: tindakLanjut,
+                      komentar: komentar,
+                    }),
+                  })
+
+                  if (response.ok) {
+                    showSuccess('AK 02 berhasil disimpan!')
+                    // Find current step (AK.02) and navigate to next step
+                    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
+                    const nextStep = asesmenSteps[currentStepIndex + 1]
+                    if (nextStep) {
+                      const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                      setTimeout(() => navigate(nextPath), 500)
+                    } else {
+                      setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
+                    }
+                  } else {
+                    console.error('Failed to save AK02:', response.status)
+                    showError('Gagal menyimpan data. Silakan coba lagi.')
+                  }
+                } catch (err) {
+                  console.error('Error saving AK02:', err)
+                  showError('Terjadi kesalahan. Silakan coba lagi.')
                 }
               }}
+              disabled={!agreedChecklist}
               style={{
                 padding: '8px 16px',
-                background: '#0066cc',
+                background: agreedChecklist ? '#0066cc' : '#999',
                 color: '#fff',
                 fontSize: '13px',
-                cursor: 'pointer',
+                cursor: agreedChecklist ? 'pointer' : 'not-allowed',
                 border: 'none',
-                borderRadius: '4px'
+                borderRadius: '4px',
+                opacity: agreedChecklist ? 1 : 0.5
               }}
             >
-              Lanjut
+              Simpan & Lanjut
             </button>
           </div>
         </div>

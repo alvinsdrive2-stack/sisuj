@@ -4,6 +4,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -92,6 +93,7 @@ export default function Apl01Page() {
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
   const { asesorList } = useDataDokumenPraAsesmen(idIzin)
+  const { showSuccess, showError } = useToast()
 
   const [_dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
   const [_dataPekerjaan, setDataPekerjaan] = useState<DataPekerjaan | null>(null)
@@ -205,9 +207,12 @@ export default function Apl01Page() {
     try {
       setIsSaving(true)
       await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
-      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      showSuccess('APL 01 berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      }, 500)
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
+      showError(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
     } finally {
       setIsSaving(false)
     }

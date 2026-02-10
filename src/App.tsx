@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/auth-context'
 import { ThemeProvider } from './contexts/theme-context'
+import { ToastProvider } from './contexts/ToastContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import {
   AdminLSPRoute,
@@ -54,6 +55,7 @@ import Ia04bPage from './pages/asesi/asesmen/Ia04bPage'
 import Ia05Page from './pages/asesi/asesmen/Ia05Page'
 import Ak02Page from './pages/asesi/asesmen/Ak02Page'
 import Ak03Page from './pages/asesi/asesmen/Ak03Page'
+import Ak06Page from './pages/asesi/asesmen/Ak06Page'
 import AsesmenSelesaiPage from './pages/asesi/asesmen/AsesmenSelesaiPage'
 import Apl01Page from './pages/asesi/Apl01Page'
 import Apl02Page from './pages/asesi/Apl02Page'
@@ -70,6 +72,7 @@ function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
+        <ToastProvider>
         <Toaster />
         <Router>
         <Routes>
@@ -346,6 +349,14 @@ function App() {
             }
           />
           <Route
+            path="/asesi/asesmen/:id/ak06"
+            element={
+              <AsesorRoute>
+                <Ak06Page />
+              </AsesorRoute>
+            }
+          />
+          <Route
             path="/asesi/asesmen/:id/selesai"
             element={
               <AsesiOrAsesorRoute>
@@ -383,6 +394,7 @@ function App() {
           <Route path="/" element={<DefaultRoute />} />
         </Routes>
       </Router>
+      </ToastProvider>
     </ThemeProvider>
     </AuthProvider>
   )

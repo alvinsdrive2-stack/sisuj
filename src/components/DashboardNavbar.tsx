@@ -47,7 +47,7 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
     .slice(0, 2)
 
   return (
-    <header className="bg-white/90 dark:bg-slate-900/90 dark:backdrop-blur-md dark:border-slate-700 border-b border-primary/10 sticky top-0 z-50 h-16 animate-fade-in overflow-hidden">
+    <header className="bg-white dark:bg-slate-900/90 dark:backdrop-blur-md dark:border-slate-700 border-b border-primary/10 sticky top-0 z-50 h-16 animate-fade-in overflow-hidden">
       <div className="w-full px-4 h-full mx-2">
         {/* Top Bar - Logo, Desktop Right Section, Mobile Toggle */}
         <div className="flex items-center justify-between h-full">
