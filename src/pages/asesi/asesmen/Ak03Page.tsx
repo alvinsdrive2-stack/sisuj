@@ -30,6 +30,7 @@ interface Ak03Response {
   message: string
   data: {
     soal: SoalAPI[]
+    catatan: string
   }
 }
 
@@ -88,6 +89,8 @@ export default function Ak03Page() {
               catatan: soal.catatan || '',
             }))
             setFeedbackItems(items)
+            // Set catatan umum from API
+            setCatatanUmum(result.data.catatan || '')
           }
         } else {
           console.warn(`AK03 API returned ${response.status}`)
@@ -171,7 +174,10 @@ export default function Ak03Page() {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({
+          answers,
+          catatan: catatanUmum
+        }),
       })
 
       if (response.ok) {
@@ -240,6 +246,7 @@ export default function Ak03Page() {
                     checked={item.ya}
                     onChange={() => handleFeedbackChange(item.id, 'ya')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
@@ -247,6 +254,7 @@ export default function Ak03Page() {
                     checked={item.tidak}
                     onChange={() => handleFeedbackChange(item.id, 'tidak')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
@@ -254,7 +262,7 @@ export default function Ak03Page() {
                     value={item.catatan}
                     onChange={(e) => handleCatatanChange(item.id, e.target.value)}
                     disabled={isFormDisabled}
-                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
+                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
                     placeholder="Tuliskan catatan..."
                   />
                 </td>
@@ -267,7 +275,7 @@ export default function Ak03Page() {
                   value={catatanUmum}
                   onChange={(e) => setCatatanUmum(e.target.value)}
                   disabled={isFormDisabled}
-                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
+                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan catatan umum..."
                 />
               </td>

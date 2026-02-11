@@ -180,7 +180,7 @@ export default function Ak02Page() {
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ak02'))?.number || 5} steps={asesmenSteps} id={id}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1f4fbf', marginBottom: '4px', letterSpacing: '1px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
             FR.AK.02 &nbsp;&nbsp; FRASEMEN ANTARA ASESOR
           </h1>
         </div>
@@ -261,6 +261,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.observasi || false}
                     onChange={() => handleEvidenceChange(unit.id, 'observasi')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
@@ -268,6 +269,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.portofolio || false}
                     onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
@@ -275,6 +277,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.pertanyaan_wawancara || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_wawancara')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
@@ -282,6 +285,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.pertanyaan_lisan || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_lisan')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
@@ -289,6 +293,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.pertanyaan_tertulis || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_tertulis')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
@@ -296,6 +301,7 @@ export default function Ak02Page() {
                     checked={evidenceChecks[unit.id]?.proyek_kerja || false}
                     onChange={() => handleEvidenceChange(unit.id, 'proyek_kerja')}
                     disabled={isFormDisabled}
+                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
               </tr>
@@ -304,7 +310,7 @@ export default function Ak02Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}><b>Rekomendasi hasil asesmen</b></td>
               <td colSpan={6} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: 'pointer' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={isKompeten === true}
                     onChange={() => setIsKompeten(isKompeten === true ? null : true)}
@@ -312,7 +318,7 @@ export default function Ak02Page() {
                   />
                   Kompeten
                 </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={isKompeten === false}
                     onChange={() => setIsKompeten(isKompeten === false ? null : false)}
@@ -333,7 +339,7 @@ export default function Ak02Page() {
                   value={tindakLanjut}
                   onChange={(e) => setTindakLanjut(e.target.value)}
                   disabled={isFormDisabled}
-                  style={{ width: '100%', height: '70px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
+                  style={{ width: '100%', height: '70px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan tindak lanjut..."
                 />
               </td>
@@ -346,7 +352,7 @@ export default function Ak02Page() {
                   value={komentar}
                   onChange={(e) => setKomentar(e.target.value)}
                   disabled={isFormDisabled}
-                  style={{ width: '100%', height: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none' }}
+                  style={{ width: '100%', height: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan komentar..."
                 />
               </td>
@@ -409,12 +415,11 @@ export default function Ak02Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: isFormDisabled ? 'default' : 'pointer' }}>
+          <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px'  }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={() => !isFormDisabled && setAgreedChecklist(!agreedChecklist)}
-                disabled={isFormDisabled}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>

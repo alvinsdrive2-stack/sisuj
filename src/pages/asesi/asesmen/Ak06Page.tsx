@@ -28,6 +28,11 @@ interface Ak06Response {
   message: string
   data: {
     aspek: AspekAPI[]
+    feedback: {
+      rekomendasi: string
+      catatan_asesor1: string
+      catatan_asesor2: string
+    }
     dimensi_kompetensi: DimensiKompetensiAPI[]
   }
 }
@@ -45,22 +50,30 @@ export default function Ak06Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList } = useDataDokumenAsesmen(id)
+  const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
+  const { jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2 } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
-  // Disable form if not asesor (both asesor_1 and asesor_2 can fill)
-  const isFormDisabled = !isAsesor
+  // Logic: If asesor_2 exists, only asesor_2 can fill. Otherwise, asesor_1 fills.
+  const hasAsesor2 = idAsesor2 !== null && idAsesor2 !== undefined
+  const isFormDisabled = isAsesor && (
+    hasAsesor2 ? !isAsesor2 : !isAsesor1
+  )
 
   // Form state
   const [aspekItems, setAspekItems] = useState<AspekItem[]>([])
   const [rekomendasiPrinsip, setRekomendasiPrinsip] = useState('')
   const [rekomendasiDimensi, setRekomendasiDimensi] = useState('')
   const [komentarAsesor, setKomentarAsesor] = useState<Record<number, string>>({})
+  const [feedbackData, setFeedbackData] = useState<{
+    rekomendasi: string
+    catatan_asesor1: string
+    catatan_asesor2: string
+  } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -99,6 +112,10 @@ export default function Ak06Page() {
               adil: item.adil || false,
             }))
             setAspekItems(aspek)
+
+            // Set feedback data
+            setFeedbackData(result.data.feedback || null)
+            setRekomendasiPrinsip(result.data.feedback?.rekomendasi || '')
           }
         } else {
           console.warn(`AK06 API returned ${response.status}`)
@@ -111,7 +128,21 @@ export default function Ak06Page() {
     }
 
     fetchData()
-  }, [id, authLoading])
+  }, [id, authLoading, asesorList])
+
+  // Map komentar asesor when feedback data and asesorList are available
+  useEffect(() => {
+    if (feedbackData && asesorList.length > 0) {
+      const komentarMap: Record<number, string> = {}
+      if (feedbackData.catatan_asesor1 && asesorList[0]) {
+        komentarMap[asesorList[0].id] = feedbackData.catatan_asesor1
+      }
+      if (feedbackData.catatan_asesor2 && asesorList[1]) {
+        komentarMap[asesorList[1].id] = feedbackData.catatan_asesor2
+      }
+      setKomentarAsesor(komentarMap)
+    }
+  }, [feedbackData, asesorList])
 
   if (isLoading) {
     return (
@@ -162,7 +193,12 @@ export default function Ak06Page() {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({
+          answers,
+          rekomendasi: rekomendasiPrinsip,
+          catatan_asesor1: komentarAsesor[asesorList[0]?.id] || '',
+          catatan_asesor2: komentarAsesor[asesorList[1]?.id] || '',
+        }),
       })
 
       if (response.ok) {
@@ -352,7 +388,15 @@ export default function Ak06Page() {
                   value={rekomendasiPrinsip}
                   onChange={(e) => setRekomendasiPrinsip(e.target.value)}
                   disabled={isFormDisabled}
-                  style={{ width: '100%', height: '120px', border: 'none', padding: '6px', fontSize: '13px', resize: 'none' }}
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    border: '1px solid #ccc',
+                    padding: '6px',
+                    fontSize: '13px',
+                    resize: 'none',
+                    cursor: isFormDisabled ? 'not-allowed' : 'text'
+                  }}
                   placeholder="Tuliskan rekomendasi..."
                 />
               </td>
@@ -394,7 +438,15 @@ export default function Ak06Page() {
                   value={rekomendasiDimensi}
                   onChange={(e) => setRekomendasiDimensi(e.target.value)}
                   disabled={isFormDisabled}
-                  style={{ width: '100%', height: '120px', border: 'none', padding: '6px', fontSize: '13px', resize: 'none' }}
+                  style={{
+                    width: '100%',
+                    height: '120px',
+                    border: 'none',
+                    padding: '6px',
+                    fontSize: '13px',
+                    resize: 'none',
+                    cursor: isFormDisabled ? 'not-allowed' : 'text'
+                  }}
                   placeholder="Tuliskan rekomendasi..."
                 />
               </td>
@@ -410,23 +462,40 @@ export default function Ak06Page() {
               <td style={{ width: '33%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Tanggal Tanda Tangan</td>
               <td style={{ width: '34%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Komentar</td>
             </tr>
-            {asesorList.map((asesor) => (
-              <tr key={asesor.id}>
-                <td style={{ height: '100px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
-                  {asesor.nama?.toUpperCase() || ''}
-                </td>
-                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}></td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  <textarea
-                    value={komentarAsesor[asesor.id] || ''}
-                    onChange={(e) => setKomentarAsesor(prev => ({ ...prev, [asesor.id]: e.target.value }))}
-                    disabled={isFormDisabled}
-                    style={{ width: '100%', height: '80px', border: 'none', padding: '6px', fontSize: '13px', resize: 'none' }}
-                    placeholder="Tuliskan komentar..."
-                  />
-                </td>
-              </tr>
-            ))}
+            {asesorList.map((asesor, index) => {
+              // Check if this is the logged-in asesor's comment
+              const isOwnComment = (
+                (isAsesor1 && index === 0) ||  // asesor_1 can edit asesor_1's comment
+                (isAsesor2 && index === 1)      // asesor_2 can edit asesor_2's comment
+              )
+              const isCommentDisabled = isAsesor && !isOwnComment
+
+              return (
+                <tr key={asesor.id}>
+                  <td style={{ height: '100px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                    {asesor.nama?.toUpperCase() || ''}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>
+                    <textarea
+                      value={komentarAsesor[asesor.id] || ''}
+                      onChange={(e) => setKomentarAsesor(prev => ({ ...prev, [asesor.id]: e.target.value }))}
+                      disabled={isCommentDisabled}
+                      style={{
+                        width: '100%',
+                        height: '80px',
+                        border: '1px solid #ccc',
+                        padding: '6px',
+                        fontSize: '13px',
+                        resize: 'none',
+                        cursor: isCommentDisabled ? 'not-allowed' : 'text'
+                      }}
+                      placeholder="Tuliskan komentar..."
+                    />
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
 

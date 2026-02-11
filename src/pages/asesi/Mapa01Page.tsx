@@ -32,6 +32,39 @@ interface KelompokKerja {
   units: Unit[]
 }
 
+interface Referensi {
+  id: number
+  nama: string
+  value: boolean
+}
+
+interface Subkategori {
+  id: number | null
+  nama: string
+  urut: number | null
+  referensis: Referensi[]
+}
+
+interface Kategori {
+  id: number | null
+  kategori: string | null
+  nama: string
+  urut: number | null
+  id_kelompok: number | null
+  subkategoris: Subkategori[]
+}
+
+interface KelompokForm {
+  id: number
+  nama: string | null
+  urut: number
+  kategoris: Kategori[]
+}
+
+interface ReferensiFormItem {
+  kelompok: KelompokForm
+}
+
 interface Mapa01Data {
   kelompok_kerja: {
     id: number
@@ -39,6 +72,7 @@ interface Mapa01Data {
     nama_dokumen: string
     kelompok_kerja: KelompokKerja[]
   }
+  referensi_form: ReferensiFormItem[]
 }
 
 interface ApiResponse {
@@ -254,7 +288,7 @@ export default function Mapa01Page() {
           />
 
           {/* STATIC: Section 1 - Pendekatan Asesmen */}
-          <Mapa01Section1 />
+          <Mapa01Section1 referensiForm={mapaData?.referensi_form} />
 
           {/* DYNAMIC/LOOPING: Section 2 - Kelompok Pekerjaan dari API */}
           {mapaData && (
@@ -262,7 +296,7 @@ export default function Mapa01Page() {
           )}
 
           {/* STATIC: Section 3 - Modifikasi */}
-          <Mapa01Section3 />
+          <Mapa01Section3 referensiForm={mapaData?.referensi_form} />
 
           {/* STATIC: Tanda Tangan */}
           <Mapa01TandaTangan />

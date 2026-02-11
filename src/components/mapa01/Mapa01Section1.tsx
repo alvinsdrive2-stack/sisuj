@@ -2,8 +2,46 @@
  * Mapa01Section1.tsx
  * Section 1: Pendekatan Asesmen - All 100% width with thin borders
  */
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+
+// ============== TYPES ==============
+interface Referensi {
+  id: number
+  nama: string
+  value: boolean
+}
+
+interface Subkategori {
+  id: number | null
+  nama: string
+  urut: number | null
+  referensis: Referensi[]
+}
+
+interface Kategori {
+  id: number | null
+  kategori: string | null
+  nama: string
+  urut: number | null
+  id_kelompok: number | null
+  subkategoris: Subkategori[]
+}
+
+interface KelompokForm {
+  id: number
+  nama: string | null
+  urut: number
+  kategoris: Kategori[]
+}
+
+interface ReferensiFormItem {
+  kelompok: KelompokForm
+}
+
+interface Mapa01Section1Props {
+  referensiForm?: ReferensiFormItem[]
+}
 
 // ============== CONSTANTS ==============
 const COLORS = {
@@ -133,11 +171,75 @@ function CheckboxItem({ text, indent = '10pt', checked = false, onToggle }: Chec
 }
 
 // ============== MAIN COMPONENT ==============
-export function Mapa01Section1() {
+export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
+  // Build checkbox states from referensiForm data
+  const initialCheckboxStates = useMemo(() => {
+    const states: Record<string, boolean> = {}
+    if (referensiForm) {
+      console.log('Building checkbox states from referensiForm:', referensiForm)
+      referensiForm.forEach((item) => {
+        const kelompok = item.kelompok
+        kelompok.kategoris?.forEach((kategori) => {
+          console.log('Kategori:', kategori.nama, kategori)
+          kategori.subkategoris?.forEach((subkategori) => {
+            subkategori.referensis?.forEach((ref) => {
+              console.log('Referensi:', ref.id, ref.nama, ref.value)
+              states[`ref_${ref.id}`] = ref.value
+            })
+          })
+        })
+      })
+      console.log('Final states:', states)
+    }
+    return states
+  }, [referensiForm])
+
   const [checkboxStates, setCheckboxStates] = useState<Record<string, boolean>>({})
+
+  // Sync checkbox states when referensiForm loads
+  useEffect(() => {
+    console.log('initialCheckboxStates changed:', initialCheckboxStates)
+    if (Object.keys(initialCheckboxStates).length > 0) {
+      setCheckboxStates(initialCheckboxStates)
+    }
+  }, [initialCheckboxStates])
+
+  useEffect(() => {
+    console.log('checkboxStates updated:', checkboxStates)
+  }, [checkboxStates])
 
   const toggleCheckbox = (text: string) => {
     setCheckboxStates(prev => ({ ...prev, [text]: !prev[text] }))
+  }
+
+  // Helper to find checkbox state by referensi id
+  const getCheckedState = (kategoriNama: string, refNama: string, defaultKey: string): boolean => {
+    console.log('getCheckedState called:', { kategoriNama, refNama, defaultKey })
+    if (referensiForm) {
+      for (const item of referensiForm) {
+        const kelompok = item.kelompok
+        for (const kategori of kelompok.kategoris || []) {
+          console.log('Checking kategori:', kategori.nama, '===', kategoriNama, '?', kategori.nama === kategoriNama)
+          if (kategori.nama === kategoriNama) {
+            for (const subkategori of kategori.subkategoris || []) {
+              for (const ref of subkategori.referensis || []) {
+                // Normalize text for comparison (remove extra spaces, punctuation)
+                const normalizedRefNama = ref.nama?.trim().replace(/\s+/g, ' ').toLowerCase() || ''
+                const normalizedSearch = refNama.trim().replace(/\s+/g, ' ').toLowerCase()
+                console.log('Comparing:', normalizedRefNama, '===', normalizedSearch, '?', normalizedRefNama === normalizedSearch)
+                if (normalizedRefNama === normalizedSearch || normalizedRefNama.includes(normalizedSearch)) {
+                  const result = checkboxStates[`ref_${ref.id}`] ?? false
+                  console.log('Found match! ref id:', ref.id, 'value:', result)
+                  return result
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    console.log('No match found, using default:', checkboxStates[defaultKey] || false)
+    return checkboxStates[defaultKey] || false
   }
 
   return (
@@ -162,7 +264,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentTop} colSpan={3}>
               <CheckboxItem
                 text="Hasil pelatihan dan/atau pendidikan, dimana kurikulum dan fasilitas praktek mampu telusur terhadap standar kompetensi."
-                checked={checkboxStates["hasil_pelatihan"] || false}
+                checked={getCheckedState("Asesi", "Hasil pelatihan dan/atau pendidikan, dimana kurikulum dan fasilitas praktek mampu telusur terhadap standar kompetensi.", "hasil_pelatihan")}
                 onToggle={() => toggleCheckbox("hasil_pelatihan")}
               />
             </TableCell>
@@ -172,7 +274,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Hasil pelatihan dan/atau pendidikan, dimana kurikulum belum berbasis kompetensi."
-                checked={checkboxStates["hasil_pelatihan_tidak_kompetensi"] || false}
+                checked={getCheckedState("Asesi", "Hasil pelatihan dan/atau pendidikan, dimana kurikulum belum berbasis kompetensi.", "hasil_pelatihan_tidak_kompetensi")}
                 onToggle={() => toggleCheckbox("hasil_pelatihan_tidak_kompetensi")}
               />
             </TableCell>
@@ -183,7 +285,7 @@ export function Mapa01Section1() {
               <p style={{ padding: '0 0 0 43pt', margin: 0, lineHeight: '12pt', textAlign: 'left' }}></p>
               <CheckboxItem
                 text="Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya mampu telusur dengan standar kompetensi."
-                checked={checkboxStates["pekerja_berpengalaman_telusur"] || false}
+                checked={getCheckedState("Asesi", "Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya mampu telusur dengan standar kompetensi.", "pekerja_berpengalaman_telusur")}
                 onToggle={() => toggleCheckbox("pekerja_berpengalaman_telusur")}
               />
             </TableCell>
@@ -193,8 +295,8 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <p style={{ padding: '0 0 0 43pt', margin: 0, lineHeight: '12pt', textAlign: 'left' }}></p>
               <CheckboxItem
-                text=" Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya belum berbasis standar kompetensi."
-                checked={checkboxStates["pekerja_berpengalaman_tidak_telusur"] || false}
+                text="Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya belum berbasis standar kompetensi."
+                checked={getCheckedState("Asesi", "Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya belum berbasis standar kompetensi", "pekerja_berpengalaman_tidak_telusur")}
                 onToggle={() => toggleCheckbox("pekerja_berpengalaman_tidak_telusur")}
               />
             </TableCell>
@@ -204,7 +306,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Pelatihan/belajar mandiri atau otodidak."
-                checked={checkboxStates["otodidak"] || false}
+                checked={getCheckedState("Asesi", "Pelatihan/belajar mandiri atau otodidak.", "otodidak")}
                 onToggle={() => toggleCheckbox("otodidak")}
               />
             </TableCell>
@@ -218,7 +320,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Sertifikasi"
-                checked={checkboxStates["sertifikasi"] || false}
+                checked={getCheckedState("Tujuan Asesmen", "Sertifikasi", "sertifikasi")}
                 onToggle={() => toggleCheckbox("sertifikasi")}
               />
             </TableCell>
@@ -228,7 +330,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Pengakuan Kompetensi Terkini (PKT)"
-                checked={checkboxStates["pkt"] || false}
+                checked={getCheckedState("Tujuan Asesmen", "Pengakuan Kompetensi Terkini (PKT)", "pkt")}
                 onToggle={() => toggleCheckbox("pkt")}
               />
             </TableCell>
@@ -238,7 +340,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Rekognisi pembelajaran lampau (RPL)"
-                checked={checkboxStates["rpl"] || false}
+                checked={getCheckedState("Tujuan Asesmen", "Rekognisi pembelajaran lampau (RPL)", "rpl")}
                 onToggle={() => toggleCheckbox("rpl")}
               />
             </TableCell>
@@ -247,8 +349,8 @@ export function Mapa01Section1() {
           <TableRow height="24pt">
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
-                text="Lainnya:"
-                checked={checkboxStates["tujuan_lainnya"] || false}
+                text="Lainnya"
+                checked={getCheckedState("Tujuan Asesmen", "Lainnya", "tujuan_lainnya")}
                 onToggle={() => toggleCheckbox("tujuan_lainnya")}
               />
             </TableCell>
@@ -265,14 +367,14 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.subContent1}>
               <CheckboxItem
                 text="Tempat kerja nyata"
-                checked={checkboxStates["tempat_kerja_nyata"] || false}
+                checked={getCheckedState("Konteks Asesmen", "Tempat kerja nyata", "tempat_kerja_nyata")}
                 onToggle={() => toggleCheckbox("tempat_kerja_nyata")}
               />
             </TableCell>
             <TableCell style={cellStyles.subContent2}>
               <CheckboxItem
                 text="Tempat kerja simulasi"
-                checked={checkboxStates["tempat_kerja_simulasi"] || false}
+                checked={getCheckedState("Konteks Asesmen", "Tempat kerja simulasi", "tempat_kerja_simulasi")}
                 onToggle={() => toggleCheckbox("tempat_kerja_simulasi")}
               />
             </TableCell>
@@ -287,7 +389,7 @@ export function Mapa01Section1() {
               <p style={{ padding: '2pt 0 0 0', margin: 0 }}><br /></p>
               <CheckboxItem
                 text="Tersedia"
-                checked={checkboxStates["tersedia"] || false}
+                checked={getCheckedState("Konteks Asesmen", "Tersedia", "tersedia")}
                 onToggle={() => toggleCheckbox("tersedia")}
               />
             </TableCell>
@@ -295,7 +397,7 @@ export function Mapa01Section1() {
               <p style={{ padding: '2pt 0 0 0', margin: 0 }}><br /></p>
               <CheckboxItem
                 text="Terbatas"
-                checked={checkboxStates["terbatas"] || false}
+                checked={getCheckedState("Konteks Asesmen", "Terbatas", "terbatas")}
                 onToggle={() => toggleCheckbox("terbatas")}
               />
             </TableCell>
@@ -303,12 +405,12 @@ export function Mapa01Section1() {
 
           <TableRow height="23pt">
             <TableCell style={cellStyles.subLabel} rowSpan={3}>
-              <p style={{ padding: '0 3pt 0 6pt', margin: 0, lineHeight: '108%', textAlign: 'left' }}>Hubungan antara standar kompetensi dan:</p>
+              <p style={{ padding: '0 3pt 0 6pt', margin: 0, lineHeight: '108%', textAlign: 'left' }}>Hubungan antara standar kompetensi dan</p>
             </TableCell>
             <TableCell style={cellStyles.contentTop2col} colSpan={2}>
               <CheckboxItem
-                text="Bukti untuk mendukung asesmen / RPL:"
-                checked={checkboxStates["bukti_asesmen_rpl"] || false}
+                text="Bukti untuk mendukung asesmen / RPL"
+                checked={getCheckedState("Konteks Asesmen", "Bukti untuk mendukung asesmen / RPL", "bukti_asesmen_rpl")}
                 onToggle={() => toggleCheckbox("bukti_asesmen_rpl")}
               />
             </TableCell>
@@ -317,8 +419,8 @@ export function Mapa01Section1() {
           <TableRow height="23pt">
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
-                text="Aktivitas kerja di tempat kerja kandidat: "
-                checked={checkboxStates["aktivitas_kerja"] || false}
+                text="Aktivitas kerja di tempat kerja kandidat"
+                checked={getCheckedState("Konteks Asesmen", "Aktivitas kerja di tempat kerja kandidat", "aktivitas_kerja")}
                 onToggle={() => toggleCheckbox("aktivitas_kerja")}
               />
             </TableCell>
@@ -327,8 +429,8 @@ export function Mapa01Section1() {
           <TableRow height="23pt">
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
-                text="Kegiatan Pembelajaran:"
-                checked={checkboxStates["kegiatan_pembelajaran"] || false}
+                text="Kegiatan Pembelajaran"
+                checked={getCheckedState("Konteks Asesmen", "Kegiatan Pembelajaran", "kegiatan_pembelajaran")}
                 onToggle={() => toggleCheckbox("kegiatan_pembelajaran")}
               />
             </TableCell>
@@ -341,7 +443,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
                 text="LSP Gatensi Karya Konstruksi"
-                checked={checkboxStates["lsp_gatensi"] || false}
+                checked={getCheckedState("Konteks Asesmen", "LSP Gatensi Karya Konstruksi", "lsp_gatensi")}
                 onToggle={() => toggleCheckbox("lsp_gatensi")}
               />
             </TableCell>
@@ -351,7 +453,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
                 text="Organisasi Pelatihan"
-                checked={checkboxStates["organisasi_pelatihan"] || false}
+                checked={getCheckedState("Konteks Asesmen", "Organisasi Pelatihan", "organisasi_pelatihan")}
                 onToggle={() => toggleCheckbox("organisasi_pelatihan")}
               />
             </TableCell>
@@ -361,7 +463,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
                 text="asesor perusahaan"
-                checked={checkboxStates["asesor_perusahaan"] || false}
+                checked={getCheckedState("Konteks Asesmen", "asesor perusahaan", "asesor_perusahaan")}
                 onToggle={() => toggleCheckbox("asesor_perusahaan")}
               />
             </TableCell>
@@ -375,7 +477,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Manajer sertifikasi LSP Gatensi Karya Konstruksi"
-                checked={checkboxStates["manajer_sertifikasi_lsp"] || false}
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP Gatensi Karya Konstruksi", "manajer_sertifikasi_lsp")}
                 onToggle={() => toggleCheckbox("manajer_sertifikasi_lsp")}
               />
             </TableCell>
@@ -385,7 +487,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Master Assessor / Master Trainer / Asesor Utama kompetensi"
-                checked={checkboxStates["master_assessor_lsp"] || false}
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Master Assessor / Master Trainer / Asesor Utama kompetensi", "master_assessor_lsp")}
                 onToggle={() => toggleCheckbox("master_assessor_lsp")}
               />
             </TableCell>
@@ -395,7 +497,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
                 text="Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar"
-                checked={checkboxStates["manajer_pelatihan_lsp"] || false}
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar", "manajer_pelatihan_lsp")}
                 onToggle={() => toggleCheckbox("manajer_pelatihan_lsp")}
               />
             </TableCell>
@@ -404,8 +506,8 @@ export function Mapa01Section1() {
           <TableRow height="24pt">
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Lainnya:"
-                checked={checkboxStates["orang_lainnya"] || false}
+                text="Lainnya"
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Lainnya", "orang_lainnya")}
                 onToggle={() => toggleCheckbox("orang_lainnya")}
               />
             </TableCell>
@@ -421,8 +523,8 @@ export function Mapa01Section1() {
             </TableCell>
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Standar Kompetensi: SKKNI 079 Tahun 2015"
-                checked={checkboxStates["skkni"] || false}
+                text="Standar Kompetensi"
+                checked={getCheckedState("Tolok ukur asesmen", "Standar Kompetensi", "skkni")}
                 onToggle={() => toggleCheckbox("skkni")}
               />
             </TableCell>
@@ -432,7 +534,7 @@ export function Mapa01Section1() {
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
                 text="Kriteria asesmen dari kurikulum pelatihan"
-                checked={checkboxStates["kriteria_kurikulum"] || false}
+                checked={getCheckedState("Tolok ukur asesmen", "Kriteria asesmen dari kurikulum pelatihan", "kriteria_kurikulum")}
                 onToggle={() => toggleCheckbox("kriteria_kurikulum")}
               />
             </TableCell>
@@ -441,8 +543,8 @@ export function Mapa01Section1() {
           <TableRow height="23pt">
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Spesifikasi kinerja suatu perusahaan atau industri:"
-                checked={checkboxStates["spesifikasi_kinerja"] || false}
+                text="Spesifikasi kinerja suatu perusahaan atau industri"
+                checked={getCheckedState("Tolok ukur asesmen", "Spesifikasi kinerja suatu perusahaan atau industri", "spesifikasi_kinerja")}
                 onToggle={() => toggleCheckbox("spesifikasi_kinerja")}
               />
             </TableCell>
@@ -451,8 +553,8 @@ export function Mapa01Section1() {
           <TableRow height="23pt">
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Spesifikasi Produk:"
-                checked={checkboxStates["spesifikasi_produk"] || false}
+                text="Spesifikasi Produk"
+                checked={getCheckedState("Tolok ukur asesmen", "Spesifikasi Produk", "spesifikasi_produk")}
                 onToggle={() => toggleCheckbox("spesifikasi_produk")}
               />
             </TableCell>
@@ -461,8 +563,8 @@ export function Mapa01Section1() {
           <TableRow height="24pt">
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Pedoman khusus:"
-                checked={checkboxStates["pedoman_khusus"] || false}
+                text="Pedoman khusus"
+                checked={getCheckedState("Tolok ukur asesmen", "Pedoman khusus", "pedoman_khusus")}
                 onToggle={() => toggleCheckbox("pedoman_khusus")}
               />
             </TableCell>

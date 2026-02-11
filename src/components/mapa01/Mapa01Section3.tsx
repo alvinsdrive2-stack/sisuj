@@ -2,6 +2,54 @@
  * Mapa01Section3.tsx
  * Section 3: Modifikasi dan Kontekstualisasi - 100% width with thin borders
  */
+import { useState, useMemo, useEffect, useRef } from "react"
+import { CustomRadio } from "@/components/ui/Radio"
+
+// ============== TYPES ==============
+interface Referensi {
+  id: number
+  nama: string
+  value: boolean
+}
+
+interface Subkategori {
+  id: number | null
+  nama: string
+  urut: number | null
+  referensis: Referensi[]
+}
+
+interface Kategori {
+  id: number | null
+  kategori: string | null
+  nama: string
+  urut: number | null
+  id_kelompok: number | null
+  subkategoris: Subkategori[]
+}
+
+interface KelompokForm {
+  id: number
+  nama: string | null
+  urut: number
+  kategoris: Kategori[]
+}
+
+interface ReferensiFormItem {
+  kelompok: KelompokForm
+}
+
+interface Mapa01Section3Props {
+  referensiForm?: ReferensiFormItem[]
+}
+
+interface Section3Item {
+  id: number
+  label: string
+  prefixLabel: string
+  value: boolean
+  alasan: string
+}
 
 // ============== CONSTANTS ==============
 const COLORS = {
@@ -35,7 +83,7 @@ const cellStyles = {
 } as const;
 
 // ============== COMPONENT ==============
-export function Mapa01Section3() {
+export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
   const headerStyle = {
     ...cellStyles.header,
     backgroundColor: COLORS.RED,
@@ -52,6 +100,103 @@ export function Mapa01Section3() {
 
   const paraStyle = { padding: '6px 8px', margin: 0, textAlign: 'left' as const };
 
+  // Build section3 items from referensiForm (kelompok 3)
+  const initialItems = useMemo(() => {
+    const items: Section3Item[] = []
+
+    // Labels mapping for section 3
+    const labelMapping: Record<string, { prefix: string; label: string }> = {
+      "Karakteristik kandidat: ": {
+        prefix: "3.1. a.",
+        label: "Karakteristik kandidat:"
+      },
+      "Kebutuhan kontekstualisasi terkait tempat kerja:": {
+        prefix: "3.1. b.",
+        label: "Kebutuhan kontekstualisasi terkait tempat kerja:"
+      },
+      "Saran yang diberikan oleh paket pelatihan atau pengembang pelatihan": {
+        prefix: "3.2.",
+        label: "Saran yang diberikan oleh paket pelatihan atau pengembang pelatihan"
+      },
+      "Penyesuaian perangkat asesmen terkait kebutuhan kontekstualisasi": {
+        prefix: "3.3.",
+        label: "Penyesuaian perangkat asesmen terkait kebutuhan kontekstualisasi"
+      },
+      "Peluang untuk kegiatan asesmen terintegrasi dan mencatat setiap perubahan yang diperlukan untuk alat asesmen": {
+        prefix: "3.4.",
+        label: "Peluang untuk kegiatan asesmen terintegrasi dan mencatat setiap perubahan yang diperlukan untuk alat asesmen"
+      }
+    }
+
+    if (referensiForm) {
+      // Find kelompok with id 3 (section 3 data)
+      const kelompok3 = referensiForm.find(item => item.kelompok.id === 3)
+      if (kelompok3) {
+        kelompok3.kelompok.kategoris?.forEach((kategori) => {
+          kategori.subkategoris?.forEach((subkategori) => {
+            subkategori.referensis?.forEach((ref) => {
+              const mapping = labelMapping[ref.nama]
+              if (mapping) {
+                items.push({
+                  id: ref.id,
+                  label: mapping.label,
+                  prefixLabel: mapping.prefix,
+                  value: ref.value,
+                  alasan: ''
+                })
+              }
+            })
+          })
+        })
+      }
+    }
+
+    return items
+  }, [referensiForm])
+
+  const [items, setItems] = useState<Section3Item[]>(initialItems)
+  const textareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
+
+  // Sync items when initialItems changes
+  useEffect(() => {
+    if (initialItems.length > 0) {
+      setItems(initialItems)
+    }
+  }, [initialItems])
+
+  // Auto-resize textareas when items change
+  useEffect(() => {
+    items.forEach(item => {
+      if (item.value && item.alasan) {
+        const textarea = textareaRefs.current[item.id]
+        if (textarea) {
+          textarea.style.height = 'auto'
+          textarea.style.height = textarea.scrollHeight + 'px'
+        }
+      }
+    })
+  }, [items])
+
+  const handleRadioChange = (id: number, value: boolean) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, value } : item
+    ))
+  }
+
+  const handleAlasanChange = (id: number, alasan: string) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, alasan } : item
+    ))
+  }
+
+  // Auto-resize textarea based on content
+  const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const textarea = e.target
+    textarea.style.height = 'auto'
+    textarea.style.height = textarea.scrollHeight + 'px'
+    handleAlasanChange(parseInt(textarea.name.replace('section3-alasan-', '')), textarea.value)
+  }
+
   return (
     <>
       {/* Section 3 Header */}
@@ -65,96 +210,75 @@ export function Mapa01Section3() {
             </td>
           </tr>
 
-          {/* 3.1 a. Karakteristik kandidat */}
-          <tr style={{ height: '41pt' }}>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={paraStyle}>
-                3.1. a. Karakteristik kandidat:
-              </p>
-            </td>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={paraStyle}>
-                Ada / tidak ada *) karateristik khusus kandidat
-              </p>
-              <p style={{ ...paraStyle, paddingTop: '8px' }}>
-                Jika ada, tuliskan ........................
-              </p>
-            </td>
-          </tr>
+          {/* Dynamic rows from API */}
+          {items.map((item, index) => (
+            <tr key={item.id}>
+              <td style={{ ...cellStyles.content, background: '#fff', verticalAlign: 'top' }}>
+                <p style={{ ...paraStyle, paddingLeft: index < 2 ? (index === 0 ? '6px' : '28px') : '23px' }}>
+                  {item.prefixLabel} {item.label}
+                </p>
+              </td>
+              <td style={{ ...cellStyles.content, background: '#fff', verticalAlign: 'top', padding: '12px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '12px' }}>
+                  {/* Ya radio */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <CustomRadio
+                      name={`section3-${item.id}`}
+                      value="ya"
+                      checked={item.value === true}
+                      onChange={() => handleRadioChange(item.id, true)}
+                    />
+                    <span style={{ fontSize: '12px' }}>Ada</span>
+                  </label>
 
-          {/* 3.1 b. Kebutuhan kontekstualisasi */}
-          <tr style={{ height: '41pt' }}>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={{ ...paraStyle, paddingLeft: '28px' }}>
-                b. Kebutuhan kontekstualisasi terkait tempat kerja:
-              </p>
-            </td>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={paraStyle}>
-                Ada / tidak ada *) kebutuhan kontekstualisasi.
-              </p>
-              <p style={{ ...paraStyle, paddingTop: '8px' }}>
-                Jika ada, tuiiskan ........................
-              </p>
-            </td>
-          </tr>
+                  {/* Tidak radio */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <CustomRadio
+                      name={`section3-${item.id}`}
+                      value="tidak"
+                      checked={item.value === false}
+                      onChange={() => handleRadioChange(item.id, false)}
+                    />
+                    <span style={{ fontSize: '12px' }}>Tidak ada</span>
+                  </label>
+                </div>
 
-          {/* 3.2 Saran */}
-          <tr style={{ height: '46pt' }}>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={{ ...paraStyle, paddingLeft: '23px' }}>
-                3.2. Saran yang diberikan oleh paket pelatihan atau pengembang pelatihan
-              </p>
-            </td>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={paraStyle}>
-                Ada / tidak ada *) saran.
-              </p>
-              <p style={{ ...paraStyle, paddingTop: '8px' }}>
-                Jika ada, tuliskan .........................
-              </p>
-            </td>
-          </tr>
-
-          {/* 3.3 Penyesuaian */}
-          <tr style={{ height: '46pt' }}>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={{ ...paraStyle, paddingLeft: '23px' }}>
-                3.3. Penyesuaian perangkat asesmen terkait kebutuhan kontekstualisasi
-              </p>
-            </td>
-             <td style={{ ...cellStyles.content, background: '#fff', marginLeft: '2px' }}>
-              <p style={paraStyle}>
-                Ada / tidak ada *) peluang.
-              </p>
-              <p style={{ ...paraStyle, paddingTop: '8px' }}>
-                Jika ada, tuliskan .........................
-              </p>
-            </td>
-          </tr>
-        </tbody>
-      
-        <tbody>
-          <tr style={{ height: '70pt' }}>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={{ ...paraStyle, paddingLeft: '23px' }}>
-                3.4. Peluang untuk kegiatan asesmen terintegrasi dan mencatat setiap perubahan yang diperlukan untuk alat asesmen
-              </p>
-            </td>
-            <td style={{ ...cellStyles.content, background: '#fff' }}>
-              <p style={paraStyle}>
-                Ada / tidak ada *) peluang.
-              </p>
-              <p style={{ ...paraStyle, paddingTop: '8px' }}>
-                Jika ada, tuliskan .........................
-              </p>
-            </td>
-          </tr>
+                {/* Text field when "Ada" is selected */}
+                {item.value && (
+                  <div style={{ marginTop: '12px' }}>
+                    <p style={{ fontSize: '11px', margin: '0 0 6px 0', fontWeight: '500' }}>Jika ada, tuliskan:</p>
+                    <textarea
+                      ref={(el) => { if (el) textareaRefs.current[item.id] = el }}
+                      name={`section3-alasan-${item.id}`}
+                      value={item.alasan}
+                      onChange={handleTextareaResize}
+                      placeholder="Alasan/keterangan..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        lineHeight: '1.5',
+                        border: '1px solid #000',
+                        borderRadius: '4px',
+                        outline: 'none',
+                        background: '#fff',
+                        resize: 'none',
+                        minHeight: '40px',
+                        height: item.alasan ? 'auto' : '40px',
+                        overflow: 'hidden',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
       <p style={{ padding: '0 0 0 14px', margin: 0, fontSize: '12px', textAlign: 'left' }}>
-        *Coret yang tidak perlu
+        *Pilih salah satu opsi
       </p>
 
       <p style={{ padding: '5px 0 0 0', margin: 0 }}><br /></p>
