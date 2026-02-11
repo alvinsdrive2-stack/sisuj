@@ -8,6 +8,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 import {
   Mapa01Header,
   Mapa01Section1,
@@ -318,29 +319,15 @@ export default function Mapa01Page() {
 
           {/* Actions */}
           <div className="mapa01-actions">
-            <button
-              onClick={handleExportPdf}
-              disabled={isExportingPdf}
-              className="mapa01-btn"
-              style={{ opacity: isExportingPdf ? 0.5 : 1, cursor: isExportingPdf ? 'not-allowed' : 'pointer' }}
-            >
+            <ActionButton variant="secondary" onClick={handleExportPdf} disabled={isExportingPdf}>
               {isExportingPdf ? "Mengekspor..." : "Download PDF"}
-            </button>
-            <button
-              onClick={handleBack}
-              disabled={isSaving}
-              className="mapa01-btn"
-            >
+            </ActionButton>
+            <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !agreedChecklist}
-              className="mapa01-btn mapa01-btn-primary"
-              style={{ opacity: isSaving || !agreedChecklist ? 0.5 : 1, cursor: isSaving || !agreedChecklist ? 'not-allowed' : 'pointer' }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </div>

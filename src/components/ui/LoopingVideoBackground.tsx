@@ -1,12 +1,10 @@
 interface LoopingVideoBackgroundProps {
   videoSrc: string
-  blur?: boolean
   scale?: string
 }
 
 export function LoopingVideoBackground({
   videoSrc,
-  blur = true,
   scale = "100"
 }: LoopingVideoBackgroundProps) {
   return (
@@ -16,8 +14,8 @@ export function LoopingVideoBackground({
         loop
         muted
         playsInline
-        className={`w-full h-full object-cover ${blur ? 'blur-sm' : ''}`}
-        style={{ transform: `scale(${scale}%)` }}
+        className={`w-full h-full object-cover`}
+        style={{ transform: `scale(${scale}%)`, filter: 'blur(2px)' }}
       >
         <source src={videoSrc} type="video/mp4" />
       </video>

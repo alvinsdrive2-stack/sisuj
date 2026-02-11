@@ -10,6 +10,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface Unit {
   id: number
@@ -493,35 +494,12 @@ export default function Ia05Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-            onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #999',
-              background: '#fff',
-              color: '#000',
-              fontSize: '14px',
-              cursor: 'pointer',
-              borderRadius: '4px'
-            }}
-          >
-            Kembali
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSaving || !isPernyataanAgreed}
-            style={{
-              padding: '8px 16px',
-              background: isSaving || !isPernyataanAgreed ? '#999' : '#0066cc',
-              color: '#fff',
-              fontSize: '14px',
-              cursor: isSaving || !isPernyataanAgreed ? 'not-allowed' : 'pointer',
-              border: 'none',
-              borderRadius: '4px'
-            }}
-          >
-            {isSaving ? "Menyimpan..." : "Lanjut"}
-          </button>
+            <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}>
+              Kembali
+            </ActionButton>
+            <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSubmit}>
+              {isSaving ? "Menyimpan..." : "Lanjut"}
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>

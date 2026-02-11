@@ -25,7 +25,7 @@ export const ASESMEN_STEPS_ASESI: StepConfig[] = [
   { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
   { number: 2, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
   { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 4, label: 'Ujian', href: '/asesi/asesmen/uji' },
   { number: 5, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 

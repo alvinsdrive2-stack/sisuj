@@ -7,6 +7,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface PersonalData {
   nama: string
@@ -329,18 +330,12 @@ export default function PraAsesmenPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => navigate(-1)}
-            style={{ padding: '8px 16px', border: '1px solid #999', background: '#fff', color: '#000', fontSize: '13px', cursor: 'pointer' }}
-          >
+          <ActionButton variant="secondary" onClick={() => navigate(-1)}>
             Kembali
-          </button>
-          <button
-            onClick={handleConfirm}
-            style={{ padding: '8px 16px', background: '#0066cc', color: '#fff', fontSize: '13px', cursor: 'pointer', border: 'none' }}
-          >
+          </ActionButton>
+          <ActionButton variant="primary" onClick={handleConfirm}>
             Data Sudah Benar, Lanjut ke APL 01
-          </button>
+          </ActionButton>
         </div>
       </AsesiLayout>
 

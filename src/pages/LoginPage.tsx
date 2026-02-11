@@ -85,10 +85,10 @@ export default function LoginPage() {
         <div className="flex flex-col items-center gap-4 animate-fade-in relative z-20">
           <div className="relative w-32 h-32">
             {/* Circular Logo */}
-            <div className="w-full h-full bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl overflow-hidden relative z-20 animate-pulse-glow">
+            <div className="w-full h-full bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg overflow-hidden relative z-20">
               <img src={favicon} alt="LSP Gatensi Logo" className="w-28 h-28 object-contain translate-x-[4px]" />
             </div>
-            
+
           </div>
         </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
         <div className="relative">
 
           {/* Main Card */}
-          <div className="relative bg-white backdrop-blur-sm rounded-2xl shadow-2xl p-5 border border-white/20 -translate-y-14">
+          <div className="relative bg-white backdrop-blur-sm rounded-2xl p-5 border border-white/10 -translate-y-14" style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)' }}>
             {/* Header */}
             <div className="mb-5 mt-12 text-center">
               <h2 className="text-xl font-bold text-slate-800 mb-2">Selamat Datang!</h2>

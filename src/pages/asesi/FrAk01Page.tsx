@@ -6,6 +6,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useEffect, useState } from "react"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface BuktiAsesmen {
   id: number
@@ -316,18 +317,12 @@ export default function FrAk01Page() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <button
-            onClick={handleBack}
-            style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '13px', cursor: 'pointer' }}
-          >
+          <ActionButton variant="secondary" onClick={handleBack}>
             Kembali
-          </button>
-          <button
-            onClick={handleSave}
-            style={{ padding: '8px 16px', background: '#0066cc', color: '#fff', fontSize: '13px', cursor: 'pointer', border: 'none' }}
-          >
+          </ActionButton>
+          <ActionButton variant="primary" onClick={handleSave}>
             Selesai
-          </button>
+          </ActionButton>
         </div>
       </AsesiLayout>
     </div>

@@ -9,6 +9,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface Referensi {
   id: number
@@ -651,20 +652,12 @@ export default function FrAk07Page() {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handleBack}
-              disabled={isSaving}
-              style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '13px', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.5 : 1 }}
-            >
+            <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !agreedChecklist}
-              style={{ padding: '8px 16px', background: agreedChecklist ? '#0066cc' : '#999', color: '#fff', fontSize: '13px', cursor: isSaving || !agreedChecklist ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving || !agreedChecklist ? 0.5 : 1 }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </AsesiLayout>

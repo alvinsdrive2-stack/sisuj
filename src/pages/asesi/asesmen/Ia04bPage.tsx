@@ -9,6 +9,8 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface Soal {
   id: number
@@ -64,6 +66,7 @@ export default function Ia04bPage() {
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [initializedFromApi, setInitializedFromApi] = useState(false)
   const [jawabanAnswers, setJawabanAnswers] = useState<Record<number, string>>({})
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   // Get dynamic steps based on asesor role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -254,16 +257,21 @@ export default function Ia04bPage() {
 
       // 3. Navigate to next step
       showSuccess('IA 04.B berhasil disimpan!')
+
+      // For asesi, show confirmation dialog before proceeding to ujian
+      if (!isAsesor) {
+        setTimeout(() => setShowConfirmDialog(true), 500)
+        return
+      }
+
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
 
-      if (isAsesor && nextStep?.href.includes('ia05')) {
+      if (nextStep?.href.includes('ia05')) {
         // Asesor goes to IA.05
         setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 500)
-      } else if (isAsesor) {
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 500)
       } else {
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 500)
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 500)
       }
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -583,38 +591,29 @@ export default function Ia04bPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => navigate(`/asesi/asesmen/${id}/upload-tugas`)}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
-            >
+            <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/upload-tugas`)}>
               Kembali
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: (isSaving || !agreedChecklist) ? '#999' : '#0066cc',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: (isSaving || !agreedChecklist) ? 'not-allowed' : 'pointer',
-                border: 'none',
-                borderRadius: '4px'
-              }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
               {isSaving ? 'Menyimpan...' : 'Selesai'}
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Confirmation Dialog for Asesi before Ujian */}
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        title="Masuk ke Ujian"
+        message="Apakah Anda sudah siap untuk mengerjakan ujian? Pastikan Anda memiliki waktu yang cukup dan koneksi internet yang stabil."
+        confirmText="Ya, Siap"
+        cancelText="Belum"
+        onConfirm={() => {
+          setShowConfirmDialog(false)
+          setTimeout(() => navigate(`/asesi/asesmen/${id}/uji`), 100)
+        }}
+        onCancel={() => setShowConfirmDialog(false)}
+      />
     </div>
   )
 }

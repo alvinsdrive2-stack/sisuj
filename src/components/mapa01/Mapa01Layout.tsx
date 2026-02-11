@@ -12,7 +12,6 @@ export function Mapa01Layout({ children }: Mapa01LayoutProps) {
   return (
     <div style={{
       maxWidth: '1000px',
-      margin: '0 auto',
       fontFamily: 'Arial, Helvetica, sans-serif',
       fontSize: '12px',
       color: '#000',

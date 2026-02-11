@@ -53,6 +53,7 @@ import Ia04aPage from './pages/asesi/asesmen/Ia04aPage'
 import UploadTugasPage from './pages/asesi/asesmen/UploadTugasPage'
 import Ia04bPage from './pages/asesi/asesmen/Ia04bPage'
 import Ia05Page from './pages/asesi/asesmen/Ia05Page'
+import UjianPage from './pages/asesi/asesmen/UjianPage'
 import Ak02Page from './pages/asesi/asesmen/Ak02Page'
 import Ak03Page from './pages/asesi/asesmen/Ak03Page'
 import Ak06Page from './pages/asesi/asesmen/Ak06Page'
@@ -325,11 +326,19 @@ function App() {
             }
           />
           <Route
+            path="/asesi/asesmen/:id/uji"
+            element={
+              <AsesiRoute>
+                <UjianPage />
+              </AsesiRoute>
+            }
+          />
+          <Route
             path="/asesi/asesmen/:id/ia05"
             element={
-              <AsesiOrAsesorRoute>
+              <AsesorRoute>
                 <Ia05Page />
-              </AsesiOrAsesorRoute>
+              </AsesorRoute>
             }
           />
           <Route

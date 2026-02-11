@@ -9,6 +9,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface UnitKompetensiAPI {
   id: number
@@ -430,7 +431,8 @@ export default function Ak02Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
+            <ActionButton
+              variant="secondary"
               onClick={() => {
                 const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
                 const prevStep = asesmenSteps[currentStepIndex - 1]
@@ -441,19 +443,12 @@ export default function Ak02Page() {
                   navigate(`/asesi/asesmen/${id}/ia05`)
                 }
               }}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
             >
               Kembali
-            </button>
-            <button
+            </ActionButton>
+            <ActionButton
+              variant="primary"
+              disabled={!agreedChecklist}
               onClick={async () => {
                 if (!agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
@@ -519,20 +514,9 @@ export default function Ak02Page() {
                   showError('Terjadi kesalahan. Silakan coba lagi.')
                 }
               }}
-              disabled={!agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: agreedChecklist ? '#0066cc' : '#999',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: agreedChecklist ? 'pointer' : 'not-allowed',
-                border: 'none',
-                borderRadius: '4px',
-                opacity: agreedChecklist ? 1 : 0.5
-              }}
             >
               Simpan & Lanjut
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>

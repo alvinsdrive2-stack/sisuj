@@ -9,6 +9,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface AspekAPI {
   aspek_id: string
@@ -29,7 +30,8 @@ interface Ak06Response {
   data: {
     aspek: AspekAPI[]
     feedback: {
-      rekomendasi: string
+      rekomendasi1: string
+      rekomendasi2: string
       catatan_asesor1: string
       catatan_asesor2: string
     }
@@ -70,7 +72,8 @@ export default function Ak06Page() {
   const [rekomendasiDimensi, setRekomendasiDimensi] = useState('')
   const [komentarAsesor, setKomentarAsesor] = useState<Record<number, string>>({})
   const [feedbackData, setFeedbackData] = useState<{
-    rekomendasi: string
+    rekomendasi1: string
+    rekomendasi2: string
     catatan_asesor1: string
     catatan_asesor2: string
   } | null>(null)
@@ -115,7 +118,8 @@ export default function Ak06Page() {
 
             // Set feedback data
             setFeedbackData(result.data.feedback || null)
-            setRekomendasiPrinsip(result.data.feedback?.rekomendasi || '')
+            setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
+            setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
           }
         } else {
           console.warn(`AK06 API returned ${response.status}`)
@@ -195,7 +199,8 @@ export default function Ak06Page() {
         },
         body: JSON.stringify({
           answers,
-          rekomendasi: rekomendasiPrinsip,
+          rekomendasi1: rekomendasiPrinsip,
+          rekomendasi2: rekomendasiDimensi,
           catatan_asesor1: komentarAsesor[asesorList[0]?.id] || '',
           catatan_asesor2: komentarAsesor[asesorList[1]?.id] || '',
         }),
@@ -441,8 +446,8 @@ export default function Ak06Page() {
                   style={{
                     width: '100%',
                     height: '120px',
-                    border: 'none',
                     padding: '6px',
+                    border: '1px solid #ccc',
                     fontSize: '13px',
                     resize: 'none',
                     cursor: isFormDisabled ? 'not-allowed' : 'text'
@@ -518,7 +523,8 @@ export default function Ak06Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
+            <ActionButton
+              variant="secondary"
               onClick={() => {
                 const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
                 const prevStep = asesmenSteps[currentStepIndex - 1]
@@ -527,33 +533,12 @@ export default function Ak06Page() {
                   navigate(prevPath)
                 }
               }}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
             >
               Kembali
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: agreedChecklist ? '#0066cc' : '#999',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: agreedChecklist ? 'pointer' : 'not-allowed',
-                border: 'none',
-                borderRadius: '4px'
-              }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleSave}>
               Selesai
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>

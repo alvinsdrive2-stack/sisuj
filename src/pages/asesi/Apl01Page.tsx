@@ -8,6 +8,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface DataPribadi {
   nama: string
@@ -93,7 +94,7 @@ export default function Apl01Page() {
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
   const { asesorList } = useDataDokumenPraAsesmen(idIzin)
-  const { showSuccess, showError } = useToast()
+  const { showSuccess, showError, showWarning } = useToast()
 
   const [_dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
   const [_dataPekerjaan, setDataPekerjaan] = useState<DataPekerjaan | null>(null)
@@ -102,7 +103,8 @@ export default function Apl01Page() {
   const [buktiPersyaratan, setBuktiPersyaratan] = useState<BuktiPersyaratan[]>([])
   const [buktiAdministratif, setBuktiAdministratif] = useState<BuktiAdministratif[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false) // Setter unused until POST is implemented
+  const [isSaving, setIsSaving] = useState(false)
+  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [skkni, setSkkni] = useState<string>("")
 
   // Form state for data pribadi
@@ -192,6 +194,11 @@ export default function Apl01Page() {
   }, [idIzin])
 
   const handleSave = async () => {
+    if (!agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu')
+      return
+    }
+
     const targetIdIzin = idIzin || user?.id_izin
     if (!targetIdIzin) {
       return
@@ -223,7 +230,7 @@ export default function Apl01Page() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>
       {/* Header */}
       <DashboardNavbar userName={user?.name} />
 
@@ -811,22 +818,28 @@ anda pada saat ini.</span>
           </tbody>
         </table>
 
+        {/* Pernyataan */}
+        <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <CustomCheckbox
+              checked={agreedChecklist}
+              onChange={() => setAgreedChecklist(!agreedChecklist)}
+              style={{ marginTop: '2px' }}
+            />
+            <span style={{ fontSize: '13px', color: '#333' }}>
+              Saya menyatakan dengan sebenar-benarnya bahwa data yang saya isi dalam APL 01 ini adalah benar dan dapat dipertanggungjawabkan.
+            </span>
+          </label>
+        </div>
+
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => navigate(-1)}
-            disabled={isSaving}
-            style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '13px', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.5 : 1 }}
-          >
+          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            style={{ padding: '8px 16px', background: '#0066cc', color: '#fff', fontSize: '13px', cursor: isSaving ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving ? 0.5 : 1 }}
-          >
+          </ActionButton>
+          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
             {isSaving ? "Menyimpan..." : "Simpan & Lanjut ke APL 02"}
-          </button>
+          </ActionButton>
         </div>
       </AsesiLayout>
     </div>

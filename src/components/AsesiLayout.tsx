@@ -15,7 +15,7 @@ export default function AsesiLayout({ children, currentStep }: AsesiLayoutProps)
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0, backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         {children}
       </div>
     </div>

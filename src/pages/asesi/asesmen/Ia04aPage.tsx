@@ -9,6 +9,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface Unit {
   id_unit: number
@@ -517,36 +518,12 @@ export default function Ia04aPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => navigate("/asesi/dashboard")}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
-            >
+            <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
               Kembali
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={!agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: !agreedChecklist ? '#999' : '#0066cc',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: !agreedChecklist ? 'not-allowed' : 'pointer',
-                border: 'none',
-                borderRadius: '4px',
-                opacity: !agreedChecklist ? 0.6 : 1
-              }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleNext}>
               Lanjut
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>

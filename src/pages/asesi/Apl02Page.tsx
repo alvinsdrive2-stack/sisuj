@@ -10,6 +10,8 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { CustomRadio } from "@/components/ui/Radio"
+import { ActionButton } from "@/components/ui/ActionButton"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 
 // ============== ANIMATED COMPONENTS ==============
 
@@ -125,98 +127,114 @@ interface ServerFileCapsuleProps {
 
 function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps) {
   const [isExiting, setIsExiting] = useState(false)
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
   const handleDelete = () => {
     if (disabled) return
-    if (confirm(`Hapus file "${file.name}" dari server?`)) {
-      setIsExiting(true)
-      setTimeout(() => {
-        onDelete(file.id)
-      }, 200)
-    }
+    setShowConfirmDialog(true)
+  }
+
+  const confirmDelete = () => {
+    setIsExiting(true)
+    setTimeout(() => {
+      onDelete(file.id)
+    }, 200)
+    setShowConfirmDialog(false)
   }
 
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '8px',
-        height: '38px',
-        background: '#f5f5f5',
-        border: '1px solid #ddd',
-        borderRadius: '6px',
-        padding: '0 12px',
-        fontSize: '12px',
-        fontWeight: '500',
-        color: '#333',
-        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-        transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
-        opacity: isExiting ? 0 : 1,
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        cursor: 'default',
-        userSelect: 'none',
-      }}
-      onMouseEnter={(e) => {
-        if (!isExiting) {
-          e.currentTarget.style.background = '#eee'
-          e.currentTarget.style.borderColor = '#ccc'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isExiting) {
-          e.currentTarget.style.background = '#f5f5f5'
-          e.currentTarget.style.borderColor = '#ddd'
-        }
-      }}
-    >
-      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        {getFileIcon(file.name || '')}
-        <span style={{
-          maxWidth: '200px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          {file.name || 'Unknown file'}
+    <>
+      <ConfirmDialog
+        isOpen={showConfirmDialog}
+        title="Hapus File"
+        message={`Apakah Anda yakin ingin menghapus file "${file.name}"?`}
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        confirmColor="#dc2626"
+        onConfirm={confirmDelete}
+        onCancel={() => setShowConfirmDialog(false)}
+      />
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          height: '38px',
+          background: '#f5f5f5',
+          border: '1px solid #ddd',
+          borderRadius: '6px',
+          padding: '0 12px',
+          fontSize: '12px',
+          fontWeight: '500',
+          color: '#333',
+          boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
+          opacity: isExiting ? 0 : 1,
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          cursor: 'default',
+          userSelect: 'none',
+        }}
+        onMouseEnter={(e) => {
+          if (!isExiting) {
+            e.currentTarget.style.background = '#eee'
+            e.currentTarget.style.borderColor = '#ccc'
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isExiting) {
+            e.currentTarget.style.background = '#f5f5f5'
+            e.currentTarget.style.borderColor = '#ddd'
+          }
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {getFileIcon(file.name || '')}
+          <span style={{
+            maxWidth: '200px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {file.name || 'Unknown file'}
+          </span>
         </span>
+        {!disabled && (
+          <button
+            onClick={handleDelete}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#999',
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              padding: '0',
+              width: '24px',
+              height: '24px',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (!isExiting && !disabled) {
+                e.currentTarget.style.background = '#dc2626'
+                e.currentTarget.style.color = '#fff'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isExiting) {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = '#999'
+              }
+            }}
+            title="Hapus file dari server"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </span>
-      {!disabled && (
-        <button
-          onClick={handleDelete}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#999',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            padding: '0',
-            width: '24px',
-            height: '24px',
-            borderRadius: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s ease',
-            flexShrink: 0,
-          }}
-          onMouseEnter={(e) => {
-            if (!isExiting && !disabled) {
-              e.currentTarget.style.background = '#dc2626'
-              e.currentTarget.style.color = '#fff'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isExiting) {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#999'
-            }
-          }}
-          title="Hapus file dari server"
-        >
-          <Trash2 size={12} />
-        </button>
-      )}
-    </span>
+    </>
   )
 }
 
@@ -853,7 +871,8 @@ export default function Apl02Page() {
             </div>
 
         {/* Upload File Section */}
-        <div style={{ background: '#fff', border: '1px solid #e0e0e0', marginBottom: '20px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        {!isAsesor && (
+        <div style={{ background: '#fff', border: '1px solid #e0e0e0', marginBottom: '20px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}> 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <div>
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Upload Bukti Dokumen</span>
@@ -973,7 +992,7 @@ export default function Apl02Page() {
             </div>
           )}
         </div>
-        
+        )}
         {/* Notice */}
         <div style={{ background: '#fff9e6', border: '1px solid #e6b800', marginBottom: '20px', padding: '12px' }}>
           <p style={{ fontSize: '12px', color: '#000', margin: 0 }}>
@@ -1293,20 +1312,12 @@ export default function Apl02Page() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => navigate(-1)}
-            disabled={isSaving}
-            style={{ padding: '8px 16px', border: '1px solid #000', background: '#fff', color: '#000', fontSize: '12px', cursor: isSaving ? 'not-allowed' : 'pointer', opacity: isSaving ? 0.5 : 1, textTransform: 'uppercase', fontFamily: 'Arial, Helvetica, sans-serif' }}
-          >
+          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={isSaving || !agreedChecklist}
-            style={{ padding: '8px 16px', background: agreedChecklist ? '#0066cc' : '#999', color: '#fff', fontSize: '12px', cursor: isSaving || !agreedChecklist ? 'not-allowed' : 'pointer', border: 'none', opacity: isSaving || !agreedChecklist ? 0.5 : 1, textTransform: 'uppercase', fontFamily: 'Arial, Helvetica, sans-serif' }}
-          >
+          </ActionButton>
+          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSubmit}>
             {isSaving ? "Menyimpan..." : "Simpan & Selesaikan"}
-          </button>
+          </ActionButton>
         </div>
       </AsesiLayout>
     </div>

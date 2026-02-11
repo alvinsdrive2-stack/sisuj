@@ -7,6 +7,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface UploadedFile {
   id: number
@@ -444,38 +445,19 @@ export default function UploadTugasPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => navigate(`/asesi/asesmen/${id}/ia04a`)}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
-            >
+            <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04a`)}>
               Kembali
-            </button>
-            <button
+            </ActionButton>
+            <ActionButton
+              variant="primary"
+              disabled={!agreedChecklist}
               onClick={() => {
                 if (!agreedChecklist) return
                 navigate(`/asesi/asesmen/${id}/ia04b`)
               }}
-              disabled={!agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: agreedChecklist ? '#0066cc' : '#999',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: agreedChecklist ? 'pointer' : 'not-allowed',
-                border: 'none',
-                borderRadius: '4px'
-              }}
             >
               Lanjut
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>

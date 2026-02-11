@@ -4,6 +4,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
@@ -89,34 +90,13 @@ export default function Ak01SuccessPage() {
             Mengalihkan ke Dashboard dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...
           </p>
 
-          <button
+          <ActionButton
+            variant="primary"
             onClick={handleBackToDashboard}
-            style={{
-              padding: '12px 32px',
-              background: '#0066cc',
-              color: '#fff',
-              fontSize: '13px',
-              cursor: 'pointer',
-              border: 'none',
-              borderRadius: '4px',
-              textTransform: 'uppercase',
-              fontWeight: 'bold',
-              fontFamily: 'Arial, Helvetica, sans-serif',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#0052a3'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,204,0.3)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#0066cc'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
+            style={{ padding: '12px 32px', textTransform: 'uppercase', fontWeight: 'bold' }}
           >
             Kembali ke Dashboard Sekarang
-          </button>
+          </ActionButton>
         </div>
         </div>
       </ModularAsesiLayout>

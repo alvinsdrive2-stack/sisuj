@@ -14,10 +14,18 @@ interface DashboardNavbarProps {
 
 export default function DashboardNavbar({ userName = "User" }: DashboardNavbarProps) {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // Determine dashboard route based on role
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const dashboardRoute = isAsesor ? '/asesor/dashboard' : '/asesi/dashboard'
+
+  const handleLogoClick = () => {
+    navigate(dashboardRoute)
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -47,15 +55,19 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
     .slice(0, 2)
 
   return (
-    <header className="bg-white dark:bg-slate-900/90 dark:backdrop-blur-md dark:border-slate-700 border-b border-primary/10 sticky top-0 z-50 h-16 animate-fade-in overflow-hidden">
+    <header className="bg-white dark:bg-slate-900/90 dark:backdrop-blur-md dark:border-slate-700 border-b border-primary/10 sticky top-0 z-50 h-16 overflow-hidden">
       <div className="w-full px-4 h-full mx-2">
         {/* Top Bar - Logo, Desktop Right Section, Mobile Toggle */}
         <div className="flex items-center justify-between h-full">
           {/* Left: Logo */}
           <div className="flex items-center">
-            <div className="w-36 h-36 flex items-center justify-center overflow-hidden">
+            <button
+              onClick={handleLogoClick}
+              className="w-36 h-36 flex items-center justify-center overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
+              title={`Kembali ke Dashboard ${isAsesor ? 'Asesor' : 'Asesi'}`}
+            >
               <img src={logo} alt="LSP Gatensi Logo" className="w-36 h-36 object-contain" />
-            </div>
+            </button>
           </div>
 
           {/* Desktop: Right section */}

@@ -8,6 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { ActionButton } from "@/components/ui/ActionButton"
 
 interface SoalAPI {
   id: number
@@ -301,35 +302,12 @@ export default function Ak03Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <button
-              onClick={() => navigate(getBackPath())}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #999',
-                background: '#fff',
-                color: '#000',
-                fontSize: '13px',
-                cursor: 'pointer',
-                borderRadius: '4px'
-              }}
-            >
+            <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={!agreedChecklist}
-              style={{
-                padding: '8px 16px',
-                background: agreedChecklist ? '#0066cc' : '#999',
-                color: '#fff',
-                fontSize: '13px',
-                cursor: agreedChecklist ? 'pointer' : 'not-allowed',
-                border: 'none',
-                borderRadius: '4px'
-              }}
-            >
+            </ActionButton>
+            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleSave}>
               Selesai
-            </button>
+            </ActionButton>
           </div>
         </div>
       </ModularAsesiLayout>
