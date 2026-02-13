@@ -90,7 +90,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
 
             if (result.data.asesor_1) {
               asesorList.push({
-                id: 1,
+                id: result.data.id_asesor_1,
                 nama: result.data.asesor_1,
                 noreg: result.data.noreg_asesor_1 || '',
               })
@@ -98,7 +98,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
 
             if (result.data.asesor_2) {
               asesorList.push({
-                id: 2,
+                id: result.data.id_asesor_2,
                 nama: result.data.asesor_2,
                 noreg: result.data.noreg_asesor_2 || '',
               })

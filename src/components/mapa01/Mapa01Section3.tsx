@@ -41,6 +41,7 @@ interface ReferensiFormItem {
 
 interface Mapa01Section3Props {
   referensiForm?: ReferensiFormItem[]
+  isAsesor?: boolean
 }
 
 interface Section3Item {
@@ -83,7 +84,7 @@ const cellStyles = {
 } as const;
 
 // ============== COMPONENT ==============
-export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
+export function Mapa01Section3({ referensiForm, isAsesor = false }: Mapa01Section3Props) {
   const headerStyle = {
     ...cellStyles.header,
     backgroundColor: COLORS.RED,
@@ -191,6 +192,8 @@ export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
 
   // Auto-resize textarea based on content
   const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!isAsesor) return // Prevent editing if not asesor
+
     const textarea = e.target
     textarea.style.height = 'auto'
     textarea.style.height = textarea.scrollHeight + 'px'
@@ -226,7 +229,8 @@ export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
                       name={`section3-${item.id}`}
                       value="ya"
                       checked={item.value === true}
-                      onChange={() => handleRadioChange(item.id, true)}
+                      onChange={() => isAsesor && handleRadioChange(item.id, true)}
+                      disabled={!isAsesor}
                     />
                     <span style={{ fontSize: '12px' }}>Ada</span>
                   </label>
@@ -237,7 +241,8 @@ export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
                       name={`section3-${item.id}`}
                       value="tidak"
                       checked={item.value === false}
-                      onChange={() => handleRadioChange(item.id, false)}
+                      onChange={() => isAsesor && handleRadioChange(item.id, false)}
+                      disabled={!isAsesor}
                     />
                     <span style={{ fontSize: '12px' }}>Tidak ada</span>
                   </label>
@@ -253,6 +258,7 @@ export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
                       value={item.alasan}
                       onChange={handleTextareaResize}
                       placeholder="Alasan/keterangan..."
+                      disabled={!isAsesor}
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -261,12 +267,14 @@ export function Mapa01Section3({ referensiForm }: Mapa01Section3Props) {
                         border: '1px solid #000',
                         borderRadius: '4px',
                         outline: 'none',
-                        background: '#fff',
+                        background: isAsesor ? '#fff' : '#f5f5f5',
                         resize: 'none',
                         minHeight: '40px',
                         height: item.alasan ? 'auto' : '40px',
                         overflow: 'hidden',
-                        fontFamily: 'inherit'
+                        fontFamily: 'inherit',
+                        cursor: isAsesor ? 'text' : 'not-allowed',
+                        opacity: isAsesor ? 1 : 0.6
                       }}
                     />
                   </div>

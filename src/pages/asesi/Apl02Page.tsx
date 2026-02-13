@@ -6,7 +6,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -424,6 +424,18 @@ interface File {
   path: string
 }
 
+interface BarcodeInfo {
+  url: string | null
+  tanggal: string | null
+  nama: string | null
+}
+
+interface SubunitBarcodes {
+  asesi: BarcodeInfo
+  asesor1: BarcodeInfo | null
+  asesor2: BarcodeInfo | null
+}
+
 interface Subunit {
   id: string
   no_elemen: string
@@ -431,6 +443,7 @@ interface Subunit {
   kompeten?: boolean
   kuk_list: KUK[]
   files: File[]
+  barcodes?: SubunitBarcodes
 }
 
 interface Unit {
@@ -445,6 +458,7 @@ interface Apl02Response {
   data: {
     metode?: 'observasi' | 'portofolio'
     is_dilanjutkan?: boolean
+    id_jadwal?: number
     units: Unit[]
   }
 }
@@ -479,7 +493,8 @@ type Apl02Data = {
 export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
@@ -487,6 +502,9 @@ export default function Apl02Page() {
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
+
+  // Get jadwal_id based on role
+  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -498,6 +516,7 @@ export default function Apl02Page() {
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
+  const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
 
   const handleCheckboxChange = (kukId: string, value: 'K' | 'BK') => {
     setKukChecklist(prev => {
@@ -594,8 +613,8 @@ export default function Apl02Page() {
         // Fetch id_izin dari list-asesi endpoint (skip for asesor)
         let fetchedIdIzin: string | null = idIzin || null
 
-        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        if (!fetchedIdIzin && !isAsesor && kegiatanAsesi?.jadwal_id) {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -671,6 +690,7 @@ export default function Apl02Page() {
 
             // Map subunit.kompeten to kukChecklist
             const newKukChecklist: Record<string, 'K' | 'BK'> = {}
+            const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
                 if (subunit.kompeten !== undefined) {
@@ -680,12 +700,20 @@ export default function Apl02Page() {
                     newKukChecklist[kukId] = subunit.kompeten ? 'K' : 'BK'
                   })
                 }
+                // Store barcodes per subunit
+                if (subunit.barcodes) {
+                  newSubunitBarcodes[subunit.id] = subunit.barcodes
+                }
               })
             })
 
             // Only set if there are saved answers
             if (Object.keys(newKukChecklist).length > 0) {
               setKukChecklist(newKukChecklist)
+            }
+            // Set barcodes
+            if (Object.keys(newSubunitBarcodes).length > 0) {
+              setSubunitBarcodes(newSubunitBarcodes)
             }
           }
         }
@@ -722,10 +750,10 @@ export default function Apl02Page() {
 
     if (isAsesor && idIzin) {
       fetchData()
-    } else if (kegiatan) {
+    } else if (kegiatanAsesi) {
       fetchData()
     }
-  }, [kegiatan, user, isAsesor, idIzinFromUrl])
+  }, [kegiatanAsesi, user, isAsesor, idIzinFromUrl])
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
@@ -733,9 +761,109 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesor, langsung navigate tanpa save
+    // Jika asesor, generate QR lalu navigate
     if (isAsesor) {
       const finalIdIzin = idIzinFromUrl || _idIzin
+      if (!finalIdIzin) {
+        showWarning("ID Izin tidak ditemukan")
+        return
+      }
+
+      // Cek apakah QR asesor sudah ada sebelum generate QR
+      const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
+      const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+
+      // Ambil salah satu subunit untuk cek barcode
+      const firstSubunitId = apl02Data?.units?.[0]?.subunits?.[0]?.id
+      const existingBarcode = firstSubunitId ? subunitBarcodes[firstSubunitId] : null
+      const hasExistingAsesorQR = isAsesor1 ? existingBarcode?.asesor1?.url : existingBarcode?.asesor2?.url
+
+      // Generate QR untuk asesor hanya jika belum ada
+      if (jadwalId && !hasExistingAsesorQR) {
+        setIsSaving(true)
+        try {
+          const token = localStorage.getItem("access_token")
+
+          console.log('Generating QR for asesor...', { finalIdIzin, jadwalId, userId: user?.id })
+
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${finalIdIzin}/apl02`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
+            })
+          })
+
+          console.log('QR Response status:', qrResponse.status)
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            console.log('QR Result:', qrResult)
+
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              // Tentukan asesor1 atau asesor2 berdasarkan index di asesorList
+              console.log('asesorList:', asesorList)
+              const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
+              console.log('asesorIndex:', asesorIndex, 'userId:', user?.id)
+
+              // Kalau ga ketemu di list, default ke asesor1
+              const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+              const isAsesor2 = asesorIndex === 1
+
+              // Ambil semua subunit IDs dari apl02Data
+              const subunitIds: string[] = []
+              apl02Data?.units.forEach(unit => {
+                unit.subunits.forEach(subunit => {
+                  subunitIds.push(subunit.id)
+                })
+              })
+
+              console.log('subunitIds:', subunitIds, 'isAsesor1:', isAsesor1, 'isAsesor2:', isAsesor2)
+
+              // Update atau buat barcode entries untuk semua subunit
+              setSubunitBarcodes(prev => {
+                const updated = { ...prev }
+                subunitIds.forEach(subunitId => {
+                  const existing = updated[subunitId]
+                  updated[subunitId] = {
+                    asesi: existing?.asesi || { url: null, tanggal: null, nama: null },
+                    asesor1: isAsesor1
+                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
+                      : existing?.asesor1 || null,
+                    asesor2: isAsesor2
+                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
+                      : existing?.asesor2 || null
+                  }
+                })
+                console.log('Updated subunitBarcodes:', updated)
+                return updated
+              })
+
+              showSuccess('Dokumen berhasil ditandatangani!')
+              // Delay sedikit biar user bisa lihat QR sebelum navigate
+              setTimeout(() => {
+                navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+              }, 1500)
+              return
+            } else {
+              console.log('QR generation failed or no url_image in response')
+            }
+          } else {
+            console.log('QR response not OK')
+          }
+        } catch (qrError) {
+          console.error('Error generating QR:', qrError)
+        } finally {
+          setIsSaving(false)
+        }
+      } else {
+        console.log('No jadwalId available')
+      }
+
       navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
       return
     }
@@ -826,6 +954,56 @@ export default function Apl02Page() {
       })
 
       if (response.ok) {
+        // Generate QR jika belum ada dan jadwalId tersedia
+        if (jadwalId) {
+          // Cek apakah ada subunit yang belum punya barcode asesi
+          const hasMissingBarcode = apl02Data?.units.some(unit =>
+            unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
+          )
+
+          if (hasMissingBarcode) {
+            try {
+              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${finalIdIzin}/apl02`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  id_jadwal: jadwalId
+                })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  // Update barcodes state - untuk display
+                  // Karena barcode sama untuk semua subunit, update semua
+                  const newBarcodes: Record<string, SubunitBarcodes> = {}
+                  apl02Data?.units.forEach(unit => {
+                    unit.subunits.forEach(subunit => {
+                      newBarcodes[subunit.id] = {
+                        asesi: {
+                          url: qrResult.data.url_image,
+                          tanggal: new Date().toISOString(),
+                          nama: user?.name || null
+                        },
+                        asesor1: subunit.barcodes?.asesor1 || null,
+                        asesor2: subunit.barcodes?.asesor2 || null
+                      }
+                    })
+                  })
+                  setSubunitBarcodes(newBarcodes)
+                }
+              }
+            } catch (qrError) {
+              console.error('Error generating QR:', qrError)
+              // Continue even if QR generation fails
+            }
+          }
+        }
+
         showSuccess('APL 02 berhasil disimpan!')
         setTimeout(() => {
           navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
@@ -1242,37 +1420,82 @@ export default function Apl02Page() {
             {/* Asesi Row 3 - Signature */}
             <tr>
               <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-              <td style={{ height: '150px', border: '1px solid #000', padding: '8px' }}></td>
+              <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {(() => {
+                  // Get first available asesi barcode
+                  const firstAsesiBarcode = Object.values(subunitBarcodes).find(b => b.asesi?.url)?.asesi
+                  if (firstAsesiBarcode?.url) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                        <img
+                          src={firstAsesiBarcode.url}
+                          alt="Tanda Tangan Asesi"
+                          style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                        />
+                        {firstAsesiBarcode.tanggal && (
+                          <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                            {new Date(firstAsesiBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
+              </td>
             </tr>
 
             {/* Dynamic Asesor Rows */}
             {asesorList.length > 0 ? (
-              asesorList.map((asesor, idx) => (
-                <React.Fragment key={asesor.id}>
-                  {idx === 0 && (
+              asesorList.map((asesor, idx) => {
+                // Get barcode for this asesor (idx 0 = asesor1, idx 1 = asesor2)
+                const firstSubunitId = Object.keys(subunitBarcodes)[0]
+                const asesorBarcode = firstSubunitId
+                  ? (idx === 0 ? subunitBarcodes[firstSubunitId]?.asesor1 : subunitBarcodes[firstSubunitId]?.asesor2)
+                  : null
+
+                return (
+                  <React.Fragment key={asesor.id}>
+                    {idx === 0 && (
+                      <tr>
+                        <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+                      </tr>
+                    )}
+                    {idx > 0 && (
+                      <tr>
+                        <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor :</td>
+                      </tr>
+                    )}
                     <tr>
-                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+                      <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
+                      <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
                     </tr>
-                  )}
-                  {idx > 0 && (
                     <tr>
-                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor :</td>
+                      <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+                      <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
                     </tr>
-                  )}
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-                    <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
-                  </tr>
-                </React.Fragment>
-              ))
+                    <tr>
+                      <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+                      <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                        {asesorBarcode?.url ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <img
+                              src={asesorBarcode.url}
+                              alt={`Tanda Tangan ${asesor.nama}`}
+                              style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                            />
+                            {asesorBarcode.tanggal && (
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                                {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  </React.Fragment>
+                )
+              })
             ) : (
               // Fallback static Asesor
               <>
@@ -1290,7 +1513,29 @@ export default function Apl02Page() {
                 </tr>
                 <tr>
                   <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-                  <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
+                  <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                    {(() => {
+                      const firstSubunitId = Object.keys(subunitBarcodes)[0]
+                      const asesor1Barcode = firstSubunitId ? subunitBarcodes[firstSubunitId]?.asesor1 : null
+                      if (asesor1Barcode?.url) {
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <img
+                              src={asesor1Barcode.url}
+                              alt="Tanda Tangan Asesor"
+                              style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                            />
+                            {asesor1Barcode.tanggal && (
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                                {new Date(asesor1Barcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      }
+                      return null
+                    })()}
+                  </td>
                 </tr>
               </>
             )}

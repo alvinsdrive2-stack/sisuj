@@ -5,7 +5,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -33,13 +33,24 @@ interface Kelompok {
   kategoris: Kategori[]
 }
 
+// API response now has kelompok properties directly on the item
 interface Ak07DataItem {
-  kelompok: Kelompok
+  id: number
+  nama: string
+  urut: number
+  kategoris: Kategori[]
+  kelompok?: Kelompok // Keep for backward compatibility
 }
 
 interface ApiResponse {
   message: string
-  data: Ak07DataItem[]
+  data: {
+    barcodes?: {
+      asesi?: { url: string; tanggal: string; nama: string }
+      asesor?: Record<string, { url: string; tanggal: string; nama: string }>
+    }
+    kelompoks: Ak07DataItem[]
+  }
 }
 
 type SelectedReferences = Record<string, Set<number> | null>
@@ -47,7 +58,8 @@ type SelectedReferences = Record<string, Set<number> | null>
 export default function FrAk07Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const { isAsesor1 } = useAsesorRole(idIzinFromUrl)
@@ -56,14 +68,58 @@ export default function FrAk07Page() {
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
+  // Get jadwal_id based on role
+  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+
   // Other sections: asesi and asesor_1 can edit, asesor_2 cannot
   const isFormDisabled = isAsesor && !isAsesor1
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string }
+    asesor?: Record<string, { url: string; tanggal: string; nama: string }>
+  } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
+
+  // Transform barcodes from old API format (asesor1, asesor2) to new dynamic format
+  useEffect(() => {
+    if (!barcodes || asesorList.length === 0) return
+
+    const apiBarcodes = barcodes as any
+
+    // If already has asesor in new format, skip transformation
+    if (apiBarcodes.asesor && Object.keys(apiBarcodes.asesor || {}).length > 0) return
+
+    // Transform old format (asesor1, asesor2) to new dynamic format
+    const transformedAsesor: Record<string, { url: string; tanggal: string; nama: string }> = {}
+
+    // Only map non-null barcodes
+    if (apiBarcodes.asesor1 && asesorList[0]) {
+      transformedAsesor[String(asesorList[0].id)] = {
+        url: apiBarcodes.asesor1.url,
+        tanggal: apiBarcodes.asesor1.tanggal,
+        nama: apiBarcodes.asesor1.nama
+      }
+    }
+    if (apiBarcodes.asesor2 && asesorList[1]) {
+      transformedAsesor[String(asesorList[1].id)] = {
+        url: apiBarcodes.asesor2.url,
+        tanggal: apiBarcodes.asesor2.tanggal,
+        nama: apiBarcodes.asesor2.nama
+      }
+    }
+
+    // Only update if we have transformed data
+    if (Object.keys(transformedAsesor).length > 0) {
+      setBarcodes({
+        asesi: apiBarcodes.asesi,
+        asesor: transformedAsesor
+      })
+    }
+  }, [barcodes, asesorList])
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -76,9 +132,9 @@ export default function FrAk07Page() {
         // Use idIzin from URL params
         let actualIdIzin = idIzin
 
-        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        if (!actualIdIzin && !isAsesor && kegiatanAsesi?.jadwal_id) {
           // Fetch id_izin from list-asesi endpoint if not in URL
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi?.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -109,15 +165,19 @@ export default function FrAk07Page() {
         if (ak07Response.ok) {
           const result: ApiResponse = await ak07Response.json()
           if (result.message === "Success") {
-            setAk07Data(result.data)
+            const kelompoks = result.data?.kelompoks || []
+            console.log('[AK07] Loaded kelompoks:', kelompoks)
+            setAk07Data(kelompoks)
 
-            // Debug: log data to see jawaban values
-            console.log('[AK07] Loaded data:', result.data)
+            // Set barcodes raw from API - will be transformed in separate effect
+            if (result.data?.barcodes) {
+              setBarcodes(result.data.barcodes as any)
+            }
 
             // Set textAnswers from API (for string jawaban)
             const newTextAnswers: Record<number, string> = {}
-            result.data.forEach(item => {
-              item.kelompok.kategoris.forEach(kategori => {
+            kelompoks.forEach((item: Ak07DataItem) => {
+              item.kategoris.forEach(kategori => {
                 kategori.referensis.forEach(ref => {
                   console.log('[AK07] Ref:', ref.id, 'jawaban:', ref.jawaban)
                   if (typeof ref.jawaban === 'string' && ref.jawaban) {
@@ -130,10 +190,10 @@ export default function FrAk07Page() {
 
             // Set selectedReferences from API (for boolean jawaban: true)
             const newSelectedReferences: SelectedReferences = {}
-            result.data.forEach(item => {
-              item.kelompok.kategoris.forEach(kategori => {
+            kelompoks.forEach((item: Ak07DataItem) => {
+              item.kategoris.forEach(kategori => {
                 if (kategori.id) {
-                  const key = `${kategori.id}_${item.kelompok.id}`
+                  const key = `${kategori.id}_${item.id}`
                   const refIds = kategori.referensis
                     .filter(ref => ref.jawaban === true)
                     .map(ref => ref.id)
@@ -157,10 +217,10 @@ export default function FrAk07Page() {
 
     if (isAsesor && idIzin) {
       fetchData()
-    } else if (kegiatan) {
+    } else if (kegiatanAsesi) {
       fetchData()
     }
-  }, [idIzin, kegiatan, isAsesor])
+  }, [idIzin, kegiatanAsesi, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
@@ -193,8 +253,8 @@ export default function FrAk07Page() {
 
     // Kalau nggak ada di user selection, cek dari API data
     const ref = ak07Data
-      ?.find(d => d.kelompok.id === kelompokId)
-      ?.kelompok.kategoris
+      ?.find(d => d.id === kelompokId)
+      ?.kategoris
       .find(k => k.id === kategoriId)
       ?.referensis.find(r => r.id === refId)
 
@@ -208,33 +268,68 @@ export default function FrAk07Page() {
       return
     }
 
-    // Jika form disabled (asesor_2), langsung navigate tanpa save
+    // Asesor_2 hanya generate QR/tanda tangan tanpa save form data
     if (isFormDisabled) {
+      const token = localStorage.getItem("access_token")
       let actualIdIzin = idIzin
-      if (!actualIdIzin && kegiatan?.jadwal_id) {
-        const token = localStorage.getItem("access_token")
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            actualIdIzin = listResult.list_asesi[0].id_izin
+
+      // Asesor uses idIzin from URL (no need to fetch list-asesi)
+      if (!actualIdIzin) {
+        showWarning("ID Izin tidak ditemukan")
+        return
+      }
+
+      // Generate QR untuk asesor_2
+      if (jadwalId) {
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak07`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
+            })
+          })
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              const currentAsesorId = String(user?.id)
+              setBarcodes(prev => ({
+                asesi: prev?.asesi,
+                asesor: {
+                  ...prev?.asesor,
+                  [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                }
+              }))
+              showSuccess('Tanda tangan berhasil disimpan!')
+              setTimeout(() => {
+                navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+              }, 500)
+              return
+            }
+          } else {
+            showError('Gagal generate tanda tangan')
           }
+        } catch (qrError) {
+          console.error('Error generating QR:', qrError)
+          showError('Gagal generate tanda tangan')
         }
       }
+
+      // Jika gagal generate QR, tetap navigate ke next page
       navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
       return
     }
 
     // Asesi dan asesor_1 - save data dulu
     let actualIdIzin = idIzin
-    if (!actualIdIzin && kegiatan?.jadwal_id) {
+    if (!actualIdIzin && kegiatanAsesi?.jadwal_id) {
       const token = localStorage.getItem("access_token")
-      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi?.jadwal_id}/list-asesi`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -263,14 +358,14 @@ export default function FrAk07Page() {
       }
 
       // Kelompok 4 (Potensi Asesi) - boolean per item
-      const potensiAsesiData = ak07Data.find(d => d.kelompok.urut === 1)
+      const potensiAsesiData = ak07Data.find(d => d.urut === 1)
       if (potensiAsesiData) {
-        potensiAsesiData.kelompok.kategoris.forEach(kategori => {
+        potensiAsesiData.kategoris.forEach(kategori => {
           kategori.referensis.forEach(ref => {
-            const isChecked = isReferenceChecked(kategori.id, potensiAsesiData.kelompok.id, ref.id)
+            const isChecked = isReferenceChecked(kategori.id, potensiAsesiData.id, ref.id)
             answers.push({
               referensi_id: ref.id,
-              kelompok_id: potensiAsesiData.kelompok.id,
+              kelompok_id: potensiAsesiData.id,
               value: isChecked
             })
           })
@@ -278,14 +373,14 @@ export default function FrAk07Page() {
       }
 
       // Kelompok 5 (Modifikasi) - boolean per item
-      const modifikasiData = ak07Data.find(d => d.kelompok.urut === 2)
+      const modifikasiData = ak07Data.find(d => d.urut === 2)
       if (modifikasiData) {
-        modifikasiData.kelompok.kategoris.forEach(kategori => {
+        modifikasiData.kategoris.forEach(kategori => {
           kategori.referensis.forEach(ref => {
-            const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
+            const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
             answers.push({
               referensi_id: ref.id,
-              kelompok_id: modifikasiData.kelompok.id,
+              kelompok_id: modifikasiData.id,
               value: isChecked
             })
           })
@@ -293,27 +388,27 @@ export default function FrAk07Page() {
       }
 
       // Kelompok 6 (Rekaman Rencana Asesmen) - string/text
-      const rencanaAsesmenData = ak07Data.find(d => d.kelompok.urut === 3)
+      const rencanaAsesmenData = ak07Data.find(d => d.urut === 3)
       if (rencanaAsesmenData) {
-        rencanaAsesmenData.kelompok.kategoris[0]?.referensis.forEach(ref => {
+        rencanaAsesmenData.kategoris[0]?.referensis.forEach(ref => {
           const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
           answers.push({
             referensi_id: ref.id,
-            kelompok_id: rencanaAsesmenData.kelompok.id,
+            kelompok_id: rencanaAsesmenData.id,
             value: textValue
           })
         })
       }
 
       // Kelompok 7 (Hasil Penyesuaian) - string/text
-      const hasilPenyesuaianData = ak07Data.find(d => d.kelompok.urut === 4)
+      const hasilPenyesuaianData = ak07Data.find(d => d.urut === 4)
       if (hasilPenyesuaianData) {
-        hasilPenyesuaianData.kelompok.kategoris[0]?.referensis.forEach(ref => {
+        hasilPenyesuaianData.kategoris[0]?.referensis.forEach(ref => {
           if (!ref.nama) return // Skip null nama
           const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
           answers.push({
             referensi_id: ref.id,
-            kelompok_id: hasilPenyesuaianData.kelompok.id,
+            kelompok_id: hasilPenyesuaianData.id,
             value: textValue
           })
         })
@@ -336,6 +431,48 @@ export default function FrAk07Page() {
         throw new Error(error.message || "Gagal menyimpan data AK07")
       }
 
+      // Generate QR jika jadwalId tersedia
+      if (jadwalId) {
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak07`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
+            })
+          })
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              // Update barcodes state
+              if (isAsesor) {
+                const currentAsesorId = String(user?.id)
+                setBarcodes(prev => ({
+                  ...prev,
+                  asesi: prev?.asesi,
+                  asesor: {
+                    ...prev?.asesor,
+                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                  }
+                }))
+              } else {
+                setBarcodes(prev => ({
+                  ...prev,
+                  asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+                }))
+              }
+            }
+          }
+        } catch (qrError) {
+          console.error('Error generating QR:', qrError)
+        }
+      }
+
       showSuccess('FR AK 07 berhasil disimpan!')
       setTimeout(() => {
         navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
@@ -352,10 +489,10 @@ export default function FrAk07Page() {
   }
 
   // Group data by kelompok
-  const potensiAsesiData = ak07Data?.find(d => d.kelompok.urut === 1)
-  const modifikasiData = ak07Data?.find(d => d.kelompok.urut === 2)
-  const rencanaAsesmenData = ak07Data?.find(d => d.kelompok.urut === 3)
-  const hasilPenyesuaianData = ak07Data?.find(d => d.kelompok.urut === 4)
+  const potensiAsesiData = ak07Data?.find(d => d.urut === 1)
+  const modifikasiData = ak07Data?.find(d => d.urut === 2)
+  const rencanaAsesmenData = ak07Data?.find(d => d.urut === 3)
+  const hasilPenyesuaianData = ak07Data?.find(d => d.urut === 4)
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -463,8 +600,8 @@ export default function FrAk07Page() {
                     Potensi Asesi
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                    {potensiAsesiData.kelompok.kategoris[0]?.referensis.map((ref) => {
-                      const isChecked = isReferenceChecked(potensiAsesiData.kelompok.kategoris[0]?.id || null, potensiAsesiData.kelompok.id, ref.id)
+                    {potensiAsesiData.kategoris[0]?.referensis.map((ref) => {
+                      const isChecked = isReferenceChecked(potensiAsesiData.kategoris[0]?.id || null, potensiAsesiData.id, ref.id)
 
                       return (
                         <div key={ref.id} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '6px' }}>
@@ -497,13 +634,13 @@ export default function FrAk07Page() {
                   <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontSize: '14px' }}>Keterangan</th>
                 </tr>
 
-                {modifikasiData.kelompok.kategoris.map((kategori, kategoriIndex) => {
+                {modifikasiData.kategoris.map((kategori, kategoriIndex) => {
                   if (!kategori.nama) return null
 
                   const filteredReferensis = kategori.referensis.filter(r => r.nama)
 
                   return filteredReferensis.map((ref, refIdx) => {
-                    const isChecked = isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)
+                    const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
                     const isFirstRow = refIdx === 0
 
                     return (
@@ -521,14 +658,14 @@ export default function FrAk07Page() {
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
                           <CustomCheckbox
                             checked={isChecked}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
                           <CustomCheckbox
-                            checked={!isReferenceChecked(kategori.id, modifikasiData.kelompok.id, ref.id)}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.kelompok.id, ref.id)}
+                            checked={!isReferenceChecked(kategori.id, modifikasiData.id, ref.id)}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
@@ -550,7 +687,7 @@ export default function FrAk07Page() {
                 <tr>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
                     <div style={{ marginBottom: '8px', fontSize: '14px' }}>Rekaman Rencana Asesmen:</div>
-                    {rencanaAsesmenData.kelompok.kategoris[0]?.referensis.map((ref) => (
+                    {rencanaAsesmenData.kategoris[0]?.referensis.map((ref) => (
                       <div key={ref.id} style={{ marginBottom: '8px', marginLeft: '20px' }}>
                         <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
                           {ref.nama}
@@ -578,7 +715,7 @@ export default function FrAk07Page() {
                 <tr>
                   <td style={{ border: '1px solid #000', padding: '8px' }}>
                     <div style={{ marginBottom: '12px', fontSize: '14px' }}>A. Hasil Penyesuaian yang wajar dan beralasan disepakati menggunakan:</div>
-                    {hasilPenyesuaianData.kelompok.kategoris[0]?.referensis.filter(r => r.nama).map((ref) => (
+                    {hasilPenyesuaianData.kategoris[0]?.referensis.filter(r => r.nama).map((ref) => (
                       <div key={ref.id} style={{ marginBottom: '12px', marginLeft: '20px' }}>
                         <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
                           {ref.nama}
@@ -603,34 +740,82 @@ export default function FrAk07Page() {
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
             <tbody>
               {asesorList.length > 0 ? (
-                asesorList.map((asesor) => (
-                  <tr key={asesor.id}>
-                    <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '80px' }}>
-                      <div>Nama Asesor : {asesor.nama?.toUpperCase() || ''}</div>
-                      {asesor.noreg && <div>No. Reg : {asesor.noreg}</div>}
-                    </td>
-                    <td style={{ border: '1px solid #000', padding: '8px', width: '50%' }}>
-                      <div>Tanggal dan Tanda Tangan Asesor :</div>
-                    </td>
-                  </tr>
-                ))
+                asesorList.map((asesor) => {
+                  const asesorBarcode = barcodes?.asesor?.[String(asesor.id)]
+                  return (
+                    <tr key={asesor.id}>
+                      <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '100px' }}>
+                        <div>Nama Asesor : {asesor.nama?.toUpperCase() || ''}</div>
+                        {asesor.noreg && <div>No. Reg : {asesor.noreg}</div>}
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '8px', width: '50%', verticalAlign: 'middle', textAlign: 'center' }}>
+                        <div style={{ marginBottom: '4px', textAlign: 'left' }}>Tanggal dan Tanda Tangan Asesor :</div>
+                        {asesorBarcode?.url ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <img
+                              src={asesorBarcode.url}
+                              alt={`Tanda Tangan ${asesor.nama}`}
+                              style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                            />
+                            {asesorBarcode.tanggal && (
+                              <div style={{ fontSize: '11px', color: '#333' }}>
+                                {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  )
+                })
               ) : (
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '80px' }}>
+                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '100px' }}>
                     <div>Nama Asesor : {namaAsesor?.toUpperCase() || ''}</div>
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%' }}>
-                    <div>Tanggal dan Tanda Tangan Asesor :</div>
+                  <td style={{ border: '1px solid #000', padding: '8px', width: '50%', verticalAlign: 'middle', textAlign: 'center' }}>
+                    <div style={{ marginBottom: '4px', textAlign: 'left' }}>Tanggal dan Tanda Tangan Asesor :</div>
+                    {Object.values(barcodes?.asesor || {})[0]?.url ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        <img
+                          src={Object.values(barcodes?.asesor || {})[0].url}
+                          alt="Tanda Tangan Asesor"
+                          style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                        />
+                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
+                          {Object.values(barcodes?.asesor || {})[0].nama}
+                        </div>
+                        {Object.values(barcodes?.asesor || {})[0]?.tanggal && (
+                          <div style={{ fontSize: '11px', color: '#333' }}>
+                            {new Date(Object.values(barcodes?.asesor || {})[0].tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               )}
               <tr>
-                <td style={{ border: '1px solid #000', padding: '8px', height: '80px' }}>
+                <td style={{ border: '1px solid #000', padding: '8px', height: '100px' }}>
                   <div>Nama Asesi :</div>
                   <div>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</div>
                 </td>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>
-                  <div>Tanggal dan Tanda Tangan Asesi :</div>
+                <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  <div style={{ marginBottom: '4px', textAlign: 'left' }}>Tanggal dan Tanda Tangan Asesi :</div>
+                  {barcodes?.asesi?.url ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img
+                        src={barcodes.asesi.url}
+                        alt="Tanda Tangan Asesi"
+                        style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                      />
+                      {barcodes.asesi.tanggal && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             </tbody>

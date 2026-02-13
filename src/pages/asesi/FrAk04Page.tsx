@@ -422,13 +422,12 @@ export default function FrAk04Page() {
 
           {/* Agreement Checklist */}
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: isFormDisabled ? 'default' : 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
                 checked={agreedChecklist}
-                onChange={(e) => !isFormDisabled && setAgreedChecklist(e.target.checked)}
-                disabled={isFormDisabled}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                onChange={(e) => setAgreedChecklist(e.target.checked)}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.

@@ -1,25 +1,16 @@
+import { useNavigate } from "react-router-dom"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PenTool, FileText, Calendar, User, Clock, CheckCircle2 } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { StatCard, DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useKegiatanKomtek } from "@/hooks/useKegiatan"
 
 export default function TandatanganKomtek() {
-  const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanKomtek(false) // belum ditandatangani
-  const { kegiatans: signedDocs, isLoading: isLoadingSigned } = useKegiatanKomtek(true) // sudah ditandatangani
-  const [signingId, setSigningId] = useState<string | null>(null)
-
-  const handleSign = async (jadwalId: string) => {
-    setSigningId(jadwalId)
-    // TODO: Implement actual API call for signing
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    setSigningId(null)
-    // Refresh data after signing
-    window.location.reload()
-  }
+  const navigate = useNavigate()
+  const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanKomtek(false)
+  const { kegiatans: signedDocs, isLoading: isLoadingSigned } = useKegiatanKomtek(true)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -39,7 +30,7 @@ export default function TandatanganKomtek() {
       {/* Page Title */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800">Tandatangan Dokumen</h2>
-        <p className="text-slate-600">Tandatangani dokumen kegiatan sertifikasi</p>
+        <p className="text-slate-600">Daftar dokumen yang belum ditandatangani</p>
       </div>
 
       {/* Stats */}
@@ -67,13 +58,13 @@ export default function TandatanganKomtek() {
         />
       </div>
 
-      {/* Documents to Sign */}
+      {/* Documents to View */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-primary" />
             Dokumen Perlu Tandatangan
-            {isLoadingPending && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            {isLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -100,28 +91,14 @@ export default function TandatanganKomtek() {
                   ]}
                   badges={[<Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>]}
                   actions={[
-                    <Button key="detail" variant="outline" size="sm">
+                    <Button
+                      key="detail"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}
+                    >
                       <FileText className="w-4 h-4 mr-2" />
                       Lihat Detail
-                    </Button>,
-                    <Button
-                      key="sign"
-                      size="sm"
-                      onClick={() => handleSign(doc.jadwal_id)}
-                      disabled={signingId === doc.jadwal_id}
-                      className="bg-primary hover:bg-primary/90"
-                    >
-                      {signingId === doc.jadwal_id ? (
-                        <div className="flex items-center gap-2">
-                          <SimpleSpinner size="sm" className="text-white" />
-                          <span>Memproses...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <PenTool className="w-4 h-4 mr-2" />
-                          Tandatangani
-                        </>
-                      )}
                     </Button>
                   ]}
                 />

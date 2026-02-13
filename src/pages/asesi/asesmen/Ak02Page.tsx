@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -29,9 +30,20 @@ interface UnitKompetensi {
   nama: string
 }
 
+type BarcodeData = {
+  url: string
+  tanggal: string
+  nama: string
+}
+
 interface Ak02Response {
   message: string
   data: {
+    barcodes?: {
+      asesi?: BarcodeData
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
     data_unit_kompetensi: UnitKompetensiAPI[]
     is_kompeten: boolean
     tindak_lanjut: string
@@ -55,6 +67,7 @@ export default function Ak02Page() {
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -69,6 +82,11 @@ export default function Ak02Page() {
   const [tindakLanjut, setTindakLanjut] = useState('')
   const [komentar, setKomentar] = useState('')
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
 
   // Unit kompetensi state
   const [unitKompetensi, setUnitKompetensi] = useState<UnitKompetensi[]>([])
@@ -100,6 +118,15 @@ export default function Ak02Page() {
         if (response.ok) {
           const result: Ak02Response = await response.json()
           if (result.message === "Success" && result.data?.data_unit_kompetensi) {
+            // Set barcodes from API
+            if (result.data.barcodes) {
+              setBarcodes({
+                asesi: result.data.barcodes.asesi,
+                asesor1: result.data.barcodes.asesor1,
+                asesor2: result.data.barcodes.asesor2,
+              })
+            }
+
             // Transform API data and set evidenceChecks
             const units: UnitKompetensi[] = []
             const checks: Record<number, EvidenceCheck> = {}
@@ -375,32 +402,65 @@ export default function Ak02Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
             </tr>
 
             {/* Asesor rows - dynamic */}
-            {asesorList.map((asesor) => (
-              <React.Fragment key={asesor.id}>
-                <tr>
-                  <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}><b>Asesor :</b></td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama</td>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{asesor.nama?.toUpperCase() || ''}</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>{asesor.noreg || ''}</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                  <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
-                </tr>
-              </React.Fragment>
-            ))}
+            {asesorList.map((asesor, idx) => {
+              const asesorBarcode = idx === 0 ? barcodes?.asesor1 : barcodes?.asesor2
+              return (
+                <React.Fragment key={asesor.id}>
+                  <tr>
+                    <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}><b>Asesor {idx + 1} :</b></td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>Nama</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                    <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      {asesorBarcode?.url ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <img
+                            src={asesorBarcode.url}
+                            alt={`Tanda Tangan ${asesor.nama}`}
+                            style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                          />
+                          {asesorBarcode.tanggal && (
+                            <div style={{ fontSize: '11px', color: '#333' }}>
+                              {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                </React.Fragment>
+              )
+            })}
           </tbody>
         </table>
 
@@ -496,14 +556,51 @@ export default function Ak02Page() {
 
                   if (response.ok) {
                     showSuccess('AK 02 berhasil disimpan!')
+
+                    // Generate QR for asesor only if not exists
+                    if (isAsesor) {
+                      const jadwalId = kegiatanAsesor?.jadwal_id
+                      const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+
+                      if (jadwalId && !existingAsesorQR) {
+                        try {
+                          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak02`, {
+                            method: 'POST',
+                            headers: {
+                              'Accept': 'application/json',
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                              id_jadwal: jadwalId
+                            })
+                          })
+
+                          if (qrResponse.ok) {
+                            const qrResult = await qrResponse.json()
+                            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                              // Update barcodes based on asesor role
+                              if (isAsesor1) {
+                                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name } }))
+                              } else {
+                                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name } }))
+                              }
+                            }
+                          }
+                        } catch (qrError) {
+                          console.error('Error generating QR:', qrError)
+                        }
+                      }
+                    }
+
                     // Find current step (AK.02) and navigate to next step
                     const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
                     const nextStep = asesmenSteps[currentStepIndex + 1]
                     if (nextStep) {
                       const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                      setTimeout(() => navigate(nextPath), 500)
+                      setTimeout(() => navigate(nextPath), 1500)
                     } else {
-                      setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
+                      setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 1500)
                     }
                   } else {
                     console.error('Failed to save AK02:', response.status)

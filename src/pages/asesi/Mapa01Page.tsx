@@ -17,8 +17,6 @@ import {
   Mapa01TandaTangan
 } from "@/components/mapa01"
 import "@/components/mapa01/Mapa01.css"
-import jsPDF from "jspdf"
-import html2canvas from "html2canvas"
 
 interface Unit {
   id_unit: number
@@ -91,12 +89,11 @@ export default function Mapa01Page() {
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, tuk: _tuk } = useDataDokumenAsesmen(idIzin || "")
-  const { showSuccess, showError, showWarning } = useToast()
+  const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isExportingPdf, setIsExportingPdf] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -190,71 +187,6 @@ export default function Mapa01Page() {
     }, 500)
   }
 
-  const handleExportPdf = async () => {
-    if (!contentRef.current) return
-
-    setIsExportingPdf(true)
-
-    // Add exporting class to hide indicators
-    document.body.classList.add('exporting-pdf')
-
-    try {
-      const element = contentRef.current
-
-      // Use html2canvas to capture the content
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      })
-
-      const imgData = canvas.toDataURL('image/png', 1.0)
-
-      // A4 size in mm
-      const a4Width = 210
-      const a4Height = 297
-
-      // Calculate image dimensions
-      const imgWidthMM = a4Width
-      const imgHeightMM = (canvas.height * a4Width) / canvas.width
-
-      // Create PDF
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
-
-      // If content fits in one page
-      if (imgHeightMM <= a4Height) {
-        pdf.addImage(imgData, 'PNG', 0, 0, imgWidthMM, imgHeightMM)
-      } else {
-        // Split into multiple pages if content is too long
-        const totalPages = Math.ceil(imgHeightMM / a4Height)
-
-        for (let i = 0; i < totalPages; i++) {
-          if (i > 0) pdf.addPage()
-
-          const yPosition = -(i * a4Height)
-          pdf.addImage(imgData, 'PNG', 0, yPosition, imgWidthMM, imgHeightMM)
-        }
-      }
-
-      // Save PDF
-      const fileName = `MAPA01_${jabatanKerja?.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`
-      pdf.save(fileName)
-
-      showSuccess('PDF berhasil diunduh!')
-    } catch (error) {
-      console.error('Error exporting PDF:', error)
-      showError('Gagal mengunduh PDF. Silakan coba lagi.')
-    } finally {
-      // Remove exporting class
-      document.body.classList.remove('exporting-pdf')
-      setIsExportingPdf(false)
-    }
-  }
-
   if (isLoading) {
     return <FullPageLoader text="Memuat data MAPA 01..." />
   }
@@ -289,7 +221,7 @@ export default function Mapa01Page() {
           />
 
           {/* STATIC: Section 1 - Pendekatan Asesmen */}
-          <Mapa01Section1 referensiForm={mapaData?.referensi_form} />
+          <Mapa01Section1 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} />
 
           {/* DYNAMIC/LOOPING: Section 2 - Kelompok Pekerjaan dari API */}
           {mapaData && (
@@ -297,7 +229,7 @@ export default function Mapa01Page() {
           )}
 
           {/* STATIC: Section 3 - Modifikasi */}
-          <Mapa01Section3 referensiForm={mapaData?.referensi_form} />
+          <Mapa01Section3 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} />
 
           {/* STATIC: Tanda Tangan */}
           <Mapa01TandaTangan />
@@ -319,9 +251,7 @@ export default function Mapa01Page() {
 
           {/* Actions */}
           <div className="mapa01-actions">
-            <ActionButton variant="secondary" onClick={handleExportPdf} disabled={isExportingPdf}>
-              {isExportingPdf ? "Mengekspor..." : "Download PDF"}
-            </ActionButton>
+            
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>

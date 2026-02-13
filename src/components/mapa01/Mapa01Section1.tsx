@@ -41,6 +41,7 @@ interface ReferensiFormItem {
 
 interface Mapa01Section1Props {
   referensiForm?: ReferensiFormItem[]
+  isAsesor?: boolean
 }
 
 // ============== CONSTANTS ==============
@@ -158,11 +159,11 @@ function CheckboxItem({ text, indent = '10pt', checked = false, onToggle }: Chec
         display: 'flex',
         alignItems: 'flex-start',
         gap: '6px',
-        cursor: hasToggle ? 'pointer' : 'default',
+        cursor: hasToggle ? 'pointer' : 'not-allowed',
         userSelect: hasToggle ? 'none' : 'auto'
       }}
     >
-      <CustomCheckbox checked={checked} onChange={() => {}} style={{ pointerEvents: 'none' }} />
+      <CustomCheckbox checked={checked} onChange={() => {}} style={{ pointerEvents: 'none', opacity: hasToggle ? 1 : 0.5 }} />
       <span style={{ fontSize: '12px', color: COLORS.BLACK, lineHeight: '1.4' }}>
         {text}
       </span>
@@ -171,7 +172,7 @@ function CheckboxItem({ text, indent = '10pt', checked = false, onToggle }: Chec
 }
 
 // ============== MAIN COMPONENT ==============
-export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
+export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Section1Props) {
   // Build checkbox states from referensiForm data
   const initialCheckboxStates = useMemo(() => {
     const states: Record<string, boolean> = {}
@@ -265,7 +266,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Hasil pelatihan dan/atau pendidikan, dimana kurikulum dan fasilitas praktek mampu telusur terhadap standar kompetensi."
                 checked={getCheckedState("Asesi", "Hasil pelatihan dan/atau pendidikan, dimana kurikulum dan fasilitas praktek mampu telusur terhadap standar kompetensi.", "hasil_pelatihan")}
-                onToggle={() => toggleCheckbox("hasil_pelatihan")}
+                onToggle={isAsesor ? () => toggleCheckbox("hasil_pelatihan") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -275,7 +276,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Hasil pelatihan dan/atau pendidikan, dimana kurikulum belum berbasis kompetensi."
                 checked={getCheckedState("Asesi", "Hasil pelatihan dan/atau pendidikan, dimana kurikulum belum berbasis kompetensi.", "hasil_pelatihan_tidak_kompetensi")}
-                onToggle={() => toggleCheckbox("hasil_pelatihan_tidak_kompetensi")}
+                onToggle={isAsesor ? () => toggleCheckbox("hasil_pelatihan_tidak_kompetensi") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -286,7 +287,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya mampu telusur dengan standar kompetensi."
                 checked={getCheckedState("Asesi", "Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya mampu telusur dengan standar kompetensi.", "pekerja_berpengalaman_telusur")}
-                onToggle={() => toggleCheckbox("pekerja_berpengalaman_telusur")}
+                onToggle={isAsesor ? () => toggleCheckbox("pekerja_berpengalaman_telusur") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -297,7 +298,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya belum berbasis standar kompetensi."
                 checked={getCheckedState("Asesi", "Pekerja berpengalaman, dimana berasal dari industry/tempat kerja yang dalam operasionalnya belum berbasis standar kompetensi", "pekerja_berpengalaman_tidak_telusur")}
-                onToggle={() => toggleCheckbox("pekerja_berpengalaman_tidak_telusur")}
+                onToggle={isAsesor ? () => toggleCheckbox("pekerja_berpengalaman_tidak_telusur") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -307,7 +308,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Pelatihan/belajar mandiri atau otodidak."
                 checked={getCheckedState("Asesi", "Pelatihan/belajar mandiri atau otodidak.", "otodidak")}
-                onToggle={() => toggleCheckbox("otodidak")}
+                onToggle={isAsesor ? () => toggleCheckbox("otodidak") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -321,7 +322,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Sertifikasi"
                 checked={getCheckedState("Tujuan Asesmen", "Sertifikasi", "sertifikasi")}
-                onToggle={() => toggleCheckbox("sertifikasi")}
+                onToggle={isAsesor ? () => toggleCheckbox("sertifikasi") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -331,7 +332,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Pengakuan Kompetensi Terkini (PKT)"
                 checked={getCheckedState("Tujuan Asesmen", "Pengakuan Kompetensi Terkini (PKT)", "pkt")}
-                onToggle={() => toggleCheckbox("pkt")}
+                onToggle={isAsesor ? () => toggleCheckbox("pkt") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -341,7 +342,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Rekognisi pembelajaran lampau (RPL)"
                 checked={getCheckedState("Tujuan Asesmen", "Rekognisi pembelajaran lampau (RPL)", "rpl")}
-                onToggle={() => toggleCheckbox("rpl")}
+                onToggle={isAsesor ? () => toggleCheckbox("rpl") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -351,7 +352,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Lainnya"
                 checked={getCheckedState("Tujuan Asesmen", "Lainnya", "tujuan_lainnya")}
-                onToggle={() => toggleCheckbox("tujuan_lainnya")}
+                onToggle={isAsesor ? () => toggleCheckbox("tujuan_lainnya") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -368,14 +369,14 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Tempat kerja nyata"
                 checked={getCheckedState("Konteks Asesmen", "Tempat kerja nyata", "tempat_kerja_nyata")}
-                onToggle={() => toggleCheckbox("tempat_kerja_nyata")}
+                onToggle={isAsesor ? () => toggleCheckbox("tempat_kerja_nyata") : undefined}
               />
             </TableCell>
             <TableCell style={cellStyles.subContent2}>
               <CheckboxItem
                 text="Tempat kerja simulasi"
                 checked={getCheckedState("Konteks Asesmen", "Tempat kerja simulasi", "tempat_kerja_simulasi")}
-                onToggle={() => toggleCheckbox("tempat_kerja_simulasi")}
+                onToggle={isAsesor ? () => toggleCheckbox("tempat_kerja_simulasi") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -390,7 +391,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Tersedia"
                 checked={getCheckedState("Konteks Asesmen", "Tersedia", "tersedia")}
-                onToggle={() => toggleCheckbox("tersedia")}
+                onToggle={isAsesor ? () => toggleCheckbox("tersedia") : undefined}
               />
             </TableCell>
             <TableCell style={cellStyles.subContent2}>
@@ -398,7 +399,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Terbatas"
                 checked={getCheckedState("Konteks Asesmen", "Terbatas", "terbatas")}
-                onToggle={() => toggleCheckbox("terbatas")}
+                onToggle={isAsesor ? () => toggleCheckbox("terbatas") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -411,7 +412,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Bukti untuk mendukung asesmen / RPL"
                 checked={getCheckedState("Konteks Asesmen", "Bukti untuk mendukung asesmen / RPL", "bukti_asesmen_rpl")}
-                onToggle={() => toggleCheckbox("bukti_asesmen_rpl")}
+                onToggle={isAsesor ? () => toggleCheckbox("bukti_asesmen_rpl") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -421,7 +422,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Aktivitas kerja di tempat kerja kandidat"
                 checked={getCheckedState("Konteks Asesmen", "Aktivitas kerja di tempat kerja kandidat", "aktivitas_kerja")}
-                onToggle={() => toggleCheckbox("aktivitas_kerja")}
+                onToggle={isAsesor ? () => toggleCheckbox("aktivitas_kerja") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -431,7 +432,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Kegiatan Pembelajaran"
                 checked={getCheckedState("Konteks Asesmen", "Kegiatan Pembelajaran", "kegiatan_pembelajaran")}
-                onToggle={() => toggleCheckbox("kegiatan_pembelajaran")}
+                onToggle={isAsesor ? () => toggleCheckbox("kegiatan_pembelajaran") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -444,7 +445,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="LSP Gatensi Karya Konstruksi"
                 checked={getCheckedState("Konteks Asesmen", "LSP Gatensi Karya Konstruksi", "lsp_gatensi")}
-                onToggle={() => toggleCheckbox("lsp_gatensi")}
+                onToggle={isAsesor ? () => toggleCheckbox("lsp_gatensi") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -454,7 +455,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Organisasi Pelatihan"
                 checked={getCheckedState("Konteks Asesmen", "Organisasi Pelatihan", "organisasi_pelatihan")}
-                onToggle={() => toggleCheckbox("organisasi_pelatihan")}
+                onToggle={isAsesor ? () => toggleCheckbox("organisasi_pelatihan") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -464,7 +465,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="asesor perusahaan"
                 checked={getCheckedState("Konteks Asesmen", "asesor perusahaan", "asesor_perusahaan")}
-                onToggle={() => toggleCheckbox("asesor_perusahaan")}
+                onToggle={isAsesor ? () => toggleCheckbox("asesor_perusahaan") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -478,7 +479,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Manajer sertifikasi LSP Gatensi Karya Konstruksi"
                 checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP Gatensi Karya Konstruksi", "manajer_sertifikasi_lsp")}
-                onToggle={() => toggleCheckbox("manajer_sertifikasi_lsp")}
+                onToggle={isAsesor ? () => toggleCheckbox("manajer_sertifikasi_lsp") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -488,7 +489,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Master Assessor / Master Trainer / Asesor Utama kompetensi"
                 checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Master Assessor / Master Trainer / Asesor Utama kompetensi", "master_assessor_lsp")}
-                onToggle={() => toggleCheckbox("master_assessor_lsp")}
+                onToggle={isAsesor ? () => toggleCheckbox("master_assessor_lsp") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -498,7 +499,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar"
                 checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar", "manajer_pelatihan_lsp")}
-                onToggle={() => toggleCheckbox("manajer_pelatihan_lsp")}
+                onToggle={isAsesor ? () => toggleCheckbox("manajer_pelatihan_lsp") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -508,7 +509,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Lainnya"
                 checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Lainnya", "orang_lainnya")}
-                onToggle={() => toggleCheckbox("orang_lainnya")}
+                onToggle={isAsesor ? () => toggleCheckbox("orang_lainnya") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -525,7 +526,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Standar Kompetensi"
                 checked={getCheckedState("Tolok ukur asesmen", "Standar Kompetensi", "skkni")}
-                onToggle={() => toggleCheckbox("skkni")}
+                onToggle={isAsesor ? () => toggleCheckbox("skkni") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -535,7 +536,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Kriteria asesmen dari kurikulum pelatihan"
                 checked={getCheckedState("Tolok ukur asesmen", "Kriteria asesmen dari kurikulum pelatihan", "kriteria_kurikulum")}
-                onToggle={() => toggleCheckbox("kriteria_kurikulum")}
+                onToggle={isAsesor ? () => toggleCheckbox("kriteria_kurikulum") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -545,7 +546,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Spesifikasi kinerja suatu perusahaan atau industri"
                 checked={getCheckedState("Tolok ukur asesmen", "Spesifikasi kinerja suatu perusahaan atau industri", "spesifikasi_kinerja")}
-                onToggle={() => toggleCheckbox("spesifikasi_kinerja")}
+                onToggle={isAsesor ? () => toggleCheckbox("spesifikasi_kinerja") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -555,7 +556,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Spesifikasi Produk"
                 checked={getCheckedState("Tolok ukur asesmen", "Spesifikasi Produk", "spesifikasi_produk")}
-                onToggle={() => toggleCheckbox("spesifikasi_produk")}
+                onToggle={isAsesor ? () => toggleCheckbox("spesifikasi_produk") : undefined}
               />
             </TableCell>
           </TableRow>
@@ -565,7 +566,7 @@ export function Mapa01Section1({ referensiForm }: Mapa01Section1Props) {
               <CheckboxItem
                 text="Pedoman khusus"
                 checked={getCheckedState("Tolok ukur asesmen", "Pedoman khusus", "pedoman_khusus")}
-                onToggle={() => toggleCheckbox("pedoman_khusus")}
+                onToggle={isAsesor ? () => toggleCheckbox("pedoman_khusus") : undefined}
               />
             </TableCell>
           </TableRow>

@@ -25,6 +25,18 @@ interface DimensiKompetensiAPI {
   nama: string
 }
 
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
+}
+
+interface Barcodes {
+  asesi: BarcodeData | null
+  asesor1: BarcodeData | null
+  asesor2: BarcodeData | null
+}
+
 interface Ak06Response {
   message: string
   data: {
@@ -36,6 +48,7 @@ interface Ak06Response {
       catatan_asesor2: string
     }
     dimensi_kompetensi: DimensiKompetensiAPI[]
+    barcodes: Barcodes
   }
 }
 
@@ -79,6 +92,11 @@ export default function Ak06Page() {
   } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [barcodes, setBarcodes] = useState<Barcodes>({
+    asesi: null,
+    asesor1: null,
+    asesor2: null
+  })
 
   // Fetch data
   useEffect(() => {
@@ -104,6 +122,7 @@ export default function Ak06Page() {
 
         if (response.ok) {
           const result: Ak06Response = await response.json()
+          console.log('AK06 Full Response:', JSON.stringify(result, null, 2))
           if (result.message === "Success" && result.data) {
             // Transform aspek data
             const aspek: AspekItem[] = result.data.aspek.map((item) => ({
@@ -120,6 +139,13 @@ export default function Ak06Page() {
             setFeedbackData(result.data.feedback || null)
             setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
             setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
+
+            // Set barcodes data
+            setBarcodes(result.data.barcodes || {
+              asesi: null,
+              asesor1: null,
+              asesor2: null
+            })
           }
         } else {
           console.warn(`AK06 API returned ${response.status}`)
@@ -475,12 +501,30 @@ export default function Ak06Page() {
               )
               const isCommentDisabled = isAsesor && !isOwnComment
 
+              // Get barcode data for this asesor
+              const asesorBarcode = index === 0 ? barcodes.asesor1 : barcodes.asesor2
+
               return (
                 <tr key={asesor.id}>
                   <td style={{ height: '100px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
                     {asesor.nama?.toUpperCase() || ''}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top', textAlign: 'center' }}>
+                    {asesorBarcode ? (
+                      <div>
+                        <img
+                          src={asesorBarcode.url}
+                          alt={`QR ${asesor.nama}`}
+                          style={{ width: '80px', height: '80px' }}
+                        />
+                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                          {asesorBarcode.tanggal ? new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID') : ''}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ minHeight: '80px' }}></div>
+                    )}
+                  </td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>
                     <textarea
                       value={komentarAsesor[asesor.id] || ''}

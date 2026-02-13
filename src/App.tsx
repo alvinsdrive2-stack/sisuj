@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/auth-context'
 import { ThemeProvider } from './contexts/theme-context'
 import { ToastProvider } from './contexts/ToastContext'
+import { DokumenModalProvider, useDokumenModal } from './contexts/DokumenModalContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import {
   AdminLSPRoute,
@@ -15,6 +16,7 @@ import {
 } from './components/RoleRoute'
 import PublicRoute from './components/PublicRoute'
 import DefaultRoute from './components/DefaultRoute'
+import DokumenFullscreenModal from './components/komtek/DokumenFullscreenModal'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardLayout from './components/DashboardLayout'
@@ -32,6 +34,7 @@ import BelumDitandatangani from './pages/direktur/BelumDitandatangani'
 import TandatanganKomtek from './pages/komtek/TandatanganKomtek'
 import SudahDitandatanganiKomtek from './pages/komtek/SudahDitandatangani'
 import BelumDitandatanganiKomtek from './pages/komtek/BelumDitandatangani'
+import DaftarAsesiPage from './pages/komtek/DaftarAsesiPage'
 
 // Manajer Pages
 import DashboardManajer from './pages/manajer/DashboardManajer'
@@ -74,6 +77,7 @@ function App() {
     <AuthProvider>
       <ThemeProvider>
         <ToastProvider>
+        <DokumenModalProvider>
         <Toaster />
         <Router>
         <Routes>
@@ -132,6 +136,7 @@ function App() {
                     <Route path="tandatangan" element={<TandatanganKomtek />} />
                     <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
+                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
@@ -403,9 +408,23 @@ function App() {
           <Route path="/" element={<DefaultRoute />} />
         </Routes>
       </Router>
+      <GlobalDokumenFullscreenModal />
+      </DokumenModalProvider>
       </ToastProvider>
     </ThemeProvider>
     </AuthProvider>
+  )
+}
+
+function GlobalDokumenFullscreenModal() {
+  const { isOpen, closeModal, asesiId, asesiNama } = useDokumenModal()
+  return (
+    <DokumenFullscreenModal
+      isOpen={isOpen}
+      onClose={closeModal}
+      asesiId={asesiId}
+      asesiNama={asesiNama}
+    />
   )
 }
 

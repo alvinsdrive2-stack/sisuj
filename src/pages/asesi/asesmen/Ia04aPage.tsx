@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -51,12 +52,23 @@ interface Ia04aResponse {
     kelompok_kerja: KelompokKerjaData
     referensi_form: ReferensiForm[]
     soal: Soal[]
+    barcodes?: {
+      asesi?: { url: string; tanggal: string; nombre: string }
+      asesor1?: { url: string; tanggal: string; nombre: string } | null
+      asesor2?: { url: string; tanggal: string; nombre: string } | null
+    }
   }
 }
 
 interface ApiResponse {
   message: string
   data: Ia04aResponse["data"]
+}
+
+type BarcodeData = {
+  url: string
+  tanggal: string
+  nama: string
 }
 
 interface ListItem {
@@ -151,12 +163,18 @@ export default function Ia04aPage() {
   const { id } = useParams<{ id?: string }>()
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { showSuccess, showWarning } = useToast()
+  const { showSuccess, showWarning, showError } = useToast()
+  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
 
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const [umpanBalik, setUmpanBalik] = useState('')
+  const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData
+    asesor?: Record<string, BarcodeData>
+  } | null>(null)
 
   // Get dynamic steps based on asesor role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -193,6 +211,42 @@ export default function Ia04aPage() {
           const result: ApiResponse = await response.json()
           if (result.message === "Success") {
             setIa04aData(result.data)
+
+            // Initialize umpan balik map from soal with is_komentar === "2"
+            const umpanBalikInit: Record<number, string> = {}
+            result.data.soal.forEach(soal => {
+              if (soal.is_komentar === "2" && soal.jawaban) {
+                umpanBalikInit[soal.id] = soal.jawaban
+              }
+            })
+            setUmpanBalikMap(umpanBalikInit)
+
+            // Set barcodes - transform from old format if needed
+            if (result.data.barcodes) {
+              const apiBarcodes = result.data.barcodes as {
+                asesi?: BarcodeData
+                asesor1?: BarcodeData | null
+                asesor2?: BarcodeData | null
+                asesor?: Record<string, BarcodeData>
+              }
+
+              // Transform old format (asesor1, asesor2) to new dynamic format
+              const transformedAsesor: Record<string, BarcodeData> = {}
+
+              // Only map non-null barcodes
+              if (apiBarcodes.asesor1 && asesorList[0]) {
+                transformedAsesor[String(asesorList[0].id)] = apiBarcodes.asesor1
+              }
+              if (apiBarcodes.asesor2 && asesorList[1]) {
+                transformedAsesor[String(asesorList[1].id)] = apiBarcodes.asesor2
+              }
+
+              setBarcodes({
+                asesi: apiBarcodes.asesi,
+                asesor: transformedAsesor
+              })
+            }
+
             console.log("IA04A Data:", result.data)
           }
         } else {
@@ -206,7 +260,7 @@ export default function Ia04aPage() {
     }
 
     fetchData()
-  }, [id, authLoading, user])
+  }, [id, authLoading, user, asesorList])
 
   const handleNext = async () => {
     if (!agreedChecklist) {
@@ -214,41 +268,174 @@ export default function Ia04aPage() {
       return
     }
 
-    // If asesor_1, save umpan balik first
-    if (isAsesor && isAsesor1 && umpanBalik.trim()) {
+    // Asesor 1 wajib isi umpan balik (cari soal dengan is_komentar === "2")
+    const umpanBalikSoal = ia04aData?.soal.find(s => s.is_komentar === "2")
+    if (isAsesor && isAsesor1 && umpanBalikSoal) {
+      const umpanBalikValue = umpanBalikMap[umpanBalikSoal.id] || ''
+      if (!umpanBalikValue.trim()) {
+        showWarning('Silakan isi umpan balik terlebih dahulu')
+        return
+      }
+    }
+
+    const isAsesor2 = isAsesor && !isAsesor1
+    const umpanBalikSoalId = umpanBalikSoal?.id
+    const umpanBalikValue = umpanBalikSoalId ? (umpanBalikMap[umpanBalikSoalId] || '') : ''
+    const isAsesor1WithUmpan = isAsesor && isAsesor1 && umpanBalikValue.trim()
+    const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+    const token = localStorage.getItem("access_token")
+
+    // Asesor_2 hanya generate QR/tanda tangan jika belum ada
+    if (isAsesor2) {
+      if (!jadwalId) {
+        showError('Jadwal tidak ditemukan')
+        return
+      }
+
+      // Cek apakah QR asesor_2 sudah ada
+      const currentAsesorId = String(user?.id)
+      const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
+
+      if (hasExistingQR) {
+        // QR sudah ada, langsung navigate
+        setTimeout(() => {
+          navigate(`/asesi/asesmen/${id}/upload-tugas`)
+        }, 500)
+        return
+      }
+
       try {
-        const token = localStorage.getItem("access_token")
-
-        // Find the first soal_id from the data
-        const soalId = ia04aData?.soal[0]?.id
-
-        if (!soalId) {
-          console.error("No soal_id found")
-        } else {
-          const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
-            method: 'POST',
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              soal_id: soalId,
-              jawaban: umpanBalik,
-            }),
+        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id_jadwal: jadwalId
           })
+        })
 
-          if (response.ok) {
-            const result = await response.json()
-            console.log("Umpan balik saved:", result)
-            showSuccess('Umpan balik berhasil disimpan!')
-          } else {
-            console.error('Failed to save umpan balik:', response.status)
+        if (qrResponse.ok) {
+          const qrResult = await qrResponse.json()
+          if (qrResult.message === "Success" && qrResult.data?.url_image) {
+            const currentAsesorId = String(user?.id)
+            setBarcodes(prev => ({
+              asesi: prev?.asesi,
+              asesor: {
+                ...prev?.asesor,
+                [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+              }
+            }))
+            showSuccess('Tanda tangan berhasil disimpan!')
+            setTimeout(() => {
+              navigate(`/asesi/asesmen/${id}/upload-tugas`)
+            }, 500)
+            return
           }
+        } else {
+          showError('Gagal generate tanda tangan')
+        }
+      } catch (qrError) {
+        console.error('Error generating QR:', qrError)
+        showError('Gagal generate tanda tangan')
+      }
+
+      // Fallback navigate jika gagal
+      navigate(`/asesi/asesmen/${id}/upload-tugas`)
+      return
+    }
+
+    // Asesor_1: simpan umpan balik, lalu generate QR
+    if (isAsesor1WithUmpan && umpanBalikSoalId) {
+      try {
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
+          method: 'POST',
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            soal_id: umpanBalikSoalId,
+            jawaban: umpanBalikValue,
+          }),
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          console.log("Umpan balik saved:", result)
+          showSuccess('Umpan balik berhasil disimpan!')
+
+          // Setelah simpan umpan, lanjut generate QR untuk asesor_1 hanya jika belum ada
+          if (jadwalId) {
+            // Cek apakah QR asesor_1 sudah ada
+            const currentAsesorId = String(user?.id)
+            const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
+
+            if (hasExistingQR) {
+              // QR sudah ada, langsung navigate
+              setTimeout(() => {
+                navigate(`/asesi/asesmen/${id}/upload-tugas`)
+              }, 500)
+              return
+            }
+            try {
+              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  id_jadwal: jadwalId
+                })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  const currentAsesorId = String(user?.id)
+                  setBarcodes(prev => ({
+                    asesi: prev?.asesi,
+                    asesor: {
+                      ...prev?.asesor,
+                      [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                    }
+                  }))
+                  showSuccess('IA 04.A berhasil disimpan!')
+                  setTimeout(() => {
+                    navigate(`/asesi/asesmen/${id}/upload-tugas`)
+                  }, 500)
+                  return
+                }
+              }
+            } catch (qrError) {
+              console.error('Error generating QR:', qrError)
+              // Tetap lanjut walau QR gagal
+              showSuccess('IA 04.A berhasil disimpan!')
+              setTimeout(() => {
+                navigate(`/asesi/asesmen/${id}/upload-tugas`)
+              }, 500)
+            }
+          }
+        } else {
+          console.error('Failed to save umpan balik:', response.status)
         }
       } catch (err) {
-        console.error('Error saving umpan balik:', err)
+        console.error('Error in asesor_1 flow:', err)
       }
+    }
+
+    // Asesi: langsung navigate (ga ada QR)
+    if (!isAsesor) {
+      showSuccess('IA 04.A berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/asesmen/${id}/upload-tugas`)
+      }, 500)
+      return
     }
 
     showSuccess('IA 04.A berhasil disimpan!')
@@ -390,7 +577,19 @@ export default function Ia04aPage() {
                   {soalItem.soal}
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {soalItem.jenis === '1' ? (() => {
+                  {soalItem.is_komentar === "2" ? (
+                    // Umpan balik - editable for asesor_1
+                    isAsesor && isAsesor1 ? (
+                      <textarea
+                        value={umpanBalikMap[soalItem.id] || ''}
+                        onChange={(e) => setUmpanBalikMap(prev => ({ ...prev, [soalItem.id]: e.target.value }))}
+                        style={{ width: '100%', height: '100px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        placeholder="Tuliskan umpan balik untuk asesi..."
+                      />
+                    ) : (
+                      <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
+                    )
+                  ) : soalItem.jenis === '1' ? (() => {
                     const parsed = parseListContent(soalItem.jawaban)
                     if (parsed.type === 'ol') {
                       return (
@@ -429,13 +628,55 @@ export default function Ia04aPage() {
           <tbody>
             <tr style={{ textAlign: 'center', fontWeight: 'bold', borderRight: '1px solid #000' }}>
               <td>Tanda Tangan Asesi</td>
-              <td>Tanda Tangan Asesor</td>
-              <td>Nama & Tanda Tangan Supervisor Tempat Kerja</td>
+              <td colSpan={asesorList.length}>Tanda Tangan Asesor</td>
+              <td style={{ display: asesorList.length > 0 ? 'none' : 'table-cell' }}>Nama & Tanda Tangan Supervisor Tempat Kerja</td>
             </tr>
+            {/* Asesi Signature Row */}
             <tr>
-              <td style={{ height: '120px', border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ height: '120px', border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ height: '120px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ height: '120px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
+                      {barcodes.asesi.nama}
+                    </div>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+              {asesorList.map((asesor) => {
+                const asesorBarcode = barcodes?.asesor?.[String(asesor.id)]
+                return (
+                  <td key={asesor.id} style={{ height: '120px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                    {asesorBarcode?.url ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>
+                          {asesorBarcode.nama.toUpperCase()}
+                        </div>
+                        <img
+                          src={asesorBarcode.url}
+                          alt={`Tanda Tangan ${asesor.nama}`}
+                          style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                        />
+                        {asesorBarcode.tanggal && (
+                          <div style={{ fontSize: '11px', color: '#333' }}>
+                            {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </td>
+                )
+              })}
+              <td style={{ display: asesorList.length > 0 ? 'none' : 'table-cell', height: '120px', border: '1px solid #000', padding: '6px' }}></td>
             </tr>
           </tbody>
         </table>
@@ -478,27 +719,6 @@ export default function Ia04aPage() {
             </tr>
           </tbody>
         </table>
-
-        {/* Umpan Balik Asesor untuk Asesi - Only for asesor_1 */}
-        {isAsesor && isAsesor1 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
-            <tbody>
-              <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
-                <td>UMPAN BALIK ASESOR UNTUK ASESI</td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  <textarea
-                    value={umpanBalik}
-                    onChange={(e) => setUmpanBalik(e.target.value)}
-                    style={{ width: '100%', height: '100px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
-                    placeholder="Tuliskan umpan balik untuk asesi..."
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>

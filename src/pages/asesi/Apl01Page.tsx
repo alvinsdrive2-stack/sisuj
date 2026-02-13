@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
 
 interface DataPribadi {
   nama: string
@@ -60,6 +60,13 @@ interface BuktiPersyaratan {
 interface BuktiAdministratif {
   no: string
   bukti: string
+  checked?: boolean
+}
+
+interface BarcodeInfo {
+  url: string | null
+  tanggal: string | null
+  nama: string | null
 }
 
 interface ApiResponse {
@@ -70,6 +77,7 @@ interface ApiResponse {
     data_sertifikasi?: DataSertifikasi
     is_memenuhi_syarat?: boolean
     skkni?: string
+    id_jadwal?: number
     data_unit_kompetensi?: Array<{
       kode: string
       nama: string
@@ -81,19 +89,30 @@ interface ApiResponse {
     bukti_administratif?: Array<{
       no: string
       bukti: string
+      checked?: boolean
     }>
+    is_diterima?: boolean
+    catatan?: string | null
+    barcodes?: {
+      asesi: BarcodeInfo
+      admin: BarcodeInfo
+    }
   }
 }
 
 export default function Apl01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
-  const { asesorList } = useDataDokumenPraAsesmen(idIzin)
+  // Get jadwal_id based on role
+  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+
   const { showSuccess, showError, showWarning } = useToast()
 
   const [_dataPribadi, setDataPribadi] = useState<DataPribadi | null>(null)
@@ -106,6 +125,9 @@ export default function Apl01Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [skkni, setSkkni] = useState<string>("")
+  const [catatan, setCatatan] = useState<string | null>(null)
+  const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
+  const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
 
   // Form state for data pribadi
   const [formDataPribadi, setFormDataPribadi] = useState<DataPribadi>({
@@ -177,6 +199,15 @@ export default function Apl01Page() {
             if (result.data.skkni) {
               setSkkni(result.data.skkni)
             }
+            if (result.data.catatan !== undefined) {
+              setCatatan(result.data.catatan)
+            }
+            if (result.data.is_diterima !== undefined) {
+              setIsDiterima(result.data.is_diterima)
+            }
+            if (result.data.barcodes) {
+              setBarcodes(result.data.barcodes)
+            }
           }
         }
       } catch (error) {
@@ -210,9 +241,41 @@ export default function Apl01Page() {
       return
     }
 
-    // Asesi - save data pekerjaan dulu
+    // Asesi - generate QR dulu kalau belum ada, lalu save data pekerjaan
     try {
       setIsSaving(true)
+      const token = localStorage.getItem("access_token")
+
+      // Generate QR jika belum ada
+      if (!barcodes?.asesi?.url && jadwalId) {
+        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${targetIdIzin}/apl01`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            id_jadwal: jadwalId
+          })
+        })
+
+        if (qrResponse.ok) {
+          const qrResult = await qrResponse.json()
+          if (qrResult.message === "Success" && qrResult.data?.url_image) {
+            setBarcodes(prev => ({
+              asesi: {
+                url: qrResult.data.url_image,
+                tanggal: new Date().toISOString(),
+                nama: formDataPribadi.nama
+              },
+              admin: prev?.admin || { url: null, tanggal: null, nama: null }
+            }))
+          }
+        }
+      }
+
+      // Save data pekerjaan
       await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
       showSuccess('APL 01 berhasil disimpan!')
       setTimeout(() => {
@@ -707,7 +770,7 @@ anda pada saat ini.</span>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                      <CustomCheckbox checked={bukti.checked || false} onChange={() => {}} disabled />
                     </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
@@ -743,7 +806,12 @@ anda pada saat ini.</span>
                 <span style={{ fontWeight: 'bold' }}>Rekomendasi (diisi oleh LSP):</span><br /><br />
                 Berdasarkan ketentuan persyaratan dasar,<br />
                 maka pemohon:<br /><br />
-                <span style={{ fontWeight: 'bold' }}>Diterima/ Tidak diterima</span> *) sebagai peserta
+                <span style={{ fontWeight: 'bold', textDecoration: isDiterima === true ? 'none' : isDiterima === false ? 'line-through' : 'none' }}>
+                  Diterima
+                </span> /{' '}
+                <span style={{ fontWeight: 'bold', textDecoration: isDiterima === false ? 'none' : isDiterima === true ? 'line-through' : 'none' }}>
+                  Tidak diterima
+                </span> *) sebagai peserta
                 sertifikasi<br /><br />
                 * coret yang tidak sesuai
               </td>
@@ -757,64 +825,60 @@ anda pada saat ini.</span>
             {/* Pemohon Row 3 - Signature */}
             <tr>
               <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan /<br />Tanggal</td>
-              <td style={{ height: '140px', border: '1px solid #000', padding: '8px' }}></td>
+              <td style={{ height: '140px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '80px', width: '80px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
             </tr>
 
-            {/* Catatan & Admin Row 1 */}
-            {asesorList.length > 0 ? (
-              // Dynamic Asesor List
-              asesorList.map((asesor, idx) => (
-                <React.Fragment key={asesor.id}>
-                  {idx === 0 && (
-                    <tr>
-                      <td rowSpan={asesorList.length * 4} style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
-                        <span style={{ fontWeight: 'bold' }}>Catatan :</span>
-                      </td>
-                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Admin / Asesor:</td>
-                    </tr>
-                  )}
-                  {idx > 0 && (
-                    <tr>
-                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor:</td>
-                    </tr>
-                  )}
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>Nama</td>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg</td>
-                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan / tanggal</td>
-                    <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
-                  </tr>
-                </React.Fragment>
-              ))
-            ) : (
-              // Static Admin (fallback)
-              <>
-                <tr>
-                  <td rowSpan={4} style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
-                    <span style={{ fontWeight: 'bold' }}>Catatan :</span>
-                  </td>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Admin:</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama</td>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg</td>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan / tanggal</td>
-                  <td style={{ height: '90px', border: '1px solid #000', padding: '8px' }}></td>
-                </tr>
-              </>
-            )}
+            {/* Catatan & Admin */}
+            <tr>
+              <td rowSpan={3} style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>
+                <span style={{ fontWeight: 'bold' }}>Catatan :</span>
+                {catatan && (
+                  <>
+                    <br /><br />
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{catatan}</span>
+                  </>
+                )}
+              </td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Admin:</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>Nama</td>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>{barcodes?.admin?.nama?.toUpperCase() || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan / tanggal</td>
+              <td style={{ height: '90px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.admin?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.admin.url}
+                      alt="Tanda Tangan Admin"
+                      style={{ height: '60px', width: '60px', objectFit: 'contain' }}
+                    />
+                    {barcodes.admin.tanggal && (
+                      <div style={{ fontSize: '12px', color: '#333' }}>
+                        {new Date(barcodes.admin.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+            </tr>
           </tbody>
         </table>
 

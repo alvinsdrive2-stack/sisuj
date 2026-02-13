@@ -234,7 +234,7 @@ class KegiatanService {
       const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesi" }))
       throw new Error(error.message || "Failed to fetch kegiatan asesi")
     }
-
+    console.log('Kegiatan Asesi Response Status:', response.status)
     return response.json()
   }
 
@@ -418,6 +418,28 @@ class KegiatanService {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to save APL 02" }))
       throw new Error(error.message || "Failed to save APL 02")
+    }
+
+    return response.json()
+  }
+
+  // Generate QR for APL 01
+  async generateQRApl01(jadwalId: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/qr/apl02`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id_jadwal: jadwalId }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to generate QR APL 01" }))
+      throw new Error(error.message || "Failed to generate QR APL 01")
     }
 
     return response.json()

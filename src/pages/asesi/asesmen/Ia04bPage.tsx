@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -33,9 +34,20 @@ interface Rekomendasi {
   rekomendasi?: boolean
 }
 
+type BarcodeData = {
+  url: string
+  tanggal: string
+  nama: string
+}
+
 interface Ia04bResponse {
   message: string
   data: {
+    barcodes?: {
+      asesi?: BarcodeData
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
     dokumen: {
       id: number
       nama_dokumen: string
@@ -54,9 +66,10 @@ export default function Ia04bPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, idAsesor1 } = useDataDokumenAsesmen(id)
-  const { role: asesorRole } = useAsesorRole(id)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
 
   const [ia04bData, setIa04bData] = useState<Ia04bResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -67,11 +80,13 @@ export default function Ia04bPage() {
   const [initializedFromApi, setInitializedFromApi] = useState(false)
   const [jawabanAnswers, setJawabanAnswers] = useState<Record<number, string>>({})
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData
+    asesor?: Record<string, BarcodeData>
+  } | null>(null)
 
   // Get dynamic steps based on asesor role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  // Check if current asesor is asesor1 (can edit IA04B) or asesor2 (read-only)
-  const isAsesor1 = isAsesor && user?.id === idAsesor1
   const canEdit = isAsesor1 // Only asesor1 can edit IA04B
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
@@ -95,8 +110,47 @@ export default function Ia04bPage() {
 
         if (response.ok) {
           const result: ApiResponse = await response.json()
+          console.log('GET IA04B Response:', result)
           if (result.message === "Success") {
             setIa04bData(result.data)
+
+            console.log('Barcodes from API:', result.data.barcodes)
+
+            // Set barcodes - directly use asesor1/asesor2 from API without complex mapping
+            if (result.data.barcodes) {
+              const apiBarcodes = result.data.barcodes as {
+                asesi?: BarcodeData
+                asesor1?: BarcodeData | null
+                asesor2?: BarcodeData | null
+              }
+
+              console.log('Barcodes from API:', apiBarcodes)
+
+              // Direct mapping - keep original asesor1/asesor2 structure
+              setBarcodes({
+                asesi: apiBarcodes.asesi,
+                asesor: {
+                  ...(apiBarcodes.asesor1 ? { asesor1: apiBarcodes.asesor1 } : {}),
+                  ...(apiBarcodes.asesor2 ? { asesor2: apiBarcodes.asesor2 } : {}),
+                }
+              })
+            }
+
+            // Fallback: load asesor barcodes from localStorage if API returns null
+            if (!result.data.barcodes || !result.data.barcodes.asesor1 || !result.data.barcodes.asesor2) {
+              const localAsesorBarcodes = localStorage.getItem(`ia04b_asesor_barcodes_${id}`)
+              if (localAsesorBarcodes) {
+                try {
+                  const parsed = JSON.parse(localAsesorBarcodes)
+                  setBarcodes(prev => ({
+                    asesi: prev?.asesi,
+                    asesor: { ...prev?.asesor, ...parsed }
+                  }))
+                } catch (e) {
+                  console.error('Error parsing local barcodes:', e)
+                }
+              }
+            }
 
             // Initialize checkbox states from API response
             const newAnswers: Record<number, 'ya' | 'tidak'> = {}
@@ -258,6 +312,76 @@ export default function Ia04bPage() {
       // 3. Navigate to next step
       showSuccess('IA 04.B berhasil disimpan!')
 
+      // 4. Generate QR for asesor only if not exists
+      if (isAsesor) {
+        const jadwalId = kegiatanAsesor?.jadwal_id
+        const currentAsesorId = String(user?.id)
+        const existingAsesorQR = barcodes?.asesor?.[currentAsesorId]?.url
+
+        // Cek apakah QR asesor sudah ada, jika ada langsung navigate ke next step
+        if (existingAsesorQR) {
+          const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+          const nextStep = asesmenSteps[currentStepIndex + 1]
+
+          if (nextStep?.href.includes('ia05')) {
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 1500)
+          } else {
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 1500)
+          }
+          return
+        }
+
+        // Generate QR hanya jika belum ada
+        if (jadwalId) {
+          try {
+            const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04b`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                id_jadwal: jadwalId
+              })
+            })
+
+            console.log('QR Response:', qrResponse.status)
+
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+              console.log('QR Result:', qrResult)
+
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+
+                setBarcodes(prev => ({
+                  asesi: prev?.asesi,
+                  asesor: {
+                    ...prev?.asesor,
+                    [currentAsesorId]: newBarcode
+                  }
+                }))
+
+                // Save to localStorage as fallback since backend might not persist it
+                const currentLocal = localStorage.getItem(`ia04b_asesor_barcodes_${id}`)
+                const localBarcodes = currentLocal ? JSON.parse(currentLocal) : {}
+                localBarcodes[currentAsesorId] = newBarcode
+                localStorage.setItem(`ia04b_asesor_barcodes_${id}`, JSON.stringify(localBarcodes))
+              } else {
+                console.warn('QR generation unexpected response:', qrResult)
+              }
+            } else {
+              const errorResult = await qrResponse.json()
+              console.error('QR generation failed:', qrResponse.status, errorResult)
+              showError('Gagal generate QR')
+            }
+          } catch (qrError) {
+            console.error('Error generating QR:', qrError)
+          }
+        }
+      }
+
       // For asesi, show confirmation dialog before proceeding to ujian
       if (!isAsesor) {
         setTimeout(() => setShowConfirmDialog(true), 500)
@@ -268,10 +392,10 @@ export default function Ia04bPage() {
       const nextStep = asesmenSteps[currentStepIndex + 1]
 
       if (nextStep?.href.includes('ia05')) {
-        // Asesor goes to IA.05
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 500)
+        // Asesor goes to IA.05 - wait longer for QR to save
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 1500)
       } else {
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 500)
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 1500)
       }
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -534,44 +658,95 @@ export default function Ia04bPage() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
             </tr>
           </tbody>
         </table>
 
         {/* Asesor Signature Table */}
-        {asesorList.map((asesor) => (
-        <table key={asesor.id} style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
-          <tbody>
-            <tr style={{ fontWeight: 'bold' }}>
-              <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor :</td>
-            </tr>
-            <tr>
-              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
-              <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  <span key={asesor.id}>
-                    {asesor.nama?.toUpperCase() || ''}
-                  </span>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  <span key={asesor.id}>
-                    {asesor.noreg && ` (${asesor.noreg})`}
-                  </span>
+        {barcodes?.asesor?.asesor1 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+            <tbody>
+              <tr style={{ fontWeight: 'bold' }}>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 1 :</td>
+              </tr>
+              <tr>
+                <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+                <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  {barcodes.asesor.asesor1.nama?.toUpperCase() || ''}
                 </td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
-            </tr>
-          </tbody>
-        </table>
-        ))}
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesor.asesor1.url}
+                      alt="Tanda Tangan Asesor 1"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesor.asesor1.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesor.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
+        {barcodes?.asesor?.asesor2 && (
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+            <tbody>
+              <tr style={{ fontWeight: 'bold' }}>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 2 :</td>
+              </tr>
+              <tr>
+                <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+                <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  {barcodes.asesor.asesor2.nama?.toUpperCase() || ''}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesor.asesor2.url}
+                      alt="Tanda Tangan Asesor 2"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesor.asesor2.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesor.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        )}
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>

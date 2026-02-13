@@ -143,6 +143,8 @@ export function useKegiatanAsesi() {
 
       try {
         const response = await kegiatanService.getKegiatanAsesi()
+        console.log('Kegiatan Asesi Response:', response)
+        console.log('Kegiatan Asesi Data:', response.data)
         setKegiatanRef.current?.(response.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
