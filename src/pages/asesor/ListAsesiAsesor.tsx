@@ -81,12 +81,6 @@ export default function ListAsesiAsesor() {
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
-
-  console.log('[DEBUG] ListAsesiAsesor - jadwalId:', jadwalId)
-  console.log('[DEBUG] ListAsesiAsesor - asesiList:', asesiList)
-  console.log('[DEBUG] ListAsesiAsesor - asesiLoading:', asesiLoading)
-  console.log('[DEBUG] ListAsesiAsesor - error:', error)
-
   // Fetch kegiatan detail
   useEffect(() => {
     const fetchKegiatan = async () => {

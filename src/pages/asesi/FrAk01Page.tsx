@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
-import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useEffect, useState } from "react"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -57,11 +57,9 @@ interface Ak01ApiResponse {
 export default function FrAk01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const { showSuccess } = useToast()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
@@ -79,7 +77,7 @@ export default function FrAk01Page() {
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji } = useDataDokumenPraAsesmen(actualIdIzin)
 
-  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+  const jadwalId = kegiatan?.jadwal_id
 
   // Format tanggal_uji untuk Hari/Tanggal dan Waktu
   const formatTanggalUji = (tanggalUjiStr: string) => {
@@ -111,8 +109,8 @@ export default function FrAk01Page() {
         // Use idIzin from URL params or fetch from list-asesi
         let fetchedIdIzin = idIzin
 
-        if (!fetchedIdIzin && !isAsesor && kegiatanAsesi?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi.jadwal_id}/list-asesi`, {
+        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -167,10 +165,10 @@ export default function FrAk01Page() {
 
     if (isAsesor && idIzin) {
       fetchData()
-    } else if (kegiatanAsesi) {
+    } else if (kegiatan) {
       fetchData()
     }
-  }, [idIzin, kegiatanAsesi, kegiatanAsesor, isAsesor])
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
@@ -356,22 +354,27 @@ export default function FrAk01Page() {
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tuk || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
             </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                {asesorList.length > 0 ? (
-                  asesorList.map((asesor, idx) => (
-                    <span key={asesor.id}>
-                      {idx > 0 && ', '}
-                      {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
-                    </span>
-                  ))
-                ) : (
-                  namaAsesor?.toUpperCase() || formData.namaAsesor || '-'
-                )}
-              </td>
-            </tr>
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                  {asesorList.length > 0
+                    ? `${asesorList[0].nama?.toUpperCase() || ''}${asesorList[0].noreg ? ` (${asesorList[0].noreg})` : ''}`
+                    : namaAsesor?.toUpperCase() || formData.namaAsesor || '-'}
+                </td>
+              </tr>
+            )}
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>

@@ -244,18 +244,25 @@ export default function Ia05Page() {
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{tuk || '-'}</td>
             </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
-                {asesorList.map((asesor, idx) => (
-                  <span key={asesor.id}>
-                    {idx > 0 && ', '}
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
                     {asesor.nama?.toUpperCase() || ''}
-                  </span>
-                ))}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}
+                </td>
+              </tr>
+            )}
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>

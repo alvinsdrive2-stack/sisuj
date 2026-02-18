@@ -288,17 +288,23 @@ export default function Ak06Page() {
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>TUK</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tuk || '-'}</td>
             </tr>
-            <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
-                {asesorList.map((asesor, idx) => (
-                  <span key={asesor.id}>
-                    {idx > 0 && ', '}
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
                     {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
-                  </span>
-                ))}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+                </td>
+              </tr>
+            )}
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID')}</td>

@@ -191,9 +191,6 @@ class KegiatanService {
   async getKegiatanAsesor(): Promise<KegiatanAsesorResponse> {
     const token = this.getToken()
 
-    console.log('[DEBUG] Fetching kegiatan asesor from:', `${this.baseUrl}/kegiatan/asesor`)
-    console.log('[DEBUG] Token exists:', !!token)
-
     const response = await fetch(`${this.baseUrl}/kegiatan/asesor`, {
       method: "GET",
       headers: {
@@ -201,20 +198,12 @@ class KegiatanService {
         "Authorization": `Bearer ${token}`,
       },
     })
-
-    console.log('[DEBUG] Response status:', response.status)
-    console.log('[DEBUG] Response ok:', response.ok)
-
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesor" }))
-      console.log('[DEBUG] Error response:', error)
       throw new Error(error.message || "Failed to fetch kegiatan asesor")
     }
 
     const result = await response.json()
-    console.log('[DEBUG] Kegiatan asesor response:', result)
-    console.log('[DEBUG] Response data:', result.data)
-
     return result
   }
 
@@ -234,7 +223,6 @@ class KegiatanService {
       const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesi" }))
       throw new Error(error.message || "Failed to fetch kegiatan asesi")
     }
-    console.log('Kegiatan Asesi Response Status:', response.status)
     return response.json()
   }
 

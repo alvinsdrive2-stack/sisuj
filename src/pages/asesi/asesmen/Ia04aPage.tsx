@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
-import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -164,8 +164,7 @@ export default function Ia04aPage() {
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
-  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
 
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -177,7 +176,6 @@ export default function Ia04aPage() {
   } | null>(null)
 
   // Get dynamic steps based on asesor role
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   useEffect(() => {
@@ -282,7 +280,7 @@ export default function Ia04aPage() {
     const umpanBalikSoalId = umpanBalikSoal?.id
     const umpanBalikValue = umpanBalikSoalId ? (umpanBalikMap[umpanBalikSoalId] || '') : ''
     const isAsesor1WithUmpan = isAsesor && isAsesor1 && umpanBalikValue.trim()
-    const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+    const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
 
     // Asesor_2 hanya generate QR/tanda tangan jika belum ada
@@ -325,7 +323,7 @@ export default function Ia04aPage() {
               asesi: prev?.asesi,
               asesor: {
                 ...prev?.asesor,
-                [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
               }
             }))
             showSuccess('Tanda tangan berhasil disimpan!')
@@ -364,9 +362,7 @@ export default function Ia04aPage() {
         })
 
         if (response.ok) {
-          const result = await response.json()
-          console.log("Umpan balik saved:", result)
-          showSuccess('Umpan balik berhasil disimpan!')
+          await response.json()
 
           // Setelah simpan umpan, lanjut generate QR untuk asesor_1 hanya jika belum ada
           if (jadwalId) {
@@ -402,7 +398,7 @@ export default function Ia04aPage() {
                     asesi: prev?.asesi,
                     asesor: {
                       ...prev?.asesor,
-                      [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                      [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
                     }
                   }))
                   showSuccess('IA 04.A berhasil disimpan!')
@@ -500,18 +496,25 @@ export default function Ia04aPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>{tuk?.toUpperCase() || ''}</td>
             </tr>
-            <tr style={{ background: '#e9e9e9e' }}>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                {asesorList.map((asesor, idx) => (
-                  <span key={asesor.id}>
-                    {idx > 0 && ', '}
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id} style={{ background: '#e9e9e9e' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>
                     {asesor.nama?.toUpperCase() || ''}
-                  </span>
-                ))}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr style={{ background: '#e9e9e9e' }}>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}
+                </td>
+              </tr>
+            )}
             <tr style={{ background: '#e9e9e9e' }}>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>

@@ -309,17 +309,19 @@ export default function FrAk04Page() {
               </tr>
 
               {/* Nama Asesor */}
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Nama Asesor</td>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>:
-                  {asesorList.map((asesor, idx) => (
-                    <span key={asesor.id}>
-                      {idx > 0 && ', '}
-                      {asesor.nama?.toUpperCase() || ''}
-                    </span>
-                  ))}
-                </td>
-              </tr>
+              {asesorList.length > 1 ? (
+                asesorList.map((asesor, idx) => (
+                  <tr key={asesor.id}>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Nama Asesor {idx + 1}</td>
+                    <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Nama Asesor</td>
+                  <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {asesorList[0]?.nama?.toUpperCase() || ''}</td>
+                </tr>
+              )}
 
               {/* Tanggal Asesmen */}
               <tr>

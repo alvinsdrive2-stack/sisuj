@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
-import { useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -67,10 +67,9 @@ export default function Ak02Page() {
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Disable form if asesor_2 (only asesor_1 can fill)
@@ -232,18 +231,25 @@ export default function Ak02Page() {
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{tuk || '-'}</td>
             </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
-                {asesorList.map((asesor, idx) => (
-                  <span key={asesor.id}>
-                    {idx > 0 && ', '}
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
                     {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
-                  </span>
-                ))}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+                </td>
+              </tr>
+            )}
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
@@ -423,18 +429,16 @@ export default function Ak02Page() {
             {/* Asesor rows - dynamic */}
             {asesorList.map((asesor, idx) => {
               const asesorBarcode = idx === 0 ? barcodes?.asesor1 : barcodes?.asesor2
+              const label = asesorList.length > 1 ? `Nama Asesor ${idx + 1}` : 'Nama Asesor'
               return (
                 <React.Fragment key={asesor.id}>
                   <tr>
-                    <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}><b>Asesor {idx + 1} :</b></td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>Nama</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{label}</td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
                     <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{asesor.nama?.toUpperCase() || ''}</td>
                   </tr>
                   <tr>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg {asesorList.length > 1 ? idx + 1 : ''}</td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>{asesor.noreg || ''}</td>
                   </tr>
@@ -559,7 +563,7 @@ export default function Ak02Page() {
 
                     // Generate QR for asesor only if not exists
                     if (isAsesor) {
-                      const jadwalId = kegiatanAsesor?.jadwal_id
+                      const jadwalId = kegiatan?.jadwal_id
                       const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
 
                       if (jadwalId && !existingAsesorQR) {
@@ -581,9 +585,9 @@ export default function Ak02Page() {
                             if (qrResult.message === "Success" && qrResult.data?.url_image) {
                               // Update barcodes based on asesor role
                               if (isAsesor1) {
-                                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name } }))
+                                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
                               } else {
-                                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name } }))
+                                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
                               }
                             }
                           }

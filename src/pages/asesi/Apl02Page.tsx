@@ -6,7 +6,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -493,18 +493,16 @@ type Apl02Data = {
 export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
-  // Get jadwal_id based on role
-  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+  // Get jadwal_id from kegiatan
+  const jadwalId = kegiatan?.jadwal_id
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -613,8 +611,8 @@ export default function Apl02Page() {
         // Fetch id_izin dari list-asesi endpoint (skip for asesor)
         let fetchedIdIzin: string | null = idIzin || null
 
-        if (!fetchedIdIzin && !isAsesor && kegiatanAsesi?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi.jadwal_id}/list-asesi`, {
+        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -750,10 +748,10 @@ export default function Apl02Page() {
 
     if (isAsesor && idIzin) {
       fetchData()
-    } else if (kegiatanAsesi) {
+    } else if (kegiatan) {
       fetchData()
     }
-  }, [kegiatanAsesi, user, isAsesor, idIzinFromUrl])
+  }, [kegiatan, user, isAsesor, idIzinFromUrl])
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
@@ -1201,11 +1199,21 @@ export default function Apl02Page() {
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.tuk || '-'}</td>
               </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesor || '-'}</td>
-              </tr>
+              {asesorList.length > 1 ? (
+                asesorList.map((asesor, idx) => (
+                  <tr key={asesor.id}>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor {idx + 1}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+                    <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{asesor.nama || '-'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesor || asesorList[0]?.nama || '-'}</td>
+                </tr>
+              )}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesi</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
@@ -1467,7 +1475,7 @@ export default function Apl02Page() {
                       </tr>
                     )}
                     <tr>
-                      <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
+                      <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor {asesorList.length > 1 ? idx + 1 : ''} :</td>
                       <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
                     </tr>
                     <tr>
@@ -1504,7 +1512,7 @@ export default function Apl02Page() {
                   <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
                 </tr>
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama :</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor :</td>
                   <td style={{ border: '1px solid #000', padding: '8px' }}>{apl02Data?.nama_asesor?.toUpperCase() || ''}</td>
                 </tr>
                 <tr>

@@ -192,7 +192,7 @@ export default function Mapa01Page() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh'}}>
       {/* Header */}
       <DashboardNavbar userName={user?.name} />
 
@@ -211,7 +211,7 @@ export default function Mapa01Page() {
 
       <AsesiLayout currentStep={4}>
         {/* A4 Size Indicator */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', background: '#f5f5f5' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px'}}>
           <div className="mapa01-container">
             <div id="mapa01-content" ref={contentRef}>
           {/* STATIC: Header */}

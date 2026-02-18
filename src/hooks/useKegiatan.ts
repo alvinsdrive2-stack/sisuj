@@ -81,15 +81,20 @@ export function useUpcomingKegiatan() {
   return { kegiatans, isLoading, error }
 }
 
-export function useKegiatanAsesor() {
+export function useKegiatanAsesor(enabled = true) {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
 
   const setKegiatanRef = useRef(setKegiatan)
   setKegiatanRef.current = setKegiatan
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     const fetchKegiatanAsesor = async () => {
       setIsLoading(true)
       setError(null)
@@ -106,40 +111,28 @@ export function useKegiatanAsesor() {
       }
     }
     fetchKegiatanAsesor()
-  }, [])
+  }, [enabled])
 
   return { kegiatan, isLoading, error }
 }
 
-export function useKegiatanAsesi() {
+export function useKegiatanAsesi(enabled = true) {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
 
   const setKegiatanRef = useRef(setKegiatan)
   setKegiatanRef.current = setKegiatan
 
   useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
     const fetchKegiatanAsesi = async () => {
       setIsLoading(true)
       setError(null)
-
-      // Skip fetching for asesor role (they access via different flow)
-      const token = localStorage.getItem("access_token")
-      if (token) {
-        try {
-          // Check if user is asesor by decoding JWT
-          const payload = JSON.parse(atob(token.split('.')[1]))
-          const role = payload?.role?.name?.toLowerCase?.() || ''
-
-          if (role === 'asesor') {
-            setIsLoading(false)
-            return
-          }
-        } catch (e) {
-          // If token parsing fails, continue with fetch
-        }
-      }
 
       try {
         const response = await kegiatanService.getKegiatanAsesi()
@@ -153,7 +146,7 @@ export function useKegiatanAsesi() {
       }
     }
     fetchKegiatanAsesi()
-  }, [])
+  }, [enabled])
 
   return { kegiatan, isLoading, error }
 }

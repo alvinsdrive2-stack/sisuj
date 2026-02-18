@@ -8,7 +8,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 
 interface DataPribadi {
   nama: string
@@ -103,15 +103,13 @@ interface ApiResponse {
 export default function Apl01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
-  // Get jadwal_id based on role
-  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+  // Get jadwal_id from kegiatan
+  const jadwalId = kegiatan?.jadwal_id
 
   const { showSuccess, showError, showWarning } = useToast()
 

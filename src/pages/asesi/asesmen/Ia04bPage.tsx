@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
-import { useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -69,7 +69,7 @@ export default function Ia04bPage() {
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
 
   const [ia04bData, setIa04bData] = useState<Ia04bResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -84,9 +84,6 @@ export default function Ia04bPage() {
     asesi?: BarcodeData
     asesor?: Record<string, BarcodeData>
   } | null>(null)
-
-  // Get dynamic steps based on asesor role
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const canEdit = isAsesor1 // Only asesor1 can edit IA04B
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
@@ -314,7 +311,7 @@ export default function Ia04bPage() {
 
       // 4. Generate QR for asesor only if not exists
       if (isAsesor) {
-        const jadwalId = kegiatanAsesor?.jadwal_id
+        const jadwalId = kegiatan?.jadwal_id
         const currentAsesorId = String(user?.id)
         const existingAsesorQR = barcodes?.asesor?.[currentAsesorId]?.url
 
@@ -353,7 +350,7 @@ export default function Ia04bPage() {
               console.log('QR Result:', qrResult)
 
               if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
 
                 setBarcodes(prev => ({
                   asesi: prev?.asesi,
@@ -468,18 +465,25 @@ export default function Ia04bPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>{tuk?.toLocaleUpperCase() || ''}</td>
             </tr>
-            <tr style={{ background: '#ffffff' }}>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                {asesorList.map((asesor, _idx) => (
-                  <span key={asesor.id}>
-                    {_idx > 0 && ', '}
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id} style={{ background: '#ffffff' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>
                     {asesor.nama?.toUpperCase() || ''}
-                  </span>
-                ))}
-              </td>
-            </tr>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr style={{ background: '#ffffff' }}>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}
+                </td>
+              </tr>
+            )}
             <tr style={{ background: '#ffffff' }}>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>

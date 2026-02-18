@@ -356,7 +356,7 @@ function Mapa01UnitAssessment({ unit, idx }: Mapa01UnitAssessmentProps) {
         verticalAlign: 'middle',
         background: '#fff'
       }}>
-        <p style={{ margin: 0 }}><br /></p>
+        <p style={{ margin: 0 }}><br />L</p>
       </td>
 
       {/* T L column */}
@@ -367,7 +367,7 @@ function Mapa01UnitAssessment({ unit, idx }: Mapa01UnitAssessmentProps) {
         background: '#fff'
       }}>
         <p style={{ margin: 0 }}><br /></p>
-        <p style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>T L</p>
+        <p style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}></p>
       </td>
 
       {/* T column */}

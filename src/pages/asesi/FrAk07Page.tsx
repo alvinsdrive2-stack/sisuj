@@ -5,7 +5,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -58,18 +58,16 @@ type SelectedReferences = Record<string, Set<number> | null>
 export default function FrAk07Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan: kegiatanAsesi } = useKegiatanAsesi()
-  const { kegiatan: kegiatanAsesor } = useKegiatanAsesor()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const { isAsesor1 } = useAsesorRole(idIzinFromUrl)
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
-  // Get jadwal_id based on role
-  const jadwalId = isAsesor ? kegiatanAsesor?.jadwal_id : kegiatanAsesi?.jadwal_id
+  // Get jadwal_id from kegiatan
+  const jadwalId = kegiatan?.jadwal_id
 
   // Other sections: asesi and asesor_1 can edit, asesor_2 cannot
   const isFormDisabled = isAsesor && !isAsesor1
@@ -132,9 +130,9 @@ export default function FrAk07Page() {
         // Use idIzin from URL params
         let actualIdIzin = idIzin
 
-        if (!actualIdIzin && !isAsesor && kegiatanAsesi?.jadwal_id) {
+        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
           // Fetch id_izin from list-asesi endpoint if not in URL
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi?.jadwal_id}/list-asesi`, {
+          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -166,7 +164,6 @@ export default function FrAk07Page() {
           const result: ApiResponse = await ak07Response.json()
           if (result.message === "Success") {
             const kelompoks = result.data?.kelompoks || []
-            console.log('[AK07] Loaded kelompoks:', kelompoks)
             setAk07Data(kelompoks)
 
             // Set barcodes raw from API - will be transformed in separate effect
@@ -179,7 +176,6 @@ export default function FrAk07Page() {
             kelompoks.forEach((item: Ak07DataItem) => {
               item.kategoris.forEach(kategori => {
                 kategori.referensis.forEach(ref => {
-                  console.log('[AK07] Ref:', ref.id, 'jawaban:', ref.jawaban)
                   if (typeof ref.jawaban === 'string' && ref.jawaban) {
                     newTextAnswers[ref.id] = ref.jawaban
                   }
@@ -204,7 +200,6 @@ export default function FrAk07Page() {
               })
             })
             setSelectedReferences(newSelectedReferences)
-            console.log('[AK07] Initialized selectedReferences:', newSelectedReferences)
           }
         } else {
           console.warn(`AK07 API returned ${ak07Response.status}`)
@@ -217,10 +212,10 @@ export default function FrAk07Page() {
 
     if (isAsesor && idIzin) {
       fetchData()
-    } else if (kegiatanAsesi) {
+    } else if (kegiatan) {
       fetchData()
     }
-  }, [idIzin, kegiatanAsesi, isAsesor])
+  }, [idIzin, kegiatan, isAsesor])
 
   const handleBack = () => {
     navigate(-1)
@@ -302,7 +297,7 @@ export default function FrAk07Page() {
                 asesi: prev?.asesi,
                 asesor: {
                   ...prev?.asesor,
-                  [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                  [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
                 }
               }))
               showSuccess('Tanda tangan berhasil disimpan!')
@@ -327,9 +322,9 @@ export default function FrAk07Page() {
 
     // Asesi dan asesor_1 - save data dulu
     let actualIdIzin = idIzin
-    if (!actualIdIzin && kegiatanAsesi?.jadwal_id) {
+    if (!actualIdIzin && kegiatan?.jadwal_id) {
       const token = localStorage.getItem("access_token")
-      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatanAsesi?.jadwal_id}/list-asesi`, {
+      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -387,15 +382,18 @@ export default function FrAk07Page() {
         })
       }
 
-      // Kelompok 6 (Rekaman Rencana Asesmen) - string/text
+      // Kelompok 6 (Rekaman Rencana Asesmen) - boolean Ya/Tidak + text keterangan
       const rencanaAsesmenData = ak07Data.find(d => d.urut === 3)
-      if (rencanaAsesmenData) {
-        rencanaAsesmenData.kategoris[0]?.referensis.forEach(ref => {
-          const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
+      if (rencanaAsesmenData && rencanaAsesmenData.kategoris[0]) {
+        const kategoriId = rencanaAsesmenData.kategoris[0].id
+        rencanaAsesmenData.kategoris[0].referensis.forEach(ref => {
+          const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
+          const keterangan = textAnswers[ref.id] || ''
+          // Simpan keterangan jika ada, kalau tidak simpan boolean
           answers.push({
             referensi_id: ref.id,
             kelompok_id: rencanaAsesmenData.id,
-            value: textValue
+            value: keterangan || isChecked
           })
         })
       }
@@ -457,7 +455,7 @@ export default function FrAk07Page() {
                   asesi: prev?.asesi,
                   asesor: {
                     ...prev?.asesor,
-                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name }
+                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
                   }
                 }))
               } else {
@@ -544,18 +542,25 @@ export default function FrAk07Page() {
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
               </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                  {asesorList.map((asesor, idx) => (
-                    <span key={asesor.id}>
-                      {idx > 0 && ', '}
+              {asesorList.length > 1 ? (
+                asesorList.map((asesor, idx) => (
+                  <tr key={asesor.id}>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor {idx + 1}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+                    <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
                       {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
-                    </span>
-                  ))}
-                </td>
-              </tr>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
@@ -655,21 +660,21 @@ export default function FrAk07Page() {
                             </td>
                           </>
                         )}
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={isChecked}
                             onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={!isReferenceChecked(kategori.id, modifikasiData.id, ref.id)}
                             onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
-                        <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : 'none', fontSize: '14px' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000', fontSize: '14px' }}>
                           {ref.nama}
                         </td>
                       </tr>
@@ -681,57 +686,112 @@ export default function FrAk07Page() {
           )}
 
           {/* Rekaman Rencana Asesmen */}
-          {rencanaAsesmenData && (
+          {rencanaAsesmenData && rencanaAsesmenData.kategoris[0]?.referensis && (
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                    <div style={{ marginBottom: '8px', fontSize: '14px' }}>Rekaman Rencana Asesmen:</div>
-                    {rencanaAsesmenData.kategoris[0]?.referensis.map((ref) => (
-                      <div key={ref.id} style={{ marginBottom: '8px', marginLeft: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
-                          {ref.nama}
-                        </label>
+                  <th colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '55%', background: '#fff', color: '#000',textAlign: 'left', fontSize: '14px' }}>Rekaman Rencana Asesmen</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#fff', color: '#000', textAlign: 'center', fontSize: '14px' }}>Ya</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#fff', color: '#000', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%', background: '#fff', color: '#000', textAlign: 'left',fontSize: '14px' }}>Keterangan</th>
+                </tr>
+
+                {rencanaAsesmenData.kategoris[0].referensis.filter(r => r.nama).map((ref, refIdx) => {
+                  const kategoriId = rencanaAsesmenData.kategoris[0]?.id || null
+                  const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
+
+                  return (
+                    <tr key={ref.id}>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', verticalAlign: 'top',borderRight:'none' }}>
+                        {refIdx + 1}
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top', borderLeft:'none' }}>
+                        {ref.nama}
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                        <CustomCheckbox
+                          checked={isChecked}
+                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id)}
+                          disabled={isFormDisabled || isSaving}
+                        />
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                        <CustomCheckbox
+                          checked={!isChecked}
+                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id)}
+                          disabled={isFormDisabled || isSaving}
+                        />
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '4px', fontSize: '14px' }}>
                         <textarea
-                          value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
+                          value={textAnswers[ref.id] || ''}
+                          onInput={(e) => {
+                            const el = e.currentTarget
+                            el.style.height = '24px'
+                            el.style.height = el.scrollHeight + 'px'
+                          }}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = '24px'
+                              el.style.height = el.scrollHeight + 'px'
+                            }
+                          }}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
                           disabled={isFormDisabled || isSaving}
-                          rows={2}
-                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff' }}
-                          placeholder="Isi jawaban di sini..."
+                          rows={1}
+                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
+                          placeholder="Keterangan..."
                         />
-                      </div>
-                    ))}
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
 
           {/* Hasil Penyesuaian */}
-          {hasilPenyesuaianData && (
+          {hasilPenyesuaianData && hasilPenyesuaianData.kategoris[0]?.referensis && (
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>
-                    <div style={{ marginBottom: '12px', fontSize: '14px' }}>A. Hasil Penyesuaian yang wajar dan beralasan disepakati menggunakan:</div>
-                    {hasilPenyesuaianData.kategoris[0]?.referensis.filter(r => r.nama).map((ref) => (
-                      <div key={ref.id} style={{ marginBottom: '12px', marginLeft: '20px' }}>
-                        <label style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold', fontSize: '14px' }}>
-                          {ref.nama}
-                        </label>
+                  <th colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', background: '#fff', color: '#000', fontSize: '14px', textAlign: 'left' }}>Hasil Penyesuaian yang wajar dan beralasan disepakati menggunakan:</th>
+
+                </tr>
+
+                {hasilPenyesuaianData.kategoris[0].referensis.filter(r => r.nama).map((ref, refIdx) => {
+                  return (
+                    <tr key={ref.id}>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left', verticalAlign: 'top',borderRight:'none' }}>
+                        {refIdx + 1}) {ref.nama}
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top',borderLeft:'none', borderRight:'none' }}>
+                        :
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '4px', fontSize: '14px', borderLeft:'none' }}>
                         <textarea
                           value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
+                          onInput={(e) => {
+                            const el = e.currentTarget
+                            el.style.height = '24px'
+                            el.style.height = el.scrollHeight + 'px'
+                          }}
+                          ref={(el) => {
+                            if (el) {
+                              el.style.height = '24px'
+                              el.style.height = el.scrollHeight + 'px'
+                            }
+                          }}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
                           disabled={isFormDisabled || isSaving}
-                          rows={2}
-                          style={{ width: '100%', padding: '6px 8px', border: '1px solid #000', fontSize: '14px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff' }}
-                          placeholder="Isi jawaban di sini..."
+                          rows={1}
+                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
+                          placeholder="Jawaban..."
                         />
-                      </div>
-                    ))}
-                  </td>
-                </tr>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
@@ -740,12 +800,13 @@ export default function FrAk07Page() {
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '12px', background: '#fff' }}>
             <tbody>
               {asesorList.length > 0 ? (
-                asesorList.map((asesor) => {
+                asesorList.map((asesor, idx) => {
                   const asesorBarcode = barcodes?.asesor?.[String(asesor.id)]
+                  const label = asesorList.length > 1 ? `Nama Asesor ${idx + 1}` : 'Nama Asesor'
                   return (
                     <tr key={asesor.id}>
                       <td style={{ border: '1px solid #000', padding: '8px', width: '50%', height: '100px' }}>
-                        <div>Nama Asesor : {asesor.nama?.toUpperCase() || ''}</div>
+                        <div>{label} : {asesor.nama?.toUpperCase() || ''}</div>
                         {asesor.noreg && <div>No. Reg : {asesor.noreg}</div>}
                       </td>
                       <td style={{ border: '1px solid #000', padding: '8px', width: '50%', verticalAlign: 'middle', textAlign: 'center' }}>

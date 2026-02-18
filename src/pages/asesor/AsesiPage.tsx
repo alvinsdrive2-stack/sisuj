@@ -81,18 +81,11 @@ export default function AsesiPage() {
   const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
 
-  console.log('[DEBUG] AsesiPage - kegiatan:', kegiatan)
-  console.log('[DEBUG] AsesiPage - jadwalId:', jadwalId)
-  console.log('[DEBUG] AsesiPage - asesiList:', asesiList)
-
   // Determine current phase
   const isPraAsesmen = kegiatan?.tahap === "1"
   const isAsesmen = kegiatan?.tahap === "2"
 
   const handleViewAsesi = (idIzin: string) => {
-    console.log('[AsesiPage] handleViewAsesi called with idIzin:', idIzin)
-    console.log('[AsesiPage] isPraAsesmen:', isPraAsesmen)
-    console.log('[AsesiPage] isAsesmen:', isAsesmen)
 
     // Navigate based on current phase - prioritize asesmen over praasesmen
     if (isAsesmen) {
