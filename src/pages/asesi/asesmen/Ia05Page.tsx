@@ -83,6 +83,7 @@ export default function Ia05Page() {
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isPernyataanAgreed, setIsPernyataanAgreed] = useState(false)
+  const [umpanBalik, setUmpanBalik] = useState<string>('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -435,6 +436,40 @@ export default function Ia05Page() {
             </table>
           </div>
         )}
+
+        {/* UMPAN BALIK UNTUK ASESI */}
+        <div style={{ marginTop: '20px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
+            <tbody>
+              <tr>
+                <td style={{ width: '30%', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                  Umpan balik untuk asesi:
+                   {isAsesor ? (
+                    <textarea
+                      defaultValue={umpanBalik}
+                      onBlur={(e) => setUmpanBalik(e.target.value)}
+                      placeholder="Tuliskan umpan balik untuk asesi..."
+                      style={{
+                        width: '100%',
+                        minHeight: '100px',
+                        padding: '8px',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        fontSize: '13px',
+                        fontFamily: 'Arial, Helvetica, sans-serif',
+                        resize: 'vertical'
+                      }}
+                    />
+                  ) : (
+                    <div style={{ minHeight: '100px', padding: '8px', fontSize: '13px', whiteSpace: 'pre-wrap' }}>
+                      {umpanBalik || '-'}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         {/* PENYUSUN DAN VALIDATOR Table */}
         <h2 style={{ fontSize: '14px', marginBottom: '10px' }}>PENYUSUN DAN VALIDATOR</h2>

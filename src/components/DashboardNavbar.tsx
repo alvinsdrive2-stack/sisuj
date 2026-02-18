@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Clock, LogOut, Bell, Menu, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import logo from "@/assets/logo.png"
@@ -15,6 +16,7 @@ interface DashboardNavbarProps {
 export default function DashboardNavbar({ userName = "User" }: DashboardNavbarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
+  const { showSuccess } = useToast()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -38,6 +40,7 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
     setIsLoggingOut(true)
     try {
       await logout()
+      showSuccess("Berhasil logout!")
       navigate("/login")
     } catch (error) {
       console.error("Logout error:", error)

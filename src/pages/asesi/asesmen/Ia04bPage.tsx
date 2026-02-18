@@ -526,13 +526,14 @@ export default function Ia04bPage() {
             {/* Header Row 1 */}
             <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td rowSpan={2} style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</td>
-              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Lingkup Penyajian proyek atau kegiatan terstruktur lainnya</td>
-              <td rowSpan={2} style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan</td>
-              <td rowSpan={2} style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan standar kompetensi kerja</td>
+              <td colSpan={3} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Aspek Penilaian</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Pencapaian</td>
             </tr>
             {/* Header Row 2 */}
             <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Lingkup Penyajian proyek atau kegiatan terstruktur lainnya</td>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan</td>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan standar kompetensi kerja</td>
               <td style={{ width: '7%', border: '1px solid #000', padding: '6px' }}>Ya</td>
               <td style={{ width: '7%', border: '1px solid #000', padding: '6px' }}>Tdk</td>
             </tr>
@@ -684,7 +685,7 @@ export default function Ia04bPage() {
 
         {/* Asesor Signature Table */}
         {barcodes?.asesor?.asesor1 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
               <tr style={{ fontWeight: 'bold' }}>
                 <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 1 :</td>
@@ -718,7 +719,7 @@ export default function Ia04bPage() {
           </table>
         )}
         {barcodes?.asesor?.asesor2 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
               <tr style={{ fontWeight: 'bold' }}>
                 <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 2 :</td>
