@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
 // ============== HELPER COMPONENTS ==============
 const Checkbox = ({ checked, label }: { checked: boolean; label: string }) => (
   <View style={styles.checkboxWrapper}>
-    <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
+    <View style={[styles.checkbox, checked ? styles.checkboxChecked : {}]} />
     <Text style={styles.checkboxLabel}>{label}</Text>
   </View>
 );

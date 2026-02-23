@@ -16,7 +16,7 @@ import {
   Mapa01Section3,
   Mapa01TandaTangan
 } from "@/components/mapa01"
-import { downloadMapa01Pdf, uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator"
+// import { uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator" // Commented: not currently used
 import "@/components/mapa01/Mapa01.css"
 
 interface Unit {
@@ -171,6 +171,9 @@ export default function Mapa01Page() {
     navigate(-1)
   }
 
+  // NOTE: handleUploadPdf is commented out because it's not currently used
+  // but kept for future reference when PDF upload functionality is needed
+  /*
   const handleUploadPdf = async () => {
     if (!actualIdIzin) {
       showWarning("ID Izin tidak ditemukan")
@@ -184,7 +187,7 @@ export default function Mapa01Page() {
         jabatanKerja?.toUpperCase() || mapaData?.kelompok_kerja?.nama_dokumen || '',
         nomorSkema?.toUpperCase() || mapaData?.kelompok_kerja?.kode || '',
         mapaData,
-        `https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01/upload`, // Sesuaikan dengan endpoint backend
+        `https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01/upload`,
         token || '',
         {
           idIzin: actualIdIzin,
@@ -204,6 +207,7 @@ export default function Mapa01Page() {
       setIsSaving(false)
     }
   }
+  */
 
   const handleSave = async () => {
     if (!agreedChecklist) {

@@ -736,7 +736,7 @@ export async function generateMapa01PdfBlob(
   try {
     // Dynamic import untuk reduce initial bundle size
     const html2canvas = (await import('html2canvas')).default
-    const { jsPDF } = await import('jspdf')
+    const jsPDF = (await import('jspdf')).default
 
     // Generate HTML
     const html = generateMapa01Pdf(judul, nomor, mapaData)
