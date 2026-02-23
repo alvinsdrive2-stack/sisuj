@@ -46,18 +46,17 @@ export default function DashboardAdminTUK() {
   // Prevent unused variable warning - stats reserved for future UI
   void _adminTukStats.length
 
-  const getStatusBadge = (_isStarted: string, isStartedPraAsesmen: string) => {
+  const getStatusBadge = (isStarted: string, tahap: string) => {
     // is_started = "0" → Belum Mulai
-    if (isStartedPraAsesmen === "0") {
+    if (isStarted === "0") {
       return (
         <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
           Belum Mulai
         </Badge>
       )
     }
-
-    // is_started_praasesmen = "1" → Pra-Asesmen
-    if (isStartedPraAsesmen === "1") {
+    // tahap = "1" → Tahap 1 - Pra-Asesmen
+    if (tahap === "1") {
       return (
         <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
           Pra-Asesmen
@@ -65,7 +64,7 @@ export default function DashboardAdminTUK() {
       )
     }
 
-    // is_started = "1" → Asesmen
+    // tahap = "2" → Tahap 2 - Asesmen
     return (
       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
         Asesmen
@@ -158,7 +157,7 @@ export default function DashboardAdminTUK() {
                       <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk.alamat}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(kegiatan.is_started, kegiatan.is_started_praasesmen || "0")}
+                      {getStatusBadge(kegiatan.is_started, kegiatan.tahap || "1")}
                       <ChevronRight className="w-5 h-5 text-slate-400" />
                     </div>
                   </div>

@@ -6,6 +6,17 @@
 import { useState } from "react"
 import { CustomCheckbox } from "../ui/Checkbox"
 
+interface Mapa01TandaTanganProps {
+  namaPenyusun?: string | null
+  namaValidator?: string | null
+  tanggalPenyusun?: string | null
+  tanggalValidator?: string | null
+  barcodePenyusun?: string | null
+  barcodeValidator?: string | null
+  noregPenyusun?: string | null
+  noregValidator?: string | null
+}
+
 // ============== CONSTANTS ==============
 const COLORS = {
   BLACK: '#000',
@@ -38,7 +49,16 @@ const cellStyles = {
 } as const;
 
 // ============== COMPONENT ==============
-export function Mapa01TandaTangan() {
+export function Mapa01TandaTangan({
+  namaPenyusun,
+  namaValidator,
+  tanggalPenyusun,
+  tanggalValidator,
+  barcodePenyusun,
+  barcodeValidator,
+  noregPenyusun,
+  noregValidator
+}: Mapa01TandaTanganProps) {
   const [checkboxStates, setCheckboxStates] = useState({
     manajerSertifikasi: false,
     masterAssessor: false,
@@ -213,9 +233,16 @@ export function Mapa01TandaTangan() {
             <td style={{ ...contentCellStyle, padding: '6px 8px' }}>
               <span style={{ fontSize: '12px', color: 'black', textAlign: 'center' }}>1</span>
             </td>
-            <td style={{ ...contentCellStyle, padding: '7px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '13px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '16px 8px' }}></td>
+            <td style={{ ...contentCellStyle, padding: '7px 8px', fontSize: '12px' }}>{namaPenyusun || ''}</td>
+            <td style={{ ...contentCellStyle, padding: '13px 8px', fontSize: '12px' }}>{noregPenyusun || '-'}</td>
+            <td style={{ ...contentCellStyle, padding: '8px', textAlign: 'center' }}>
+              {barcodePenyusun ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                  <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                  {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                </div>
+              ) : ''}
+            </td>
           </tr>
 
           <tr style={{ height: '23pt' }}>
@@ -236,9 +263,16 @@ export function Mapa01TandaTangan() {
             <td style={{ ...contentCellStyle, padding: '6px 8px' }}>
               <span style={{ fontSize: '12px', color: 'black', textAlign: 'center' }}>1</span>
             </td>
-            <td style={{ ...contentCellStyle, padding: '7px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '13px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '16px 8px' }}></td>
+            <td style={{ ...contentCellStyle, padding: '7px 8px', fontSize: '12px' }}>{namaValidator || ''}</td>
+            <td style={{ ...contentCellStyle, padding: '13px 8px', fontSize: '12px' }}>{noregValidator || '-'}</td>
+            <td style={{ ...contentCellStyle, padding: '8px', textAlign: 'center' }}>
+              {barcodeValidator ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                  <img src={barcodeValidator} alt="QR Validator" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                  {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                </div>
+              ) : ''}
+            </td>
           </tr>
 
           <tr style={{ height: '23pt' }}>

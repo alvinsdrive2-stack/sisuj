@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/auth-context'
 import { ThemeProvider } from './contexts/theme-context'
 import { ToastProvider } from './contexts/ToastContext'
 import { DokumenModalProvider, useDokumenModal } from './contexts/DokumenModalContext'
+import { DaftarHadirModalProvider, useDaftarHadirModal } from './contexts/DaftarHadirModalContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import {
   AdminLSPRoute,
@@ -17,6 +18,7 @@ import {
 import PublicRoute from './components/PublicRoute'
 import DefaultRoute from './components/DefaultRoute'
 import DokumenFullscreenModal from './components/komtek/DokumenFullscreenModal'
+import { DaftarHadirModal } from './components/admin-tuk/DaftarHadirModal'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardLayout from './components/DashboardLayout'
@@ -78,6 +80,7 @@ function App() {
       <ThemeProvider>
         <ToastProvider>
         <DokumenModalProvider>
+        <DaftarHadirModalProvider>
         <Toaster />
         <Router>
         <Routes>
@@ -409,6 +412,8 @@ function App() {
         </Routes>
       </Router>
       <GlobalDokumenFullscreenModal />
+      <GlobalDaftarHadirModal />
+      </DaftarHadirModalProvider>
       </DokumenModalProvider>
       </ToastProvider>
     </ThemeProvider>
@@ -424,6 +429,21 @@ function GlobalDokumenFullscreenModal() {
       onClose={closeModal}
       asesiId={asesiId}
       asesiNama={asesiNama}
+    />
+  )
+}
+
+function GlobalDaftarHadirModal() {
+  const { isOpen, mode, personType, personId, personName, jadwalId, closeModal } = useDaftarHadirModal()
+  return (
+    <DaftarHadirModal
+      isOpen={isOpen}
+      mode={mode}
+      personType={personType}
+      personId={personId}
+      personName={personName}
+      jadwalId={jadwalId}
+      onClose={closeModal}
     />
   )
 }

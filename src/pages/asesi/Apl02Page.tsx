@@ -460,6 +460,7 @@ interface Apl02Response {
     is_dilanjutkan?: boolean
     id_jadwal?: number
     units: Unit[]
+    barcodes?: SubunitBarcodes
   }
 }
 
@@ -679,12 +680,14 @@ export default function Apl02Page() {
         // Parse apl02 response
         let units: Unit[] = []
         let metodeFromApi: 'observasi' | 'portofolio' | undefined
+        let barcodesFromApi: SubunitBarcodes | undefined
 
         if (apl02Response.ok) {
           const apl02Result: Apl02Response = await apl02Response.json()
           if (apl02Result.message === "Success" && apl02Result.data) {
             units = apl02Result.data.units || []
             metodeFromApi = apl02Result.data.metode
+            barcodesFromApi = apl02Result.data.barcodes
 
             // Map subunit.kompeten to kukChecklist
             const newKukChecklist: Record<string, 'K' | 'BK'> = {}
@@ -698,9 +701,11 @@ export default function Apl02Page() {
                     newKukChecklist[kukId] = subunit.kompeten ? 'K' : 'BK'
                   })
                 }
-                // Store barcodes per subunit
+                // Store barcodes per subunit (prefer subunit-level barcodes, fallback to API-level)
                 if (subunit.barcodes) {
                   newSubunitBarcodes[subunit.id] = subunit.barcodes
+                } else if (barcodesFromApi) {
+                  newSubunitBarcodes[subunit.id] = barcodesFromApi
                 }
               })
             })

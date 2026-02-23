@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getRoleConfig } from "@/lib/rbac-config"
 import favicon from "@/assets/favicon.png"
@@ -37,6 +38,7 @@ export default function LoginPage() {
   const [showSuccessLoader, setShowSuccessLoader] = useState(false)
   const navigate = useNavigate()
   const { login, isLoading } = useAuth()
+  const { showSuccess } = useToast()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,6 +60,9 @@ export default function LoginPage() {
         const roleConfiguration = getRoleConfig(userRole)
         console.log("Role Config:", roleConfiguration)
         console.log("Redirecting to:", roleConfiguration?.defaultRoute)
+
+        // Show success toast
+        showSuccess(`Login Berhasil, Selamat datang ${userRole} ${userData?.name}!`)
 
         setShowSuccessLoader(true)
         preloadDashboardImages()

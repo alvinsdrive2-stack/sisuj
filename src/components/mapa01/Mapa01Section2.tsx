@@ -189,17 +189,6 @@ function Mapa01MetodeTable({ units }: Mapa01MetodeTableProps) {
     <>
       <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: '12px' }} cellSpacing="0">
         <tbody>
-          {/* Header Row - Metode dan Perangkat Asesmen */}
-          <tr style={{ height: '13pt' }}>
-            <td style={{ ...headerCellStyle, background: '#fff' }}></td>
-            <td style={{ ...headerCellStyle, background: '#fff' }}></td>
-            <td style={{ ...headerCellStyle, background: '#fff' }} colSpan={3}></td>
-            <td style={{ ...headerCellStyle, background: '#fff' }} colSpan={6}>
-              <p style={{ fontWeight: 'bold', fontSize: '11px', color: COLORS.BLACK, padding: '6px 8px', margin: 0, textAlign: 'center' }}>
-                Metode dan Perangkat Asesmen
-              </p>
-            </td>
-          </tr>
 
           {/* Second Header Row - Bukti-Bukti and Jenis Bukti */}
           <tr style={{ height: '77pt' }}>
@@ -219,7 +208,7 @@ function Mapa01MetodeTable({ units }: Mapa01MetodeTableProps) {
             </td>
             <td style={{ ...headerCellStyle, padding: '6px 8px', textAlign: 'center', background: '#fff' }} colSpan={6}>
               <p style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}>
-                CL (Ceklis Observasi), DIT (Daftar Instruksi Terstruktur), DPL (Daftar Pertanyaan Lisan), DPT (Daftar Pertanyaan Tertulis), VPK (Verifikasi Pihak Ketiga), CVP (Ceklis Verifikasi Portofolio), CRP (Ceklis Reviu Produk), PW (Pertanyaan
+                Metode dan Perangkat Asesmen CL (Ceklis Observasi), DIT (Daftar Instruksi Terstruktur), DPL (Daftar Pertanyaan Lisan), DPT (Daftar Pertanyaan Tertulis), VPK (Verifikasi Pihak Ketiga), CVP (Ceklis Verifikasi Portofolio), CRP (Ceklis Reviu Produk), PW (Pertanyaan
               </p>
               <p style={{ fontWeight: 'bold', fontSize: '11px', padding: '6px 8px', margin: 0, lineHeight: '12px' }}>
                 Wawancara)

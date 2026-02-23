@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Clock, LogOut, Bell, Menu, X } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,6 +8,8 @@ import { useToast } from "@/contexts/ToastContext"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import logo from "@/assets/logo.png"
+
+const PAS_FOTO_CACHE_KEY = "pas_foto_cache"
 
 interface DashboardNavbarProps {
   userName?: string
@@ -20,10 +22,25 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(new Date())
+  const [pasFoto, setPasFoto] = useState<string | null>(() => {
+    // Initialize from cache only if it matches current user
+    try {
+      const cached = localStorage.getItem(PAS_FOTO_CACHE_KEY)
+      if (!cached) return null
+      const { url, idIzin } = JSON.parse(cached)
+      // Only use cache if it's for the same user
+      if (url && idIzin && idIzin === user?.id_izin) {
+        return url
+      }
+      return null
+    } catch {
+      return null
+    }
+  })
 
   // Determine dashboard route based on role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const dashboardRoute = isAsesor ? '/asesor/dashboard' : '/asesi/dashboard'
+  const dashboardRoute = '/login'
 
   const handleLogoClick = () => {
     navigate(dashboardRoute)
@@ -36,8 +53,65 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
     return () => clearInterval(timer)
   }, [])
 
+  // Fetch pas_foto from SIKI API
+  useEffect(() => {
+    const fetchPasFoto = async () => {
+      if (!user?.id_izin) return
+
+      // Check cache validity (cache for 1 hour)
+      try {
+        const cached = localStorage.getItem(PAS_FOTO_CACHE_KEY)
+        if (cached) {
+          const { url, timestamp, idIzin } = JSON.parse(cached)
+          const cacheAge = Date.now() - timestamp
+          // Use cache if less than 1 hour old and same user
+          if (url && cacheAge < 3600000 && idIzin === user.id_izin) {
+            setPasFoto(url)
+            return
+          }
+        }
+      } catch {
+        // Invalid cache, continue to fetch
+      }
+
+      try {
+        const response = await fetch(
+          `https://siki.pu.go.id/siki-api/v1/permohonan-skk/${user.id_izin}`,
+          {
+            headers: {
+              'token': 'f3332337ac671c33262198340c2f7b579f7843775ecc425107f086956cbb2b1a9e96b0cc6f643d24'
+            }
+          }
+        )
+        if (!response.ok) return
+
+        const data = await response.json()
+        const fotoUrl = data.personal?.[0]?.pas_foto
+
+        if (fotoUrl) {
+          setPasFoto(fotoUrl)
+          // Cache the photo URL
+          localStorage.setItem(
+            PAS_FOTO_CACHE_KEY,
+            JSON.stringify({
+              url: fotoUrl,
+              timestamp: Date.now(),
+              idIzin: user.id_izin
+            })
+          )
+        }
+      } catch (error) {
+        console.error("Failed to fetch pas_foto:", error)
+      }
+    }
+
+    fetchPasFoto()
+  }, [user?.id_izin])
+
   const handleLogout = async () => {
     setIsLoggingOut(true)
+    // Clear pas_foto cache on logout
+    localStorage.removeItem(PAS_FOTO_CACHE_KEY)
     try {
       await logout()
       showSuccess("Berhasil logout!")
@@ -88,6 +162,9 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
 
             {/* User Avatar */}
             <Avatar className="w-10 h-10">
+              {pasFoto && (
+                <AvatarImage src={pasFoto} alt={userName} className="object-cover" />
+              )}
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {userInitials}
               </AvatarFallback>
@@ -130,12 +207,15 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
               <div className="flex items-center justify-between px-4 py-2">
                 <div className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
+                    {pasFoto && (
+                      <AvatarImage src={pasFoto} alt={userName} className="object-cover" />
+                    )}
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                       {userInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-semibold text-slate-800">{userName}</p>
+                    <p className="font-semibold text-slate-800 dark:text-slate-200">{userName}</p>
                     <p className="text-xs text-slate-500">Peserta</p>
                   </div>
                 </div>

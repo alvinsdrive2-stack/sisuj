@@ -26,11 +26,14 @@ interface Kelompok {
 interface Ak04Data {
   kelompoks: Kelompok[]
   alasan: string
+  barcodes?: {
+    asesi?: { url: string; tanggal: string; nama: string }
+  }
 }
 
 interface ApiResponse {
   message: string
-  data: Ak04Data
+  data: Ak04Data | { data: Ak04Data }
 }
 
 type AnswerType = boolean | null
@@ -51,6 +54,7 @@ export default function FrAk04Page() {
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
+  const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
 
   // Only asesi can edit this form
   const isFormDisabled = isAsesor
@@ -98,12 +102,21 @@ export default function FrAk04Page() {
 
         if (ak04Response.ok) {
           const result: ApiResponse = await ak04Response.json()
+          console.log("=== AK04 API Response ===")
+          console.log("Full result:", JSON.stringify(result, null, 2))
+
           if (result.message === "Success") {
-            setAk04Data(result.data)
+            // Handle nested data.data structure (new API format) or direct data (old format)
+            const apiData = 'data' in result.data && 'kelompoks' in (result.data as { data: Ak04Data }).data
+              ? (result.data as { data: Ak04Data }).data
+              : result.data as Ak04Data
+
+            console.log("apiData:", apiData)
+            setAk04Data(apiData)
 
             // Load existing answers from API
             const initialAnswers: Record<number, AnswerType> = {}
-            result.data.kelompoks.forEach(kelompok => {
+            apiData.kelompoks.forEach(kelompok => {
               kelompok.referensis.forEach(ref => {
                 initialAnswers[ref.id] = ref.jawaban
               })
@@ -111,8 +124,13 @@ export default function FrAk04Page() {
             setAnswers(initialAnswers)
 
             // Load existing alasan
-            if (result.data.alasan) {
-              setAlasanBanding(result.data.alasan)
+            if (apiData.alasan) {
+              setAlasanBanding(apiData.alasan)
+            }
+
+            // Load barcodes
+            if (apiData.barcodes) {
+              setBarcodes(apiData.barcodes)
             }
           }
         } else {
@@ -328,7 +346,7 @@ export default function FrAk04Page() {
                 <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Tanggal Asesmen</td>
                 <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {new Date().toLocaleDateString('id-ID')}</td>
               </tr>
-              <br />
+
               {/* Header Row */}
               <tr>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
@@ -414,9 +432,25 @@ export default function FrAk04Page() {
 
               {/* Tanda Tangan */}
               <tr>
-                <td colSpan={4} style={{ border: '1px solid #000', padding: '8px', height: '80px' }}>
-                  Tanda tangan Asesi : {namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}<br /><br />
-                  Tanggal : {new Date().toLocaleDateString('id-ID')}
+                <td colSpan={4} style={{ border: '1px solid #000', padding: '8px', minHeight: '80px' }}>
+                  <div>Tanda tangan Asesi : {namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</div>
+                  {barcodes?.asesi?.url ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', marginTop: '8px' }}>
+                      <img
+                        src={barcodes.asesi.url}
+                        alt="Tanda Tangan Asesi"
+                        style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        Tanggal : {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '8px' }}>
+                      <br />
+                      Tanggal : {new Date().toLocaleDateString('id-ID')}
+                    </div>
+                  )}
                 </td>
               </tr>
             </tbody>

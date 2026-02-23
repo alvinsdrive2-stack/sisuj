@@ -6,7 +6,7 @@ import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
-import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import {
@@ -16,6 +16,7 @@ import {
   Mapa01Section3,
   Mapa01TandaTangan
 } from "@/components/mapa01"
+import { downloadMapa01Pdf, uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator"
 import "@/components/mapa01/Mapa01.css"
 
 interface Unit {
@@ -88,7 +89,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk: _tuk } = useDataDokumenAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -170,6 +171,40 @@ export default function Mapa01Page() {
     navigate(-1)
   }
 
+  const handleUploadPdf = async () => {
+    if (!actualIdIzin) {
+      showWarning("ID Izin tidak ditemukan")
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const result = await uploadMapa01PdfToBackend(
+        jabatanKerja?.toUpperCase() || mapaData?.kelompok_kerja?.nama_dokumen || '',
+        nomorSkema?.toUpperCase() || mapaData?.kelompok_kerja?.kode || '',
+        mapaData,
+        `https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01/upload`, // Sesuaikan dengan endpoint backend
+        token || '',
+        {
+          idIzin: actualIdIzin,
+          fileName: `mapa01_${actualIdIzin}.pdf`
+        }
+      )
+
+      if (result.success) {
+        showSuccess(result.message)
+      } else {
+        showWarning(result.message)
+      }
+    } catch (error) {
+      console.error('Error uploading PDF:', error)
+      showWarning('Gagal upload PDF')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
@@ -232,7 +267,16 @@ export default function Mapa01Page() {
           <Mapa01Section3 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} />
 
           {/* STATIC: Tanda Tangan */}
-          <Mapa01TandaTangan />
+          <Mapa01TandaTangan
+            namaPenyusun={namaPenyusun}
+            namaValidator={namaValidator}
+            tanggalPenyusun={tanggalPenyusun}
+            tanggalValidator={tanggalValidator}
+            barcodePenyusun={barcodePenyusun}
+            barcodeValidator={barcodeValidator}
+            noregPenyusun={noregPenyusun}
+            noregValidator={noregValidator}
+          />
           </div>
 
           {/* Agreement Checklist */}
@@ -251,10 +295,11 @@ export default function Mapa01Page() {
 
           {/* Actions */}
           <div className="mapa01-actions">
-            
+
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
+            
             <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
             </ActionButton>

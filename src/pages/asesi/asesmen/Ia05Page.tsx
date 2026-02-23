@@ -53,6 +53,7 @@ interface Ia05Response {
   data: {
     dokumen: Dokumen
     soal: Soal[]
+    umpan_balik?: string
   }
 }
 
@@ -66,16 +67,16 @@ export default function Ia05Page() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1 } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const isAsesi = user?.role?.name?.toLowerCase() === 'asesi'
-  // Check if current asesor is asesor1 (can edit) or asesor2 (read-only)
-  // const isAsesor1 = isAsesor && user?.id === idAsesor1
+  // Check if current asesor is asesor1 (can edit umpan_balik) or asesor2 (read-only)
+  const isAsesor1 = isAsesor && user?.id === idAsesor1
   const canEditIa05 = isAsesi // Only asesi can answer the questions
-  // const canEditGrading = isAsesor1 // Only asesor1 can grade the answers
+  const canEditUmpanBalik = isAsesor1 // Only asesor1 can edit umpan_balik
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   const [ia05Data, setIa05Data] = useState<Ia05Response["data"] | null>(null)
@@ -117,6 +118,11 @@ export default function Ia05Page() {
               }
             })
             setAnswers(newAnswers)
+
+            // Set umpan balik from API response
+            if (result.data.umpan_balik) {
+              setUmpanBalik(result.data.umpan_balik)
+            }
           }
         }
       } catch (error) {
@@ -131,6 +137,43 @@ export default function Ia05Page() {
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') => {
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
+  }
+
+  // Handler for asesor to save umpan_balik
+  const handleSaveUmpanBalik = async () => {
+    if (!ia05Data || !id) return
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem('access_token')
+
+      const payload = {
+        id_izin: parseInt(id),
+        dokumen_id: ia05Data.dokumen.id,
+        umpan_balik: umpanBalik
+      }
+
+      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        showSuccess('Umpan balik berhasil disimpan!')
+      } else {
+        const result = await response.json()
+        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
+      }
+    } catch (error) {
+      console.error('Error saving umpan balik:', error)
+      showError('Gagal menyimpan umpan balik. Silakan coba lagi.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -159,7 +202,8 @@ export default function Ia05Page() {
       const payload = {
         id_izin: parseInt(id),
         dokumen_id: ia05Data.dokumen.id,
-        answers: answersPayload
+        answers: answersPayload,
+        umpan_balik: umpanBalik || undefined
       }
 
       const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
@@ -437,18 +481,19 @@ export default function Ia05Page() {
           </div>
         )}
 
-        {/* UMPAN BALIK UNTUK ASESI */}
+        {/* UMPAN BALIK UNTUK ASESI - Only visible for asesor */}
+        {isAsesor && (
         <div style={{ marginTop: '20px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
               <tr>
                 <td style={{ width: '30%', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
                   Umpan balik untuk asesi:
-                   {isAsesor ? (
                     <textarea
                       defaultValue={umpanBalik}
                       onBlur={(e) => setUmpanBalik(e.target.value)}
                       placeholder="Tuliskan umpan balik untuk asesi..."
+                      disabled={!canEditUmpanBalik}
                       style={{
                         width: '100%',
                         minHeight: '100px',
@@ -457,19 +502,17 @@ export default function Ia05Page() {
                         borderRadius: '4px',
                         fontSize: '13px',
                         fontFamily: 'Arial, Helvetica, sans-serif',
-                        resize: 'vertical'
+                        resize: 'vertical',
+                        backgroundColor: canEditUmpanBalik ? '#fff' : '#f5f5f5',
+                        cursor: canEditUmpanBalik ? 'text' : 'not-allowed'
                       }}
                     />
-                  ) : (
-                    <div style={{ minHeight: '100px', padding: '8px', fontSize: '13px', whiteSpace: 'pre-wrap' }}>
-                      {umpanBalik || '-'}
-                    </div>
-                  )}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+        )}
 
         {/* PENYUSUN DAN VALIDATOR Table */}
         <h2 style={{ fontSize: '14px', marginBottom: '10px' }}>PENYUSUN DAN VALIDATOR</h2>
@@ -485,13 +528,20 @@ export default function Ia05Page() {
             </tr>
           </thead>
           <tbody>
-            {/* Penyusun rows */}
+            {/* Penyusun row */}
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Penyusun</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>1</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{namaPenyusun || '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{noregPenyusun || '-'}</td>
+              <td style={{ height: '80px', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                {barcodePenyusun ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                    {tanggalPenyusun && <span style={{ fontSize: '11px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                  </div>
+                ) : '-'}
+              </td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>2</td>
@@ -500,13 +550,20 @@ export default function Ia05Page() {
               <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
             </tr>
 
-            {/* Validator rows */}
+            {/* Validator row */}
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Validator</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>1</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ height: '60px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{namaValidator || '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{noregValidator || '-'}</td>
+              <td style={{ height: '80px', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                {barcodeValidator ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <img src={barcodeValidator} alt="QR Validator" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
+                    {tanggalValidator && <span style={{ fontSize: '11px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                  </div>
+                ) : '-'}
+              </td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>2</td>
@@ -536,12 +593,30 @@ export default function Ia05Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}>
-              Kembali
-            </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSubmit}>
-              {isSaving ? "Menyimpan..." : "Lanjut"}
-            </ActionButton>
+            {/* Buttons for Asesi */}
+            {isAsesi && (
+              <>
+                <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}>
+                  Kembali
+                </ActionButton>
+                <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSubmit}>
+                  {isSaving ? "Menyimpan..." : "Lanjut"}
+                </ActionButton>
+              </>
+            )}
+            {/* Buttons for Asesor */}
+            {isAsesor && (
+              <>
+                <ActionButton variant="secondary" onClick={() => navigate(-1)}>
+                  Kembali
+                </ActionButton>
+                {canEditUmpanBalik && (
+                  <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSaveUmpanBalik}>
+                    {isSaving ? "Menyimpan..." : "Simpan Umpan Balik"}
+                  </ActionButton>
+                )}
+              </>
+            )}
           </div>
         </div>
       </ModularAsesiLayout>

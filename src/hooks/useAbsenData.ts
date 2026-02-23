@@ -1,0 +1,100 @@
+import { useState, useEffect, useRef } from "react"
+
+const API_BASE_URL = "https://backend.devgatensi.site/api"
+
+export interface AbsenData {
+  id_izin?: string
+  // Asesi - Pra Asesmen
+  url_absen_asesi_pra_awal: string | null
+  url_absen_asesi_pra_akhir: string | null
+  // Asesi - Asesmen
+  url_absen_asesi_awal: string | null
+  url_absen_asesi_akhir: string | null
+  // Asesor 1 - Pra Asesmen
+  url_absen_asesor1_pra_awal: string | null
+  url_absen_asesor1_pra_akhir: string | null
+  // Asesor 1 - Asesmen
+  url_absen_asesor1_awal: string | null
+  url_absen_asesor1_akhir: string | null
+  // Asesor 2 - Pra Asesmen
+  url_absen_asesor2_pra_awal: string | null
+  url_absen_asesor2_pra_akhir: string | null
+  // Asesor 2 - Asesmen
+  url_absen_asesor2_awal: string | null
+  url_absen_asesor2_akhir: string | null
+  // Foto
+  foto_kegiatan: string | null
+  foto_bersama: string | null
+}
+
+export interface AbsenDataResponse {
+  message: string
+  data: AbsenData
+}
+
+async function fetchAbsenData(idIzin: string): Promise<AbsenDataResponse> {
+  const token = localStorage.getItem("access_token")
+
+  const response = await fetch(`${API_BASE_URL}/dokumen/absen/${idIzin}`, {
+    method: "GET",
+    headers: {
+      "Accept": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Failed to fetch absen data" }))
+    throw new Error(error.message || "Failed to fetch absen data")
+  }
+
+  return response.json()
+}
+
+export function useAbsenData(idIzin: string, enabled = true) {
+  const [data, setData] = useState<AbsenData | null>(null)
+  const [isLoading, setIsLoading] = useState(enabled && !!idIzin)
+  const [error, setError] = useState<string | null>(null)
+
+  const setDataRef = useRef(setData)
+  setDataRef.current = setData
+
+  useEffect(() => {
+    if (!enabled || !idIzin) {
+      setIsLoading(false)
+      return
+    }
+
+    const fetchData = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await fetchAbsenData(idIzin)
+        console.log('Absen Data Response:', response)
+        setDataRef.current?.(response.data)
+      } catch (err) {
+        console.error('Error fetching absen data:', err)
+        setError(err instanceof Error ? err.message : "Failed to fetch absen data")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchData()
+  }, [idIzin, enabled])
+
+  const refetch = async () => {
+    if (!idIzin) return
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await fetchAbsenData(idIzin)
+      setDataRef.current?.(response.data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch absen data")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return { data, isLoading, error, refetch }
+}

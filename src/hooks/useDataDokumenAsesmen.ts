@@ -20,6 +20,14 @@ interface DataDokumenAsesmenData {
   tanggal_uji: string
   tanggal_selesai: string | null
   jenis_kelas: string
+  nama_penyusun: string | null
+  nama_validator: string | null
+  tanggal_penyusun: string | null
+  tanggal_validator: string | null
+  barcode_penyusun: string | null
+  barcode_validator: string | null
+  noreg_penyusun: string | null
+  noreg_validator: string | null
 }
 
 interface DataDokumenAsesmenResponse {
@@ -39,6 +47,14 @@ interface UseDataDokumenAsesmenResult {
   tanggalUji: string
   tanggalSelesai: string | null
   jenisKelas: string
+  namaPenyusun: string | null
+  namaValidator: string | null
+  tanggalPenyusun: string | null
+  tanggalValidator: string | null
+  barcodePenyusun: string | null
+  barcodeValidator: string | null
+  noregPenyusun: string | null
+  noregValidator: string | null
   isLoading: boolean
   error: string | null
 }
@@ -56,6 +72,14 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     tanggalUji: string
     tanggalSelesai: string | null
     jenisKelas: string
+    namaPenyusun: string | null
+    namaValidator: string | null
+    tanggalPenyusun: string | null
+    tanggalValidator: string | null
+    barcodePenyusun: string | null
+    barcodeValidator: string | null
+    noregPenyusun: string | null
+    noregValidator: string | null
   }>({
     jabatanKerja: '',
     nomorSkema: '',
@@ -68,6 +92,14 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     tanggalUji: '',
     tanggalSelesai: null,
     jenisKelas: '',
+    namaPenyusun: null,
+    namaValidator: null,
+    tanggalPenyusun: null,
+    tanggalValidator: null,
+    barcodePenyusun: null,
+    barcodeValidator: null,
+    noregPenyusun: null,
+    noregValidator: null,
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -125,6 +157,14 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
               tanggalUji: result.data.tanggal_uji || '',
               tanggalSelesai: result.data.tanggal_selesai,
               jenisKelas: result.data.jenis_kelas || '',
+              namaPenyusun: result.data.nama_penyusun || null,
+              namaValidator: result.data.nama_validator || null,
+              tanggalPenyusun: result.data.tanggal_penyusun || null,
+              tanggalValidator: result.data.tanggal_validator || null,
+              barcodePenyusun: result.data.barcode_penyusun || null,
+              barcodeValidator: result.data.barcode_validator || null,
+              noregPenyusun: result.data.noreg_penyusun || null,
+              noregValidator: result.data.noreg_validator || null,
             })
           }
         } else {

@@ -10,7 +10,7 @@
                     Calibri,
                     Candara,
                     Segoe,
-                    Segoe UI,
+                    "Segoe UI",
                     Optima,
                     Arial,
                     sans-serif;
@@ -37,7 +37,7 @@
                     Calibri,
                     Candara,
                     Segoe,
-                    Segoe UI,
+                    "Segoe UI",
                     Optima,
                     Arial,
                     sans-serif;
@@ -133,12 +133,12 @@ writing-mode: vertical-rl;
                 <td style="width: 30%;" rowspan="2">Skema Sertifikasi Okupasi Nasional</td>
                 <td style="width: 15%;">Judul</td>
                 <td style="width: 3%;">:</td>
-                <td style="width: 52%;">{{ $skema['judul'] }}</td>
+                <td style="width: 52%;">{{ $dokumenHeader['jabatan_kerja'] }}</td>
             </tr>
             <tr>
                 <td>Nomor</td>
                 <td>:</td>
-                <td>{{ $skema['nomor'] }}</td>
+                <td>{{ $dokumenHeader['nomor_skema'] }}</td>
             </tr>
         </table>
         <br />
@@ -151,6 +151,56 @@ writing-mode: vertical-rl;
                 </td>
             </tr>
         </table>
+        @php
+        $refMap = collect($referensi_form)
+        ->flatMap(fn ($f) => $f['kelompok']['kategoris'] ?? [])
+        ->flatMap(fn ($k) => $k['subkategoris'] ?? [])
+        ->flatMap(fn ($s) => $s['referensis'] ?? [])
+        ->keyBy('id');
+
+        $asesi = [
+            'hasil_pelatihan_telusur'           => $refMap[82]['value'] ?? false,
+            'hasil_pelatihan_tidak_kompetensi'  => $refMap[83]['value'] ?? false,
+            'pekerja_berpengalaman_telusur'     => $refMap[84]['value'] ?? false,
+            'pekerja_berpengalaman_tidak_telusur'=> $refMap[85]['value'] ?? false,
+            'otodidak'                          => $refMap[86]['value'] ?? false,
+        ];
+
+        $tujuan = [
+            'sertifikasi' => $refMap[87]['value'] ?? false,
+            'pkt'         => $refMap[88]['value'] ?? false,
+            'rpl'         => $refMap[89]['value'] ?? false,
+            'lainnya'     => $refMap[90]['value'] ?? false,
+        ];
+
+        $konteks = [
+            'tempat_kerja_nyata'     => $refMap[91]['value'] ?? false,
+            'tempat_kerja_simulasi'  => $refMap[92]['value'] ?? false,
+            'tersedia'               => $refMap[93]['value'] ?? false,
+            'terbatas'               => $refMap[94]['value'] ?? false,
+            'bukti_asesmen_rpl'      => $refMap[95]['value'] ?? false,
+            'aktivitas_kerja'        => $refMap[96]['value'] ?? false,
+            'kegiatan_pembelajaran'  => $refMap[97]['value'] ?? false,
+            'lsp_gatensi'            => $refMap[98]['value'] ?? false,
+            'organisasi_pelatihan'   => $refMap[99]['value'] ?? false,
+            'asesor_perusahaan'      => $refMap[100]['value'] ?? false,
+        ];
+
+        $orang_relevan = [
+            'manajer_sertifikasi_lsp' => $refMap[101]['value'] ?? false,
+            'master_assessor_lsp'     => $refMap[102]['value'] ?? false,
+            'manajer_pelatihan_lsp'   => $refMap[103]['value'] ?? false,
+            'lainnya'                 => $refMap[104]['value'] ?? false,
+        ];
+
+        $tolak_ukur = [
+            'skkni'               => $refMap[105]['value'] ?? false,
+            'kriteria_kurikulum'  => $refMap[106]['value'] ?? false,
+            'spesifikasi_kinerja' => $refMap[107]['value'] ?? false,
+            'spesifikasi_produk'  => $refMap[108]['value'] ?? false,
+            'pedoman_khusus'      => $refMap[109]['value'] ?? false,
+        ];
+        @endphp
         <table width="100%" cellpadding="5" cellspacing="0" align="center">
             <!-- Header Section 1 -->
             <tr>
@@ -308,39 +358,39 @@ writing-mode: vertical-rl;
                 </td>
             </tr>
 
-            <!-- Tolok Ukur Asesmen -->
+            <!-- Tolak Ukur Asesmen -->
             <tr>
-                <td class="hd-dok" colspan="5" style="font-weight: bold;">1.2. Tolok ukur asesmen</td>
+                <td class="hd-dok" colspan="5" style="font-weight: bold;">1.2. Tolak ukur asesmen</td>
             </tr>
             <tr>
                 <td rowspan="5" style="vertical-align: top;">1.2</td>
-                <td rowspan="5" style="vertical-align: top;">Tolok ukur asesmen</td>
+                <td rowspan="5" style="vertical-align: top;">Tolak ukur asesmen</td>
                 <td colspan="3">
-                    <span class="checkbox {{ $tolok_ukur['skkni'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $tolak_ukur['skkni'] ? 'checked' : '' }}"></span>
                     Standar Kompetensi
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox {{ $tolok_ukur['kriteria_kurikulum'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $tolak_ukur['kriteria_kurikulum'] ? 'checked' : '' }}"></span>
                     Kriteria asesmen dari kurikulum pelatihan
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox {{ $tolok_ukur['spesifikasi_kinerja'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $tolak_ukur['spesifikasi_kinerja'] ? 'checked' : '' }}"></span>
                     Spesifikasi kinerja suatu perusahaan atau industri
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox {{ $tolok_ukur['spesifikasi_produk'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $tolak_ukur['spesifikasi_produk'] ? 'checked' : '' }}"></span>
                     Spesifikasi Produk
                 </td>
             </tr>
             <tr>
                 <td colspan="3">
-                    <span class="checkbox {{ $tolok_ukur['pedoman_khusus'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $tolak_ukur['pedoman_khusus'] ? 'checked' : '' }}"></span>
                     Pedoman khusus
                 </td>
             </tr>
@@ -356,12 +406,12 @@ writing-mode: vertical-rl;
             </tr>
         </table>
 
-        @foreach ($kelompok_kerja as $kelompok)
+        @foreach ($kelompok_kerja['kelompok_kerja'] as $kelompok)
         <!-- Kelompok Pekerjaan {{ $kelompok['urut'] }} -->
         <table width="100%" cellpadding="5" cellspacing="0" align="center">
             <tr>
                 <td style="width: 20%;" rowspan="{{ count($kelompok['units']) + 1 }}">
-                    <strong>Kelompok Pekerjaan {{ $kelompok['urut'] }}</strong>
+                    <strong>{{ $kelompok['nama'] }}</strong>
                 </td>
                 <td style="width: 8%;" align="center"><strong>No.</strong></td>
                 <td style="width: 22%;" align="center"><strong>Kode Unit</strong></td>
@@ -370,40 +420,38 @@ writing-mode: vertical-rl;
             @foreach ($kelompok['units'] as $i => $unit)
             <tr>
                 <td align="center">{{ $i + 1 }}.</td>
-                <td align="center">{{ $unit['no_unit'] }}</td>
-                <td>{{ $unit['kode_unit'] }}</td>
+                <td align="center">{{ $unit['kode_unit'] }}</td>
                 <td>{{ $unit['nama_unit'] }}</td>
             </tr>
             @endforeach
-            
         </table>
         <br />
 
         <!-- Tabel Metode Asesmen untuk Kelompok ini -->
         <table width="100%" cellpadding="5" cellspacing="0" align="center" style="font-size: 10pt;">
-             <tr>
-        <td rowspan="2" style="width: 15%;" align="center"><strong>Unit Kompetensi</strong></td>
-        <td rowspan="2" style="width: 18%;" align="center">
-            <strong>Bukti-Bukti</strong><br />
-            <small>(Kinerja, Produk, Portofolio, dan/atau Pengetahuan) diidentifikasi berdasarkan Kriteria Unjuk Kerja dan Pendekatan Asesmen.</small>
-        </td>
-        <td colspan="3" align="center"><strong>Jenis Bukti</strong></td>
-        <td colspan="5" align="center"><strong>Metode dan Perangkat Asesmen<br/>
-CL (Ceklis Observasi), DIT (Daftar Instruksi 
-Terstruktur), DPL (Daftar Pertanyaan Lisan), 
-DPT (Daftar Pertanyaan Tertulis), VPK (Verifikasi 
-Pihak Ketiga), CVP (Ceklis Verifikasi Portofolio), 
-CRP (Ceklis Reviu Produk), PW (Pertanyaan 
+            <tr>
+                <td rowspan="2" style="width: 15%;" align="center"><strong>Unit Kompetensi</strong></td>
+                <td rowspan="2" style="width: 18%;" align="center">
+                    <strong>Bukti-Bukti</strong><br />
+                    <small>(Kinerja, Produk, Portofolio, dan/atau Pengetahuan) diidentifikasi berdasarkan Kriteria Unjuk Kerja dan Pendekatan Asesmen.</small>
+                </td>
+                <td colspan="3" align="center"><strong>Jenis Bukti</strong></td>
+                <td colspan="5" align="center"><strong>Metode dan Perangkat Asesmen<br/>
+CL (Ceklis Observasi), DIT (Daftar Instruksi
+Terstruktur), DPL (Daftar Pertanyaan Lisan),
+DPT (Daftar Pertanyaan Tertulis), VPK (Verifikasi
+Pihak Ketiga), CVP (Ceklis Verifikasi Portofolio),
+CRP (Ceklis Reviu Produk), PW (Pertanyaan
 Wawancara)
 </strong></td>
-    </tr>
+            </tr>
             <tr>
                 <td style="width: 5%;" align="center"><strong>L</strong></td>
-                <td style="width: 5%;" align="center"><strong>T L</strong></td>
+                <td style="width: 5%;" align="center"><strong>TL</strong></td>
                 <td style="width: 5%;" align="center"><strong>T</strong></td>
                 <td style="width: 13%;" align="center" class="rotate-text">
                     <strong>Observasi langsung</strong><br />
-                    <small>(kerja nyata/aktivitas waktu nyata di tempat kerja di lingkungan tempat kerja yang disimulasikan)</small></div>
+                    <small>(kerja nyata/aktivitas waktu nyata di tempat kerja di lingkungan tempat kerja yang disimulasikan)</small>
                 </td>
                 <td style="width: 13%;" align="center" class="rotate-text">
                     <strong>Kegiatan Terstruktur</strong><br />
@@ -424,16 +472,16 @@ Wawancara)
             </tr>
             @foreach ($kelompok['units'] as $i => $unit)
             <tr>
-                <td align="center"></td>
-                <td align="center"></td>
+                <td>{{ $i + 1 }}. {{ $unit['nama_unit'] }}</td>
+                <td>Hasil tanya jawab tentang: {{ $unit['nama_unit'] }}</td>
                 <td align="center">L</td>
                 <td align="center"></td>
                 <td align="center">T</td>
                 <td align="center"></td>
-                <td align="center"><strong></strong></td>
+                <td align="center"></td>
+                <td align="center">DPT</td>
                 <td align="center"></td>
                 <td align="center"></td>
-                <td align="center"><strong></strong></td>
             </tr>
             @endforeach
         </table>
@@ -486,7 +534,7 @@ Wawancara)
             </tr>
             <tr>
                 <td>
-                    <span class="checkbox {{ $konfirmasi['manajer_sertifikasi'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $konfirmasi['manajer_sertifikasi'] ?? false ? 'checked' : '' }}"></span>
                     Manajer sertifikasi
                 </td>
                 <td></td>
@@ -494,7 +542,7 @@ Wawancara)
             </tr>
             <tr>
                 <td>
-                    <span class="checkbox {{ $konfirmasi['master_assessor'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $konfirmasi['master_assessor'] ?? false ? 'checked' : '' }}"></span>
                     Master Assessor / Master Trainer / Asesor Utama kompetensi
                 </td>
                 <td></td>
@@ -502,7 +550,7 @@ Wawancara)
             </tr>
             <tr>
                 <td>
-                    <span class="checkbox {{ $konfirmasi['manajer_pelatihan'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $konfirmasi['manajer_pelatihan'] ?? false ? 'checked' : '' }}"></span>
                     Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar
                 </td>
                 <td></td>
@@ -510,7 +558,7 @@ Wawancara)
             </tr>
             <tr>
                 <td>
-                    <span class="checkbox {{ $konfirmasi['lainnya'] ? 'checked' : '' }}"></span>
+                    <span class="checkbox {{ $konfirmasi['lainnya'] ?? false ? 'checked' : '' }}"></span>
                     Lainnya:
                 </td>
                 <td></td>
@@ -531,13 +579,13 @@ Wawancara)
             <tr>
                 <td rowspan="2">Penyusun</td>
                 <td align="center">1</td>
-                <td>{{ $penyusun['nama'] }}</td>
-                <td>{{ $penyusun['nomor_met'] }}</td>
+                <td>{{ $penyusun['nama'] ?? '' }}</td>
+                <td>{{ $penyusun['nomor_met'] ?? '' }}</td>
                 <td rowspan="2">
-                    @if($barcodes['penyusun'])
+                    @if($barcodes['penyusun'] ?? null)
                     <img src="{{ $barcodes['penyusun']->path }}" /><br />
-                    {{ now()->translatedFormat('d F Y') }}
                     @endif
+                    {{ now()->translatedFormat('d F Y') }}
                 </td>
             </tr>
             <tr>
@@ -548,13 +596,13 @@ Wawancara)
             <tr>
                 <td rowspan="2">Validator</td>
                 <td align="center">1</td>
-                <td>{{ $validator['nama'] }}</td>
-                <td>{{ $validator['nomor_met'] }}</td>
+                <td>{{ $validator['nama'] ?? '' }}</td>
+                <td>{{ $validator['nomor_met'] ?? '' }}</td>
                 <td rowspan="2">
-                    @if($barcodes['validator'])
+                    @if($barcodes['validator'] ?? null)
                     <img src="{{ $barcodes['validator']->path }}" /><br />
-                    {{ now()->translatedFormat('d F Y') }}
                     @endif
+                    {{ now()->translatedFormat('d F Y') }}
                 </td>
             </tr>
             <tr>

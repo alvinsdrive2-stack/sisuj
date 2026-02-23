@@ -85,7 +85,15 @@
   page-break-after: auto;
   break-after: auto;
 }
-
+td.rotate-text {
+writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform : rotate(180deg);
+  width: auto;      /* lebar = 1 "kolom" teks */
+  height: 35vh;     /* tinggi ngikutin konten */
+  word-break: break-all; /* atau break-word */
+  white-space: normal;
+}
 #mapa01-content .mapa01-methods-table {
   page-break-inside: avoid;
   break-inside: avoid;
@@ -140,10 +148,18 @@
   font-weight: bold;
 }
 
-.mapa01-header-table td.label-sub {
+.mapa01-header-table td.label {
   font-weight: bold;
-  text-align: center;
-  width: 10%;
+}
+
+.mapa01-header-table td.rotate-text {
+writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform : rotate(180deg);
+  width: auto;      /* lebar = 1 "kolom" teks */
+  height: 35vh;     /* tinggi ngikutin konten */
+  word-break: break-all; /* atau break-word */
+  white-space: normal;
 }
 
 /* Section Number */

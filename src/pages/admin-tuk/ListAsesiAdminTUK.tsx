@@ -2,12 +2,13 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Clock, Calendar, MapPin, Play } from "lucide-react"
+import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
+import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
 
 interface CountdownTime {
   days: number
@@ -83,6 +84,7 @@ export default function ListAsesiAdminTUK() {
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [startingPraAsesmen, setStartingPraAsesmen] = useState(false)
   const [startingAsesmen, setStartingAsesmen] = useState(false)
+  const { openQrModal, openDetailModal } = useDaftarHadirModal()
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -165,12 +167,12 @@ export default function ListAsesiAdminTUK() {
                     Belum Mulai
                   </Badge>
                 )}
-                {kegiatan.is_started_praasesmen === "1" && (
+                {kegiatan.tahap === "1" && (
                   <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
                     Pra-Asesmen
                   </Badge>
                 )}
-                {kegiatan.is_started === "1" && (
+                {kegiatan.tahap === "2" && (
                   <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
                     Asesmen
                   </Badge>
@@ -247,7 +249,7 @@ export default function ListAsesiAdminTUK() {
               )}
 
               {/* Start Button - based on is_started and is_started_praasesmen */}
-              {kegiatan?.is_started_praasesmen === "0" && (
+              {kegiatan?.tahap === "0" && (
                 <Button
                   onClick={handleStartPraAsesmen}
                   disabled={startingPraAsesmen}
@@ -266,7 +268,7 @@ export default function ListAsesiAdminTUK() {
                   )}
                 </Button>
               )}
-              {kegiatan?.is_started_praasesmen === "1" && (
+              {kegiatan?.tahap === "1" && (
                 <Button
                   onClick={handleStartAsesmen}
                   disabled={startingAsesmen}
@@ -283,15 +285,6 @@ export default function ListAsesiAdminTUK() {
                       Mulai Asesmen
                     </>
                   )}
-                </Button>
-              )}
-              {kegiatan?.is_started === "1" && (
-                <Button
-                  disabled
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Asesmen Berjalan
                 </Button>
               )}
 
@@ -317,36 +310,37 @@ export default function ListAsesiAdminTUK() {
           </div>
         </div>
       )}
+      {/* Split Layout: Asesi List & Daftar Hadir */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Asesi List - 2 columns */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Daftar Asesi
+              {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="text-center py-8 text-red-500">
+                Gagal memuat daftar asesi: {error}
+              </div>
+            )}
 
-      {/* Asesi List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Daftar Asesi
-            {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="text-center py-8 text-red-500">
-              Gagal memuat daftar asesi: {error}
-            </div>
-          )}
+            {!asesiLoading && !error && asesiList.length === 0 && (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                Tidak ada asesi untuk jadwal ini
+              </div>
+            )}
 
-          {!asesiLoading && !error && asesiList.length === 0 && (
-            <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-              Tidak ada asesi untuk jadwal ini
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {asesiList.map((asesi, index) => (
-              <div
-                key={asesi.id_izin}
-                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary transition-colors bg-white dark:bg-slate-800"
-              >
-                <div className="flex items-center justify-between">
+            <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              {asesiList.map((asesi, index) => (
+                <div
+                  key={asesi.id_izin}
+                  onClick={() => openDetailModal('asesi', asesi.id_izin, asesi.nama, jadwalId || "")}
+                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-sm font-bold text-primary">{index + 1}</span>
@@ -356,20 +350,40 @@ export default function ListAsesiAdminTUK() {
                       <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                     </div>
                   </div>
-
-                  {/* Kompeten Indicator Only - Glowing Green */}
-                  {asesi.kompeten === "K" && (
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
-                      <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Daftar Hadir - 1 column */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Daftar Hadir
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              variant="outline"
+              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex flex-col gap-1"
+              onClick={() => openQrModal('asesi', jadwalId || "")}
+            >
+              <Users className="w-5 h-5 text-primary" />
+              <span className="text-sm font-semibold">Daftar Hadir Asesi</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex flex-col gap-1"
+              onClick={() => openQrModal('asesor', jadwalId || "")}
+            >
+              <UserCheck className="w-5 h-5 text-primary" />
+              <span className="text-sm font-semibold">Daftar Hadir Asesor</span>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

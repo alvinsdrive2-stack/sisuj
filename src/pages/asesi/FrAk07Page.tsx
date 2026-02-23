@@ -14,7 +14,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 interface Referensi {
   id: number
   nama: string | null
-  jawaban?: boolean | string | null
+  jawaban?: boolean | string | { bool: boolean; text: string } | null
 }
 
 interface Kategori {
@@ -45,11 +45,23 @@ interface Ak07DataItem {
 interface ApiResponse {
   message: string
   data: {
+    data?: {
+      barcodes?: {
+        asesi?: { url: string; tanggal: string; nama: string }
+        asesor1?: { url: string; tanggal: string; nama: string }
+        asesor2?: { url: string; tanggal: string; nama: string }
+        asesor?: Record<string, { url: string; tanggal: string; nama: string }>
+      }
+      kelompoks: Ak07DataItem[]
+    }
+    // Backward compatibility - direct data
     barcodes?: {
       asesi?: { url: string; tanggal: string; nama: string }
+      asesor1?: { url: string; tanggal: string; nama: string }
+      asesor2?: { url: string; tanggal: string; nama: string }
       asesor?: Record<string, { url: string; tanggal: string; nama: string }>
     }
-    kelompoks: Ak07DataItem[]
+    kelompoks?: Ak07DataItem[]
   }
 }
 
@@ -75,6 +87,8 @@ export default function FrAk07Page() {
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
     asesor?: Record<string, { url: string; tanggal: string; nama: string }>
+    asesor1?: { url: string; tanggal: string; nama: string }
+    asesor2?: { url: string; tanggal: string; nama: string }
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -163,20 +177,25 @@ export default function FrAk07Page() {
         if (ak07Response.ok) {
           const result: ApiResponse = await ak07Response.json()
           if (result.message === "Success") {
-            const kelompoks = result.data?.kelompoks || []
+            // Handle nested data.data structure (new API format) or direct data (old format)
+            const apiData = result.data?.data || result.data
+            const kelompoks = apiData?.kelompoks || []
             setAk07Data(kelompoks)
 
             // Set barcodes raw from API - will be transformed in separate effect
-            if (result.data?.barcodes) {
-              setBarcodes(result.data.barcodes as any)
+            if (apiData?.barcodes) {
+              setBarcodes(apiData.barcodes as any)
             }
 
-            // Set textAnswers from API (for string jawaban)
+            // Set textAnswers from API (for string jawaban or object with text)
             const newTextAnswers: Record<number, string> = {}
             kelompoks.forEach((item: Ak07DataItem) => {
               item.kategoris.forEach(kategori => {
                 kategori.referensis.forEach(ref => {
-                  if (typeof ref.jawaban === 'string' && ref.jawaban) {
+                  // Handle object jawaban format: { bool: boolean, text: string }
+                  if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'text' in ref.jawaban) {
+                    newTextAnswers[ref.id] = ref.jawaban.text
+                  } else if (typeof ref.jawaban === 'string' && ref.jawaban) {
                     newTextAnswers[ref.id] = ref.jawaban
                   }
                 })
@@ -184,14 +203,20 @@ export default function FrAk07Page() {
             })
             setTextAnswers(newTextAnswers)
 
-            // Set selectedReferences from API (for boolean jawaban: true)
+            // Set selectedReferences from API (for boolean jawaban: true or object with bool: true)
             const newSelectedReferences: SelectedReferences = {}
             kelompoks.forEach((item: Ak07DataItem) => {
               item.kategoris.forEach(kategori => {
                 if (kategori.id) {
                   const key = `${kategori.id}_${item.id}`
                   const refIds = kategori.referensis
-                    .filter(ref => ref.jawaban === true)
+                    .filter(ref => {
+                      // Handle object jawaban format
+                      if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
+                        return ref.jawaban.bool === true
+                      }
+                      return ref.jawaban === true
+                    })
                     .map(ref => ref.id)
                   if (refIds.length > 0) {
                     newSelectedReferences[key] = new Set(refIds)
@@ -254,6 +279,10 @@ export default function FrAk07Page() {
       ?.referensis.find(r => r.id === refId)
 
     // Return true/false based on API data
+    // Handle object jawaban format: { bool: boolean, text: string }
+    if (typeof ref?.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
+      return ref.jawaban.bool === true
+    }
     return ref?.jawaban === true
   }
 
