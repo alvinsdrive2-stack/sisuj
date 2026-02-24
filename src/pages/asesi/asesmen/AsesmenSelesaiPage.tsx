@@ -5,8 +5,10 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 export default function AsesmenSelesaiPage() {
   const navigate = useNavigate()
@@ -19,6 +21,15 @@ export default function AsesmenSelesaiPage() {
   // Get dynamic steps based on role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   // Get current step (last step = Selesai)
   const currentStep = asesmenSteps[asesmenSteps.length - 1]?.number || 5
@@ -103,6 +114,16 @@ export default function AsesmenSelesaiPage() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

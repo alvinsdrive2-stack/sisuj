@@ -5,10 +5,13 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface SoalAPI {
   id: number
@@ -40,14 +43,24 @@ export default function Ak03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { asesorList } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, 0)
+  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Disable form if asesor but not asesor_1 (only asesor_1 can fill)
   const isFormDisabled = isAsesor && !isAsesor1
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   // Form state
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
@@ -311,6 +324,16 @@ export default function Ak03Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

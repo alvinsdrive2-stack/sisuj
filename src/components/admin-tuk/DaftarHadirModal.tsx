@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faChevronLeft, faChevronRight, faEye, faClose, faCamera, faUsers, faClock, faQrcode } from "@fortawesome/free-solid-svg-icons"
+import { faChevronLeft, faChevronRight, faEye, faClose, faCamera, faUsers, faClock, faQrcode, faUpload } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import QRCode from "qrcode"
 import { useAbsenData, AbsenData } from "@/hooks/useAbsenData"
@@ -146,13 +146,6 @@ export function DaftarHadirModal({
           url: data?.foto_kegiatan,
           canUpload: true
         },
-        {
-          id: 'foto_bersama',
-          label: 'Foto Bersama',
-          status: data?.foto_bersama ? 'done' : 'pending',
-          url: data?.foto_bersama,
-          canUpload: true
-        },
       ]
     } else {
       // Asesor nodes - same structure
@@ -248,13 +241,6 @@ export function DaftarHadirModal({
           url: data?.foto_kegiatan,
           canUpload: true
         },
-        {
-          id: 'foto_bersama',
-          label: 'Foto Bersama',
-          status: data?.foto_bersama ? 'done' : 'pending',
-          url: data?.foto_bersama,
-          canUpload: true
-        },
       ]
     }
   }
@@ -262,7 +248,7 @@ export function DaftarHadirModal({
   const absenNodes = getAbsenNodes(absenData)
 
   // Get only nodes that are clickable (have URL or can upload)
-  const clickableNodes = absenNodes.filter(node => node.url !== null || node.canUpload)
+  const clickableNodes = absenNodes.filter(node => (node.url && node.url !== null) || node.canUpload)
 
   // Detect mobile device
   useEffect(() => {
@@ -276,17 +262,29 @@ export function DaftarHadirModal({
 
   // Generate QR Code
   useEffect(() => {
-    if (isOpen && mode === 'qr' && jadwalId) {
+    // Generate QR for 'qr' mode OR when in detail mode viewing an uploadable node without photo
+    const shouldGenerateQR = isOpen && (
+      (mode === 'qr' && jadwalId) ||
+      (mode === 'detail' && selectedNode?.canUpload && !selectedNode.url && personId)
+    )
+
+    if (shouldGenerateQR) {
       const token = generateTempToken()
-      const url = `https://sisuj.vercel.app/attendance?token=${token}&type=${personType}&jadwal=${jadwalId}`
+      const authToken = localStorage.getItem("access_token") || ""
+      // In detail mode, use personId (idIzin), in qr mode use jadwalId
+      const idForQR = mode === 'detail' ? personId : jadwalId
+      const url = `https://sisuj.vercel.app/attendance?token=${token}&type=${personType}&auth=${encodeURIComponent(authToken)}&id=${idForQR}`
 
       QRCode.toDataURL(url, {
-        width: 256,
+        width: 220,
         margin: 2,
         color: { dark: '#000', light: '#fff' }
-      }).then(setQrDataUrl)
+      }).then(setQrDataUrl).catch(console.error)
+    } else if (!isOpen) {
+      // Reset QR when modal closes
+      setQrDataUrl("")
     }
-  }, [isOpen, mode, personType, jadwalId])
+  }, [isOpen, mode, personType, jadwalId, selectedNode, personId])
 
   // Generate temporary token (30 min expiry)
   const generateTempToken = () => {
@@ -296,12 +294,19 @@ export function DaftarHadirModal({
     return btoa(`${expiry}.${random}.${jadwalId}`)
   }
 
-  // Auto-select first clickable node when modal opens
+  // Auto-select first node that has a URL (prioritize over uploadable nodes without URL)
   useEffect(() => {
-    if (isOpen && !selectedNode && clickableNodes.length > 0) {
-      setSelectedNode(clickableNodes[0])
+    // Wait for data to be loaded (absenData should not be null)
+    if (isOpen && !absenLoading && absenData && !selectedNode && clickableNodes.length > 0) {
+      console.log('clickableNodes:', clickableNodes)
+      console.log('Nodes with URL:', clickableNodes.filter(n => n.url))
+      // First try to find a node that has a URL
+      const nodeWithUrl = clickableNodes.find(node => node.url)
+      console.log('Selected nodeWithUrl:', nodeWithUrl)
+      // If found, select it; otherwise select the first clickable node
+      setSelectedNode(nodeWithUrl || clickableNodes[0])
     }
-  }, [isOpen, clickableNodes])
+  }, [isOpen, absenLoading, absenData, clickableNodes])
 
   // Reset state when modal closes
   useEffect(() => {
@@ -378,13 +383,13 @@ export function DaftarHadirModal({
 
   if (!isOpen) return null
 
-  // QR Mode styling
+  // QR Mode styling - matching KegiatanModal
   const qrContent = (
     <div style={{ textAlign: 'center', padding: '24px' }}>
       <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '14px' }}>
         {isMobile
           ? 'Gunakan kamera untuk mengambil foto kehadiran'
-          : 'Scan QR Code dengan HP atau upload dari komputer'
+          : 'Scan QR Code dengan HP untuk mengambil foto'
         }
       </p>
 
@@ -398,14 +403,13 @@ export function DaftarHadirModal({
               justifyContent: 'center',
               gap: '12px',
               padding: '20px 32px',
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              background: 'linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%)',
               color: '#fff',
               border: 'none',
               borderRadius: '12px',
               fontSize: '16px',
               fontWeight: '600',
               cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
             }}
           >
             <FontAwesomeIcon icon={faCamera} style={{ fontSize: '20px' }} />
@@ -487,8 +491,8 @@ export function DaftarHadirModal({
             transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#10b981'
-            e.currentTarget.style.background = '#ecfdf5'
+            e.currentTarget.style.borderColor = '#1e3a5f'
+            e.currentTarget.style.background = '#e8eef5'
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.borderColor = '#d1d5db'
@@ -723,37 +727,46 @@ export function DaftarHadirModal({
                   </>
                 ) : selectedNode.canUpload ? (
                   // Show QR + Upload options for uploadable nodes without photo
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', padding: '24px' }}>
-                    <p style={{ color: '#6b7280', fontSize: '14px', textAlign: 'center' }}>
-                      {isMobile
-                        ? 'Gunakan kamera untuk mengambil foto'
-                        : 'Scan QR Code dengan HP atau upload dari komputer'
-                      }
-                    </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: '24px', flex: 1 }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <FontAwesomeIcon icon={faCamera} style={{ fontSize: '48px', color: '#1e3a5f', marginBottom: '12px' }} />
+                      <p style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
+                        Belum ada foto untuk {selectedNode.label}
+                      </p>
+                    </div>
 
                     {isMobile ? (
                       // Mobile - Camera option
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '300px' }}>
                         <label
                           style={{
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '12px',
-                            padding: '20px 32px',
-                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                            gap: '10px',
+                            padding: '14px 24px',
+                            background: '#1e3a5f',
                             color: '#fff',
                             border: 'none',
-                            borderRadius: '12px',
-                            fontSize: '16px',
+                            borderRadius: '10px',
+                            fontSize: '15px',
                             fontWeight: '600',
                             cursor: 'pointer',
-                            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
                           }}
                         >
-                          <FontAwesomeIcon icon={faCamera} style={{ fontSize: '20px' }} />
-                          Buka Kamera
+                          {uploadingNode === selectedNode.id ? (
+                            <>
+                              <SimpleSpinner size="sm" className="text-white" />
+                              Mengupload...
+                            </>
+                          ) : (
+                            <>
+                              <FontAwesomeIcon icon={faCamera} />
+                              Buka Kamera
+                            </>
+                          )}
                           <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                            disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) handleFileUpload(selectedNode.id, file)
@@ -761,25 +774,26 @@ export function DaftarHadirModal({
                           />
                         </label>
 
-                        <div style={{ color: '#9ca3af', fontSize: '13px' }}>atau</div>
+                        <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>atau</div>
 
                         <label style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '12px',
-                          padding: '16px 24px',
+                          gap: '8px',
+                          padding: '12px 20px',
                           background: '#f3f4f6',
                           color: '#374151',
                           border: '2px dashed #d1d5db',
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           fontSize: '14px',
                           fontWeight: '500',
                           cursor: 'pointer',
                         }}>
-                          <FontAwesomeIcon icon={faCamera} />
-                          Upload dari Galeri
+                          <FontAwesomeIcon icon={faUpload} />
+                          Pilih dari Galeri
                           <input type="file" accept="image/*" style={{ display: 'none' }}
+                            disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) handleFileUpload(selectedNode.id, file)
@@ -789,64 +803,74 @@ export function DaftarHadirModal({
                       </div>
                     ) : (
                       // Desktop - QR Code + Upload
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '300px' }}>
+                        {qrDataUrl ? (
+                          <div style={{
+                            padding: '12px',
+                            background: '#fff',
+                            border: '2px solid #e5e7eb',
+                            borderRadius: '12px',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                          }}>
+                            <img src={qrDataUrl} alt="QR Code" style={{ width: '160px', height: '160px' }} />
+                          </div>
+                        ) : (
+                          <SimpleSpinner size="lg" />
+                        )}
                         <div style={{
-                          padding: '16px',
-                          background: '#fff',
-                          border: '2px solid #e5e7eb',
-                          borderRadius: '16px',
-                          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
-                        }}>
-                          <img
-                            src={qrDataUrl}
-                            alt="QR Code"
-                            style={{ width: '180px', height: '180px' }}
-                          />
-                        </div>
-
-                        <div style={{
-                          padding: '12px 20px',
+                          padding: '8px 14px',
                           background: '#fef3c7',
-                          borderRadius: '8px',
+                          borderRadius: '6px',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
+                          gap: '6px',
                         }}>
-                          <FontAwesomeIcon icon={faClock} style={{ color: '#d97706', fontSize: '14px' }} />
-                          <span style={{ fontSize: '13px', color: '#92400e' }}>
-                            QR berlaku 30 menit
-                          </span>
+                          <FontAwesomeIcon icon={faClock} style={{ color: '#d97706', fontSize: '12px' }} />
+                          <span style={{ fontSize: '12px', color: '#92400e' }}>QR berlaku 30 menit</span>
                         </div>
-
-                        <div style={{ color: '#9ca3af', fontSize: '13px' }}>atau</div>
-
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+                          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+                          <span style={{ fontSize: '12px', color: '#9ca3af' }}>atau</span>
+                          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+                        </div>
                         <label style={{
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '12px',
-                          padding: '14px 24px',
+                          gap: '8px',
+                          padding: '12px 20px',
                           background: '#f3f4f6',
                           color: '#374151',
                           border: '2px dashed #d1d5db',
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           fontSize: '14px',
                           fontWeight: '500',
                           cursor: 'pointer',
+                          width: '100%',
                           transition: 'all 0.2s',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = '#10b981'
-                          e.currentTarget.style.background = '#ecfdf5'
+                          e.currentTarget.style.borderColor = '#1e3a5f'
+                          e.currentTarget.style.background = '#e8eef5'
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.borderColor = '#d1d5db'
                           e.currentTarget.style.background = '#f3f4f6'
                         }}
                         >
-                          <FontAwesomeIcon icon={faCamera} />
-                          Upload dari Komputer
+                          {uploadingNode === selectedNode.id ? (
+                            <>
+                              <SimpleSpinner size="sm" className="text-[#1e3a5f]" />
+                              Mengupload...
+                            </>
+                          ) : (
+                            <>
+                              <FontAwesomeIcon icon={faUpload} />
+                              Upload dari Komputer
+                            </>
+                          )}
                           <input type="file" accept="image/*" style={{ display: 'none' }}
+                            disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
                               if (file) handleFileUpload(selectedNode.id, file)
@@ -929,25 +953,31 @@ export function DaftarHadirModal({
 
         {/* Modal Header */}
         <div style={{
-          padding: '10px 12px',
+          padding: '12px 16px',
           borderBottom: '1px solid #e5e7eb',
           background: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '8px' }}>
-            {mode === 'qr' ? (
-              <FontAwesomeIcon icon={faQrcode} style={{ fontSize: '20px', color: '#10b981' }} />
-            ) : (
-              <FontAwesomeIcon icon={faUsers} style={{ fontSize: '20px', color: '#10b981' }} />
-            )}
-            <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0 }}>
-              {mode === 'qr'
-                ? `Daftar Hadir ${personType === 'asesi' ? 'Asesi' : 'Asesor'}`
-                : `Detail Absen - ${personName}`
-              }
-            </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <FontAwesomeIcon
+              icon={mode === 'qr' ? faQrcode : faUsers}
+              style={{ fontSize: '22px', color: '#1e3a5f' }}
+            />
+            <div>
+              <h3 style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: 0 }}>
+                {mode === 'qr'
+                  ? `Daftar Hadir ${personType === 'asesi' ? 'Asesi' : 'Asesor'}`
+                  : `Detail Absen - ${personName}`
+                }
+              </h3>
+              {mode === 'qr' && (
+                <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>
+                  Scan QR untuk absensi
+                </p>
+              )}
+            </div>
           </div>
           <button
             onClick={onClose}
@@ -963,7 +993,7 @@ export function DaftarHadirModal({
             onMouseEnter={(e) => e.currentTarget.style.background = '#f3f4f6'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <FontAwesomeIcon icon={faClose} style={{ fontSize: '18px', color: '#6b7280' }} />
+            <FontAwesomeIcon icon={faClose} style={{ fontSize: '18px' }} />
           </button>
         </div>
 

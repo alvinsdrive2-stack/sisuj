@@ -7,10 +7,12 @@ import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface UnitKompetensiAPI {
   id: number
@@ -74,6 +76,15 @@ export default function Ak02Page() {
 
   // Disable form if asesor_2 (only asesor_1 can fill)
   const isFormDisabled = isAsesor && !isAsesor1
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   // Form state
   const [evidenceChecks, setEvidenceChecks] = useState<Record<number, EvidenceCheck>>({})
@@ -621,6 +632,16 @@ export default function Ak02Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

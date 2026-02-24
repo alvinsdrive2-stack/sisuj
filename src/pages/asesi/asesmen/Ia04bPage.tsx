@@ -7,11 +7,13 @@ import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Soal {
   id: number
@@ -86,6 +88,15 @@ export default function Ia04bPage() {
   } | null>(null)
   const canEdit = isAsesor1 // Only asesor1 can edit IA04B
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   useEffect(() => {
     const fetchData = async () => {
@@ -793,6 +804,16 @@ export default function Ia04bPage() {
           setTimeout(() => navigate(`/asesi/asesmen/${id}/uji`), 100)
         }}
         onCancel={() => setShowConfirmDialog(false)}
+      />
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
       />
     </div>
   )

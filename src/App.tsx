@@ -19,6 +19,7 @@ import PublicRoute from './components/PublicRoute'
 import DefaultRoute from './components/DefaultRoute'
 import DokumenFullscreenModal from './components/komtek/DokumenFullscreenModal'
 import { DaftarHadirModal } from './components/admin-tuk/DaftarHadirModal'
+import { KegiatanModal } from './components/admin-tuk/KegiatanModal'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import DashboardLayout from './components/DashboardLayout'
@@ -73,6 +74,8 @@ import FrAk07Page from './pages/asesi/FrAk07Page'
 import FrAk04Page from './pages/asesi/FrAk04Page'
 import K3AsesmenPage from './pages/asesi/K3AsesmenPage'
 import FrAk01Page from './pages/asesi/FrAk01Page'
+import CapturePage from './pages/CapturePage'
+import AttendancePage from './pages/AttendancePage'
 
 function App() {
   return (
@@ -85,6 +88,9 @@ function App() {
         <Router>
         <Routes>
           {/* Public Routes */}
+          <Route path="/capture" element={<CapturePage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
+          <Route path="/attendance" element={<AttendancePage />} />
           <Route
             path="/login"
             element={
@@ -434,17 +440,25 @@ function GlobalDokumenFullscreenModal() {
 }
 
 function GlobalDaftarHadirModal() {
-  const { isOpen, mode, personType, personId, personName, jadwalId, closeModal } = useDaftarHadirModal()
+  const { isOpen, mode, personType, personId, personName, jadwalId, closeModal, isKegiatanModalOpen, kegiatanModalType, kegiatanModalJadwalId, closeKegiatanModal } = useDaftarHadirModal()
   return (
-    <DaftarHadirModal
-      isOpen={isOpen}
-      mode={mode}
-      personType={personType}
-      personId={personId}
-      personName={personName}
-      jadwalId={jadwalId}
-      onClose={closeModal}
-    />
+    <>
+      <DaftarHadirModal
+        isOpen={isOpen}
+        mode={mode}
+        personType={personType}
+        personId={personId}
+        personName={personName}
+        jadwalId={jadwalId}
+        onClose={closeModal}
+      />
+      <KegiatanModal
+        isOpen={isKegiatanModalOpen}
+        type={kegiatanModalType}
+        jadwalId={kegiatanModalJadwalId}
+        onClose={closeKegiatanModal}
+      />
+    </>
   )
 }
 

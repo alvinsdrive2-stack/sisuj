@@ -6,11 +6,13 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Unit {
   id: number
@@ -78,6 +80,15 @@ export default function Ia05Page() {
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor1 // Only asesor1 can edit umpan_balik
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   const [ia05Data, setIa05Data] = useState<Ia05Response["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -620,6 +631,16 @@ export default function Ia05Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

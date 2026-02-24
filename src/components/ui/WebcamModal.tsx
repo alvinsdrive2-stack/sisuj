@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { X, Camera, RefreshCw, Check } from "lucide-react"
+import { X, Camera, RefreshCw, Check, Upload } from "lucide-react"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faFolderOpen } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 
@@ -465,8 +467,8 @@ export function WebcamModal({
           ) : (
             <>
               <button
-                onClick={switchCamera}
-                title="Ganti kamera"
+                onClick={retryCamera}
+                title="Refresh kamera"
                 disabled={isLoading}
                 style={{
                   display: "flex",
@@ -503,10 +505,8 @@ export function WebcamModal({
               >
                 <Camera style={{ width: "28px", height: "28px" }} />
               </button>
-              <button
-                onClick={retryCamera}
-                title="Refresh kamera"
-                disabled={isLoading}
+              <label
+                title="Upload foto"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -517,12 +517,28 @@ export function WebcamModal({
                   color: "#374151",
                   border: "none",
                   borderRadius: "50%",
-                  cursor: isLoading ? "not-allowed" : "pointer",
-                  opacity: isLoading ? 0.5 : 1
+                  cursor: "pointer",
                 }}
               >
-                <Camera style={{ width: "20px", height: "20px" }} />
-              </button>
+                <FontAwesomeIcon icon={faFolderOpen} style={{ fontSize: "20px" }} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const reader = new FileReader()
+                      reader.onload = (ev) => {
+                        setCapturedImage(ev.target?.result as string)
+                        stopCamera()
+                        setHasCamera(false)
+                      }
+                      reader.readAsDataURL(file)
+                    }
+                  }}
+                />
+              </label>
             </>
           )}
         </div>

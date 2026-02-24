@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode } from "react"
 
 type ModalMode = 'qr' | 'detail'
 type PersonType = 'asesi' | 'asesor'
+type KegiatanType = 'foto_bersama' | 'daftar_hadir_asesi' | 'daftar_hadir_asesor'
 
 interface DaftarHadirModalContextType {
   isOpen: boolean
@@ -13,6 +14,12 @@ interface DaftarHadirModalContextType {
   openQrModal: (personType: PersonType, jadwalId: string) => void
   openDetailModal: (personType: PersonType, personId: string, personName: string, jadwalId: string) => void
   closeModal: () => void
+  // Kegiatan Modal (Foto Bersama + Daftar Hadir)
+  isKegiatanModalOpen: boolean
+  kegiatanModalType: KegiatanType
+  kegiatanModalJadwalId: string
+  openKegiatanModal: (type: KegiatanType, jadwalId: string) => void
+  closeKegiatanModal: () => void
 }
 
 const DaftarHadirModalContext = createContext<DaftarHadirModalContextType | undefined>(undefined)
@@ -24,6 +31,11 @@ export function DaftarHadirModalProvider({ children }: { children: ReactNode }) 
   const [personId, setPersonId] = useState("")
   const [personName, setPersonName] = useState("")
   const [jadwalId, setJadwalId] = useState("")
+
+  // Kegiatan Modal state
+  const [isKegiatanModalOpen, setIsKegiatanModalOpen] = useState(false)
+  const [kegiatanModalType, setKegiatanModalType] = useState<KegiatanType>('foto_bersama')
+  const [kegiatanModalJadwalId, setKegiatanModalJadwalId] = useState("")
 
   const openQrModal = (type: PersonType, jadwal: string) => {
     setMode('qr')
@@ -50,6 +62,17 @@ export function DaftarHadirModalProvider({ children }: { children: ReactNode }) 
     setPersonName("")
   }
 
+  const openKegiatanModal = (type: KegiatanType, jadwal: string) => {
+    setKegiatanModalType(type)
+    setKegiatanModalJadwalId(jadwal)
+    setIsKegiatanModalOpen(true)
+  }
+
+  const closeKegiatanModal = () => {
+    setIsKegiatanModalOpen(false)
+    setKegiatanModalJadwalId("")
+  }
+
   return (
     <DaftarHadirModalContext.Provider value={{
       isOpen,
@@ -60,7 +83,12 @@ export function DaftarHadirModalProvider({ children }: { children: ReactNode }) 
       jadwalId,
       openQrModal,
       openDetailModal,
-      closeModal
+      closeModal,
+      isKegiatanModalOpen,
+      kegiatanModalType,
+      kegiatanModalJadwalId,
+      openKegiatanModal,
+      closeKegiatanModal
     }}>
       {children}
     </DaftarHadirModalContext.Provider>

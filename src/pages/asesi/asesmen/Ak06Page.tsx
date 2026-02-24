@@ -6,10 +6,12 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface AspekAPI {
   aspek_id: string
@@ -78,6 +80,25 @@ export default function Ak06Page() {
   const isFormDisabled = isAsesor && (
     hasAsesor2 ? !isAsesor2 : !isAsesor1
   )
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const {
+    showAwalModal,
+    showAkhirModal,
+    setShowAkhirModal,
+    submitAbsenAwal,
+    submitAbsenAkhir,
+    handleAwalModalClose,
+    handleAkhirModalClose,
+    shouldShowAkhirModal,
+    isChecking: isCheckingAbsen
+  } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   // Form state
   const [aspekItems, setAspekItems] = useState<AspekItem[]>([])
@@ -234,9 +255,16 @@ export default function Ak06Page() {
 
       if (response.ok) {
         showSuccess('AK 06 berhasil disimpan!')
-        setTimeout(() => {
-          navigate(`/asesi/asesmen/${id}/selesai`)
-        }, 500)
+
+        // Check if absen akhir is needed
+        const needAbsenAkhir = await shouldShowAkhirModal()
+        if (needAbsenAkhir) {
+          setShowAkhirModal(true)
+        } else {
+          setTimeout(() => {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }, 500)
+        }
       } else {
         console.error('Failed to save AK06:', response.status)
         showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -245,6 +273,14 @@ export default function Ak06Page() {
       console.error('Error saving AK06:', err)
       showError('Terjadi kesalahan. Silakan coba lagi.')
     }
+  }
+
+  // Handle absen akhir submit - navigate after success
+  const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
+    await submitAbsenAkhir(imageBlob)
+    setTimeout(() => {
+      navigate(`/asesi/asesmen/${id}/selesai`)
+    }, 500)
   }
 
   return (
@@ -592,6 +628,26 @@ export default function Ak06Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
+
+      {/* Absen Akhir Modal */}
+      <WebcamModal
+        isOpen={showAkhirModal}
+        onClose={handleAkhirModalClose}
+        onSubmit={handleAbsenAkhirSubmit}
+        title="Absen Keluar Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen keluar"
+        canClose={true}
+      />
     </div>
   )
 }

@@ -4,10 +4,12 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowLeft, faLightbulb } from '@fortawesome/free-solid-svg-icons'
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Unit {
   id: number
@@ -111,11 +113,30 @@ export default function UjianPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, asesorList } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const canEdit = !isAsesor
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const {
+    showAwalModal,
+    showAkhirModal,
+    setShowAkhirModal,
+    submitAbsenAwal,
+    submitAbsenAkhir,
+    handleAwalModalClose,
+    handleAkhirModalClose,
+    shouldShowAkhirModal,
+    isChecking: isCheckingAbsen
+  } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
 
   // Anti-cheat states
   const [violationCount, setViolationCount] = useState(0)
@@ -397,15 +418,30 @@ export default function UjianPage() {
       await saveAnswer()
       showSuccess('Ujian berhasil diselesaikan!')
 
-      setTimeout(() => {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }, 1500)
+      // Check if absen akhir is needed
+      const needAbsenAkhir = await shouldShowAkhirModal()
+      if (needAbsenAkhir) {
+        setShowCelebration(false)
+        setShowAkhirModal(true)
+      } else {
+        setTimeout(() => {
+          navigate(`/asesi/asesmen/${id}/selesai`)
+        }, 1500)
+      }
     } catch (error) {
       showError('Gagal menyimpan jawaban. Silakan coba lagi.')
       setShowCelebration(false)
     } finally {
       setIsSaving(false)
     }
+  }
+
+  // Handle absen akhir submit - navigate after success
+  const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
+    await submitAbsenAkhir(imageBlob)
+    setTimeout(() => {
+      navigate(`/asesi/asesmen/${id}/selesai`)
+    }, 500)
   }
 
   const handleDotClick = (index: number) => {
@@ -997,6 +1033,26 @@ export default function UjianPage() {
           </div>
         )}
       </div>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Ujian"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
+
+      {/* Absen Akhir Modal */}
+      <WebcamModal
+        isOpen={showAkhirModal}
+        onClose={handleAkhirModalClose}
+        onSubmit={handleAbsenAkhirSubmit}
+        title="Absen Keluar Ujian"
+        description="Silakan ambil foto wajah Anda untuk absen keluar"
+        canClose={true}
+      />
     </div>
   )
 }

@@ -2,10 +2,10 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText } from "lucide-react"
+import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText, ChevronDown, Camera } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
 import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
@@ -84,7 +84,20 @@ export default function ListAsesiAdminTUK() {
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [startingPraAsesmen, setStartingPraAsesmen] = useState(false)
   const [startingAsesmen, setStartingAsesmen] = useState(false)
-  const { openQrModal, openDetailModal } = useDaftarHadirModal()
+  const [showDaftarHadirMenu, setShowDaftarHadirMenu] = useState(false)
+  const daftarHadirMenuRef = useRef<HTMLDivElement>(null)
+  const { openQrModal, openDetailModal, openKegiatanModal } = useDaftarHadirModal()
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (daftarHadirMenuRef.current && !daftarHadirMenuRef.current.contains(event.target as Node)) {
+        setShowDaftarHadirMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -113,7 +126,7 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startPraAsesmen(kegiatan.jadwal_id)
       toast("Pra-asesmen berhasil dimulai!", "success")
-      setTimeout(() => navigate(-1), 1000)
+      setTimeout(() => window.location.reload(), 1000)
     } catch (error) {
       console.error('Error starting pra-asesmen:', error)
       toast(error instanceof Error ? error.message : "Gagal memulai pra-asesmen", "error")
@@ -128,7 +141,7 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startAssessment(kegiatan.jadwal_id)
       toast("Asesmen berhasil dimulai!", "success")
-      setTimeout(() => navigate(-1), 1000)
+      setTimeout(() => window.location.reload(), 1000)
     } catch (error) {
       console.error('Error starting asesmen:', error)
       toast(error instanceof Error ? error.message : "Gagal memulai asesmen", "error")
@@ -364,23 +377,71 @@ export default function ListAsesiAdminTUK() {
               Daftar Hadir
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex flex-col gap-1"
-              onClick={() => openQrModal('asesi', jadwalId || "")}
-            >
-              <Users className="w-5 h-5 text-primary" />
-              <span className="text-sm font-semibold">Daftar Hadir Asesi</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex flex-col gap-1"
-              onClick={() => openQrModal('asesor', jadwalId || "")}
-            >
-              <UserCheck className="w-5 h-5 text-primary" />
-              <span className="text-sm font-semibold">Daftar Hadir Asesor</span>
-            </Button>
+          <CardContent className="space-y-3">
+            {/* Daftar Hadir Button with Dropdown */}
+            <div className="relative" ref={daftarHadirMenuRef}>
+              <Button
+                variant="outline"
+                className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+                onClick={() => setShowDaftarHadirMenu(!showDaftarHadirMenu)}
+              >
+                <div className="flex items-center gap-3">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div className="text-left">
+                    <span className="text-sm font-semibold block">Daftar Hadir</span>
+                    <span className="text-xs text-muted-foreground">Asesi & Asesor</span>
+                  </div>
+                </div>
+                <ChevronDown className={`w-5 h-5 text-primary transition-transform ${showDaftarHadirMenu ? 'rotate-180' : ''}`} />
+              </Button>
+
+              {/* Dropdown Menu */}
+              {showDaftarHadirMenu && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                  <button
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors text-left"
+                    onClick={() => {
+                      openKegiatanModal('daftar_hadir_asesi', jadwalId || "")
+                      setShowDaftarHadirMenu(false)
+                    }}
+                  >
+                    <Users className="w-5 h-5 text-primary" />
+                    <div>
+                      <span className="text-sm font-medium block">Daftar Hadir Asesi</span>
+                      <span className="text-xs text-muted-foreground">QR Code & absensi asesi</span>
+                    </div>
+                  </button>
+                  <div className="border-t border-slate-100" />
+                  <button
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-primary/5 transition-colors text-left"
+                    onClick={() => {
+                      openKegiatanModal('daftar_hadir_asesor', jadwalId || "")
+                      setShowDaftarHadirMenu(false)
+                    }}
+                  >
+                    <UserCheck className="w-5 h-5 text-primary" />
+                    <div>
+                      <span className="text-sm font-medium block">Daftar Hadir Asesor</span>
+                      <span className="text-xs text-muted-foreground">QR Code & absensi asesor</span>
+                    </div>
+                  </button>
+                  <div className="border-t border-slate-100" />
+                  <button
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-emerald-50 transition-colors text-left"
+                    onClick={() => {
+                      openKegiatanModal('foto_bersama', jadwalId || "")
+                      setShowDaftarHadirMenu(false)
+                    }}
+                  >
+                    <Camera className="w-5 h-5 text-emerald-600" />
+                    <div>
+                      <span className="text-sm font-medium block">Foto Bersama</span>
+                      <span className="text-xs text-muted-foreground">Upload foto kegiatan</span>
+                    </div>
+                  </button>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
