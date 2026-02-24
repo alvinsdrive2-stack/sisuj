@@ -9,6 +9,8 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumen } from "@/hooks/useDataDokumen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Unit {
   id_unit: number
@@ -64,6 +66,15 @@ export default function Mapa02Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [selectedPotensi, setSelectedPotensi] = useState<Record<number, number>>({})
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzin,
+    asesorList: [] // asesorList not available in this page
+  })
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -365,6 +376,16 @@ export default function Mapa02Page() {
           </div>
         </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

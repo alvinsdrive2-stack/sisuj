@@ -18,6 +18,8 @@ import {
 } from "@/components/mapa01"
 // import { uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator" // Commented: not currently used
 import "@/components/mapa01/Mapa01.css"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Unit {
   id_unit: number
@@ -89,7 +91,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -97,6 +99,15 @@ export default function Mapa01Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzin,
+    asesorList: asesorList
+  })
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -311,6 +322,16 @@ export default function Mapa01Page() {
         </div>
       </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

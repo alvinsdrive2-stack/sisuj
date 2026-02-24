@@ -9,6 +9,8 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useToast } from "@/contexts/ToastContext"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface BuktiAsesmen {
   id: number
@@ -76,6 +78,28 @@ export default function FrAk01Page() {
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji } = useDataDokumenPraAsesmen(actualIdIzin)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const {
+    showAwalModal,
+    showAkhirModal,
+    setShowAkhirModal,
+    submitAbsenAwal,
+    submitAbsenAkhir,
+    handleAwalModalClose,
+    handleAkhirModalClose,
+    shouldShowAkhirModal,
+    absenData
+  } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: actualIdIzin,
+    asesorList: asesorList
+  })
+
+  // State for pending navigation after absen akhir
+  const [pendingNavigation, setPendingNavigation] = useState(false)
 
   const jadwalId = kegiatan?.jadwal_id
 
@@ -185,6 +209,33 @@ export default function FrAk01Page() {
     })
   }
 
+  // Handle absen akhir modal close - navigate after submission
+  const handleAbsenAkhirModalClose = () => {
+    setShowAkhirModal(false)
+    if (pendingNavigation) {
+      setPendingNavigation(false)
+      navigate("/asesi/praasesmen/ak01-success")
+    }
+  }
+
+  // Handle absen akhir submission
+  const handleAbsenAkhirSubmit = async (blob: Blob) => {
+    await submitAbsenAkhir(blob)
+    // Don't reset pendingNavigation - let handleAbsenAkhirModalClose handle navigation
+  }
+
+  // Navigate to success page (check absen akhir first)
+  const navigateToSuccess = async () => {
+    // Check if absen akhir is needed (for both asesi and asesor)
+    const needsAbsenAkhir = await shouldShowAkhirModal()
+    if (needsAbsenAkhir) {
+      setPendingNavigation(true)
+      setShowAkhirModal(true)
+    } else {
+      navigate("/asesi/praasesmen/ak01-success")
+    }
+  }
+
   const handleSave = async () => {
     try {
       const token = localStorage.getItem("access_token")
@@ -244,10 +295,6 @@ export default function FrAk01Page() {
               console.error('Error generating QR:', qrError)
             }
           }
-
-          showSuccess('Data berhasil disimpan!')
-          setTimeout(() => navigate("/asesi/praasesmen/ak01-success"), 500)
-          return
         }
 
         // Generate QR for asesi (only if not already exists)
@@ -283,8 +330,19 @@ export default function FrAk01Page() {
           }
         }
 
-        // Navigate to success page
-        navigate("/asesi/praasesmen/ak01-success")
+        // Navigate to success page (check absen akhir first for both asesi and asesor)
+        console.log('[FrAk01Page handleSave] Checking if needs absen akhir...')
+        const needsAbsenAkhir = await shouldShowAkhirModal()
+        console.log('[FrAk01Page handleSave] needsAbsenAkhir:', needsAbsenAkhir)
+
+        if (needsAbsenAkhir) {
+          console.log('[FrAk01Page handleSave] Showing absen akhir modal')
+          setPendingNavigation(true)
+          setShowAkhirModal(true)
+        } else {
+          console.log('[FrAk01Page handleSave] Navigating to success page')
+          navigate("/asesi/praasesmen/ak01-success")
+        }
       } else {
         console.error('Failed to save:', await response.text())
       }
@@ -613,6 +671,26 @@ export default function FrAk01Page() {
           </ActionButton>
         </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
+
+      {/* Absen Akhir Modal */}
+      <WebcamModal
+        isOpen={showAkhirModal}
+        onClose={handleAbsenAkhirModalClose}
+        onSubmit={handleAbsenAkhirSubmit}
+        title="Absen Keluar Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen keluar"
+        canClose={false}
+      />
     </div>
   )
 }

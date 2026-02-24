@@ -9,6 +9,8 @@ import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface DataPribadi {
   nama: string
@@ -126,6 +128,15 @@ export default function Apl01Page() {
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzin,
+    asesorList: [] // asesorList not available in this page
+  })
 
   // Form state for data pribadi
   const [formDataPribadi, setFormDataPribadi] = useState<DataPribadi>({
@@ -904,6 +915,16 @@ anda pada saat ini.</span>
           </ActionButton>
         </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

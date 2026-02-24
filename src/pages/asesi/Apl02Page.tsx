@@ -12,6 +12,8 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { CustomRadio } from "@/components/ui/Radio"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 // ============== ANIMATED COMPONENTS ==============
 
@@ -516,6 +518,16 @@ export default function Apl02Page() {
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  // Note: asesorList is available after useDataDokumenPraAsesmen is called
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzin,
+    asesorList: asesorList
+  })
 
   const handleCheckboxChange = (kukId: string, value: 'K' | 'BK') => {
     setKukChecklist(prev => {
@@ -1578,6 +1590,16 @@ export default function Apl02Page() {
           </ActionButton>
         </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

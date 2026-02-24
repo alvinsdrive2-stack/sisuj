@@ -10,6 +10,8 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Referensi {
   id: number
@@ -95,6 +97,15 @@ export default function FrAk07Page() {
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzin,
+    asesorList: asesorList
+  })
 
   // Transform barcodes from old API format (asesor1, asesor2) to new dynamic format
   useEffect(() => {
@@ -936,6 +947,16 @@ export default function FrAk07Page() {
           </div>
         </div>
       </AsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

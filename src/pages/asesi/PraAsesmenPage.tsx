@@ -8,6 +8,8 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface PersonalData {
   nama: string
@@ -59,6 +61,16 @@ export default function PraAsesmenPage() {
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  // For PraAsesmenPage, asesorList is not available, so asesor will default to 'asesor1'
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzinFromUrl,
+    asesorList: [] // No asesorList available for this page
+  })
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -412,6 +424,16 @@ export default function PraAsesmenPage() {
           </div>
         </div>
       )}
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

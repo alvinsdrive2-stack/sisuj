@@ -3,6 +3,8 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { WebcamModal } from "@/components/ui/WebcamModal"
 
 export default function Apl02SuccessPage() {
   const navigate = useNavigate()
@@ -12,6 +14,15 @@ export default function Apl02SuccessPage() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [countdown, setCountdown] = useState(3)
   const [actualIdIzin, setActualIdIzin] = useState<string | null>(null)
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: actualIdIzin || undefined,
+    asesorList: [] // asesorList not available in this page
+  })
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -151,6 +162,16 @@ export default function Apl02SuccessPage() {
           </button>
         </div>
       </div>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }
