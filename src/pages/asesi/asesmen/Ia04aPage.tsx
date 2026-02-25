@@ -163,7 +163,7 @@ export default function Ia04aPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -178,7 +178,7 @@ export default function Ia04aPage() {
   } | null>(null)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -436,8 +436,51 @@ export default function Ia04aPage() {
       }
     }
 
-    // Asesi: langsung navigate (ga ada QR)
+    // Asesi: generate QR jika belum ada, lalu navigate
     if (!isAsesor) {
+      // Cek apakah QR asesi sudah ada
+      if (barcodes?.asesi?.url) {
+        showSuccess('IA 04.A berhasil disimpan!')
+        setTimeout(() => {
+          navigate(`/asesi/asesmen/${id}/upload-tugas`)
+        }, 500)
+        return
+      }
+
+      // Generate QR untuk asesi
+      if (jadwalId) {
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
+            })
+          })
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              setBarcodes(prev => ({
+                ...prev,
+                asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+              }))
+              setTimeout(() => {
+                navigate(`/asesi/asesmen/${id}/upload-tugas`)
+              }, 500)
+              return
+            }
+          }
+        } catch (qrError) {
+          console.error('Error generating asesi QR:', qrError)
+        }
+      }
+
+      // Fallback jika gagal generate QR
       showSuccess('IA 04.A berhasil disimpan!')
       setTimeout(() => {
         navigate(`/asesi/asesmen/${id}/upload-tugas`)
@@ -705,32 +748,80 @@ export default function Ia04aPage() {
               <td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>NOMOR MET</td>
               <td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>TANDA TANGAN DAN TANGGAL</td>
             </tr>
-            <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
-              <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>PENYUSUN</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-            </tr>
-            <tr style={{ background: '#e9e9e9e' }}>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-            </tr>
-            <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
-              <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>VALIDATOR</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-            </tr>
-            <tr style={{ background: '#e9e9e9e' }}>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td>
-            </tr>
+            {/* PENYUSUN */}
+            {(namaPenyusun || barcodePenyusun) ? (
+              <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>PENYUSUN</td>
+                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{namaPenyusun?.toUpperCase() || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{noregPenyusun || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  {barcodePenyusun ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img src={barcodePenyusun} alt="TTD Penyusun" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                      {tanggalPenyusun && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {new Date(tanggalPenyusun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  ) : '-'}
+                </td>
+              </tr>
+            ) : (
+              <>
+                <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
+                  <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>PENYUSUN</td>
+                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                </tr>
+                <tr style={{ background: '#e9e9e9e' }}>
+                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                </tr>
+              </>
+            )}
+            {/* VALIDATOR */}
+            {(namaValidator || barcodeValidator) ? (
+              <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>VALIDATOR</td>
+                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{namaValidator?.toUpperCase() || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{noregValidator || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  {barcodeValidator ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img src={barcodeValidator} alt="TTD Validator" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                      {tanggalValidator && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {new Date(tanggalValidator).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  ) : '-'}
+                </td>
+              </tr>
+            ) : (
+              <>
+                <tr style={{ background: '#e9e9e9e', fontWeight: 'bold' }}>
+                  <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>VALIDATOR</td>
+                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                </tr>
+                <tr style={{ background: '#e9e9e9e' }}>
+                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}></td>
+                </tr>
+              </>
+            )}
           </tbody>
         </table>
 

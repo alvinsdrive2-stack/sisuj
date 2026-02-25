@@ -82,7 +82,7 @@ export default function Ia05Page() {
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -105,7 +105,6 @@ export default function Ia05Page() {
         const token = localStorage.getItem("access_token")
         const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
           headers: {
-            "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         })
@@ -129,8 +128,6 @@ export default function Ia05Page() {
               }
             })
             setAnswers(newAnswers)
-
-            // Set umpan balik from API response
             if (result.data.umpan_balik) {
               setUmpanBalik(result.data.umpan_balik)
             }
@@ -158,9 +155,18 @@ export default function Ia05Page() {
     try {
       const token = localStorage.getItem('access_token')
 
+      // Build answers array
+      const answersPayload = ia05Data.soal
+        .filter(soal => answers[soal.id])
+        .map(soal => ({
+          soal_id: soal.id,
+          jawaban: answers[soal.id]
+        }))
+
       const payload = {
-        id_izin: parseInt(id),
+        id_izin: id,
         dokumen_id: ia05Data.dokumen.id,
+        answers: answersPayload,
         umpan_balik: umpanBalik
       }
 
@@ -175,6 +181,8 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('Umpan balik berhasil disimpan!')
+        // Navigate to AK02
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
       } else {
         const result = await response.json()
         showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
@@ -211,7 +219,7 @@ export default function Ia05Page() {
         }))
 
       const payload = {
-        id_izin: parseInt(id),
+        id_izin: id,
         dokumen_id: ia05Data.dokumen.id,
         answers: answersPayload,
         umpan_balik: umpanBalik || undefined

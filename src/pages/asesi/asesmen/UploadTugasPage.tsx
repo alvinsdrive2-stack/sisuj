@@ -79,7 +79,7 @@ export default function UploadTugasPage() {
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -88,34 +88,35 @@ export default function UploadTugasPage() {
   })
 
   // Fetch existing tugas
-  useEffect(() => {
-    const fetchTugas = async () => {
-      if (!id) return
+  const fetchTugas = async () => {
+    if (!id) return
 
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/tugas`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/tugas`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-        if (response.ok) {
-          const result: TugasResponse = await response.json()
-          if (result.message === "Success" && result.data.url) {
-            setUploadedTugas({
-              url: result.data.url,
-              extension: result.data.extension,
-              fileName: `Tugas.${result.data.extension}`
-            })
-          }
+      if (response.ok) {
+        const result: TugasResponse = await response.json()
+        console.log('Fetch tugas response:', result)
+        if (result.message === "Success" && result.data?.url) {
+          setUploadedTugas({
+            url: result.data.url,
+            extension: result.data.extension,
+            fileName: `Tugas.${result.data.extension}`
+          })
         }
-      } catch (error) {
-        console.error("Error fetching tugas:", error)
       }
+    } catch (error) {
+      console.error("Error fetching tugas:", error)
     }
+  }
 
+  useEffect(() => {
     fetchTugas()
   }, [id])
 
@@ -147,16 +148,8 @@ export default function UploadTugasPage() {
       console.log('Upload response:', result)
 
       if (response.ok) {
-        // Backend returns filename and extension separately
-        const { filename, extension, url } = result.data || { filename: '', extension: '', url: '' }
-        const finalFileName = filename || selectedFile.name
-        const finalExtension = extension || selectedFile.name.split('.').pop() || ''
-
-        setUploadedTugas({
-          url: url || '',
-          extension: finalExtension,
-          fileName: finalFileName
-        })
+        // Refetch tugas data to get the correct URL from server
+        await fetchTugas()
         setSelectedFile(null)
         showSuccess(result.message || 'Tugas berhasil diupload!')
         setShowModal(true)
@@ -258,7 +251,7 @@ export default function UploadTugasPage() {
               UPLOAD FILE TUGAS
             </h2>
             <p style={{ fontSize: '13px', color: '#666' }}>
-              Silakan upload tugas terstruktur Anda (PDF, PPT, PPTX, JPG, PNG - Max 10MB)
+              Silakan upload tugas terstruktur Anda (PDF, PPT, PPTX - Max 10MB)
             </p>
           </div>
           )}
@@ -506,7 +499,7 @@ export default function UploadTugasPage() {
                           Pilih File
                           <input
                             type="file"
-                            accept=".pdf,.ppt,.pptx,.jpg,.jpeg,.png"
+                            accept=".pdf,.ppt,.pptx"
                             onChange={handleFileChange}
                             style={{ display: 'none' }}
                           />

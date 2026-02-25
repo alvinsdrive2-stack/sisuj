@@ -74,11 +74,16 @@ export default function Ak02Page() {
   // Get dynamic steps
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
-  // Disable form if asesor_2 (only asesor_1 can fill)
-  const isFormDisabled = isAsesor && !isAsesor1
+  // Disable form for asesi and asesor_2 (only asesor_1 can fill)
+  const isFormDisabled = !isAsesor1
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  // Note: absen akhir for asesi is now handled in Ak03Page
+  const {
+    showAwalModal,
+    submitAbsenAwal,
+    handleAwalModalClose,
+  } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -219,7 +224,7 @@ export default function Ak02Page() {
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
-            FR.AK.02 &nbsp;&nbsp; FRASEMEN ANTARA ASESOR
+            FR.AK.02 &nbsp;&nbsp; FORMULIR REKAMAN ASESMEN KOMPETENSI
           </h1>
         </div>
 
@@ -572,7 +577,7 @@ export default function Ak02Page() {
                   if (response.ok) {
                     showSuccess('AK 02 berhasil disimpan!')
 
-                    // Generate QR for asesor only if not exists
+                    // Generate QR for asesor if not exists
                     if (isAsesor) {
                       const jadwalId = kegiatan?.jadwal_id
                       const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
@@ -606,16 +611,48 @@ export default function Ak02Page() {
                           console.error('Error generating QR:', qrError)
                         }
                       }
-                    }
 
-                    // Find current step (AK.02) and navigate to next step
-                    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
-                    const nextStep = asesmenSteps[currentStepIndex + 1]
-                    if (nextStep) {
-                      const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                      setTimeout(() => navigate(nextPath), 1500)
+                      // For asesor: navigate to next step
+                      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
+                      const nextStep = asesmenSteps[currentStepIndex + 1]
+                      if (nextStep) {
+                        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                        setTimeout(() => navigate(nextPath), 1500)
+                      } else {
+                        setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 1500)
+                      }
                     } else {
-                      setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 1500)
+                      // For asesi: generate QR if not exists
+                      const jadwalId = kegiatan?.jadwal_id
+                      const existingAsesiQR = barcodes?.asesi?.url
+
+                      if (jadwalId && !existingAsesiQR) {
+                        try {
+                          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak02`, {
+                            method: 'POST',
+                            headers: {
+                              'Accept': 'application/json',
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                              id_jadwal: jadwalId
+                            })
+                          })
+
+                          if (qrResponse.ok) {
+                            const qrResult = await qrResponse.json()
+                            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                              setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
+                            }
+                          }
+                        } catch (qrError) {
+                          console.error('Error generating asesi QR:', qrError)
+                        }
+                      }
+
+                      // For asesi: navigate to AK03
+                      setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 1500)
                     }
                   } else {
                     console.error('Failed to save AK02:', response.status)

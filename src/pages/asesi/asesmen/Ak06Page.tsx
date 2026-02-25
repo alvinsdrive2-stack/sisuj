@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -70,6 +71,7 @@ export default function Ak06Page() {
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2 } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -91,7 +93,6 @@ export default function Ak06Page() {
     handleAwalModalClose,
     handleAkhirModalClose,
     shouldShowAkhirModal,
-    isChecking: isCheckingAbsen
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -255,6 +256,42 @@ export default function Ak06Page() {
 
       if (response.ok) {
         showSuccess('AK 06 berhasil disimpan!')
+
+        // Generate QR for asesor only if not exists
+        if (isAsesor) {
+          const jadwalId = kegiatan?.jadwal_id
+          const existingAsesorQR = isAsesor1 ? barcodes.asesor1?.url : barcodes.asesor2?.url
+
+          if (jadwalId && !existingAsesorQR) {
+            try {
+              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak06`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  id_jadwal: jadwalId
+                })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  // Update barcodes based on asesor role
+                  if (isAsesor1) {
+                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  } else {
+                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  }
+                }
+              }
+            } catch (qrError) {
+              console.error('Error generating QR:', qrError)
+            }
+          }
+        }
 
         // Check if absen akhir is needed
         const needAbsenAkhir = await shouldShowAkhirModal()
@@ -553,18 +590,20 @@ export default function Ak06Page() {
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top', textAlign: 'center' }}>
                     {asesorBarcode ? (
-                      <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                         <img
                           src={asesorBarcode.url}
                           alt={`QR ${asesor.nama}`}
-                          style={{ width: '80px', height: '80px' }}
+                          style={{ height: '50px', width: '50px', objectFit: 'contain' }}
                         />
-                        <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                          {asesorBarcode.tanggal ? new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID') : ''}
-                        </div>
+                        {asesorBarcode.tanggal && (
+                          <div style={{ fontSize: '11px', color: '#333' }}>
+                            {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div style={{ minHeight: '80px' }}></div>
+                      <div style={{ minHeight: '50px' }}></div>
                     )}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>
@@ -599,7 +638,6 @@ export default function Ak06Page() {
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
                 style={{ marginTop: '2px' }}
-                disabled={isFormDisabled}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
                 Saya menyatakan dengan sebenar-benarnya bahwa peninjauan proses asesmen ini telah saya lakukan dengan objektif dan dapat dipertanggungjawabkan.

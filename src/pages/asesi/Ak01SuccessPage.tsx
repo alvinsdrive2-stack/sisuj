@@ -13,7 +13,6 @@ export default function Ak01SuccessPage() {
   const { user } = useAuth()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [countdown, setCountdown] = useState(3)
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   // Step 10 (Selesai) for AK01 Success
   const currentStep = 10

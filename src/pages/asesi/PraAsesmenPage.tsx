@@ -64,7 +64,7 @@ export default function PraAsesmenPage() {
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // For PraAsesmenPage, asesorList is not available, so asesor will default to 'asesor1'
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'praasesmen',
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor

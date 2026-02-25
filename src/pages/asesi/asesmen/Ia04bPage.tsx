@@ -90,7 +90,7 @@ export default function Ia04bPage() {
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -320,7 +320,42 @@ export default function Ia04bPage() {
       // 3. Navigate to next step
       showSuccess('IA 04.B berhasil disimpan!')
 
-      // 4. Generate QR for asesor only if not exists
+      // 4. Generate QR for asesi if not exists
+      if (!isAsesor && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04b`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: kegiatan.jadwal_id
+            })
+          })
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            console.log('Asesi QR Result:', qrResult)
+
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              setBarcodes(prev => ({
+                ...prev,
+                asesi: {
+                  url: qrResult.data.url_image,
+                  tanggal: new Date().toISOString(),
+                  nama: user?.name || ''
+                }
+              }))
+            }
+          }
+        } catch (qrError) {
+          console.error('Error generating asesi QR:', qrError)
+        }
+      }
+
+      // 5. Generate QR for asesor only if not exists
       if (isAsesor) {
         const jadwalId = kegiatan?.jadwal_id
         const currentAsesorId = String(user?.id)

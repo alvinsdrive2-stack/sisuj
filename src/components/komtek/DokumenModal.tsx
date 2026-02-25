@@ -239,7 +239,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama }: DokumenMod
                     width: '3px',
                     background: '#ddd',
                     transform: 'translateX(10px)',
-                    height: '88vh',
+                    height: '100vh',
                   }}></div>
 
                   {/* Documents */}

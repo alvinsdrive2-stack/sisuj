@@ -86,7 +86,7 @@ export default function ListAsesiAdminTUK() {
   const [startingAsesmen, setStartingAsesmen] = useState(false)
   const [showDaftarHadirMenu, setShowDaftarHadirMenu] = useState(false)
   const daftarHadirMenuRef = useRef<HTMLDivElement>(null)
-  const { openQrModal, openDetailModal, openKegiatanModal } = useDaftarHadirModal()
+  const { openDetailModal, openKegiatanModal } = useDaftarHadirModal()
 
   // Close dropdown when clicking outside
   useEffect(() => {

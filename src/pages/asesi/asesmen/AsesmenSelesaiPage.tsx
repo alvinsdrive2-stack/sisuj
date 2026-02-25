@@ -23,7 +23,7 @@ export default function AsesmenSelesaiPage() {
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,

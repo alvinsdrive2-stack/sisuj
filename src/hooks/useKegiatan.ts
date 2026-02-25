@@ -281,3 +281,81 @@ export function useKegiatanKomtek(ttd: boolean) {
 
   return { kegiatans, isLoading, error }
 }
+
+// Absen data interface
+export interface AbsenData {
+  id_izin: string
+  url_absen_asesi_awal: string | null
+  url_absen_asesi_akhir: string | null
+  url_absen_asesi_pra_awal: string | null
+  url_absen_asesi_pra_akhir: string | null
+  url_absen_asesor1_awal: string | null
+  url_absen_asesor1_akhir: string | null
+  url_absen_asesor2_awal: string | null
+  url_absen_asesor2_akhir: string | null
+  url_absen_asesor1_pra_awal: string | null
+  url_absen_asesor1_pra_akhir: string | null
+  url_absen_asesor2_pra_awal: string | null
+  url_absen_asesor2_pra_akhir: string | null
+}
+
+// Hook to fetch absen data for multiple asesi
+export function useAbsenData(asesiIds: string[], enabled = true) {
+  const [absenData, setAbsenData] = useState<Record<string, AbsenData>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!enabled || asesiIds.length === 0) {
+      return
+    }
+
+    const fetchAbsenData = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const results: Record<string, AbsenData> = {}
+
+        // Fetch absen data for each asesi in parallel
+        await Promise.all(
+          asesiIds.map(async (idIzin) => {
+            try {
+              const response = await fetch(`https://backend.devgatensi.site/api/dokumen/absen/${idIzin}`, {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": `Bearer ${token}`,
+                },
+              })
+
+              if (response.ok) {
+                const result = await response.json()
+                if (result.message === "Success" && result.data) {
+                  results[idIzin] = {
+                    id_izin: idIzin,
+                    ...result.data
+                    
+                  }
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching absen for ${idIzin}:`, err)
+            }
+          })
+        )
+
+        setAbsenData(results)
+      } catch (err) {
+        console.error('Error fetching absen data:', err)
+        setError(err instanceof Error ? err.message : "Failed to fetch absen data")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchAbsenData()
+  }, [asesiIds.join(','), enabled])
+
+  return { absenData, isLoading, error }
+}

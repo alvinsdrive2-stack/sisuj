@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faClose, faCamera, faClock, faUpload, faCheck, faImage, faQrcode, faUsers, faUserCheck, faEye, faFilePdf, faDownload, faExternalLinkAlt, faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons"
+import { faClose, faCamera, faClock, faUpload, faImage, faUsers, faUserCheck, faFilePdf, faExternalLinkAlt, faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import QRCode from "qrcode"
@@ -39,7 +39,15 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
   const [selectedField, setSelectedField] = useState<UrlField | null>(null)
 
   // Get labels based on type
-  const getTypeInfo = () => {
+  const getTypeInfo = (): {
+    title: string
+    subtitle: string
+    icon: any
+    iconBg: string
+    captureType: string
+    urlFields: UrlField[]
+    uploadEndpoint: string
+  } => {
     switch (type) {
       case 'foto_bersama':
         return {

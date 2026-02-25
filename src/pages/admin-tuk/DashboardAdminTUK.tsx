@@ -46,7 +46,7 @@ export default function DashboardAdminTUK() {
   // Prevent unused variable warning - stats reserved for future UI
   void _adminTukStats.length
 
-  const getStatusBadge = (isStarted: string, tahap: string) => {
+  const getStatusBadge = (_isStarted: string, tahap: string) => {
     // is_started = "0" → Belum Mulai
     if (tahap === "0") {
       return (

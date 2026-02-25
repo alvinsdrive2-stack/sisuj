@@ -62,6 +62,7 @@ import Ia05Page from './pages/asesi/asesmen/Ia05Page'
 import UjianPage from './pages/asesi/asesmen/UjianPage'
 import Ak02Page from './pages/asesi/asesmen/Ak02Page'
 import Ak03Page from './pages/asesi/asesmen/Ak03Page'
+import Ak05Page from './pages/asesi/asesmen/Ak05Page'
 import Ak06Page from './pages/asesi/asesmen/Ak06Page'
 import AsesmenSelesaiPage from './pages/asesi/asesmen/AsesmenSelesaiPage'
 import Apl01Page from './pages/asesi/Apl01Page'
@@ -358,16 +359,24 @@ function App() {
           <Route
             path="/asesi/asesmen/:id/ak02"
             element={
-              <AsesorRoute>
+              <AsesiOrAsesorRoute>
                 <Ak02Page />
-              </AsesorRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
             path="/asesi/asesmen/:id/ak03"
             element={
-              <AsesorRoute>
+              <AsesiOrAsesorRoute>
                 <Ak03Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ak05"
+            element={
+              <AsesorRoute>
+                <Ak05Page />
               </AsesorRoute>
             }
           />

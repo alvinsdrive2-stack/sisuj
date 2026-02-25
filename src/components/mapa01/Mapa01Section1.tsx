@@ -177,20 +177,16 @@ export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Sectio
   const initialCheckboxStates = useMemo(() => {
     const states: Record<string, boolean> = {}
     if (referensiForm) {
-      console.log('Building checkbox states from referensiForm:', referensiForm)
       referensiForm.forEach((item) => {
         const kelompok = item.kelompok
         kelompok.kategoris?.forEach((kategori) => {
-          console.log('Kategori:', kategori.nama, kategori)
           kategori.subkategoris?.forEach((subkategori) => {
             subkategori.referensis?.forEach((ref) => {
-              console.log('Referensi:', ref.id, ref.nama, ref.value)
               states[`ref_${ref.id}`] = ref.value
             })
           })
         })
       })
-      console.log('Final states:', states)
     }
     return states
   }, [referensiForm])
@@ -199,14 +195,12 @@ export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Sectio
 
   // Sync checkbox states when referensiForm loads
   useEffect(() => {
-    console.log('initialCheckboxStates changed:', initialCheckboxStates)
     if (Object.keys(initialCheckboxStates).length > 0) {
       setCheckboxStates(initialCheckboxStates)
     }
   }, [initialCheckboxStates])
 
   useEffect(() => {
-    console.log('checkboxStates updated:', checkboxStates)
   }, [checkboxStates])
 
   const toggleCheckbox = (text: string) => {
@@ -215,22 +209,18 @@ export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Sectio
 
   // Helper to find checkbox state by referensi id
   const getCheckedState = (kategoriNama: string, refNama: string, defaultKey: string): boolean => {
-    console.log('getCheckedState called:', { kategoriNama, refNama, defaultKey })
     if (referensiForm) {
       for (const item of referensiForm) {
         const kelompok = item.kelompok
         for (const kategori of kelompok.kategoris || []) {
-          console.log('Checking kategori:', kategori.nama, '===', kategoriNama, '?', kategori.nama === kategoriNama)
           if (kategori.nama === kategoriNama) {
             for (const subkategori of kategori.subkategoris || []) {
               for (const ref of subkategori.referensis || []) {
                 // Normalize text for comparison (remove extra spaces, punctuation)
                 const normalizedRefNama = ref.nama?.trim().replace(/\s+/g, ' ').toLowerCase() || ''
                 const normalizedSearch = refNama.trim().replace(/\s+/g, ' ').toLowerCase()
-                console.log('Comparing:', normalizedRefNama, '===', normalizedSearch, '?', normalizedRefNama === normalizedSearch)
                 if (normalizedRefNama === normalizedSearch || normalizedRefNama.includes(normalizedSearch)) {
                   const result = checkboxStates[`ref_${ref.id}`] ?? false
-                  console.log('Found match! ref id:', ref.id, 'value:', result)
                   return result
                 }
               }
@@ -239,7 +229,6 @@ export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Sectio
         }
       }
     }
-    console.log('No match found, using default:', checkboxStates[defaultKey] || false)
     return checkboxStates[defaultKey] || false
   }
 

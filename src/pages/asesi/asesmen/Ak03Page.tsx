@@ -42,7 +42,7 @@ export default function Ak03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { role: asesorRole } = useAsesorRole(id)
   const { asesorList } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -50,11 +50,20 @@ export default function Ak03Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
 
-  // Disable form if asesor but not asesor_1 (only asesor_1 can fill)
-  const isFormDisabled = isAsesor && !isAsesor1
+  // Disable form for asesor (only asesi can fill)
+  const isFormDisabled = isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, isChecking: isCheckingAbsen } = useAbsenCheck({
+  const {
+    showAwalModal,
+    showAkhirModal,
+    setShowAkhirModal,
+    submitAbsenAwal,
+    submitAbsenAkhir,
+    handleAwalModalClose,
+    handleAkhirModalClose,
+    shouldShowAkhirModal,
+  } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -196,10 +205,19 @@ export default function Ak03Page() {
 
       if (response.ok) {
         showSuccess('AK 03 berhasil disimpan!')
-        setTimeout(() => {
-          // Navigate to AK06 (asesor_1 only, asesor_2 skips AK03)
-          navigate(`/asesi/asesmen/${id}/ak06`)
-        }, 500)
+
+        if (!isAsesor) {
+          // For asesi: check if absen akhir is needed, then show modal or navigate
+          const needAbsenAkhir = await shouldShowAkhirModal()
+          if (needAbsenAkhir) {
+            setShowAkhirModal(true)
+          } else {
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
+          }
+        } else {
+          // For asesor: navigate to AK05
+          setTimeout(() => navigate(`/asesi/asesmen/${id}/ak05`), 500)
+        }
       } else {
         console.error('Failed to save AK03:', response.status)
         showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -334,6 +352,21 @@ export default function Ak03Page() {
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
       />
+
+      {/* Absen Akhir Modal - for asesi only */}
+      {!isAsesor && (
+        <WebcamModal
+          isOpen={showAkhirModal}
+          onClose={handleAkhirModalClose}
+          onSubmit={async (imageBlob: Blob) => {
+            await submitAbsenAkhir(imageBlob)
+            setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
+          }}
+          title="Absen Keluar Asesmen"
+          description="Silakan ambil foto wajah Anda untuk absen keluar"
+          canClose={true}
+        />
+      )}
     </div>
   )
 }

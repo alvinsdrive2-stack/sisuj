@@ -120,16 +120,11 @@ export default function UjianPage() {
   const canEdit = !isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  // Note: absen akhir for asesi is now handled in Ak02Page
   const {
     showAwalModal,
-    showAkhirModal,
-    setShowAkhirModal,
     submitAbsenAwal,
-    submitAbsenAkhir,
     handleAwalModalClose,
-    handleAkhirModalClose,
-    shouldShowAkhirModal,
-    isChecking: isCheckingAbsen
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -418,30 +413,17 @@ export default function UjianPage() {
       await saveAnswer()
       showSuccess('Ujian berhasil diselesaikan!')
 
-      // Check if absen akhir is needed
-      const needAbsenAkhir = await shouldShowAkhirModal()
-      if (needAbsenAkhir) {
-        setShowCelebration(false)
-        setShowAkhirModal(true)
-      } else {
-        setTimeout(() => {
-          navigate(`/asesi/asesmen/${id}/selesai`)
-        }, 1500)
-      }
+      // For asesi, redirect to AK02; for asesor, redirect to selesai
+      const redirectTarget = isAsesor ? 'selesai' : 'ak02'
+      setTimeout(() => {
+        navigate(`/asesi/asesmen/${id}/${redirectTarget}`)
+      }, 1500)
     } catch (error) {
       showError('Gagal menyimpan jawaban. Silakan coba lagi.')
       setShowCelebration(false)
     } finally {
       setIsSaving(false)
     }
-  }
-
-  // Handle absen akhir submit - navigate after success
-  const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
-    await submitAbsenAkhir(imageBlob)
-    setTimeout(() => {
-      navigate(`/asesi/asesmen/${id}/selesai`)
-    }, 500)
   }
 
   const handleDotClick = (index: number) => {
@@ -1042,16 +1024,6 @@ export default function UjianPage() {
         title="Absen Masuk Ujian"
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
-      />
-
-      {/* Absen Akhir Modal */}
-      <WebcamModal
-        isOpen={showAkhirModal}
-        onClose={handleAkhirModalClose}
-        onSubmit={handleAbsenAkhirSubmit}
-        title="Absen Keluar Ujian"
-        description="Silakan ambil foto wajah Anda untuk absen keluar"
-        canClose={true}
       />
     </div>
   )

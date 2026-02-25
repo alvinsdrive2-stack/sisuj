@@ -2,11 +2,11 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Clock, Calendar, MapPin, UserCheck, Eye } from "lucide-react"
-import { useKegiatanAsesor } from "@/hooks/useKegiatan"
-import { useListAsesi } from "@/hooks/useKegiatan"
+import { Users, Clock, Calendar, MapPin, UserCheck, Info } from "lucide-react"
+import { useKegiatanAsesor, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
+import { useAuth } from "@/contexts/auth-context"
 
 interface CountdownTime {
   days: number
@@ -76,33 +76,117 @@ function useCountdown(targetDate: string): CountdownTime {
 
 export default function AsesiPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { kegiatan, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesor()
   const jadwalId = kegiatan?.jadwal_id
   const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
 
-  // Determine current phase
-  const isPraAsesmen = kegiatan?.tahap === "1"
-  const isAsesmen = kegiatan?.tahap === "2"
+  // Get asesi IDs for absen data fetch
+  const asesiIds = asesiList.map(a => a.id_izin)
+  const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
+
+  // Debug absen data
+  console.log('[DEBUG] absenData:', absenData)
+
+  // State for asesor IDs from data-dokumen
+  const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({
+    id_asesor_1: null,
+    id_asesor_2: null
+  })
+
+  // Fetch asesor IDs from data-dokumen endpoint
+  useEffect(() => {
+    const fetchAsesorIds = async () => {
+      if (asesiList.length === 0) return
+
+      const firstAsesiId = asesiList[0].id_izin
+      const token = localStorage.getItem("access_token")
+
+      try {
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${firstAsesiId}/data-dokumen`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          if (result.message === "Success" && result.data) {
+            setAsesorIds({
+              id_asesor_1: result.data.id_asesor_1,
+              id_asesor_2: result.data.id_asesor_2
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching asesor IDs:', err)
+      }
+    }
+
+    fetchAsesorIds()
+  }, [asesiList])
+
+  // Determine if user is asesor1 or asesor2
+  const isAsesor1 = asesorIds.id_asesor_1 === Number(user?.id)
+  const isAsesor2 = asesorIds.id_asesor_2 === Number(user?.id)
+  const asesorRole = isAsesor1 ? 1 : isAsesor2 ? 2 : null
+
+  // Helper function to get asesi absen status color
+  const getAsesiAbsenStatus = (absen: AbsenData | undefined, phase: 'asesmen' | 'praasesmen') => {
+    if (!absen) return 'yellow'
+
+    if (phase === 'asesmen') {
+      const akhir = absen.url_absen_asesi_akhir
+      // If akhir has value -> green, otherwise yellow
+      return akhir ? 'green' : 'yellow'
+    } else {
+      const akhir = absen.url_absen_asesi_pra_akhir
+      return akhir ? 'green' : 'yellow'
+    }
+  }
+
+  // Helper function to get asesor review status
+  const getAsesorReviewStatus = (absen: AbsenData | undefined, phase: 'asesmen' | 'praasesmen', asesorNum: 1 | 2) => {
+    if (!absen || !asesorNum) return 'Butuh ditinjau'
+
+    if (phase === 'asesmen') {
+      const awal = asesorNum === 1 ? absen.url_absen_asesor1_awal : absen.url_absen_asesor2_awal
+      const akhir = asesorNum === 1 ? absen.url_absen_asesor1_akhir : absen.url_absen_asesor2_akhir
+      if (akhir) return 'Sudah ditinjau'
+      if (awal) return 'Butuh ditinjau'
+      return 'Butuh ditinjau'
+    } else {
+      const awal = asesorNum === 1 ? absen.url_absen_asesor1_pra_awal : absen.url_absen_asesor2_pra_awal
+      const akhir = asesorNum === 1 ? absen.url_absen_asesor1_pra_akhir : absen.url_absen_asesor2_pra_akhir
+
+      if (akhir) return 'Sudah ditinjau'
+      if (awal) return 'Butuh ditinjau'
+      return 'Butuh ditinjau'
+    }
+  }
+
+  // Helper function to get status badge style
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Sudah ditinjau':
+        return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+      case 'Sedang ditinjau':
+        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+      default:
+        return 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+    }
+  }
 
   const handleViewAsesi = (idIzin: string) => {
-
-    // Navigate based on current phase - prioritize asesmen over praasesmen
-    if (isAsesmen) {
-      // Navigate to asesmen
-      const url = `/asesi/asesmen/${idIzin}/ia04a`
-      console.log('[AsesiPage] Navigating to:', url)
-      navigate(url)
-    } else if (isPraAsesmen) {
-      // Navigate to praasesmen
-      const url = `/asesi/praasesmen/${idIzin}/apl01`
-      console.log('[AsesiPage] Navigating to:', url)
-      navigate(url)
+    // Navigate based on current phase
+    if (kegiatan?.tahap === "2") {
+      navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+    } else if (kegiatan?.tahap === "1") {
+      navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     } else {
-      // Default to praasesmen
-      const url = `/asesi/praasesmen/${idIzin}/apl01`
-      console.log('[AsesiPage] Navigating to:', url)
-      navigate(url)
+      navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     }
   }
 
@@ -151,17 +235,17 @@ export default function AsesiPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-bold text-slate-800">{kegiatan.skema.nama}</h3>
-              {kegiatan.is_started === "0" && (
+              {kegiatan.tahap === "0" && (
                 <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">
                   Belum Mulai
                 </Badge>
               )}
-              {kegiatan.is_started_praasesmen === "1" && kegiatan.tahap === "1" && (
+              {kegiatan.tahap === "1" && (
                 <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">
                   Pra-Asesmen
                 </Badge>
               )}
-              {kegiatan.is_started === "1" && kegiatan.tahap === "2" && (
+              {kegiatan.tahap === "2" && (
                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
                   Asesmen
                 </Badge>
@@ -251,7 +335,18 @@ export default function AsesiPage() {
           </div>
         </div>
       </div>
-
+      {/* Info Box */}
+          <div className="mb-4 p-4 bg-white border shadow-sm rounded-lg flex items-start gap-3">
+            <Info className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-slate-700">
+              <p className="font-medium mb-1">Panduan:</p>
+              <ul className="list-disc list-inside space-y-1 text-slate-600">
+                <li>Indikator <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 align-middle"></span> hijau = Asesi sudah selesai absen</li>
+                <li>Indikator <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 align-middle"></span> kuning = Asesi belum selesai absen</li>
+                <li>Klik kartu asesi dengan indikator hijau dan status "Butuh ditinjau" untuk melakukan peninjauan</li>
+              </ul>
+            </div>
+          </div>
       {/* Asesi List */}
       <Card>
         <CardHeader>
@@ -274,60 +369,70 @@ export default function AsesiPage() {
             </div>
           )}
 
+          
+
           <div className="space-y-3">
-            {asesiList.map((asesi, index) => (
-              <div
-                key={asesi.id_izin}
-                className="p-4 border border-slate-200 rounded-lg bg-white hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{index + 1}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800">{asesi.nama}</h4>
-                      <p className="text-xs text-slate-500">ID: {asesi.id_izin}</p>
-                    </div>
-                  </div>
+            {asesiList.map((asesi, index) => {
+              const absen = absenData[asesi.id_izin]
 
-                  <div className="flex items-center gap-3">
-                    {/* View Button */}
-                    <Button
-                      size="sm"
-                      onClick={() => handleViewAsesi(asesi.id_izin)}
-                      className="gap-2"
-                    >
-                      <Eye className="w-4 h-4" />
-                      {isPraAsesmen && !isAsesmen && "Lihat PraAsesmen"}
-                      {isAsesmen && "Lihat Asesmen"}
-                      {!isPraAsesmen && !isAsesmen && "Lihat Data"}
-                    </Button>
-                    {/* Status Indicators */}
-                    {asesi.is_started && (
-                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">
-                        Sedang Mengerjakan
-                      </Badge>
-                    )}
+              const asesiStatus = kegiatan?.tahap === "2"
+                ? getAsesiAbsenStatus(absen, 'asesmen')
+                : getAsesiAbsenStatus(absen, 'praasesmen')
 
-                    {asesi.kompeten === "K" && (
-                      <div className="relative">
-                        <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
-                        <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+              const reviewStatus = asesorRole
+                ? (kegiatan?.tahap === "2"
+                    ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
+                    : getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2))
+                : 'Butuh ditinjau'
+
+              // Only allow click if asesi has green indicator (absen selesai)
+              const canClick = asesiStatus === 'green'
+
+              return (
+                <div
+                  key={asesi.id_izin}
+                  onClick={() => canClick && handleViewAsesi(asesi.id_izin)}
+                  className={`p-4 border border-slate-200 rounded-lg bg-white transition-all ${
+                    canClick
+                      ? 'hover:shadow-md hover:border-primary/30 cursor-pointer'
+                      : 'cursor-not-allowed opacity-70'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">{index + 1}</span>
                       </div>
-                    )}
+                      <div>
+                        <h4 className="font-semibold text-slate-800">{asesi.nama}</h4>
+                        <p className="text-xs text-slate-500">ID: {asesi.id_izin}</p>
+                      </div>
+                    </div>
 
-                    {asesi.kompeten === "BK" && (
-                      <Badge className="bg-red-100 text-red-700 hover:bg-red-200">
-                        Belum Kompeten
+                    <div className="flex items-center gap-3">
+                      {/* Review Status Badge */}
+                      <Badge className={getStatusBadgeStyle(reviewStatus)}>
+                        {reviewStatus}
                       </Badge>
-                    )}
 
-                    
+                      {/* Asesi Absen Status Indicator */}
+                      <div
+                        className={`relative w-4 h-4 rounded-full ${
+                          asesiStatus === 'green'
+                            ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                            : 'bg-yellow-500 shadow-lg shadow-yellow-500/50'
+                        }`}
+                        title={asesiStatus === 'green' ? 'Absen selesai' : 'Absen belum selesai'}
+                      >
+                        {asesiStatus === 'green' && (
+                          <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </CardContent>
       </Card>

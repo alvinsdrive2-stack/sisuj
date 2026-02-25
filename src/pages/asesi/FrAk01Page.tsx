@@ -8,7 +8,6 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
-import { useToast } from "@/contexts/ToastContext"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
@@ -61,7 +60,6 @@ export default function FrAk01Page() {
   const { user } = useAuth()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const { showSuccess } = useToast()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
@@ -87,9 +85,7 @@ export default function FrAk01Page() {
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
-    handleAkhirModalClose,
     shouldShowAkhirModal,
-    absenData
   } = useAbsenCheck({
     phase: 'praasesmen',
     role: 'auto',
@@ -222,18 +218,6 @@ export default function FrAk01Page() {
   const handleAbsenAkhirSubmit = async (blob: Blob) => {
     await submitAbsenAkhir(blob)
     // Don't reset pendingNavigation - let handleAbsenAkhirModalClose handle navigation
-  }
-
-  // Navigate to success page (check absen akhir first)
-  const navigateToSuccess = async () => {
-    // Check if absen akhir is needed (for both asesi and asesor)
-    const needsAbsenAkhir = await shouldShowAkhirModal()
-    if (needsAbsenAkhir) {
-      setPendingNavigation(true)
-      setShowAkhirModal(true)
-    } else {
-      navigate("/asesi/praasesmen/ak01-success")
-    }
   }
 
   const handleSave = async () => {

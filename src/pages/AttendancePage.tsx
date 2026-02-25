@@ -8,7 +8,6 @@ const API_BASE_URL = "https://backend.devgatensi.site/api"
 
 // Primary color: HSL(222, 80%, 25%) = #0d2137
 const PRIMARY_COLOR = "#0d2137"
-const PRIMARY_LIGHT = "#1a3a5c"
 const PRIMARY_DARK = "#081624"
 
 export default function AttendancePage() {
@@ -51,7 +50,7 @@ export default function AttendancePage() {
 
       try {
         const decoded = atob(token)
-        const [expiryStr, random, idIzin] = decoded.split(".")
+        const [expiryStr, _random, idIzin] = decoded.split(".")
         const expiry = parseInt(expiryStr)
         const now = Date.now()
 

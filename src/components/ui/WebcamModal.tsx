@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react"
-import { X, Camera, RefreshCw, Check, Upload } from "lucide-react"
+import { X, Camera, RefreshCw, Check } from "lucide-react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faFolderOpen } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
@@ -31,7 +31,7 @@ export function WebcamModal({
   const [hasCamera, setHasCamera] = useState(false)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
+  const [facingMode, _setFacingMode] = useState<"user" | "environment">("user")
   const [error, setError] = useState<string | null>(null)
 
   // Stop camera helper
@@ -211,11 +211,6 @@ export function WebcamModal({
       setIsSubmitting(false)
     }
   }
-
-  // Switch camera
-  const switchCamera = useCallback(() => {
-    setFacingMode(prev => prev === "user" ? "environment" : "user")
-  }, [])
 
   // Retry camera
   const retryCamera = useCallback(() => {
