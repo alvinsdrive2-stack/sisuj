@@ -1,16 +1,16 @@
 import { useNavigate } from "react-router-dom"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PenTool, FileText, Calendar, User, Clock, CheckCircle2 } from "lucide-react"
 import { StatCard, DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useKegiatanKomtek } from "@/hooks/useKegiatan"
+import { useKegiatanKomtek, useRekomendasiStatus } from "@/hooks/useKegiatan"
 
 export default function TandatanganKomtek() {
   const navigate = useNavigate()
   const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanKomtek(false)
   const { kegiatans: signedDocs, isLoading: isLoadingSigned } = useKegiatanKomtek(true)
+  const { rekomendasiStatus } = useRekomendasiStatus(pendingDocs, !isLoadingPending && pendingDocs.length > 0)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -24,6 +24,18 @@ export default function TandatanganKomtek() {
 
   const isLoading = isLoadingPending || isLoadingSigned
   const totalDocs = pendingDocs.length + signedDocs.length
+
+  // Get status badge for a kegiatan
+  const getStatusBadge = (jadwalId: string) => {
+    const status = rekomendasiStatus[jadwalId]
+    if (!status) {
+      return <Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>
+    }
+    if (status.hasPending) {
+      return <Badge key="status" className="bg-amber-100 text-amber-700">Menunggu Persetujuan</Badge>
+    }
+    return <Badge key="status" className="bg-emerald-100 text-emerald-700">Telah Selesai Ditinjau</Badge>
+  }
 
   return (
     <div className="space-y-6">
@@ -89,18 +101,8 @@ export default function TandatanganKomtek() {
                     { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                     { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                   ]}
-                  badges={[<Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>]}
-                  actions={[
-                    <Button
-                      key="detail"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Lihat Detail
-                    </Button>
-                  ]}
+                  badges={[getStatusBadge(doc.jadwal_id)]}
+                  onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}
                 />
               ))}
             </div>

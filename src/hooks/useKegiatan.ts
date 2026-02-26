@@ -100,8 +100,6 @@ export function useKegiatanAsesor(enabled = true) {
       setError(null)
       try {
         const response = await kegiatanService.getKegiatanAsesor()
-        console.log('Kegiatan Asesor Response:', response)
-        console.log('Kegiatan Data:', response.data)
         setKegiatanRef.current?.(response.data)
       } catch (err) {
         console.error('Error fetching kegiatan asesor:', err)
@@ -136,8 +134,6 @@ export function useKegiatanAsesi(enabled = true) {
 
       try {
         const response = await kegiatanService.getKegiatanAsesi()
-        console.log('Kegiatan Asesi Response:', response)
-        console.log('Kegiatan Asesi Data:', response.data)
         setKegiatanRef.current?.(response.data)
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
@@ -172,8 +168,6 @@ export function useKegiatanAdminTUK() {
         const tanggalUji = `${year}-${month}-${day}`
 
         const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji)
-        console.log('Kegiatan Admin TUK Response:', response)
-        console.log('Kegiatan Admin TUK Data:', response.data.data)
         setKegiatansRef.current?.(response.data.data)
       } catch (err) {
         console.error('Error fetching kegiatan admin TUK:', err)
@@ -202,8 +196,6 @@ export function useKegiatanDirektur(ttd: boolean) {
       setError(null)
       try {
         const response = await kegiatanService.getKegiatanDirektur(ttd)
-        console.log(`Kegiatan Direktur Response (ttd=${ttd}):`, response)
-        console.log(`Kegiatan Direktur Data (ttd=${ttd}):`, response.data.data)
         setKegiatansRef.current?.(response.data.data)
       } catch (err) {
         console.error('Error fetching kegiatan direktur:', err)
@@ -266,8 +258,6 @@ export function useKegiatanKomtek(ttd: boolean) {
       setError(null)
       try {
         const response = await kegiatanService.getKegiatanKomtek(ttd)
-        console.log(`Kegiatan Komtek Response (ttd=${ttd}):`, response)
-        console.log(`Kegiatan Komtek Data (ttd=${ttd}):`, response.data.data)
         setKegiatansRef.current?.(response.data.data)
       } catch (err) {
         console.error('Error fetching kegiatan komtek:', err)
@@ -358,4 +348,186 @@ export function useAbsenData(asesiIds: string[], enabled = true) {
   }, [asesiIds.join(','), enabled])
 
   return { absenData, isLoading, error }
+}
+
+// Rekomendasi response interface
+export interface RekomendasiData {
+  komtek1?: { id: string; rekomendasi: string | null }
+  komtek2?: { id: string; rekomendasi: string | null }
+  komtek3?: { id: string; rekomendasi: string | null }
+}
+
+// Hook to fetch rekomendasi status for multiple id_izin
+export function useRekomendasiStatus(kegiatans: KegiatanAsesor[], enabled = true) {
+  const [rekomendasiStatus, setRekomendasiStatus] = useState<Record<string, { hasPending: boolean; pendingCount: number; completedCount: number }>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled || kegiatans.length === 0) {
+      return
+    }
+
+    const fetchRekomendasi = async () => {
+      setIsLoading(true)
+      const token = localStorage.getItem("access_token")
+      const userData = localStorage.getItem("user_data")
+      const currentUser = userData ? JSON.parse(userData) : null
+      const currentUserId = currentUser?.id?.toString()
+
+      if (!currentUserId) {
+        setIsLoading(false)
+        return
+      }
+
+      const results: Record<string, { hasPending: boolean; pendingCount: number; completedCount: number }> = {}
+
+      // Process each kegiatan
+      await Promise.all(
+        kegiatans.map(async (kegiatan) => {
+          try {
+            // First get list asesi for this kegiatan
+            const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+              headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            })
+
+            if (!listAsesiResponse.ok) return
+
+            const listAsesiData = await listAsesiResponse.json()
+            const asesiList = listAsesiData.list_asesi || []
+
+            let pendingCount = 0
+            let completedCount = 0
+
+            // Fetch rekomendasi for each asesi's id_izin
+            await Promise.all(
+              asesiList.map(async (asesi: AsesiItem) => {
+                try {
+                  const rekomendasiResponse = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesi.id_izin}`, {
+                    headers: {
+                      "Accept": "application/json",
+                      "Authorization": `Bearer ${token}`,
+                    },
+                  })
+
+                  if (!rekomendasiResponse.ok) return
+
+                  const rekomendasiData: RekomendasiData = await rekomendasiResponse.json()
+
+                  // Check if current user's rekomendasi is pending or completed
+                  const komtekKeys: (keyof RekomendasiData)[] = ['komtek1', 'komtek2', 'komtek3']
+                  for (const key of komtekKeys) {
+                    const komtek = rekomendasiData[key]
+                    if (komtek && komtek.id === currentUserId) {
+                      if (komtek.rekomendasi === null) {
+                        pendingCount++
+                      } else {
+                        completedCount++
+                      }
+                      break
+                    }
+                  }
+                } catch (err) {
+                  console.error(`Error fetching rekomendasi for ${asesi.id_izin}:`, err)
+                }
+              })
+            )
+
+            results[kegiatan.jadwal_id] = {
+              hasPending: pendingCount > 0,
+              pendingCount,
+              completedCount
+            }
+          } catch (err) {
+            console.error(`Error processing kegiatan ${kegiatan.jadwal_id}:`, err)
+          }
+        })
+      )
+
+      setRekomendasiStatus(results)
+      setIsLoading(false)
+    }
+
+    fetchRekomendasi()
+  }, [kegiatans.map(k => k.jadwal_id).join(','), enabled])
+
+  return { rekomendasiStatus, isLoading }
+}
+
+// Hook to fetch rekomendasi status for individual asesi items
+export function useAsesiRekomendasiStatus(asesiList: AsesiItem[], enabled = true) {
+  const [asesiRekomendasiStatus, setAsesiRekomendasiStatus] = useState<Record<string, { status: 'pending' | 'completed' | 'unknown' }>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled || asesiList.length === 0) {
+      return
+    }
+
+    const fetchRekomendasi = async () => {
+      setIsLoading(true)
+      const token = localStorage.getItem("access_token")
+      const userData = localStorage.getItem("user_data")
+      const currentUser = userData ? JSON.parse(userData) : null
+      const currentUserId = currentUser?.id?.toString()
+
+      if (!currentUserId) {
+        setIsLoading(false)
+        return
+      }
+
+      const results: Record<string, { status: 'pending' | 'completed' | 'unknown' }> = {}
+
+      // Fetch rekomendasi for each asesi's id_izin
+      await Promise.all(
+        asesiList.map(async (asesi) => {
+          try {
+            const response = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesi.id_izin}`, {
+              headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            })
+
+            if (!response.ok) {
+              results[asesi.id_izin] = { status: 'unknown' }
+              return
+            }
+
+            const rekomendasiData: RekomendasiData = await response.json()
+
+            // Check if current user's rekomendasi is pending or completed
+            const komtekKeys: (keyof RekomendasiData)[] = ['komtek1', 'komtek2', 'komtek3']
+            let found = false
+            for (const key of komtekKeys) {
+              const komtek = rekomendasiData[key]
+              if (komtek && komtek.id === currentUserId) {
+                results[asesi.id_izin] = {
+                  status: komtek.rekomendasi === null ? 'pending' : 'completed'
+                }
+                found = true
+                break
+              }
+            }
+
+            if (!found) {
+              results[asesi.id_izin] = { status: 'unknown' }
+            }
+          } catch (err) {
+            console.error(`Error fetching rekomendasi for ${asesi.id_izin}:`, err)
+            results[asesi.id_izin] = { status: 'unknown' }
+          }
+        })
+      )
+
+      setAsesiRekomendasiStatus(results)
+      setIsLoading(false)
+    }
+
+    fetchRekomendasi()
+  }, [asesiList.map(a => a.id_izin).join(','), enabled])
+
+  return { asesiRekomendasiStatus, isLoading }
 }

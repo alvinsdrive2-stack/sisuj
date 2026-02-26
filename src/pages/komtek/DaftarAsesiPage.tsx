@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText } from "lucide-react"
-import { useListAsesi } from "@/hooks/useKegiatan"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, CheckCircle2, Hourglass } from "lucide-react"
+import { useListAsesi, useAsesiRekomendasiStatus } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
@@ -18,6 +18,31 @@ export default function DaftarAsesiPage() {
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
+
+  // Rekomendasi status for each asesi
+  const { asesiRekomendasiStatus } = useAsesiRekomendasiStatus(asesiList, !asesiLoading && asesiList.length > 0)
+
+  // Get rekomendasi status badge for an asesi
+  const getRekomendasiBadge = (idIzin: string) => {
+    const status = asesiRekomendasiStatus[idIzin]
+    if (!status || status.status === 'unknown') {
+      return null
+    }
+    if (status.status === 'pending') {
+      return (
+        <Badge className="bg-amber-100 text-amber-700 flex items-center gap-1">
+          <Hourglass className="w-3 h-3" />
+          Menunggu Persetujuan
+        </Badge>
+      )
+    }
+    return (
+      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-emerald-50 flex items-center gap-1">
+        <CheckCircle2 className="w-3 h-3" />
+        Selesai Ditinjau
+      </Badge>
+    )
+  }
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -168,6 +193,9 @@ export default function DaftarAsesiPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
+                      {/* Rekomendasi Status Badge */}
+                      {getRekomendasiBadge(asesi.id_izin)}
+
                       {/* Kompeten Badge */}
                       <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
                         {asesi.kompeten}
@@ -179,10 +207,7 @@ export default function DaftarAsesiPage() {
                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           <span className="text-xs font-medium">Aktif</span>
                         </div>
-                      )}
-
-                      {/* Action Icon */}
-                      <FileText className="w-5 h-5 text-primary" />
+                      )}    
                     </div>
                   </div>
                 </div>
