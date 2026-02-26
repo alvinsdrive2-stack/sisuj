@@ -27,7 +27,7 @@ import { toast } from "@/components/ui/toast"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
-  const { kegiatan, isLoading, error } = useKegiatanAsesi()
+  const { kegiatan, isLoading: _isLoading, error: _error } = useKegiatanAsesi()
   const navigate = useNavigate()
   const [showPage, setShowPage] = useState(false)
   const [idIzin, setIdIzin] = useState<string | null>(null)
@@ -50,7 +50,7 @@ export default function DashboardAsesiPage() {
           const result = await response.json()
           const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
           if (matchedAsesi?.id_izin) {
-            console.log("Found matching asesi:", matchedAsesi)
+            
             setIdIzin(matchedAsesi.id_izin)
           }
         }
@@ -63,14 +63,14 @@ export default function DashboardAsesiPage() {
   }, [kegiatan?.jadwal_id, user?.name])
 
   // Debug logging
-  console.log("=== ASESI DASHBOARD DEBUG ===")
-  console.log("User data:", user)
-  console.log("kegiatan:", kegiatan)
-  console.log("kegiatan?.jadwal_id:", kegiatan?.jadwal_id)
-  console.log("id_izin from list-asesi:", idIzin)
-  console.log("isLoading:", isLoading)
-  console.log("error:", error)
-  console.log("==============================")
+  
+  
+  
+  
+  
+  
+  
+  
 
   // Page entrance animation
   useEffect(() => {
@@ -78,9 +78,9 @@ export default function DashboardAsesiPage() {
   }, [])
 
   // Debug logging
-  console.log("=== ASESI DASHBOARD DEBUG ===")
-  console.log("User data:", user)
-  console.log("==============================")
+  
+  
+  
 
   const [, _setCurrentTime] = useState(new Date()) // Clock state reserved for future use
   const [countdown, setCountdown] = useState({
@@ -339,7 +339,7 @@ export default function DashboardAsesiPage() {
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
                   onClick={() => {
-                    console.log("Navigating with id_izin:", idIzin)
+                    
                     if (!idIzin) {
                       toast("ID Izin tidak ditemukan", "error")
                       return

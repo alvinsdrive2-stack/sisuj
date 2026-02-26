@@ -9,10 +9,10 @@ export default function DashboardAsesi() {
   const navigate = useNavigate()
   const { kegiatan, isLoading, error } = useKegiatanAsesi()
 
-  console.log('=== Dashboard Asesi ===')
-  console.log('isLoading:', isLoading)
-  console.log('error:', error)
-  console.log('kegiatan:', kegiatan)
+  
+  
+  
+  
 
   const asesiStats = [
     {

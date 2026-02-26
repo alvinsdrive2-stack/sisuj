@@ -144,7 +144,7 @@ export default function Ak06Page() {
 
         if (response.ok) {
           const result: Ak06Response = await response.json()
-          console.log('AK06 Full Response:', JSON.stringify(result, null, 2))
+          
           if (result.message === "Success" && result.data) {
             // Transform aspek data
             const aspek: AspekItem[] = result.data.aspek.map((item) => ({

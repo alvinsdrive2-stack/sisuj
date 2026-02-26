@@ -198,7 +198,7 @@ export default function Ia04aPage() {
 
       if (!id) {
         console.error("No id_izin found in user data")
-        console.log("User:", user)
+        
         setIsLoading(false)
         return
       }
@@ -206,8 +206,8 @@ export default function Ia04aPage() {
       try {
         const token = localStorage.getItem("access_token")
 
-        console.log("=== FETCHING IA04A ===")
-        console.log("ID:", id)
+        
+        
 
         const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
           headers: {
@@ -256,7 +256,7 @@ export default function Ia04aPage() {
               })
             }
 
-            console.log("IA04A Data:", result.data)
+            
           }
         } else {
           console.warn(`IA04A API returned ${response.status}`)

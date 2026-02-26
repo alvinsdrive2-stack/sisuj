@@ -102,7 +102,7 @@ export default function UploadTugasPage() {
 
       if (response.ok) {
         const result: TugasResponse = await response.json()
-        console.log('Fetch tugas response:', result)
+        
         if (result.message === "Success" && result.data?.url) {
           setUploadedTugas({
             url: result.data.url,
@@ -145,7 +145,7 @@ export default function UploadTugasPage() {
       })
 
       const result = await response.json()
-      console.log('Upload response:', result)
+      
 
       if (response.ok) {
         // Refetch tugas data to get the correct URL from server

@@ -799,7 +799,7 @@ export default function Apl02Page() {
         try {
           const token = localStorage.getItem("access_token")
 
-          console.log('Generating QR for asesor...', { finalIdIzin, jadwalId, userId: user?.id })
+          
 
           const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${finalIdIzin}/apl02`, {
             method: 'POST',
@@ -813,17 +813,17 @@ export default function Apl02Page() {
             })
           })
 
-          console.log('QR Response status:', qrResponse.status)
+          
 
           if (qrResponse.ok) {
             const qrResult = await qrResponse.json()
-            console.log('QR Result:', qrResult)
+            
 
             if (qrResult.message === "Success" && qrResult.data?.url_image) {
               // Tentukan asesor1 atau asesor2 berdasarkan index di asesorList
-              console.log('asesorList:', asesorList)
+              
               const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-              console.log('asesorIndex:', asesorIndex, 'userId:', user?.id)
+              
 
               // Kalau ga ketemu di list, default ke asesor1
               const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
@@ -837,7 +837,7 @@ export default function Apl02Page() {
                 })
               })
 
-              console.log('subunitIds:', subunitIds, 'isAsesor1:', isAsesor1, 'isAsesor2:', isAsesor2)
+              
 
               // Update atau buat barcode entries untuk semua subunit
               setSubunitBarcodes(prev => {
@@ -854,7 +854,7 @@ export default function Apl02Page() {
                       : existing?.asesor2 || null
                   }
                 })
-                console.log('Updated subunitBarcodes:', updated)
+                
                 return updated
               })
 
@@ -865,10 +865,10 @@ export default function Apl02Page() {
               }, 1500)
               return
             } else {
-              console.log('QR generation failed or no url_image in response')
+              
             }
           } else {
-            console.log('QR response not OK')
+            
           }
         } catch (qrError) {
           console.error('Error generating QR:', qrError)
@@ -876,7 +876,7 @@ export default function Apl02Page() {
           setIsSaving(false)
         }
       } else {
-        console.log('No jadwalId available')
+        
       }
 
       navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)

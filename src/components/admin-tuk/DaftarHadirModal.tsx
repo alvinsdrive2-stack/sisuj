@@ -298,11 +298,8 @@ export function DaftarHadirModal({
   useEffect(() => {
     // Wait for data to be loaded (absenData should not be null)
     if (isOpen && !absenLoading && absenData && !selectedNode && clickableNodes.length > 0) {
-      console.log('clickableNodes:', clickableNodes)
-      console.log('Nodes with URL:', clickableNodes.filter(n => n.url))
       // First try to find a node that has a URL
       const nodeWithUrl = clickableNodes.find(node => node.url)
-      console.log('Selected nodeWithUrl:', nodeWithUrl)
       // If found, select it; otherwise select the first clickable node
       setSelectedNode(nodeWithUrl || clickableNodes[0])
     }

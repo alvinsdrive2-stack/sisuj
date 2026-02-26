@@ -6,6 +6,8 @@ interface DokumenModalContextType {
   asesiNama: string
   openModal: (asesiId: string, asesiNama: string) => void
   closeModal: () => void
+  onPenilaianSuccess: (() => void) | null
+  setOnPenilaianSuccess: (callback: (() => void) | null) => void
 }
 
 const DokumenModalContext = createContext<DokumenModalContextType | undefined>(undefined)
@@ -14,6 +16,7 @@ export function DokumenModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [asesiId, setAsesiId] = useState("")
   const [asesiNama, setAsesiNama] = useState("")
+  const [onPenilaianSuccess, setOnPenilaianSuccess] = useState<(() => void) | null>(null)
 
   const openModal = (id: string, nama: string) => {
     setAsesiId(id)
@@ -28,7 +31,7 @@ export function DokumenModalProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <DokumenModalContext.Provider value={{ isOpen, asesiId, asesiNama, openModal, closeModal }}>
+    <DokumenModalContext.Provider value={{ isOpen, asesiId, asesiNama, openModal, closeModal, onPenilaianSuccess, setOnPenilaianSuccess }}>
       {children}
     </DokumenModalContext.Provider>
   )

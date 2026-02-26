@@ -3,13 +3,13 @@ import { Badge } from "@/components/ui/badge"
 import { PenTool, FileText, Calendar, User, Clock, CheckCircle2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { StatCard, DocumentCard, EmptyState } from "@/components/direktur"
+import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 
 export default function TandatanganDirektur() {
   const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanDirektur(false) // belum ditandatangani
-  const { kegiatans: signedDocs, isLoading: isLoadingSigned } = useKegiatanDirektur(true) // sudah ditandatangani
+  const { isLoading: isLoadingSigned } = useKegiatanDirektur(true) // sudah ditandatangani
   const [signingId, setSigningId] = useState<string | null>(null)
 
   const handleSign = async (jadwalId: string) => {
@@ -32,7 +32,6 @@ export default function TandatanganDirektur() {
   }
 
   const isLoading = isLoadingPending || isLoadingSigned
-  const totalDocs = pendingDocs.length + signedDocs.length
 
   return (
     <div className="space-y-6">
@@ -42,32 +41,7 @@ export default function TandatanganDirektur() {
         <p className="text-slate-600">Tandatangani dokumen kegiatan sertifikasi</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          value={isLoading ? "..." : pendingDocs.length}
-          label="Menunggu Tandatangan"
-          icon={Clock}
-          iconColor="text-amber-600"
-          bgColor="bg-amber-50"
-        />
-        <StatCard
-          value={isLoading ? "..." : signedDocs.length}
-          label="Sudah Ditandatangani"
-          icon={CheckCircle2}
-          iconColor="text-emerald-600"
-          bgColor="bg-emerald-50"
-        />
-        <StatCard
-          value={isLoading ? "..." : totalDocs}
-          label="Total Dokumen"
-          icon={FileText}
-          iconColor="text-blue-600"
-          bgColor="bg-blue-50"
-        />
-      </div>
-
-      {/* Documents to Sign */}
+            {/* Documents to Sign */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

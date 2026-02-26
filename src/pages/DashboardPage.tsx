@@ -37,11 +37,11 @@ export default function DashboardPage() {
   }, [])
 
   // Debug logging
-  console.log("=== DASHBOARD DEBUG ===")
-  console.log("User data:", user)
-  console.log("User name:", user?.name)
-  console.log("User email:", user?.email)
-  console.log("======================")
+  
+  
+  
+  
+  
 
   const [, setCurrentTime] = useState(new Date())
   const [countdown, setCountdown] = useState({

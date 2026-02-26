@@ -73,7 +73,7 @@ export function useAbsenCheck({
     const userId = String(user?.id || '')
     const userNoreg = (user as any)?.noreg || ''
 
-    console.log('[useAbsenCheck] Detecting role:', { userId, userNoreg, asesorListLength: asesorList.length, asesorList })
+    
 
     // Try to match by ID first, then by noreg
     let matchedIndex = asesorList.findIndex(a => String(a.id) === userId)
@@ -81,7 +81,7 @@ export function useAbsenCheck({
       matchedIndex = asesorList.findIndex(a => a.noreg === userNoreg)
     }
 
-    console.log('[useAbsenCheck] Matched index:', matchedIndex)
+    
 
     // Default to asesor1 if found at index 0, asesor2 if index 1
     if (matchedIndex === 0) return 'asesor1'
@@ -112,13 +112,13 @@ export function useAbsenCheck({
   // Fetch absen data
   const fetchAbsenData = useCallback(async () => {
     if (!finalIdIzin) {
-      console.log('[fetchAbsenData] No finalIdIzin, returning null')
+      
       return null
     }
 
     try {
       const token = localStorage.getItem("access_token")
-      console.log('[fetchAbsenData] Fetching absen data for idIzin:', finalIdIzin)
+      
 
       const response = await fetch(`${API_BASE_URL}/dokumen/absen/${finalIdIzin}`, {
         headers: {
@@ -130,11 +130,11 @@ export function useAbsenCheck({
       if (response.ok) {
         const result = await response.json()
         const absen = result.data || result
-        console.log('[fetchAbsenData] Received absen data:', absen)
+        
         setAbsenData(absen)
         return absen
       } else {
-        console.log('[fetchAbsenData] Response not ok:', response.status)
+        
       }
     } catch (error) {
       console.error("[fetchAbsenData] Error fetching absen data:", error)
@@ -185,7 +185,7 @@ export function useAbsenCheck({
     })
 
     const result: PostResponse = await response.json()
-    console.log(`POST ${endpoint}-awal response:`, result)
+    
 
     if (!response.ok) {
       throw new Error(result.message || "Gagal menyimpan foto absen")
@@ -217,7 +217,7 @@ export function useAbsenCheck({
     })
 
     const result: PostResponse = await response.json()
-    console.log(`POST ${endpoint}-akhir response:`, result)
+    
 
     if (!response.ok) {
       throw new Error(result.message || "Gagal menyimpan foto absen")
@@ -232,21 +232,21 @@ export function useAbsenCheck({
 
   // Check if should show absen akhir modal (with fresh data)
   const shouldShowAkhirModal = useCallback(async () => {
-    console.log('[shouldShowAkhirModal] Starting check, actualRole:', actualRole)
+    
 
     // Re-fetch to get fresh data
     const freshData = await fetchAbsenData()
-    console.log('[shouldShowAkhirModal] Fresh data:', freshData)
+    
 
     if (!freshData) {
-      console.log('[shouldShowAkhirModal] No data, returning false')
+      
       return false
     }
 
     const akhirField = getAkhirField()
     const fieldValue = freshData[akhirField]
-    console.log(`[shouldShowAkhirModal] Checking field: ${akhirField}, value:`, fieldValue)
-    console.log(`[shouldShowAkhirModal] Will show modal:`, !fieldValue)
+    
+    
 
     return !fieldValue
   }, [fetchAbsenData, getAkhirField, actualRole])

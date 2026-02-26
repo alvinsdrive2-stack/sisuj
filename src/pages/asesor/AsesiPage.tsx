@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Clock, Calendar, MapPin, UserCheck, Info } from "lucide-react"
+import { Users, Clock, Calendar, MapPin, UserCheck} from "lucide-react"
 import { useKegiatanAsesor, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
@@ -87,7 +87,7 @@ export default function AsesiPage() {
   const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
 
   // Debug absen data
-  console.log('[DEBUG] absenData:', absenData)
+  
 
   // State for asesor IDs from data-dokumen
   const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({
@@ -335,18 +335,7 @@ export default function AsesiPage() {
           </div>
         </div>
       </div>
-      {/* Info Box */}
-          <div className="mb-4 p-4 bg-white border shadow-sm rounded-lg flex items-start gap-3">
-            <Info className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-slate-700">
-              <p className="font-medium mb-1">Panduan:</p>
-              <ul className="list-disc list-inside space-y-1 text-slate-600">
-                <li>Indikator <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 align-middle"></span> hijau = Asesi sudah selesai absen</li>
-                <li>Indikator <span className="inline-block w-2 h-2 rounded-full bg-yellow-500 align-middle"></span> kuning = Asesi belum selesai absen</li>
-                <li>Klik kartu asesi dengan indikator hijau dan status "Butuh ditinjau" untuk melakukan peninjauan</li>
-              </ul>
-            </div>
-          </div>
+      
       {/* Asesi List */}
       <Card>
         <CardHeader>

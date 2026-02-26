@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { kegiatanService, Kegiatan, KegiatanAsesor, KegiatanWithId, AsesiItem } from "@/lib/kegiatan-service"
 
 export type { KegiatanAsesor, KegiatanWithId, AsesiItem }
@@ -218,30 +218,34 @@ export function useListAsesi(jadwalId: string) {
   const setAsesiListRef = useRef(setAsesiList)
   setAsesiListRef.current = setAsesiList
 
-  useEffect(() => {
-    const fetchListAsesi = async () => {
-      if (!jadwalId) {
-        setIsLoading(false)
-        return
-      }
-
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await kegiatanService.getListAsesi(jadwalId)
-        console.log('List Asesi Response:', response)
-        setAsesiListRef.current?.(response.list_asesi)
-      } catch (err) {
-        console.error('Error fetching list asesi:', err)
-        setError(err instanceof Error ? err.message : "Failed to fetch list asesi")
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchListAsesi = useCallback(async () => {
+    if (!jadwalId) {
+      setIsLoading(false)
+      return
     }
-    fetchListAsesi()
+
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await kegiatanService.getListAsesi(jadwalId)
+      setAsesiListRef.current?.(response.list_asesi)
+    } catch (err) {
+      console.error('Error fetching list asesi:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch list asesi")
+    } finally {
+      setIsLoading(false)
+    }
   }, [jadwalId])
 
-  return { asesiList, isLoading, error }
+  useEffect(() => {
+    fetchListAsesi()
+  }, [fetchListAsesi])
+
+  const refetch = useCallback(() => {
+    fetchListAsesi()
+  }, [fetchListAsesi])
+
+  return { asesiList, isLoading, error, refetch }
 }
 
 export function useKegiatanKomtek(ttd: boolean) {

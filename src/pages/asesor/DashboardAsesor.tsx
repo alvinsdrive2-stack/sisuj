@@ -9,10 +9,10 @@ export default function DashboardAsesor() {
   const navigate = useNavigate()
   const { kegiatan, isLoading, error } = useKegiatanAsesor()
 
-  console.log('=== Dashboard Asesor ===')
-  console.log('isLoading:', isLoading)
-  console.log('error:', error)
-  console.log('kegiatan:', kegiatan)
+  
+  
+  
+  
 
   const _asesorStats = [
     {

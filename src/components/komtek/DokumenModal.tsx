@@ -30,9 +30,10 @@ interface DokumenModalProps {
   onClose: () => void
   asesiId: string
   asesiNama: string
+  onPenilaianSuccess?: () => void
 }
 
-export function DokumenModal({ isOpen, onClose, asesiId, asesiNama }: DokumenModalProps) {
+export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess }: DokumenModalProps) {
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<DokumenItem | null>(null)
@@ -178,6 +179,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama }: DokumenMod
         setIsCompleted(true)
         setRekomendasiValue(kompeten ? 'K' : 'BK')
         setShowConfirmModal(false)
+        onPenilaianSuccess?.()
         onClose()
       } else {
         const error = await response.json()
@@ -486,7 +488,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama }: DokumenMod
                               justifyContent: 'center',
                               pointerEvents: 'none',
                               transition: 'opacity 0.3s ease',
-                              background: 'rgba(255, 255, 255, 0.2)'
+                              background: 'rgba(255, 255, 255, 0.7)'
                             }}>
                               <img
                                 src={rekomendasiValue === 'K' ? kompetenImg : tidakKompetenImg}
@@ -495,7 +497,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama }: DokumenMod
                                   maxWidth: '100%',
                                   maxHeight: '100%',
                                   objectFit: 'contain',
-                                  opacity: 0.8
+                                  opacity: 1
                                 }}
                               />
                             </div>

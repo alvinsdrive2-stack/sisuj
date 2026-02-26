@@ -315,16 +315,16 @@ export default function FrAk01Page() {
         }
 
         // Navigate to success page (check absen akhir first for both asesi and asesor)
-        console.log('[FrAk01Page handleSave] Checking if needs absen akhir...')
+        
         const needsAbsenAkhir = await shouldShowAkhirModal()
-        console.log('[FrAk01Page handleSave] needsAbsenAkhir:', needsAbsenAkhir)
+        
 
         if (needsAbsenAkhir) {
-          console.log('[FrAk01Page handleSave] Showing absen akhir modal')
+          
           setPendingNavigation(true)
           setShowAkhirModal(true)
         } else {
-          console.log('[FrAk01Page handleSave] Navigating to success page')
+          
           navigate("/asesi/praasesmen/ak01-success")
         }
       } else {

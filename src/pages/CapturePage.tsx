@@ -113,13 +113,6 @@ export default function CapturePage() {
       // All uploads go to /bukti/{jadwalId}/kegiatan
       const endpoint = `${API_BASE_URL}/bukti/${tokenData.jadwalId}/kegiatan`
 
-      console.log('Upload debug:', {
-        endpoint,
-        fieldName,
-        jadwalId: tokenData.jadwalId,
-        authToken: tokenData.authToken ? `${tokenData.authToken.substring(0, 20)}...` : 'MISSING'
-      })
-
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -129,15 +122,15 @@ export default function CapturePage() {
         body: formData,
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response redirected:', response.redirected)
-      console.log('Response URL:', response.url)
+      
+      
+      
 
       if (response.ok) {
         setIsSuccess(true)
       } else {
         const result = await response.json().catch(() => ({ message: "Upload gagal" }))
-        console.log('Error result:', result)
+        
         setError(result.message || "Gagal mengupload foto")
       }
     } catch (e) {

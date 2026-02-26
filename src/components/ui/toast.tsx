@@ -16,7 +16,6 @@ export function toast(message: string, type: 'success' | 'error' | 'warning' | '
   if (toastCallback) {
     toastCallback(message, type)
   } else {
-    console.log(`[toast.${type}]`, message)
   }
 }
 

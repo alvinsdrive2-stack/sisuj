@@ -70,7 +70,7 @@ export function useAbsenData(idIzin: string, enabled = true) {
       setError(null)
       try {
         const response = await fetchAbsenData(idIzin)
-        console.log('Absen Data Response:', response)
+        
         setDataRef.current?.(response.data)
       } catch (err) {
         console.error('Error fetching absen data:', err)

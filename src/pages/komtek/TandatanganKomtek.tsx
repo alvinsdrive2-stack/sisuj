@@ -2,14 +2,14 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { PenTool, FileText, Calendar, User, Clock, CheckCircle2 } from "lucide-react"
-import { StatCard, DocumentCard, EmptyState } from "@/components/direktur"
+import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useKegiatanKomtek, useRekomendasiStatus } from "@/hooks/useKegiatan"
 
 export default function TandatanganKomtek() {
   const navigate = useNavigate()
   const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanKomtek(false)
-  const { kegiatans: signedDocs, isLoading: isLoadingSigned } = useKegiatanKomtek(true)
+  const { isLoading: isLoadingSigned } = useKegiatanKomtek(true)
   const { rekomendasiStatus } = useRekomendasiStatus(pendingDocs, !isLoadingPending && pendingDocs.length > 0)
 
   const formatDate = (dateString: string) => {
@@ -23,7 +23,6 @@ export default function TandatanganKomtek() {
   }
 
   const isLoading = isLoadingPending || isLoadingSigned
-  const totalDocs = pendingDocs.length + signedDocs.length
 
   // Get status badge for a kegiatan
   const getStatusBadge = (jadwalId: string) => {
@@ -44,32 +43,6 @@ export default function TandatanganKomtek() {
         <h2 className="text-2xl font-bold text-slate-800">Tandatangan Dokumen</h2>
         <p className="text-slate-600">Daftar dokumen yang belum ditandatangani</p>
       </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          value={isLoading ? "..." : pendingDocs.length}
-          label="Menunggu Tandatangan"
-          icon={Clock}
-          iconColor="text-amber-600"
-          bgColor="bg-amber-50"
-        />
-        <StatCard
-          value={isLoading ? "..." : signedDocs.length}
-          label="Sudah Ditandatangani"
-          icon={CheckCircle2}
-          iconColor="text-emerald-600"
-          bgColor="bg-emerald-50"
-        />
-        <StatCard
-          value={isLoading ? "..." : totalDocs}
-          label="Total Dokumen"
-          icon={FileText}
-          iconColor="text-blue-600"
-          bgColor="bg-blue-50"
-        />
-      </div>
-
       {/* Documents to View */}
       <Card>
         <CardHeader>

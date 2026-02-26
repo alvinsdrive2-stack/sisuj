@@ -44,12 +44,20 @@ export default function DaftarAsesiPage() {
     )
   }
 
-  // Fetch kegiatan detail
+  // Fetch kegiatan detail (dari yang belum dan sudah ditandatangani)
   useEffect(() => {
     const fetchKegiatan = async () => {
       try {
-        const response = await kegiatanService.getKegiatanKomtek(false)
-        const found = response.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
+        // Fetch dari yang belum ditandatangani
+        const responseFalse = await kegiatanService.getKegiatanKomtek(false)
+        let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
+
+        // Kalau ga ketemu, cari dari yang sudah ditandatangani
+        if (!found) {
+          const responseTrue = await kegiatanService.getKegiatanKomtek(true)
+          found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
+        }
+
         if (found) {
           setKegiatan(found)
         }

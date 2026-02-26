@@ -52,14 +52,14 @@ export default function LoginPage() {
       // Get user role from returned user data
       const userRole = userData?.role?.name
 
-      console.log("=== LOGIN REDIRECT ===")
-      console.log("User Role:", userRole)
-      console.log("User Data:", userData)
+      
+      
+      
 
       if (userRole) {
         const roleConfiguration = getRoleConfig(userRole)
-        console.log("Role Config:", roleConfiguration)
-        console.log("Redirecting to:", roleConfiguration?.defaultRoute)
+        
+        
 
         // Show success toast
         showSuccess(`Login Berhasil, Selamat datang ${userRole} ${userData?.name}!`)

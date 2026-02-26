@@ -114,16 +114,16 @@ export default function AttendancePage() {
         body: formData,
       })
 
-      console.log('Response status:', response.status)
-      console.log('Response headers:', response.headers)
+      
+      
 
       if (response.ok) {
-        const result = await response.json()
-        console.log('Success result:', result)
+        await response.json()
+
         setIsSuccess(true)
       } else {
         const result = await response.json().catch(() => ({ message: "Upload gagal" }))
-        console.log('Error result:', result)
+        
         setError(result.message || "Gagal mengupload foto")
       }
     } catch (e) {

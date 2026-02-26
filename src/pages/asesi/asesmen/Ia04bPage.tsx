@@ -118,11 +118,11 @@ export default function Ia04bPage() {
 
         if (response.ok) {
           const result: ApiResponse = await response.json()
-          console.log('GET IA04B Response:', result)
+          
           if (result.message === "Success") {
             setIa04bData(result.data)
 
-            console.log('Barcodes from API:', result.data.barcodes)
+            
 
             // Set barcodes - directly use asesor1/asesor2 from API without complex mapping
             if (result.data.barcodes) {
@@ -132,7 +132,7 @@ export default function Ia04bPage() {
                 asesor2?: BarcodeData | null
               }
 
-              console.log('Barcodes from API:', apiBarcodes)
+              
 
               // Direct mapping - keep original asesor1/asesor2 structure
               setBarcodes({
@@ -337,7 +337,7 @@ export default function Ia04bPage() {
 
           if (qrResponse.ok) {
             const qrResult = await qrResponse.json()
-            console.log('Asesi QR Result:', qrResult)
+            
 
             if (qrResult.message === "Success" && qrResult.data?.url_image) {
               setBarcodes(prev => ({
@@ -389,11 +389,11 @@ export default function Ia04bPage() {
               })
             })
 
-            console.log('QR Response:', qrResponse.status)
+            
 
             if (qrResponse.ok) {
               const qrResult = await qrResponse.json()
-              console.log('QR Result:', qrResult)
+              
 
               if (qrResult.message === "Success" && qrResult.data?.url_image) {
                 const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }

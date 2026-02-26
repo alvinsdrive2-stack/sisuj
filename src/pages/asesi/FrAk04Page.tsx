@@ -113,8 +113,8 @@ export default function FrAk04Page() {
 
         if (ak04Response.ok) {
           const result: ApiResponse = await ak04Response.json()
-          console.log("=== AK04 API Response ===")
-          console.log("Full result:", JSON.stringify(result, null, 2))
+          
+          
 
           if (result.message === "Success") {
             // Handle nested data.data structure (new API format) or direct data (old format)
@@ -122,7 +122,7 @@ export default function FrAk04Page() {
               ? (result.data as { data: Ak04Data }).data
               : result.data as Ak04Data
 
-            console.log("apiData:", apiData)
+            
             setAk04Data(apiData)
 
             // Load existing answers from API

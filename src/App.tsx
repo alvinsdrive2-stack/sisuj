@@ -38,6 +38,7 @@ import TandatanganKomtek from './pages/komtek/TandatanganKomtek'
 import SudahDitandatanganiKomtek from './pages/komtek/SudahDitandatangani'
 import BelumDitandatanganiKomtek from './pages/komtek/BelumDitandatangani'
 import DaftarAsesiPage from './pages/komtek/DaftarAsesiPage'
+import DaftarAsesiSudahPage from './pages/komtek/DaftarAsesiSudahPage'
 
 // Manajer Pages
 import DashboardManajer from './pages/manajer/DashboardManajer'
@@ -145,6 +146,7 @@ function App() {
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganKomtek />} />
                     <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
+                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
                     <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
@@ -437,13 +439,14 @@ function App() {
 }
 
 function GlobalDokumenFullscreenModal() {
-  const { isOpen, closeModal, asesiId, asesiNama } = useDokumenModal()
+  const { isOpen, closeModal, asesiId, asesiNama, onPenilaianSuccess } = useDokumenModal()
   return (
     <DokumenFullscreenModal
       isOpen={isOpen}
       onClose={closeModal}
       asesiId={asesiId}
       asesiNama={asesiNama}
+      onPenilaianSuccess={onPenilaianSuccess || undefined}
     />
   )
 }
