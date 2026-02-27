@@ -523,6 +523,7 @@ export function DaftarHadirModal({
             position: 'relative',
             marginLeft: '80px',
             overflowY: 'hidden',
+            overflowX: 'hidden',
             maxHeight: 'calc(90vh - 180px)',
             paddingRight: '10px',
             paddingBottom: '20px'
@@ -567,7 +568,7 @@ export function DaftarHadirModal({
                     background: isSelected
                       ? '#10b981'
                       : hasDocument
-                        ? '#059669'
+                        ? '#4e4e4e'
                         : '#f5f5f5',
                     color: isSelected
                       ? '#fff'
@@ -578,7 +579,7 @@ export function DaftarHadirModal({
                     borderColor: isSelected
                       ? '#10b981'
                       : hasDocument
-                        ? '#059669'
+                        ? '#4e4e4e'
                         : '#ddd',
                     display: 'flex',
                     alignItems: 'center',
@@ -588,7 +589,7 @@ export function DaftarHadirModal({
                     flexShrink: 0,
                     zIndex: 1,
                     transition: 'all 0.3s ease',
-                    transform: isSelected ? 'scale(1.1) translateX(10px)' : 'scale(1) translateX(10px)'
+                     transform: isSelected && index === 0 ? 'scale(1.15) translateX(10px) translateY(2px)':isSelected && index === 12 ? 'scale(1.15) translateX(10px) translateY(-2px)' : isSelected ? 'scale(1.2) translateX(10px)' : 'scale(1) translateX(10px)'
                   }}>
                   {isSelected ? (
                     <FontAwesomeIcon icon={faEye} style={{ color: 'white', fontSize: '12px' }} />
@@ -600,17 +601,17 @@ export function DaftarHadirModal({
                 {/* Label */}
                 <span style={{
                   marginLeft: '14px',
-                  fontSize: '14px',
+                  fontSize: '13px',
                   color: isSelected
                     ? '#10b981'
                     : hasDocument
-                      ? '#059669'
+                      ? '#4e4e4e'
                       : '#333',
-                  fontWeight: isSelected || hasDocument ? '600' : 'normal',
+                  fontWeight: isSelected ? 'bold' : hasDocument ? '600' : 'normal',
                   paddingTop: '6px',
                   flex: 1,
                   transition: 'all 0.3s ease',
-                  transform: 'translateX(10px)'
+                  transform: isSelected && index === 12 ? 'scale(1.2) translateX(20px) translateY(-5px)' : isSelected ? 'scale(1.1) translateX(20px) translateY(-9px)' : 'scale(1) translateX(10px) translateY(-9px)'
                 }}>
                   {node.label}
                   {!hasDocument && (

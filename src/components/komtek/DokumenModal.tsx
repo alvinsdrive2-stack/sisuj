@@ -297,7 +297,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px', width: '100%' }}>
                 {/* Left - Document List */}
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column'}}>
                   <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase', marginLeft: '60px' }}>
                     Daftar Dokumen
                   </h4>
@@ -307,6 +307,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                       position: 'relative',
                       marginLeft: '80px',
                       overflowY: 'hidden',
+                      overflowX: 'hidden',
                       maxHeight: 'calc(90vh - 180px)',
                       paddingRight: '10px'
                     }}>
@@ -338,7 +339,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                             marginBottom: index < documentList.length - 1 ? '24px' : '0px',
                             position: 'relative',
                             cursor: hasDocument ? 'pointer' : 'not-allowed',
-                            transform: index == 15 ? 'translateY(2px)' : 'translateY(2px)',
+                            transform: index == 15 && isSelected? 'translateY(-7px)' : 'translateY(2px)',
                           }}
                         >
                           {/* Document Circle */}
@@ -350,7 +351,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               background: isSelected
                                 ? '#10b981'
                                 : hasDocument
-                                  ? '#059669'
+                                  ? '#4e4e4e'
                                   : '#f5f5f5',
                               color: isSelected
                                 ? '#fff'
@@ -361,7 +362,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               borderColor: isSelected
                                 ? '#10b981'
                                 : hasDocument
-                                  ? '#059669'
+                                  ? '#4e4e4e'
                                   : '#ddd',
                               display: 'flex',
                               alignItems: 'center',
@@ -371,7 +372,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               flexShrink: 0,
                               zIndex: 1,
                               transition: 'all 0.3s ease',
-                              transform: isSelected ? 'scale(1.1) translateX(10px)' : 'scale(1) translateX(10px)'
+                              transform: isSelected ? 'scale(1.2) translateX(10px) translateY(5px)' : 'scale(1) translateX(10px)'
                             }}>
                             {isSelected ? (
                               <FontAwesomeIcon icon={faEye} style={{ color: 'white', fontSize: '12px' }} />
@@ -389,13 +390,13 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                             color: isSelected
                               ? '#10b981'
                               : hasDocument
-                                ? '#059669'
+                                ? '#4e4e4e'
                                 : '#333',
-                            fontWeight: isSelected || hasDocument ? '600' : 'normal',
+                            fontWeight: isSelected ? 'bold' : hasDocument ? '600' : 'normal',
                             paddingTop: '6px',
                             flex: 1,
                             transition: 'all 0.3s ease',
-                            transform: isSelected ? 'translateX(10px)' : 'translateX(10px)'
+                            transform: index==15 && isSelected? 'scale(1) translateX(20px) translateY(2px)': isSelected ? 'scale(1.6) translateX(38px) translateY(1px)': 'scale(1) translateX(15px)'
                           }}>
                             {doc.label}
                             {!hasDocument && (
