@@ -9,48 +9,57 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
 
-interface KomtekFiles {
-  ba_komtek?: string
+interface DirekturFiles {
+  sk_pelaksanaan_uji?: string
+  spt_asesor?: string
+  spt_komtek?: string
   sk_komtek?: string
+  ba_komtek?: string
 }
 
-export default function DaftarAsesiSudahPage() {
+export default function DaftarAsesiPage() {
   const { jadwalId } = useParams<{ jadwalId: string }>()
   const navigate = useNavigate()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
-  const [komtekFiles, setKomtekFiles] = useState<KomtekFiles>({})
-  const [komtekFilesLoading, setKomtekFilesLoading] = useState(false)
+  const [direkturFiles, setDirekturFiles] = useState<DirekturFiles>({})
+  const [direkturFilesLoading, setDirekturFilesLoading] = useState(false)
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
 
-  // Fetch komtek files
+  // Fetch direktur files
   useEffect(() => {
-    const fetchKomtekFiles = async () => {
+    const fetchDirekturFiles = async () => {
       if (!jadwalId) return
 
-      setKomtekFilesLoading(true)
+      setDirekturFilesLoading(true)
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/komtek/files/${jadwalId}`, {
+        console.log('[DEBUG] Fetching direktur files for jadwalId:', jadwalId)
+        const response = await fetch(`https://backend.devgatensi.site/api/direktur/files/${jadwalId}`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         })
+        console.log('[DEBUG] Response status:', response.status)
         if (response.ok) {
-          const data = await response.json()
-          setKomtekFiles(data)
+          const result = await response.json()
+          console.log('[DEBUG] Full API response:', result)
+          console.log('[DEBUG] Response data:', result.data)
+          setDirekturFiles(result.data || {})
+        } else {
+          console.log('[DEBUG] Response not OK')
         }
       } catch (err) {
-        console.error('Error fetching komtek files:', err)
+        console.error('[DEBUG] Error fetching direktur files:', err)
       } finally {
-        setKomtekFilesLoading(false)
+        setDirekturFilesLoading(false)
       }
     }
-    fetchKomtekFiles()
+    fetchDirekturFiles()
   }, [jadwalId])
 
   // Fetch kegiatan detail (dari yang belum dan sudah ditandatangani)
@@ -58,12 +67,12 @@ export default function DaftarAsesiSudahPage() {
     const fetchKegiatan = async () => {
       try {
         // Fetch dari yang belum ditandatangani
-        const responseFalse = await kegiatanService.getKegiatanKomtek(false)
+        const responseFalse = await kegiatanService.getKegiatanDirektur(false)
         let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
 
         // Kalau ga ketemu, cari dari yang sudah ditandatangani
         if (!found) {
-          const responseTrue = await kegiatanService.getKegiatanKomtek(true)
+          const responseTrue = await kegiatanService.getKegiatanDirektur(true)
           found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
         }
 
@@ -100,7 +109,7 @@ export default function DaftarAsesiSudahPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/komtek/belum-ditandatangani")}
+          onClick={() => navigate("/direktur/belum-ditandatangani")}
           className="hover:bg-primary/10"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -118,7 +127,7 @@ export default function DaftarAsesiSudahPage() {
             {/* Left: Kegiatan Info */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema?.nama || '-'}</h3>
                 {kegiatan.is_started === "0" && (
                   <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                     Belum Mulai
@@ -131,7 +140,7 @@ export default function DaftarAsesiSudahPage() {
                 )}
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                {kegiatan.tuk.nama} • {kegiatan.asesor.nama}
+                {kegiatan.tuk?.nama || '-'} • {kegiatan.asesor?.nama || '-'}
               </p>
 
               <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
@@ -145,7 +154,7 @@ export default function DaftarAsesiSudahPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-primary" />
-                  {kegiatan.tuk.alamat}
+                  {kegiatan.tuk?.alamat || '-'}
                 </div>
               </div>
             </div>
@@ -219,47 +228,104 @@ export default function DaftarAsesiSudahPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
-              Dokumen Komtek
-              {komtekFilesLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+              Dokumen Direktur
+              {direkturFilesLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* BA Komtek */}
+            {/* SK Pelaksanaan Uji */}
             <Button
               variant="outline"
-              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
-              disabled={!komtekFiles.ba_komtek}
-              onClick={() => komtekFiles.ba_komtek && openFile(komtekFiles.ba_komtek)}
+              className="w-full h-14 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!direkturFiles.sk_pelaksanaan_uji}
+              onClick={() => direkturFiles.sk_pelaksanaan_uji && openFile(direkturFiles.sk_pelaksanaan_uji)}
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
                 <div className="text-left">
-                  <span className="text-sm font-semibold block">BA Komtek</span>
+                  <span className="text-sm font-semibold block">SK Pelaksanaan Uji</span>
                   <span className="text-xs text-muted-foreground">
-                    {komtekFiles.ba_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                    {direkturFiles.sk_pelaksanaan_uji ? 'Klik untuk buka' : 'Belum tersedia'}
                   </span>
                 </div>
               </div>
-              {komtekFiles.ba_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
+              {direkturFiles.sk_pelaksanaan_uji && <ExternalLink className="w-5 h-5 text-primary" />}
+            </Button>
+
+            {/* SPT Asesor */}
+            <Button
+              variant="outline"
+              className="w-full h-14 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!direkturFiles.spt_asesor}
+              onClick={() => direkturFiles.spt_asesor && openFile(direkturFiles.spt_asesor)}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block">SPT Asesor</span>
+                  <span className="text-xs text-muted-foreground">
+                    {direkturFiles.spt_asesor ? 'Klik untuk buka' : 'Belum tersedia'}
+                  </span>
+                </div>
+              </div>
+              {direkturFiles.spt_asesor && <ExternalLink className="w-5 h-5 text-primary" />}
+            </Button>
+
+            {/* SPT Komtek */}
+            <Button
+              variant="outline"
+              className="w-full h-14 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!direkturFiles.spt_komtek}
+              onClick={() => direkturFiles.spt_komtek && openFile(direkturFiles.spt_komtek)}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block">SPT Komtek</span>
+                  <span className="text-xs text-muted-foreground">
+                    {direkturFiles.spt_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                  </span>
+                </div>
+              </div>
+              {direkturFiles.spt_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
             </Button>
 
             {/* SK Komtek */}
             <Button
               variant="outline"
-              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
-              disabled={!komtekFiles.sk_komtek}
-              onClick={() => komtekFiles.sk_komtek && openFile(komtekFiles.sk_komtek)}
+              className="w-full h-14 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!direkturFiles.sk_komtek}
+              onClick={() => direkturFiles.sk_komtek && openFile(direkturFiles.sk_komtek)}
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
                 <div className="text-left">
                   <span className="text-sm font-semibold block">SK Komtek</span>
                   <span className="text-xs text-muted-foreground">
-                    {komtekFiles.sk_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                    {direkturFiles.sk_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
                   </span>
                 </div>
               </div>
-              {komtekFiles.sk_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
+              {direkturFiles.sk_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
+            </Button>
+
+            {/* BA Komtek */}
+            <Button
+              variant="outline"
+              className="w-full h-14 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!direkturFiles.ba_komtek}
+              onClick={() => direkturFiles.ba_komtek && openFile(direkturFiles.ba_komtek)}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block">BA Komtek</span>
+                  <span className="text-xs text-muted-foreground">
+                    {direkturFiles.ba_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                  </span>
+                </div>
+              </div>
+              {direkturFiles.ba_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
             </Button>
           </CardContent>
         </Card>

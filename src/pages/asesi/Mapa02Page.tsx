@@ -179,8 +179,6 @@ export default function Mapa02Page() {
 
     setIsSaving(true)
     try {
-      // TODO: POST data to backend
-
       // Get actual idIzin
       let actualIdIzin = idIzin
       if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
@@ -199,11 +197,32 @@ export default function Mapa02Page() {
         }
       }
 
-      showSuccess('MAPA 02 berhasil disimpan!')
-      setTimeout(() => {
-        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
-      }, 500)
+      if (!actualIdIzin) {
+        showWarning("ID Izin tidak ditemukan")
+        return
+      }
+
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa02`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        showSuccess('MAPA 02 berhasil disimpan!')
+        setTimeout(() => {
+          navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
+        }, 500)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        showWarning(errorData.message || 'Gagal menyimpan MAPA 02')
+      }
     } catch (error) {
+      console.error('Error saving MAPA 02:', error)
+      showWarning('Gagal menyimpan MAPA 02')
     } finally {
       setIsSaving(false)
     }

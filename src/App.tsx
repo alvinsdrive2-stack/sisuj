@@ -30,15 +30,17 @@ import DashboardAdminLSP from './pages/admin-lsp/DashboardAdminLSP'
 
 // Direktur Pages
 import TandatanganDirektur from './pages/direktur/TandatanganDirektur'
-import SudahDitandatangani from './pages/direktur/SudahDitandatangani'
-import BelumDitandatangani from './pages/direktur/BelumDitandatangani'
+import SudahDitandatanganiDirektur from './pages/direktur/SudahDitandatangani'
+import BelumDitandatanganiDirektur from './pages/direktur/BelumDitandatangani'
+import DaftarAsesiDirekturPage from './pages/direktur/DaftarAsesiPage'
+import DaftarAsesiSudahDirekturPage from './pages/direktur/DaftarAsesiSudahPage'
 
 // Komtek Pages
 import TandatanganKomtek from './pages/komtek/TandatanganKomtek'
 import SudahDitandatanganiKomtek from './pages/komtek/SudahDitandatangani'
 import BelumDitandatanganiKomtek from './pages/komtek/BelumDitandatangani'
-import DaftarAsesiPage from './pages/komtek/DaftarAsesiPage'
-import DaftarAsesiSudahPage from './pages/komtek/DaftarAsesiSudahPage'
+import DaftarAsesiKomtekPage from './pages/komtek/DaftarAsesiPage'
+import DaftarAsesiSudahKomtekPage from './pages/komtek/DaftarAsesiSudahPage'
 
 // Manajer Pages
 import DashboardManajer from './pages/manajer/DashboardManajer'
@@ -128,8 +130,10 @@ function App() {
                 <DashboardLayout>
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganDirektur />} />
-                    <Route path="sudah-ditandatangani" element={<SudahDitandatangani />} />
-                    <Route path="belum-ditandatangani" element={<BelumDitandatangani />} />
+                    <Route path="sudah-ditandatangani" element={<SudahDitandatanganiDirektur />} />
+                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahDirekturPage />} />
+                    <Route path="belum-ditandatangani" element={<BelumDitandatanganiDirektur />} />
+                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiDirekturPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
@@ -146,9 +150,9 @@ function App() {
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganKomtek />} />
                     <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
-                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
+                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahKomtekPage />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
-                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiKomtekPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
