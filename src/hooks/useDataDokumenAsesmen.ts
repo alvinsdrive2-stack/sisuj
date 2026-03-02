@@ -28,6 +28,7 @@ interface DataDokumenAsesmenData {
   barcode_validator: string | null
   noreg_penyusun: string | null
   noreg_validator: string | null
+  jadwal_id: string | null
 }
 
 interface DataDokumenAsesmenResponse {
@@ -55,6 +56,7 @@ interface UseDataDokumenAsesmenResult {
   barcodeValidator: string | null
   noregPenyusun: string | null
   noregValidator: string | null
+  jadwalId: string | null
   isLoading: boolean
   error: string | null
 }
@@ -80,6 +82,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     barcodeValidator: string | null
     noregPenyusun: string | null
     noregValidator: string | null
+    jadwalId: string | null
   }>({
     jabatanKerja: '',
     nomorSkema: '',
@@ -100,6 +103,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     barcodeValidator: null,
     noregPenyusun: null,
     noregValidator: null,
+    jadwalId: null,
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -165,6 +169,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
               barcodeValidator: result.data.barcode_validator || null,
               noregPenyusun: result.data.noreg_penyusun || null,
               noregValidator: result.data.noreg_validator || null,
+              jadwalId: result.data.jadwal_id || null,
             })
           }
         } else {

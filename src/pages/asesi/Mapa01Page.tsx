@@ -226,37 +226,15 @@ export default function Mapa01Page() {
       return
     }
 
-    if (!actualIdIzin) {
-      showWarning("ID Izin tidak ditemukan")
-      return
-    }
-
     setIsSaving(true)
-    try {
-      const token = localStorage.getItem("access_token")
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        showSuccess('MAPA 01 berhasil disimpan!')
-        setTimeout(() => {
-          navigate(`/asesi/praasesmen/${actualIdIzin}/mapa02`)
-        }, 500)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        showWarning(errorData.message || 'Gagal menyimpan MAPA 01')
-      }
-    } catch (error) {
-      console.error('Error saving MAPA 01:', error)
-      showWarning('Gagal menyimpan MAPA 01')
-    } finally {
+    // TODO: Implement actual save logic with API
+    setTimeout(() => {
       setIsSaving(false)
-    }
+      showSuccess('MAPA 01 berhasil disimpan!')
+      setTimeout(() => {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/mapa02`)
+      }, 500)
+    }, 500)
   }
 
   if (isLoading) {

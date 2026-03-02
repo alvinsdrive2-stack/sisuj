@@ -357,9 +357,18 @@ export default function Ia04bPage() {
 
       // 5. Generate QR for asesor only if not exists
       if (isAsesor) {
+        // Tentukan key berdasarkan role asesor (asesor1 atau asesor2)
+        const asesorKey = isAsesor1 ? 'asesor1' : 'asesor2'
+        const existingAsesorQR = barcodes?.asesor?.[asesorKey]?.url
         const jadwalId = kegiatan?.jadwal_id
-        const currentAsesorId = String(user?.id)
-        const existingAsesorQR = barcodes?.asesor?.[currentAsesorId]?.url
+
+        console.log('IA04B Asesor QR Debug:', {
+          isAsesor1,
+          asesorKey,
+          existingAsesorQR,
+          jadwalId,
+          allBarcodes: barcodes
+        })
 
         // Cek apakah QR asesor sudah ada, jika ada langsung navigate ke next step
         if (existingAsesorQR) {
@@ -374,54 +383,52 @@ export default function Ia04bPage() {
           return
         }
 
-        // Generate QR hanya jika belum ada
-        if (jadwalId) {
-          try {
-            const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04b`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
+        // Generate QR untuk asesor
+        if (!jadwalId) {
+          console.error('Jadwal ID tidak ditemukan dari useKegiatanByRole!')
+          showError('Jadwal tidak ditemukan. Silakan refresh halaman.')
+          return
+        }
+
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04b`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
             })
+          })
 
-            
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
 
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
 
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+              setBarcodes(prev => ({
+                asesi: prev?.asesi,
+                asesor: {
+                  ...prev?.asesor,
+                  [asesorKey]: newBarcode
+                }
+              }))
 
-                setBarcodes(prev => ({
-                  asesi: prev?.asesi,
-                  asesor: {
-                    ...prev?.asesor,
-                    [currentAsesorId]: newBarcode
-                  }
-                }))
-
-                // Save to localStorage as fallback since backend might not persist it
-                const currentLocal = localStorage.getItem(`ia04b_asesor_barcodes_${id}`)
-                const localBarcodes = currentLocal ? JSON.parse(currentLocal) : {}
-                localBarcodes[currentAsesorId] = newBarcode
-                localStorage.setItem(`ia04b_asesor_barcodes_${id}`, JSON.stringify(localBarcodes))
-              } else {
-                console.warn('QR generation unexpected response:', qrResult)
-              }
+              console.log('IA04B QR generated successfully:', asesorKey, newBarcode)
             } else {
-              const errorResult = await qrResponse.json()
-              console.error('QR generation failed:', qrResponse.status, errorResult)
-              showError('Gagal generate QR')
+              console.warn('QR generation unexpected response:', qrResult)
             }
-          } catch (qrError) {
-            console.error('Error generating QR:', qrError)
+          } else {
+            const errorResult = await qrResponse.json()
+            console.error('QR generation failed:', qrResponse.status, errorResult)
+            showError(`Gagal generate QR: ${errorResult.message || 'Terjadi kesalahan'}`)
           }
+        } catch (qrError) {
+          console.error('Error generating QR:', qrError)
+          showError('Gagal generate QR')
         }
       }
 

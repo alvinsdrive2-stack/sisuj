@@ -629,11 +629,9 @@ export default function Ia05Page() {
                 <ActionButton variant="secondary" onClick={() => navigate(-1)}>
                   Kembali
                 </ActionButton>
-                {canEditUmpanBalik && (
                   <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSaveUmpanBalik}>
                     {isSaving ? "Menyimpan..." : "Simpan Umpan Balik"}
                   </ActionButton>
-                )}
               </>
             )}
           </div>

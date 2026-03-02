@@ -1,13 +1,12 @@
-import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, FileText, Calendar, User, Clock } from "lucide-react"
+import { AlertCircle, FileText, Calendar, User, Clock, Eye } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 
 export default function BelumDitandatangani() {
-  const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanDirektur(false) // false = belum ditandatangani
 
   const formatDate = (dateString: string) => {
@@ -58,16 +57,25 @@ export default function BelumDitandatangani() {
                 skemaSertifikasi={doc.skema.nama}
                 jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                 documentInfo={[
-                  { icon: User, label: "Asesor", value: doc.asesor?.nama || "-" },
-                  { icon: FileText, label: "TUK", value: doc.tuk?.nama || "-" },
+                  { icon: User, label: "Asesor", value: doc.asesor.nama },
+                  { icon: FileText, label: "TUK", value: doc.tuk.nama },
                   { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                   { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                 ]}
                 badges={[
                   <Badge key="status" variant="outline" className="border-amber-200 text-amber-700">Menunggu</Badge>
                 ]}
-                cardClassName="border-l-4 border-l-amber-400 cursor-pointer"
-                onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
+                cardClassName="border-l-4 border-l-amber-400"
+                actions={[
+                  <Button key="detail" variant="outline" size="sm">
+                    <Eye className="w-4 h-4 mr-2" />
+                    Lihat Detail
+                  </Button>,
+                  <Button key="sign" size="sm" className="bg-primary hover:bg-primary/90">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Tandatangani Sekarang
+                  </Button>
+                ]}
               />
             ))}
           </div>

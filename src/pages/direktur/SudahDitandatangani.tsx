@@ -1,13 +1,12 @@
-import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { FileText, Calendar, User, CheckCircle2 } from "lucide-react"
+import { FileText, Calendar, User, CheckCircle2, Download } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 
 export default function SudahDitandatangani() {
-  const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanDirektur(true) // true = sudah ditandatangani
 
   const formatDate = (dateString: string) => {
@@ -52,13 +51,22 @@ export default function SudahDitandatangani() {
                 skemaSertifikasi={doc.skema.nama}
                 jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                 documentInfo={[
-                  { icon: User, label: "Asesor", value: doc.asesor?.nama || "-" },
-                  { icon: FileText, label: "TUK", value: doc.tuk?.nama || "-" },
+                  { icon: User, label: "Asesor", value: doc.asesor.nama },
+                  { icon: FileText, label: "TUK", value: doc.tuk.nama },
                   { icon: Calendar, label: "Tanggal Uji", value: formatDate(doc.tanggal_uji) }
                 ]}
                 badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
-                cardClassName="bg-gradient-to-r from-emerald-50/50 to-transparent cursor-pointer"
-                onClick={() => navigate(`/direktur/sudah-ditandatangani/${doc.jadwal_id}`)}
+                cardClassName="bg-gradient-to-r from-emerald-50/50 to-transparent"
+                actions={[
+                  <Button key="detail" variant="outline" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Lihat Detail
+                  </Button>,
+                  <Button key="download" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                    <Download className="w-4 h-4 mr-2" />
+                    Unduh
+                  </Button>
+                ]}
               />
             ))}
           </div>
