@@ -37,6 +37,10 @@ interface DokumenItem {
   url: string | null
 }
 
+interface AsesiWithKey extends Asesor {
+  key: string
+}
+
 const getFileIcon = (url: string) => {
   if (!url) return faFile
   const extension = url.split('.').pop()?.toLowerCase() || ''
@@ -50,20 +54,6 @@ const getFileIcon = (url: string) => {
     default:
       return faFile
   }
-}
-
-const getFileType = (url: string) => {
-  if (!url) return 'unknown'
-  const extension = url.split('.').pop()?.toLowerCase() || ''
-  return extension
-}
-
-const getPdfUrl = (url: string) => {
-  const fileType = getFileType(url)
-  if (fileType === 'pdf') {
-    return url + '#toolbar=0&navpanes=0&scrollbar=0'
-  }
-  return url
 }
 
 const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data']; label: string }> = [
@@ -131,7 +121,7 @@ export default function DetailDokumenDirekturPage() {
     fetchData()
   }, [id])
 
-  const documentList: (Asesor & { key: string })[] = (dokumenResponse?.list_asesi || []).map(asesi => ({
+  const documentList: AsesiWithKey[] = (dokumenResponse?.list_asesi || []).map(asesi => ({
     ...asesi,
     key: asesi.id_izin
   }))
