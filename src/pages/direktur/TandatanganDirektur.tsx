@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
+import { useNavigate } from "react-router-dom"
 
 export default function TandatanganDirektur() {
+  const navigate = useNavigate()
   const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanDirektur(false) // belum ditandatangani
   const { isLoading: isLoadingSigned } = useKegiatanDirektur(true) // sudah ditandatangani
   const [signingId, setSigningId] = useState<string | null>(null)
@@ -74,14 +76,13 @@ export default function TandatanganDirektur() {
                   ]}
                   badges={[<Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>]}
                   actions={[
-                    <Button key="detail" variant="outline" size="sm">
-                      <FileText className="w-4 h-4 mr-2" />
-                      Lihat Detail
-                    </Button>,
                     <Button
                       key="sign"
                       size="sm"
-                      onClick={() => handleSign(doc.jadwal_id)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSign(doc.jadwal_id)
+                      }}
                       disabled={signingId === doc.jadwal_id}
                       className="bg-primary hover:bg-primary/90"
                     >
@@ -98,6 +99,7 @@ export default function TandatanganDirektur() {
                       )}
                     </Button>
                   ]}
+                  onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
                 />
               ))}
             </div>
