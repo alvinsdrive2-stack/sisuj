@@ -31,6 +31,7 @@ import DashboardAdminLSP from './pages/admin-lsp/DashboardAdminLSP'
 // Direktur Pages
 import TandatanganDirektur from './pages/direktur/TandatanganDirektur'
 import SudahDitandatangani from './pages/direktur/SudahDitandatangani'
+import DetailDokumenDirekturPage from './pages/direktur/DetailDokumenDirekturPage'
 import BelumDitandatangani from './pages/direktur/BelumDitandatangani'
 
 // Komtek Pages
@@ -129,7 +130,9 @@ function App() {
                   <Routes>
                     <Route path="tandatangan" element={<TandatanganDirektur />} />
                     <Route path="sudah-ditandatangani" element={<SudahDitandatangani />} />
+                    <Route path="sudah-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatangani />} />
+                    <Route path="belum-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
