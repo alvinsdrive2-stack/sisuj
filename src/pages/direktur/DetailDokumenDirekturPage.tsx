@@ -198,115 +198,120 @@ export default function DetailDokumenDirekturPage() {
           </div>
         )}
 
-        {/* Dokumen Direktur Section - Always Visible */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Dokumen Direktur
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {direkturDocuments.map((doc) => {
-                const hasDocument = !!doc.url
-                return (
-                  <div
-                    key={doc.key}
-                    className={`p-4 border rounded-lg transition-all ${
-                      hasDocument
-                        ? 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer'
-                        : 'border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
-                    }`}
-                    onClick={() => {
-                      if (hasDocument && doc.url) {
-                        window.open(doc.url, '_blank')
-                      }
-                    }}
-                  >
-                    <div className="flex flex-col items-center text-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
-                        hasDocument ? 'bg-primary/10' : 'bg-slate-200 dark:bg-slate-700'
-                      }`}>
-                        <FileText className={`w-6 h-6 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
-                      </div>
-                      <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-1">{doc.label}</h4>
-                      {!hasDocument ? (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
-                      ) : (
-                        <div className="flex items-center gap-1 text-xs text-primary">
-                          <span>Buka</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Daftar Asesi Section - Like Komtek */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Daftar Asesi
-              {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="text-center py-8 text-red-500">
-                Gagal memuat daftar asesi: {error}
-              </div>
-            )}
-
-            {!asesiLoading && !error && asesiList.length === 0 && (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                Tidak ada asesi untuk jadwal ini
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {asesiList.map((asesi, index) => (
-                <div
-                  key={asesi.id_izin}
-                  onClick={() => handleOpenDokumenModal({ id_izin: asesi.id_izin, nama: asesi.nama })}
-                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">{index + 1}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {/* Kompeten Badge */}
-                      <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
-                        {asesi.kompeten}
-                      </Badge>
-
-                      {/* Status Indicator */}
-                      {asesi.is_started && (
-                        <div className="flex items-center gap-1.5 text-emerald-600">
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span className="text-xs font-medium">Aktif</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+        {/* Side by Side: Daftar Asesi (70%) + Dokumen Direktur (30%) */}
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+          {/* Left: Daftar Asesi - 70% */}
+          <Card className="lg:col-span-7">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Daftar Asesi
+                {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {error && (
+                <div className="text-center py-8 text-red-500">
+                  Gagal memuat daftar asesi: {error}
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              )}
+
+              {!asesiLoading && !error && asesiList.length === 0 && (
+                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                  Tidak ada asesi untuk jadwal ini
+                </div>
+              )}
+
+              <div className="space-y-3">
+                {asesiList.map((asesi, index) => (
+                  <div
+                    key={asesi.id_izin}
+                    onClick={() => handleOpenDokumenModal({ id_izin: asesi.id_izin, nama: asesi.nama })}
+                    className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">{index + 1}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {/* Kompeten Badge */}
+                        <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
+                          {asesi.kompeten}
+                        </Badge>
+
+                        {/* Status Indicator */}
+                        {asesi.is_started && (
+                          <div className="flex items-center gap-1.5 text-emerald-600">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-xs font-medium">Aktif</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right: Dokumen Direktur - 30% */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Dokumen Direktur
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {direkturDocuments.map((doc) => {
+                  const hasDocument = !!doc.url
+                  return (
+                    <div
+                      key={doc.key}
+                      className={`p-3 border rounded-lg transition-all ${
+                        hasDocument
+                          ? 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer'
+                          : 'border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
+                      }`}
+                      onClick={() => {
+                        if (hasDocument && doc.url) {
+                          window.open(doc.url, '_blank')
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          hasDocument ? 'bg-primary/10' : 'bg-slate-200 dark:bg-slate-700'
+                        }`}>
+                          <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">{doc.label}</h4>
+                          {!hasDocument ? (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
+                          ) : (
+                            <div className="flex items-center gap-1 text-xs text-primary">
+                              <span>Buka</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </>
   )
