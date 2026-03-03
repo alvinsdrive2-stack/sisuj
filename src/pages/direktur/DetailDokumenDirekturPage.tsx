@@ -3,11 +3,10 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
-import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
 
@@ -39,11 +38,9 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data'
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { showError } = useToast()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
-  const [kegiatanLoading, setKegiatanLoading] = useState(true)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
 
   // Modal context
@@ -68,8 +65,6 @@ export default function DetailDokumenDirekturPage() {
         }
       } catch (err) {
         console.error('Error fetching kegiatan:', err)
-      } finally {
-        setKegiatanLoading(false)
       }
     }
     fetchKegiatan()
