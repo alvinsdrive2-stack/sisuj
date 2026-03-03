@@ -50,15 +50,15 @@ export default function BelumDitandatangani() {
             />
           )}
           <div className="space-y-4">
-            {kegiatans.map((doc) => (
+            {kegiatans.filter(doc => doc?.asesor && doc?.tuk && doc?.skema).map((doc) => (
               <DocumentCard
                 key={doc.jadwal_id}
                 nomorKegiatan={doc.nama_kegiatan}
-                skemaSertifikasi={doc.skema.nama}
+                skemaSertifikasi={doc.skema?.nama || '-'}
                 jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                 documentInfo={[
-                  { icon: User, label: "Asesor", value: doc.asesor.nama },
-                  { icon: FileText, label: "TUK", value: doc.tuk.nama },
+                  { icon: User, label: "Asesor", value: doc.asesor?.nama || '-' },
+                  { icon: FileText, label: "TUK", value: doc.tuk?.nama || '-' },
                   { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                   { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                 ]}
