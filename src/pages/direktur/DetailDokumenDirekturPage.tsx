@@ -35,16 +35,30 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data'
   { key: 'ba_komtek', label: 'BA Komtek' },
 ]
 
+interface DokumenAsesiResponse {
+  message: string
+  list_asesi: Array<{
+    id_izin: string
+    nama: string
+    is_started: string
+    started_at: string | null
+    kompeten: string
+  }>
+  [key: string]: any
+}
+
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showError } = useToast()
-  const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
+  const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [kegiatanLoading, setKegiatanLoading] = useState(true)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
+  const [dokumenAsesi, setDokumenAsesi] = useState<DokumenAsesiResponse | null>(null)
   const [selectedAsesi, setSelectedAsesi] = useState<typeof asesiList[0] | null>(null)
+  const [loadingDokumenAsesi, setLoadingDokumenAsesi] = useState(false)
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -103,6 +117,41 @@ export default function DetailDokumenDirekturPage() {
     fetchDokumenDirektur()
   }, [id])
 
+  // Fetch dokumen asesi when selected
+  useEffect(() => {
+    const fetchDokumenAsesi = async () => {
+      if (!selectedAsesi) {
+        setDokumenAsesi(null)
+        return
+      }
+
+      setLoadingDokumenAsesi(true)
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`https://backend.devgatensi.site/api/dokumen/asesi/${id}`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result: DokumenAsesiResponse = await response.json()
+          setDokumenAsesi(result)
+        } else {
+          showError('Gagal memuat dokumen asesi')
+        }
+      } catch (error) {
+        console.error("Error fetching dokumen asesi:", error)
+        showError('Terjadi kesalahan saat memuat dokumen')
+      } finally {
+        setLoadingDokumenAsesi(false)
+      }
+    }
+
+    fetchDokumenAsesi()
+  }, [selectedAsesi, id])
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -119,6 +168,31 @@ export default function DetailDokumenDirekturPage() {
     url: dokumenDirektur?.[config.key] || null
   }))
 
+  // Build asesi documents list (similar to komtek DetailDokumenAsesiPage)
+  const docKeyMap: Record<string, string> = {
+    'apl01': 'apl01',
+    'apl02': 'apl02',
+    'mapa01': 'mapa01',
+    'mapa02': 'mapa02',
+    'ak07': 'ak07',
+    'ak04': 'ak04',
+    'ak01': 'ak01',
+    'ia04a': 'ia04a',
+    'ak02': 'ak02',
+    'ia04b': 'ia04b',
+    'ak03': 'ak03',
+    'ia05': 'ia05',
+    'ak05': 'ak05',
+    'ak06': 'ak06',
+    'tugas': 'tugas'
+  }
+
+  const asesiDocuments = selectedAsesi && dokumenAsesi ? docKeyMap[selectedAsesi.kompeten] ? [{
+    key: selectedAsesi.kompeten,
+    label: selectedAsesi.nama,
+    url: (dokumenAsesi as any)[docKeyMap[selectedAsesi.kompeten]] || null
+  }] : [] : []
+
   return (
     <>
       <div className="space-y-6">
@@ -133,8 +207,8 @@ export default function DetailDokumenDirekturPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dokumen Direktur</h2>
-            <p className="text-slate-600 dark:text-slate-400">Pilih asesi untuk melihat dokumen direktur</p>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dokumen Direktur & Asesi</h2>
+            <p className="text-slate-600 dark:text-slate-400">Kelola dokumen untuk kegiatan ini</p>
           </div>
         </div>
 
@@ -195,6 +269,56 @@ export default function DetailDokumenDirekturPage() {
           </div>
         )}
 
+        {/* Dokumen Direktur Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Dokumen Direktur
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {direkturDocuments.map((doc) => {
+                const hasDocument = !!doc.url
+                return (
+                  <div
+                    key={doc.key}
+                    className={`p-4 border rounded-lg transition-all ${
+                      hasDocument
+                        ? 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer'
+                        : 'border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
+                    }`}
+                    onClick={() => {
+                      if (hasDocument && doc.url) {
+                        window.open(doc.url, '_blank')
+                      }
+                    }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
+                        hasDocument ? 'bg-primary/10' : 'bg-slate-200 dark:bg-slate-700'
+                      }`}>
+                        <FileText className={`w-6 h-6 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
+                      </div>
+                      <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 mb-1">{doc.label}</h4>
+                      {!hasDocument ? (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
+                      ) : (
+                        <div className="flex items-center gap-1 text-xs text-primary">
+                          <span>Buka</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Asesi Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: Asesi List */}
           <Card className="lg:col-span-1">
@@ -244,64 +368,53 @@ export default function DetailDokumenDirekturPage() {
             </CardContent>
           </Card>
 
-          {/* Right: Dokumen Direktur */}
+          {/* Right: Dokumen Asesi */}
           <Card className="lg:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
-                Dokumen Direktur
+                Dokumen Asesi
                 {selectedAsesi && (
                   <span className="text-sm font-normal text-slate-600 dark:text-slate-400">
                     - {selectedAsesi.nama}
                   </span>
                 )}
+                {loadingDokumenAsesi && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!selectedAsesi ? (
                 <div className="text-center py-16 text-slate-500 dark:text-slate-400">
                   <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Pilih asesi untuk melihat dokumen direktur</p>
+                  <p>Pilih asesi untuk melihat dokumen</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {direkturDocuments.map((doc) => {
-                    const hasDocument = !!doc.url
-                    return (
-                      <div
-                        key={doc.key}
-                        className={`p-4 border rounded-lg transition-all ${
-                          hasDocument
-                            ? 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer'
-                            : 'border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
-                        }`}
-                        onClick={() => {
-                          if (hasDocument && doc.url) {
-                            window.open(doc.url, '_blank')
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                              hasDocument ? 'bg-primary/10' : 'bg-slate-200 dark:bg-slate-700'
-                            }`}>
-                              <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100">{doc.label}</h4>
-                              {!hasDocument && (
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
-                              )}
-                            </div>
-                          </div>
-                          {hasDocument && (
-                            <ExternalLink className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
+                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800">
+                  {asesiDocuments.length > 0 && asesiDocuments[0].url ? (
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                        <FileText className="w-8 h-8 text-primary" />
                       </div>
-                    )
-                  })}
+                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
+                        {asesiDocuments[0].label}
+                      </h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                        Dokumen {selectedAsesi.kompeten.toUpperCase()}
+                      </p>
+                      <Button
+                        onClick={() => window.open(asesiDocuments[0].url!, '_blank')}
+                        className="bg-primary hover:bg-primary/90"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Buka Dokumen
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                      <p>Dokumen belum tersedia</p>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
