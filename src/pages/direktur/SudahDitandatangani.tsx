@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useNavigate } from "react-router-dom"
 
 export default function SudahDitandatangani() {
+  const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanDirektur(true) // true = sudah ditandatangani
 
   const formatDate = (dateString: string) => {
@@ -57,12 +59,13 @@ export default function SudahDitandatangani() {
                 ]}
                 badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
                 cardClassName="bg-gradient-to-r from-emerald-50/50 to-transparent"
+                onClick={() => navigate(`/direktur/sudah-ditandatangani/${doc.jadwal_id}`)}
                 actions={[
-                  <Button key="detail" variant="outline" size="sm">
+                  <Button key="detail" variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
                     <FileText className="w-4 h-4 mr-2" />
                     Lihat Detail
                   </Button>,
-                  <Button key="download" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                  <Button key="download" size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={(e) => e.stopPropagation()}>
                     <Download className="w-4 h-4 mr-2" />
                     Unduh
                   </Button>
