@@ -3,12 +3,13 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, CheckCircle2 } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { useDokumenModal } from "@/contexts/DokumenModalContext"
 
 interface DokumenDirekturResponse {
   message: string
@@ -35,30 +36,18 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data'
   { key: 'ba_komtek', label: 'BA Komtek' },
 ]
 
-interface DokumenAsesiResponse {
-  message: string
-  list_asesi: Array<{
-    id_izin: string
-    nama: string
-    is_started: string
-    started_at: string | null
-    kompeten: string
-  }>
-  [key: string]: any
-}
-
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { showError } = useToast()
-  const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(id || "")
+  const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [kegiatanLoading, setKegiatanLoading] = useState(true)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
-  const [dokumenAsesi, setDokumenAsesi] = useState<DokumenAsesiResponse | null>(null)
-  const [selectedAsesi, setSelectedAsesi] = useState<typeof asesiList[0] | null>(null)
-  const [loadingDokumenAsesi, setLoadingDokumenAsesi] = useState(false)
+
+  // Modal context
+  const { openModal: openDokumenModal } = useDokumenModal()
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -66,11 +55,9 @@ export default function DetailDokumenDirekturPage() {
       if (!id) return
 
       try {
-        // Fetch dari yang belum ditandatangani
         const responseFalse = await kegiatanService.getKegiatanDirektur(false)
         let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
 
-        // Kalau ga ketemu, cari dari yang sudah ditandatangani
         if (!found) {
           const responseTrue = await kegiatanService.getKegiatanDirektur(true)
           found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
@@ -117,41 +104,6 @@ export default function DetailDokumenDirekturPage() {
     fetchDokumenDirektur()
   }, [id])
 
-  // Fetch dokumen asesi when selected
-  useEffect(() => {
-    const fetchDokumenAsesi = async () => {
-      if (!selectedAsesi) {
-        setDokumenAsesi(null)
-        return
-      }
-
-      setLoadingDokumenAsesi(true)
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/dokumen/asesi/${id}`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: DokumenAsesiResponse = await response.json()
-          setDokumenAsesi(result)
-        } else {
-          showError('Gagal memuat dokumen asesi')
-        }
-      } catch (error) {
-        console.error("Error fetching dokumen asesi:", error)
-        showError('Terjadi kesalahan saat memuat dokumen')
-      } finally {
-        setLoadingDokumenAsesi(false)
-      }
-    }
-
-    fetchDokumenAsesi()
-  }, [selectedAsesi, id])
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -162,36 +114,15 @@ export default function DetailDokumenDirekturPage() {
     return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const handleOpenDokumenModal = (asesi: { id_izin: string; nama: string }) => {
+    openDokumenModal(asesi.id_izin, asesi.nama)
+  }
+
   const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
     key: config.key,
     label: config.label,
     url: dokumenDirektur?.[config.key] || null
   }))
-
-  // Build asesi documents list (similar to komtek DetailDokumenAsesiPage)
-  const docKeyMap: Record<string, string> = {
-    'apl01': 'apl01',
-    'apl02': 'apl02',
-    'mapa01': 'mapa01',
-    'mapa02': 'mapa02',
-    'ak07': 'ak07',
-    'ak04': 'ak04',
-    'ak01': 'ak01',
-    'ia04a': 'ia04a',
-    'ak02': 'ak02',
-    'ia04b': 'ia04b',
-    'ak03': 'ak03',
-    'ia05': 'ia05',
-    'ak05': 'ak05',
-    'ak06': 'ak06',
-    'tugas': 'tugas'
-  }
-
-  const asesiDocuments = selectedAsesi && dokumenAsesi ? docKeyMap[selectedAsesi.kompeten] ? [{
-    key: selectedAsesi.kompeten,
-    label: selectedAsesi.nama,
-    url: (dokumenAsesi as any)[docKeyMap[selectedAsesi.kompeten]] || null
-  }] : [] : []
 
   return (
     <>
@@ -207,8 +138,8 @@ export default function DetailDokumenDirekturPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dokumen Direktur & Asesi</h2>
-            <p className="text-slate-600 dark:text-slate-400">Kelola dokumen untuk kegiatan ini</p>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Daftar Asesi</h2>
+            <p className="text-slate-600 dark:text-slate-400">Pilih asesi untuk melihat dokumen</p>
           </div>
         </div>
 
@@ -216,7 +147,6 @@ export default function DetailDokumenDirekturPage() {
         {kegiatan && (
           <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800">
             <div className="flex gap-6">
-              {/* Left: Kegiatan Info */}
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
@@ -251,7 +181,6 @@ export default function DetailDokumenDirekturPage() {
                 </div>
               </div>
 
-              {/* Right: Status indicator */}
               <div className="w-[18%] flex flex-col items-center justify-center">
                 <div className="p-5 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5">
                   <div className="text-center">
@@ -269,7 +198,7 @@ export default function DetailDokumenDirekturPage() {
           </div>
         )}
 
-        {/* Dokumen Direktur Section */}
+        {/* Dokumen Direktur Section - Always Visible */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -318,108 +247,66 @@ export default function DetailDokumenDirekturPage() {
           </CardContent>
         </Card>
 
-        {/* Asesi Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Asesi List */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                Daftar Asesi
-                {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {error && (
-                <div className="text-center py-8 text-red-500">
-                  Gagal memuat daftar asesi: {error}
-                </div>
-              )}
+        {/* Daftar Asesi Section - Like Komtek */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Daftar Asesi
+              {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <div className="text-center py-8 text-red-500">
+                Gagal memuat daftar asesi: {error}
+              </div>
+            )}
 
-              {!asesiLoading && !error && asesiList.length === 0 && (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                  Tidak ada asesi untuk jadwal ini
-                </div>
-              )}
+            {!asesiLoading && !error && asesiList.length === 0 && (
+              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                Tidak ada asesi untuk jadwal ini
+              </div>
+            )}
 
-              <div className="space-y-2">
-                {asesiList.map((asesi, index) => (
-                  <div
-                    key={asesi.id_izin}
-                    onClick={() => setSelectedAsesi(asesi)}
-                    className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                      selectedAsesi?.id_izin === asesi.id_izin
-                        ? 'border-primary bg-primary/5 shadow-md'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800'
-                    }`}
-                  >
+            <div className="space-y-3">
+              {asesiList.map((asesi, index) => (
+                <div
+                  key={asesi.id_izin}
+                  onClick={() => handleOpenDokumenModal({ id_izin: asesi.id_izin, nama: asesi.nama })}
+                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                >
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-bold text-primary">{index + 1}</span>
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">{index + 1}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">{asesi.nama}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">{asesi.kompeten}</p>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                       </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      {/* Kompeten Badge */}
+                      <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
+                        {asesi.kompeten}
+                      </Badge>
+
+                      {/* Status Indicator */}
+                      {asesi.is_started && (
+                        <div className="flex items-center gap-1.5 text-emerald-600">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="text-xs font-medium">Aktif</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Right: Dokumen Asesi */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
-                Dokumen Asesi
-                {selectedAsesi && (
-                  <span className="text-sm font-normal text-slate-600 dark:text-slate-400">
-                    - {selectedAsesi.nama}
-                  </span>
-                )}
-                {loadingDokumenAsesi && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!selectedAsesi ? (
-                <div className="text-center py-16 text-slate-500 dark:text-slate-400">
-                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Pilih asesi untuk melihat dokumen</p>
                 </div>
-              ) : (
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800">
-                  {asesiDocuments.length > 0 && asesiDocuments[0].url ? (
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                        <FileText className="w-8 h-8 text-primary" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-2">
-                        {asesiDocuments[0].label}
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                        Dokumen {selectedAsesi.kompeten.toUpperCase()}
-                      </p>
-                      <Button
-                        onClick={() => window.open(asesiDocuments[0].url!, '_blank')}
-                        className="bg-primary hover:bg-primary/90"
-                      >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Buka Dokumen
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Dokumen belum tersedia</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   )
