@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, FileText, Calendar, User, Clock, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { AlertCircle, FileText, Calendar, User, Clock } from "lucide-react"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
@@ -69,26 +68,6 @@ export default function BelumDitandatangani() {
                 ]}
                 cardClassName="border-l-4 border-l-amber-400"
                 onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
-                actions={[
-                  <Button
-                    key="detail"
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Lihat Detail
-                  </Button>,
-                  <Button
-                    key="sign"
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <AlertCircle className="w-4 h-4 mr-2" />
-                    Tandatangani Sekarang
-                  </Button>
-                ]}
               />
             ))}
           </div>
