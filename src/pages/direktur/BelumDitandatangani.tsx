@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { useKegiatanDirektur } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useNavigate } from "react-router-dom"
 
 export default function BelumDitandatangani() {
+  const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanDirektur(false) // false = belum ditandatangani
 
   const formatDate = (dateString: string) => {
@@ -66,12 +68,23 @@ export default function BelumDitandatangani() {
                   <Badge key="status" variant="outline" className="border-amber-200 text-amber-700">Menunggu</Badge>
                 ]}
                 cardClassName="border-l-4 border-l-amber-400"
+                onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
                 actions={[
-                  <Button key="detail" variant="outline" size="sm">
+                  <Button
+                    key="detail"
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Eye className="w-4 h-4 mr-2" />
                     Lihat Detail
                   </Button>,
-                  <Button key="sign" size="sm" className="bg-primary hover:bg-primary/90">
+                  <Button
+                    key="sign"
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <AlertCircle className="w-4 h-4 mr-2" />
                     Tandatangani Sekarang
                   </Button>
