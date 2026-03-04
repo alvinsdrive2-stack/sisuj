@@ -4,10 +4,11 @@ interface DokumenModalContextType {
   isOpen: boolean
   asesiId: string
   asesiNama: string
-  openModal: (asesiId: string, asesiNama: string) => void
+  openModal: (asesiId: string, asesiNama: string, readOnly?: boolean) => void
   closeModal: () => void
   onPenilaianSuccess: (() => void) | null
   setOnPenilaianSuccess: (callback: (() => void) | null) => void
+  readOnly: boolean
 }
 
 const DokumenModalContext = createContext<DokumenModalContextType | undefined>(undefined)
@@ -17,10 +18,12 @@ export function DokumenModalProvider({ children }: { children: ReactNode }) {
   const [asesiId, setAsesiId] = useState("")
   const [asesiNama, setAsesiNama] = useState("")
   const [onPenilaianSuccess, setOnPenilaianSuccess] = useState<(() => void) | null>(null)
+  const [readOnly, setReadOnly] = useState(false)
 
-  const openModal = (id: string, nama: string) => {
+  const openModal = (id: string, nama: string, readOnlyMode = false) => {
     setAsesiId(id)
     setAsesiNama(nama)
+    setReadOnly(readOnlyMode)
     setIsOpen(true)
   }
 
@@ -28,10 +31,11 @@ export function DokumenModalProvider({ children }: { children: ReactNode }) {
     setIsOpen(false)
     setAsesiId("")
     setAsesiNama("")
+    setReadOnly(false)
   }
 
   return (
-    <DokumenModalContext.Provider value={{ isOpen, asesiId, asesiNama, openModal, closeModal, onPenilaianSuccess, setOnPenilaianSuccess }}>
+    <DokumenModalContext.Provider value={{ isOpen, asesiId, asesiNama, openModal, closeModal, onPenilaianSuccess, setOnPenilaianSuccess, readOnly }}>
       {children}
     </DokumenModalContext.Provider>
   )

@@ -442,7 +442,7 @@ function App() {
 }
 
 function GlobalDokumenFullscreenModal() {
-  const { isOpen, closeModal, asesiId, asesiNama, onPenilaianSuccess } = useDokumenModal()
+  const { isOpen, closeModal, asesiId, asesiNama, onPenilaianSuccess, readOnly } = useDokumenModal()
   return (
     <DokumenFullscreenModal
       isOpen={isOpen}
@@ -450,6 +450,7 @@ function GlobalDokumenFullscreenModal() {
       asesiId={asesiId}
       asesiNama={asesiNama}
       onPenilaianSuccess={onPenilaianSuccess || undefined}
+      readOnly={readOnly}
     />
   )
 }

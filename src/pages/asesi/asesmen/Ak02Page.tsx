@@ -67,7 +67,7 @@ export default function Ak02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, tanggalSelesai } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
@@ -274,11 +274,11 @@ export default function Ak02Page() {
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Tanggal Asesmen</td>
               <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Mulai :</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}></td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Selesai :</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}></td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
           </tbody>
         </table>

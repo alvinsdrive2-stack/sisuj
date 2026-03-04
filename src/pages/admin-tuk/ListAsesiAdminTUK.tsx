@@ -192,7 +192,7 @@ export default function ListAsesiAdminTUK() {
                 )}
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                {kegiatan.tuk.nama} • {kegiatan.asesor.nama}
+                {kegiatan.tuk.nama.toUpperCase()} • {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''}
               </p>
 
               <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">

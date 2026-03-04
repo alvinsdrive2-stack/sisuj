@@ -52,8 +52,8 @@ export default function SudahDitandatangani() {
                 skemaSertifikasi={doc.skema?.nama || '-'}
                 jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                 documentInfo={[
-                  { icon: User, label: "Asesor", value: doc.asesor?.nama || '-' },
-                  { icon: FileText, label: "TUK", value: doc.tuk?.nama || '-' },
+                  { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
+                  { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '-' },
                   { icon: Calendar, label: "Tanggal Uji", value: formatDate(doc.tanggal_uji) }
                 ]}
                 badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}

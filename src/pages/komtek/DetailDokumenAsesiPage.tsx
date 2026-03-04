@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faFilePdf, faFilePowerpoint, faFileImage, faFile, faArrowLeft, faSpinner } from "@fortawesome/free-solid-svg-icons"
+import { faFilePdf, faFilePowerpoint, faFileImage, faFile, faArrowLeft, faSpinner, faCalendar, faClock, faMapMarkerAlt } from "@fortawesome/free-solid-svg-icons"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 
 interface Asesor {
   jadwal_id: string
@@ -66,6 +67,7 @@ export default function DetailDokumenAsesiPage() {
   const { showError } = useToast()
 
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
+  const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDoc, setSelectedDoc] = useState<DokumenItem | null>(null)
 
@@ -97,6 +99,32 @@ export default function DetailDokumenAsesiPage() {
     }
 
     fetchDokumen()
+  }, [id])
+
+  // Fetch kegiatan detail
+  useEffect(() => {
+    const fetchKegiatan = async () => {
+      if (!id) return
+
+      try {
+        const responseFalse = await kegiatanService.getKegiatanKomtek(false)
+        let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
+
+        if (!found) {
+          const responseTrue = await kegiatanService.getKegiatanKomtek(true)
+          found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
+        }
+
+        if (found) {
+          console.log('Kegiatan data:', found)
+          console.log('asesor2:', found.asesor2)
+          setKegiatan(found)
+        }
+      } catch (err) {
+        console.error('Error fetching kegiatan:', err)
+      }
+    }
+    fetchKegiatan()
   }, [id])
 
   // Build document list from list_asesi
@@ -152,6 +180,36 @@ export default function DetailDokumenAsesiPage() {
       </div>
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 16px' }}>
+        {/* Kegiatan Info Header */}
+        {kegiatan && (
+          <div style={{ background: '#fff', borderRadius: '12px', padding: '20px', marginBottom: '24px', border: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ flex: 1, minWidth: '250px' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
+                  {kegiatan.skema.nama}
+                </h3>
+                <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
+                  {kegiatan.tuk.nama.toUpperCase()} • {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '13px', color: '#6b7280' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FontAwesomeIcon icon={faCalendar} style={{ color: '#10b981', fontSize: '14px' }} />
+                    {new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FontAwesomeIcon icon={faClock} style={{ color: '#10b981', fontSize: '14px' }} />
+                    {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#10b981', fontSize: '14px' }} />
+                    {kegiatan.tuk.alamat}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <button

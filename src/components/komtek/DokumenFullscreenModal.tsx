@@ -1,11 +1,12 @@
 import {DokumenModal} from "@/components/komtek/DokumenModal"
 
-export default function DokumenFullscreenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess }: {
+export default function DokumenFullscreenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess, readOnly = false }: {
   isOpen: boolean
   onClose: () => void
   asesiId: string
   asesiNama: string
   onPenilaianSuccess?: () => void
+  readOnly?: boolean
 }) {
   if (!isOpen) return null
 
@@ -32,6 +33,7 @@ export default function DokumenFullscreenModal({ isOpen, onClose, asesiId, asesi
         asesiId={asesiId}
         asesiNama={asesiNama}
         onPenilaianSuccess={onPenilaianSuccess}
+        readOnly={readOnly}
       />
     </div>
   )

@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
+import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useToast } from "@/contexts/ToastContext"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
+import { DokumenViewerModal } from "@/components/direktur"
 
 interface DokumenDirekturResponse {
   message: string
@@ -42,6 +44,8 @@ export default function DetailDokumenDirekturPage() {
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
+  const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string } | null>(null)
+  const [showTtdConfirmation, setShowTtdConfirmation] = useState(false)
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
@@ -110,7 +114,7 @@ export default function DetailDokumenDirekturPage() {
   }
 
   const handleOpenDokumenModal = (asesi: { id_izin: string; nama: string }) => {
-    openDokumenModal(asesi.id_izin, asesi.nama)
+    openDokumenModal(asesi.id_izin, asesi.nama, true)
   }
 
   const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
@@ -157,8 +161,9 @@ export default function DetailDokumenDirekturPage() {
                   )}
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                  {kegiatan.tuk.nama} • {kegiatan.asesor.nama}
-                </p>
+                  {kegiatan.tuk.nama.toUpperCase()}
+                </p> 
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Asesor | {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''}</p>
 
                 <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
@@ -169,6 +174,7 @@ export default function DetailDokumenDirekturPage() {
                     <Clock className="w-4 h-4 text-primary" />
                     {formatTime(kegiatan.tanggal_uji)}
                   </div>
+                  <br />
                   <div className="flex items-center gap-1.5">
                     <MapPin className="w-4 h-4 text-primary" />
                     {kegiatan.tuk.alamat}
@@ -176,10 +182,10 @@ export default function DetailDokumenDirekturPage() {
                 </div>
               </div>
 
-              <div className="w-[18%] flex flex-col items-center justify-center">
-                <div className="p-5 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5">
+              <div className="w-[18%] flex flex-col items-center justify-center gap-4">
+                <div className="p-20 py-2 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5">
                   <div className="text-center">
-                    <Users className="w-8 h-8 text-primary mx-auto mb-2" />
+                    <Users className="w-5 h-5 text-primary mx-auto mb-2" />
                     <div className="text-2xl font-black text-primary">
                       {asesiList.length}
                     </div>
@@ -188,6 +194,15 @@ export default function DetailDokumenDirekturPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Tanda Tangan Button - Single button for all direktur docs */}
+                <button
+                  onClick={() => setShowTtdConfirmation(true)}
+                  className="w-full px-4 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>TANDA TANGAN</span>
+                </button>
               </div>
             </div>
           </div>
@@ -278,7 +293,7 @@ export default function DetailDokumenDirekturPage() {
                       }`}
                       onClick={() => {
                         if (hasDocument && doc.url) {
-                          window.open(doc.url, '_blank')
+                          setSelectedDokumen({ url: doc.url, title: doc.label })
                         }
                       }}
                     >
@@ -293,10 +308,7 @@ export default function DetailDokumenDirekturPage() {
                           {!hasDocument ? (
                             <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
                           ) : (
-                            <div className="flex items-center gap-1 text-xs text-primary">
-                              <span>Buka</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </div>
+                            <span className="text-xs text-primary">Lihat</span>
                           )}
                         </div>
                       </div>
@@ -308,6 +320,100 @@ export default function DetailDokumenDirekturPage() {
           </Card>
         </div>
       </div>
+
+      {/* Dokumen Viewer Modal */}
+      <DokumenViewerModal
+        isOpen={selectedDokumen !== null}
+        onClose={() => setSelectedDokumen(null)}
+        url={selectedDokumen?.url || null}
+        title={selectedDokumen?.title || ''}
+      />
+
+      {/* TTD Confirmation Modal - Portal */}
+      {showTtdConfirmation && createPortal(
+        <div
+          onClick={() => setShowTtdConfirmation(false)}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] p-4"
+          style={{
+            animation: 'fadeIn 0.3s ease-out'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
+            style={{
+              animation: 'slideUp 0.3s ease-out'
+            }}
+          >
+            <style>{`
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+              @keyframes slideUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(20px) scale(0.95);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0) scale(1);
+                }
+              }
+            `}</style>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Konfirmasi Tanda Tangan</h3>
+                <p className="text-sm text-slate-600">Pastikan Anda telah membaca semua dokumen</p>
+              </div>
+            </div>
+
+            <div className="mb-6 p-4 bg-slate-50 rounded-lg">
+              <p className="text-sm text-slate-700 mb-3">Dengan menandatangani, Anda menyatakan bahwa:</p>
+              <ul className="text-sm text-slate-600 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 mt-0.5">•</span>
+                  <span>Semua dokumen telah dibaca dan dipahami</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 mt-0.5">•</span>
+                  <span>Data yang tertera sudah benar dan lengkap</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-amber-600 mt-0.5">•</span>
+                  <span>Bertanggung jawab atas keputusan yang dibuat</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowTtdConfirmation(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  setShowTtdConfirmation(false)
+                  // Open the first available direktur document for signing
+                  const firstAvailableDoc = direkturDocuments.find(doc => doc.url !== null)
+                  if (firstAvailableDoc) {
+                    setSelectedDokumen({ url: firstAvailableDoc.url!, title: firstAvailableDoc.label })
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-blue-900 transition-colors font-medium"
+              >
+                Ya, Lanjutkan
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </>
   )
 }

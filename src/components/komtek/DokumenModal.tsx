@@ -31,9 +31,10 @@ interface DokumenModalProps {
   asesiId: string
   asesiNama: string
   onPenilaianSuccess?: () => void
+  readOnly?: boolean
 }
 
-export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess }: DokumenModalProps) {
+export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<DokumenItem | null>(null)
@@ -309,20 +310,9 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                       overflowY: 'hidden',
                       overflowX: 'hidden',
                       maxHeight: 'calc(90vh - 180px)',
-                      paddingRight: '10px'
+                      paddingRight: '10px',
+                      paddingBottom: '20px'
                     }}>
-                    {/* Vertical Line */}
-                    <div style={{
-                      position: 'absolute',
-                      left: '14px',
-                      top: '12px',
-                      bottom: '12px',
-                      width: '3px',
-                      background: '#ddd',
-                      transform: 'translateX(10px)',
-                      height: '100vh',
-                    }}></div>
-
                     {/* Documents */}
                     {documentList.map((doc, index) => {
                       const hasDocument = !!doc.url
@@ -351,7 +341,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               background: isSelected
                                 ? '#10b981'
                                 : hasDocument
-                                  ? '#4e4e4e'
+                                  ? '#0b815a'
                                   : '#f5f5f5',
                               color: isSelected
                                 ? '#fff'
@@ -362,7 +352,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               borderColor: isSelected
                                 ? '#10b981'
                                 : hasDocument
-                                  ? '#4e4e4e'
+                                  ? '#0b815a'
                                   : '#ddd',
                               display: 'flex',
                               alignItems: 'center',
@@ -372,7 +362,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               flexShrink: 0,
                               zIndex: 1,
                               transition: 'all 0.3s ease',
-                              transform: isSelected ? 'scale(1.2) translateX(10px) translateY(5px)' : 'scale(1) translateX(10px)'
+                              transform: isSelected ? 'scale(1.2) translateX(10px) translateY(5px)' : 'scale(1) translateX(10px)',
                             }}>
                             {isSelected ? (
                               <FontAwesomeIcon icon={faEye} style={{ color: 'white', fontSize: '12px' }} />
@@ -406,15 +396,15 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                             )}
                           </span>
 
-                          {/* Completed Line Segment */}
-                          {hasDocument && index < documentList.length - 1 && (
+                          {/* Line Segment to next node */}
+                          {index < documentList.length - 1 && (
                             <div style={{
                               position: 'absolute',
-                              left: '18px',
-                              top: '36px',
+                              left: '24px',
+                              top: '30px',
                               width: '3px',
-                              height: 'calc(100% - 36px)',
-                              background: '#10b981',
+                              height: '24px',
+                              background: hasDocument ? '#10b981' : '#ddd',
                               zIndex: 0
                             }}></div>
                           )}
@@ -581,44 +571,57 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
               </span>
               <button
                 onClick={() => {
-                  if (isLastDoc && !isCompleted) {
+                  if (readOnly && isLastDoc) {
+                    onClose()
+                  } else if (isLastDoc && !isCompleted) {
                     setShowConfirmModal(true)
                   } else if (!isLastDoc) {
                     goToNextDoc()
                   }
                 }}
-                disabled={isLastDoc && isCompleted}
+                disabled={isLastDoc && isCompleted && !readOnly}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   padding: '8px 16px',
-                  background: isLastDoc
-                    ? isCompleted
-                      ? '#9ca3af'
-                      : '#f59e0b'
-                    : '#10b981',
+                  background: readOnly
+                    ? '#10b981'
+                    : isLastDoc
+                      ? isCompleted
+                        ? '#9ca3af'
+                        : '#f59e0b'
+                      : '#10b981',
                   color: '#fff',
                   fontSize: '13px',
                   fontWeight: '600',
                   borderRadius: '20px',
                   border: 'none',
-                  cursor: isLastDoc && isCompleted ? 'not-allowed' : 'pointer',
-                  opacity: isLastDoc && isCompleted ? 0.7 : 1,
+                  cursor: (isLastDoc && isCompleted && !readOnly) ? 'not-allowed' : 'pointer',
+                  opacity: (isLastDoc && isCompleted && !readOnly) ? 0.7 : 1,
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  if (!(isLastDoc && isCompleted)) {
+                  if (!readOnly && !(isLastDoc && isCompleted)) {
                     e.currentTarget.style.background = isLastDoc ? '#d97706' : '#059669'
+                  } else if (readOnly) {
+                    e.currentTarget.style.background = '#059669'
                   }
                 }}
                 onMouseLeave={(e) => {
-                  if (!(isLastDoc && isCompleted)) {
+                  if (!readOnly && !(isLastDoc && isCompleted)) {
                     e.currentTarget.style.background = isLastDoc ? '#f59e0b' : '#10b981'
+                  } else if (readOnly) {
+                    e.currentTarget.style.background = '#10b981'
                   }
                 }}
               >
-                {isLastDoc ? (
+                {readOnly && isLastDoc ? (
+                  <>
+                    Tutup
+                    <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '12px' }} />
+                  </>
+                ) : isLastDoc ? (
                   isCompleted ? (
                     'Sudah Dinilai'
                   ) : (

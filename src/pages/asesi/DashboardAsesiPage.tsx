@@ -475,7 +475,7 @@ export default function DashboardAsesiPage() {
                           </div>
                           <div className="flex-1">
                             <h4 className="text-lg font-semibold text-slate-800">{assessor.name.toUpperCase()}</h4>
-                            <Badge variant="info" className="mt-2">
+                            <Badge variant="error" className="mt-2">
                               <Award className="w-3 h-3 mr-1" />
                               No. Lisensi: {assessor.license}
                             </Badge>
