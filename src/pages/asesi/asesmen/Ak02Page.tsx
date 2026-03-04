@@ -67,7 +67,7 @@ export default function Ak02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, tanggalSelesai } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
