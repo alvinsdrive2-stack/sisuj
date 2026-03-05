@@ -79,7 +79,7 @@ export default function Ia05Page() {
   const isAsesor1 = isAsesor && user?.id === idAsesor1
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor1 // Only asesor1 can edit umpan_balik
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

@@ -262,7 +262,16 @@ export default function ListAsesiAsesor() {
             {asesiList.map((asesi, index) => (
               <div
                 key={asesi.id_izin}
-                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary transition-colors bg-white dark:bg-slate-800"
+                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
+                onClick={() => {
+                  // Check jenjang_id for low jenjang flow
+                  const jenjangId = parseInt(kegiatan?.jenjang_id || "0")
+                  if (jenjangId < 4) {
+                    navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`)
+                  } else {
+                    navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`)
+                  }
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">

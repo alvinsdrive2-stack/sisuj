@@ -76,7 +76,7 @@ export default function UploadTugasPage() {
   const [showModal, setShowModal] = useState(false)
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

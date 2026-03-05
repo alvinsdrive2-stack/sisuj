@@ -118,6 +118,8 @@ export default function UjianPage() {
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const canEdit = !isAsesor
+  // Note: Ujian page doesn't have kegiatan data, so we use "0" as default jenjang_id
+  // This page is part of the asesmen flow but the jenjang_id is not critical for ujian steps
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: absen akhir for asesi is now handled in Ak02Page

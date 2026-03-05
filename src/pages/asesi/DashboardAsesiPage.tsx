@@ -339,7 +339,7 @@ export default function DashboardAsesiPage() {
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
                   onClick={() => {
-                    
+
                     if (!idIzin) {
                       toast("ID Izin tidak ditemukan", "error")
                       return
@@ -348,7 +348,13 @@ export default function DashboardAsesiPage() {
                       navigate(`/asesi/praasesmen`)
                     }
                     if (kegiatan?.tahap === "2") {
-                      navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+                      // Check jenjang_id for low jenjang flow
+                      const jenjangId = parseInt(kegiatan?.jenjang_id || "0")
+                      if (jenjangId < 4) {
+                        navigate(`/asesi/asesmen/${idIzin}/ia01`)
+                      } else {
+                        navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+                      }
                     }
                   }}
                 >

@@ -57,6 +57,9 @@ import AsesiPage from './pages/asesor/AsesiPage'
 import DashboardAsesiPage from './pages/asesi/DashboardAsesiPage'
 import PraAsesmenPage from './pages/asesi/PraAsesmenPage'
 import AsesmenPage from './pages/asesi/AsesmenPage'
+import Ia01Page from './pages/asesi/asesmen/Ia01Page'
+import Ia02Page from './pages/asesi/asesmen/Ia02Page'
+import Ia03Page from './pages/asesi/asesmen/Ia03Page'
 import Ia04aPage from './pages/asesi/asesmen/Ia04aPage'
 import UploadTugasPage from './pages/asesi/asesmen/UploadTugasPage'
 import Ia04bPage from './pages/asesi/asesmen/Ia04bPage'
@@ -318,6 +321,30 @@ function App() {
             element={
               <AsesiOrAsesorRoute>
                 <AsesmenPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia01"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia01Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia02"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia02Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia03"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia03Page />
               </AsesiOrAsesorRoute>
             }
           />

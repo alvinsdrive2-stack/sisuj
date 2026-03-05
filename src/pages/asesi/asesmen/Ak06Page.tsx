@@ -75,7 +75,8 @@ export default function Ak06Page() {
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+  const jenjangId = kegiatan?.jenjang_id || "0"
+  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
 
   // Logic: If asesor_2 exists, only asesor_2 can fill. Otherwise, asesor_1 fills.
   const hasAsesor2 = idAsesor2 !== null && idAsesor2 !== undefined

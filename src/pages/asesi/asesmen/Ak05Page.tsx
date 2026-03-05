@@ -52,7 +52,8 @@ export default function Ak05Page() {
   const canEdit = role === 'asesor_1'
 
   const resolvedAsesorRole = role || 'none'
-  const asesmenSteps = getAsesmenSteps(isAsesor, resolvedAsesorRole, asesorList.length)
+  const jenjangId = kegiatan?.jenjang_id || "0"
+  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, resolvedAsesorRole, asesorList.length)
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check

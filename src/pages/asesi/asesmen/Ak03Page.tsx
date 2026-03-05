@@ -48,7 +48,7 @@ export default function Ak03Page() {
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
 
   // Disable form for asesor (only asesi can fill)
   const isFormDisabled = isAsesor

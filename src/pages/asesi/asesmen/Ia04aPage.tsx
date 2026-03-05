@@ -187,7 +187,8 @@ export default function Ia04aPage() {
   })
 
   // Get dynamic steps based on asesor role
-  const asesmenSteps = getAsesmenSteps(isAsesor, asesorRole, asesorList.length)
+  const jenjangId = kegiatan?.jenjang_id || "0"
+  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
 
   useEffect(() => {
     const fetchData = async () => {

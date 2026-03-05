@@ -31,6 +31,45 @@ export const ASESMEN_STEPS_ASESI: StepConfig[] = [
   { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
+// Asesmen Steps for Asesi (jenjang < 4) - IA01, IA02, IA03 instead of IA04A, IA04B
+export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
+  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 4, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 5, label: 'Ujian', href: '/asesi/asesmen/uji' },
+  { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+// Asesmen Steps for Asesor 1 (jenjang < 4)
+export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_1: StepConfig[] = [
+  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 4, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 8, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 9, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+// Asesmen Steps for Asesor 2 (jenjang < 4)
+export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_2: StepConfig[] = [
+  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 4, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
 // Asesmen Steps for Asesor 1 (full flow)
 export const ASESMEN_STEPS_ASESOR_1: StepConfig[] = [
   { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
@@ -59,22 +98,29 @@ export const ASESMEN_STEPS_ASESOR_2: StepConfig[] = [
 // Default asesmen steps (backward compatibility)
 export const ASESMEN_STEPS: StepConfig[] = ASESMEN_STEPS_ASESI
 
-// Get asesmen steps based on asesor role
-export function getAsesmenSteps(isAsesor: boolean, asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none', _asesorCount: number): StepConfig[] {
+// Get asesmen steps based on jenjang_id and asesor role
+export function getAsesmenSteps(
+  jenjangId: string,
+  isAsesor: boolean,
+  asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none',
+  asesorCount: number
+): StepConfig[] {
+  const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
+
   if (!isAsesor) {
-    return ASESMEN_STEPS_ASESI
+    return isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI
   }
 
   if (asesorRole === 'asesor_1') {
-    return ASESMEN_STEPS_ASESOR_1
+    return isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1
   }
 
   if (asesorRole === 'asesor_2') {
-    return ASESMEN_STEPS_ASESOR_2
+    return isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2
   }
 
   // For asesor_other (asesor 3+), use same steps as asesor_2 for now
-  return ASESMEN_STEPS_ASESOR_2
+  return isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2
 }
 
 // Helper function to get current step number from href
