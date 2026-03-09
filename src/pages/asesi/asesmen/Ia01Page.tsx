@@ -1,34 +1,105 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+
+interface Kuk {
+  id: number
+  nama: string
+}
+
+interface Soal {
+  id: number
+  no: string
+  jenis: string
+  id_kelompok: number
+  penilaian_lanjut: string | null
+  pencapaian: boolean | null
+  kuk: Kuk
+  id_subunitkompetensi: number
+}
+
+interface Subunit {
+  id: number
+  nama: string
+  soal: Soal[]
+}
+
+interface Unit {
+  id_unit: number
+  nama_unit: string
+  kode_unit: string
+  subunits: Subunit[]
+}
+
+interface KelompokKerjaItem {
+  id: number
+  nama: string
+  urut: string
+  umpan_balik: string | null
+  units: Unit[]
+}
+
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
+}
+
+interface Ia01Response {
+  message: string
+  data: {
+    barcodes?: {
+      asesi?: BarcodeData | null
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
+    kelompok_kerja: {
+      id: number
+      kode: string
+      nama_dokumen: string
+      kelompok_kerja: KelompokKerjaItem[]
+    }
+  }
+}
+
+interface SoalAnswer {
+  pencapaian: boolean | null
+  penilaian_lanjut: string | null
+}
 
 export default function Ia01Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { showSuccess, showWarning } = useToast()
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
-  const [isLoading, setIsLoading] = useState(true)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const jenjangId = kegiatan?.jenjang_id || "0"
+  // Get dynamic steps
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
-  // Absen check - auto-detect role
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+  // Disable form for asesi and asesor_2 (only asesor_1 can fill)
+  const isFormDisabled = !isAsesor1
+
+  // Absen check
+  const {
+    showAwalModal,
+    submitAbsenAwal,
+    handleAwalModalClose,
+  } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
     checkOnMount: true,
@@ -36,15 +107,40 @@ export default function Ia01Page() {
     asesorList
   })
 
-  // Get dynamic steps based on jenjang and asesor role
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
+  // Form state
+  const [soalAnswers, setSoalAnswers] = useState<Record<number, SoalAnswer>>({})
+  const [umpanBalik, setUmpanBalik] = useState('')
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
+  const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [expandedKelompok, setExpandedKelompok] = useState<Set<number>>(new Set())
+  const [dokumenId, setDokumenId] = useState<number | null>(null)
+  const [kelompokKerjaData, setKelompokKerjaData] = useState<KelompokKerjaItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
+  // Toggle kelompok expansion
+  const toggleKelompok = (kelompokId: number) => {
+    setExpandedKelompok(prev => {
+      const next = new Set(prev)
+      if (next.has(kelompokId)) {
+        next.delete(kelompokId)
+      } else {
+        next.add(kelompokId)
+      }
+      return next
+    })
+  }
+
+  // Fetch IA01 data
   useEffect(() => {
     const fetchData = async () => {
       if (authLoading) return
 
       if (!id) {
-        console.error("No id_izin found in user data")
+        console.error("No id_izin found")
         setIsLoading(false)
         return
       }
@@ -59,76 +155,105 @@ export default function Ia01Page() {
         })
 
         if (response.ok) {
-          const result = await response.json()
-          console.log("IA01 data:", result)
+          const result: Ia01Response = await response.json()
+          if (result.message === "Success" && result.data?.kelompok_kerja) {
+            // Set barcodes
+            if (result.data.barcodes) {
+              setBarcodes({
+                asesi: result.data.barcodes.asesi,
+                asesor1: result.data.barcodes.asesor1,
+                asesor2: result.data.barcodes.asesor2,
+              })
+            }
+
+            // Set dokumen_id
+            setDokumenId(result.data.kelompok_kerja.id)
+
+            // Set kelompok kerja data
+            setKelompokKerjaData(result.data.kelompok_kerja.kelompok_kerja)
+
+            // Initialize answers and feedback from existing data
+            const answers: Record<number, SoalAnswer> = {}
+            let firstUmpanBalik = ''
+
+            result.data.kelompok_kerja.kelompok_kerja.forEach((kelompok) => {
+              // Get first feedback as the main umpan balik
+              if (!firstUmpanBalik && kelompok.umpan_balik) {
+                firstUmpanBalik = kelompok.umpan_balik
+              }
+
+              // Set answers from soal
+              kelompok.units.forEach((unit) => {
+                unit.subunits.forEach((subunit) => {
+                  subunit.soal.forEach((soal) => {
+                    answers[soal.id] = {
+                      pencapaian: soal.pencapaian,
+                      penilaian_lanjut: soal.penilaian_lanjut,
+                    }
+                  })
+                })
+              })
+            })
+
+            setSoalAnswers(answers)
+            setUmpanBalik(firstUmpanBalik)
+
+            // Expand all by default
+            setExpandedKelompok(new Set(result.data.kelompok_kerja.kelompok_kerja.map(k => k.id)))
+          }
         }
-      } catch (error) {
-        console.error("Error fetching IA01:", error)
+      } catch (err) {
+        console.error("Error fetching IA01:", err)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchData()
-  }, [id, authLoading, user, asesorList])
-
-  const handleNext = async () => {
-    if (!agreedChecklist) {
-      showWarning('Silakan centang pernyataan terlebih dahulu')
-      return
-    }
-
-    // Generate QR if needed
-    const jadwalId = kegiatan?.jadwal_id
-    const token = localStorage.getItem("access_token")
-
-    if (jadwalId) {
-      try {
-        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia01`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            id_jadwal: jadwalId
-          })
-        })
-
-        if (qrResponse.ok) {
-          console.log("QR IA01 generated")
-        }
-      } catch (qrError) {
-        console.error('Error generating QR:', qrError)
-      }
-    }
-
-    showSuccess('IA.01 berhasil disimpan!')
-    setTimeout(() => {
-      navigate(`/asesi/asesmen/${id}/ia02`)
-    }, 500)
-  }
+  }, [id, authLoading])
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'Arial, Helvetica, sans-serif' }}>
         <DashboardNavbar userName={user?.name} />
         <FullPageLoader text="Memuat data IA.01..." />
       </div>
     )
   }
 
+  const handlePencapaianChange = (soalId: number, value: boolean) => {
+    setSoalAnswers(prev => ({
+      ...prev,
+      [soalId]: {
+        ...prev[soalId],
+        pencapaian: value
+      }
+    }))
+  }
+
+  const handlePenilaianLanjutChange = (soalId: number, value: string) => {
+    setSoalAnswers(prev => ({
+      ...prev,
+      [soalId]: {
+        ...prev[soalId],
+        penilaian_lanjut: value
+      }
+    }))
+  }
+
+  const handleFeedbackChange = (value: string) => {
+    setUmpanBalik(value)
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      {/* Header */}
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       <DashboardNavbar userName={user?.name} />
 
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
         <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
+            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
             <span>Asesmen</span>
             <span>/</span>
@@ -137,30 +262,348 @@ export default function Ia01Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia01'))?.number || 1} steps={asesmenSteps} id={id}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', letterSpacing: '1px' }}>
-            FR.IA.01. FORMULIR ASESMEN MANDIRI
+          <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
+            FR.IA.01. &nbsp; CEKLIS OBSERVASI AKTIVITAS DITEMPAT KERJA ATAU TEMPAT KERJA SIMULASI
           </h1>
         </div>
 
-        {/* Placeholder Content */}
-        <div style={{
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '40px',
-          textAlign: 'center',
-          marginBottom: '20px'
-        }}>
-          <p style={{ fontSize: '16px', color: '#666', marginBottom: '10px' }}>
-            Halaman ini sedang dalam pengembangan
-          </p>
-          <p style={{ fontSize: '14px', color: '#999' }}>
-            Formulir IA.01 akan ditampilkan di sini
-          </p>
+        {/* IDENTITAS Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Nomor</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{nomorSkema || '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>TUK</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{tuk || '-'}</td>
+            </tr>
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                    {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+                </td>
+              </tr>
+            )}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || '-'}</td>
+            </tr>
+            <tr>
+              <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Tanggal Asesmen</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'right' }}>Mulai :</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'right' }}>Selesai :</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* PANDUAN BAGI ASESOR */}
+        <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
+          <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+            PANDUAN BAGI ASESOR
+          </div>
+          <div style={{ padding: '10px', fontSize: '12px' }}>
+            <ul style={{ margin: 0, paddingLeft: '20px' }}>
+              <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
+              <li>Isi standar industri atau tempat kerja.</li>
+              <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
+              <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
+              <li>Isi kolom KUK sesuai SKKNI.</li>
+            </ul>
+          </div>
         </div>
+
+        {/* KELOMPOK PEKERJAAN */}
+        {kelompokKerjaData.map((kelompok) => (
+          <div key={kelompok.id} style={{ marginBottom: '15px' }}>
+            {/* Kelompok Header */}
+            <div
+              onClick={() => toggleKelompok(kelompok.id)}
+              style={{
+                background: '#c40000',
+                color: '#fff',
+                padding: '10px 12px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                userSelect: 'none'
+              }}
+            >
+              <span>Kelompok Pekerjaan {kelompok.urut}</span>
+              <span style={{ fontSize: '16px' }}>{expandedKelompok.has(kelompok.id) ? '▼' : '▶'}</span>
+            </div>
+
+            {expandedKelompok.has(kelompok.id) && (
+              <>
+              <br />
+                {/* Units Table - Header */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000', borderTop: 'none' }}>
+                  <thead>
+                    <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                      <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Kelompok Pekerjaan {kelompok.urut}</th>
+                      <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
+                      <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Kode Unit</th>
+                      <th style={{ border: '1px solid #000', padding: '6px' }}>Judul Unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {kelompok.units
+                      .filter((unit) => unit.subunits.some((subunit) => subunit.soal.length > 0))
+                      .map((unit, index) => (
+                      <tr key={unit.id_unit}>
+                        {index === 0 && (
+                          <td rowSpan={kelompok.units.filter((u) => u.subunits.some((s) => s.soal.length > 0)).length} style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                            {kelompok.nama}
+                          </td>
+                        )}
+                        <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                          {index + 1}
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.kode_unit}</td>
+                        <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.nama_unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <br/>
+                {/* Observation Table - per unit */}
+                {kelompok.units
+                  .filter((unit) => unit.subunits.some((subunit) => subunit.soal.length > 0))
+                  .map((unit, filteredIndex) => (
+                  <div key={unit.id_unit} style={{ marginBottom: '15px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
+                      <tbody>
+                        <tr>
+                          <td style={{ width: '20%', border: '1px solid #000', padding: '6px', background: '#fff' }}>Unit Kompetensi {filteredIndex + 1}</td>
+                          <td style={{ width: '2%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                          <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.kode_unit}</td>
+                        </tr>
+                        <tr>
+                          <td style={{ border: '1px solid #000', padding: '6px', background: '#fff' }}>Judul Unit</td>
+                          <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                          <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.nama_unit}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <br/>
+                    {/* Soal Table */}
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000', borderTop: 'none' }}>
+                      <thead>
+                        <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                          <th rowSpan={2} style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
+                          <th rowSpan={2} style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Elemen</th>
+                          <th rowSpan={2} style={{ width: '35%', border: '1px solid #000', padding: '6px' }}>Kriteria Unjuk Kerja</th>
+                          <th rowSpan={2} style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Standar Industri / Tempat Kerja</th>
+                          <th colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Pencapaian</th>
+                          <th rowSpan={2} style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Penilaian Lanjut</th>
+                        </tr>
+                        <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                          <th style={{ width: '5%', border: '1px solid #000', padding: '4px' }}>Ya</th>
+                          <th style={{ width: '5%', border: '1px solid #000', padding: '4px' }}>Tidak</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unit.subunits.map((subunit) =>
+                          subunit.soal.map((soal) => (
+                            <tr key={soal.id}>
+                              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{soal.no}</td>
+                              <td style={{ border: '1px solid #000', padding: '6px' }}>{subunit.nama}</td>
+                              <td style={{ border: '1px solid #000', padding: '6px' }}>{soal.kuk.nama}</td>
+                              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>SKKNI</td>
+                              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                                <CustomCheckbox
+                                  checked={soalAnswers[soal.id]?.pencapaian === true}
+                                  onChange={() => handlePencapaianChange(soal.id, true)}
+                                  disabled={isFormDisabled}
+                                  style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                                <CustomCheckbox
+                                  checked={soalAnswers[soal.id]?.pencapaian === false}
+                                  onChange={() => handlePencapaianChange(soal.id, false)}
+                                  disabled={isFormDisabled}
+                                  style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ border: '1px solid #000', padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  value={soalAnswers[soal.id]?.penilaian_lanjut || ''}
+                                  onChange={(e) => handlePenilaianLanjutChange(soal.id, e.target.value)}
+                                  disabled={isFormDisabled}
+                                  style={{
+                                    width: '100%',
+                                    border: '1px solid #ccc',
+                                    padding: '4px',
+                                    fontSize: '12px',
+                                    cursor: isFormDisabled ? 'not-allowed' : 'text'
+                                  }}
+                                  placeholder="Isi penilaian lanjut..."
+                                />
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        ))}
+
+        {/* UMPAN BALIK - Single at the end */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                <b>Umpan Balik untuk asesi:</b>
+                <br />
+                <textarea
+                  value={umpanBalik}
+                  onChange={(e) => handleFeedbackChange(e.target.value)}
+                  disabled={isFormDisabled}
+                  style={{
+                    width: '100%',
+                    minHeight: '70px',
+                    border: '1px solid #ccc',
+                    padding: '6px',
+                    fontSize: '12px',
+                    resize: 'vertical',
+                    cursor: isFormDisabled ? 'not-allowed' : 'text',
+                    marginTop: '8px'
+                  }}
+                  placeholder="Tuliskan umpan balik untuk asesi..."
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* REKOMENDASI & TTD Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}><b>Rekomendasi:</b></td>
+              <td colSpan={2} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}><b>Asesi</b></td>
+            </tr>
+            <tr>
+              <td rowSpan={3 + 3 * asesorList.length} style={{ width: '50%', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
+                  <CustomCheckbox
+                    checked={Object.values(soalAnswers).every(a => a.pencapaian === true)}
+                    onChange={() => {}}
+                    disabled={isFormDisabled}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span style={{ fontSize: '12px' }}>Asesi telah memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan <b>KOMPETEN</b>.</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
+                  <CustomCheckbox
+                    checked={Object.values(soalAnswers).some(a => a.pencapaian === false)}
+                    onChange={() => {}}
+                    disabled={isFormDisabled}
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span style={{ fontSize: '12px' }}>Asesi belum memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan <b>BELUM KOMPETEN</b>.</span>
+                </label>
+              </td>
+              <td style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+              <td style={{ width: '35%', border: '1px solid #000', padding: '6px' }}>: {namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan / Tanggal</td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={2} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}><b>Asesor</b></td>
+              <td></td>
+            </tr>
+            {asesorList.map((asesor, idx) => {
+              const asesorBarcode = idx === 0 ? barcodes?.asesor1 : barcodes?.asesor2
+              const label = asesorList.length > 1 ? `Asesor ${idx + 1}` : 'Asesor'
+              return (
+                <React.Fragment key={asesor.id}>
+                  <tr>
+                    <td style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Nama {label}</td>
+                    <td style={{ width: '35%', border: '1px solid #000', padding: '6px' }}>: {asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg{asesorList.length > 1 ? ` ${idx + 1}` : ''}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>: {asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan / Tanggal</td>
+                    <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      {asesorBarcode?.url ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <img
+                            src={asesorBarcode.url}
+                            alt={`Tanda Tangan ${asesor.nama}`}
+                            style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                          />
+                          {asesorBarcode.tanggal && (
+                            <div style={{ fontSize: '11px', color: '#333' }}>
+                              {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                </React.Fragment>
+              )
+            })}
+          </tbody>
+        </table>
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
@@ -173,18 +616,182 @@ export default function Ia01Page() {
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
-                Saya menyatakan dengan sebenar-benarnya bahwa saya telah memahami instruksi tugas terstruktur dan akan menyelesaikan tugas tersebut sesuai dengan ketentuan yang berlaku.
+                Saya menyatakan dengan sebenar-benarnya bahwa hasil penilaian observasi ini telah saya isi dengan jujur dan dapat dipertanggungjawabkan.
               </span>
             </label>
           </div>
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
+            <ActionButton
+              variant="secondary"
+              onClick={() => {
+                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                const prevStep = asesmenSteps[currentStepIndex - 1]
+                if (prevStep) {
+                  const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                  navigate(prevPath)
+                } else {
+                  navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
+                }
+              }}
+            >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleNext}>
-              Lanjut
+            <ActionButton
+              variant="primary"
+              disabled={!agreedChecklist}
+              onClick={async () => {
+                if (!agreedChecklist) {
+                  showWarning('Silakan centang pernyataan terlebih dahulu')
+                  return
+                }
+
+                if (!id || !dokumenId) {
+                  showWarning('Data tidak lengkap')
+                  return
+                }
+
+                try {
+                  const token = localStorage.getItem("access_token")
+
+                  // Prepare answers array - filter out answers with pencapaian = null
+                  const answers = Object.entries(soalAnswers)
+                    .filter(([, answer]) => answer.pencapaian !== null)
+                    .map(([soalId, answer]) => ({
+                      soal_id: parseInt(soalId),
+                      penilaian_lanjut: answer.penilaian_lanjut?.trim() || null,
+                      pencapaian: answer.pencapaian
+                    }))
+
+                  // Prepare feedback array - use same umpan balik for all kelompoks
+                  const feedback = kelompokKerjaData.map((kelompok) => ({
+                    kelompok_id: kelompok.id,
+                    umpan_balik: umpanBalik
+                  }))
+
+                  const payload = {
+                    dokumen_id: dokumenId,
+                    answers,
+                    feedback,
+                  }
+
+                  console.log('Sending IA01 payload:', payload)
+
+                  const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia01`, {
+                    method: 'POST',
+                    headers: {
+                      "Accept": "application/json",
+                      "Authorization": `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                  })
+
+                  if (response.ok) {
+                    showSuccess('IA 01 berhasil disimpan!')
+
+                    // Generate QR after saving
+                    const jadwalId = kegiatan?.jadwal_id
+
+                    console.log('QR Generation - isAsesor:', isAsesor, 'isAsesor1:', isAsesor1, 'jadwalId:', jadwalId, 'kegiatan:', kegiatan, 'barcodes:', barcodes)
+
+                    // For asesor: generate QR only if not exists
+                    const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+                    const hasAsesorQR = !!existingAsesorQR && existingAsesorQR.length > 0
+
+                    console.log('QR Check for asesor - existingAsesorQR:', existingAsesorQR, 'hasAsesorQR:', hasAsesorQR)
+
+                    if (isAsesor && jadwalId && !hasAsesorQR) {
+                      console.log('Attempting asesor QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia01`)
+                      try {
+                        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia01`, {
+                          method: 'POST',
+                          headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({
+                            id_jadwal: jadwalId
+                          })
+                        })
+
+                        console.log('QR Response status:', qrResponse.status)
+
+                        if (qrResponse.ok) {
+                          const qrResult = await qrResponse.json()
+                          console.log('QR Result:', qrResult)
+                          if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                            if (isAsesor1) {
+                              setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                            } else {
+                              setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                            }
+                          }
+                        } else {
+                          const errorData = await qrResponse.json().catch(() => ({ message: 'Unknown error' }))
+                          console.error('QR POST failed:', qrResponse.status, errorData)
+                        }
+                      } catch (qrError) {
+                        console.error('Error generating asesor QR:', qrError)
+                      }
+                    } else {
+                      console.log('QR POST skipped - isAsesor:', isAsesor, 'jadwalId:', jadwalId, 'hasAsesorQR:', hasAsesorQR, 'existingAsesorQR:', existingAsesorQR)
+                    }
+
+                    // For asesi: generate QR if not exists
+                    const existingAsesiQR = barcodes?.asesi?.url
+                    const hasAsesiQR = !!existingAsesiQR && existingAsesiQR.length > 0
+
+                    console.log('QR Check for asesi - existingAsesiQR:', existingAsesiQR, 'hasAsesiQR:', hasAsesiQR)
+
+                    if (jadwalId && !hasAsesiQR) {
+                      try {
+                        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia01`, {
+                          method: 'POST',
+                          headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`,
+                          },
+                          body: JSON.stringify({
+                            id_jadwal: jadwalId
+                          })
+                        })
+
+                        if (qrResponse.ok) {
+                          const qrResult = await qrResponse.json()
+                          if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                            setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
+                          }
+                        }
+                      } catch (qrError) {
+                        console.error('Error generating asesi QR:', qrError)
+                      }
+                    }
+
+                    // Navigate to next step
+                    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                    const nextStep = asesmenSteps[currentStepIndex + 1]
+                    if (nextStep) {
+                      const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                      setTimeout(() => navigate(nextPath), 500)
+                    } else {
+                      setTimeout(() => navigate(`/asesi/asesmen/${id}/ia02`), 500)
+                    }
+                  } else {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+                    console.error('Failed to save IA01:', response.status, errorData)
+                    showError(errorData.message || 'Gagal menyimpan data. Silakan coba lagi.')
+                  }
+                } catch (err) {
+                  console.error('Error saving IA01:', err)
+                  showError('Terjadi kesalahan. Silakan coba lagi.')
+                }
+              }}
+            >
+              Simpan & Lanjut
             </ActionButton>
           </div>
         </div>

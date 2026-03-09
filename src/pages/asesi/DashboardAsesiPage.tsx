@@ -23,6 +23,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
 
 export default function DashboardAsesiPage() {
@@ -30,7 +31,10 @@ export default function DashboardAsesiPage() {
   const { kegiatan, isLoading: _isLoading, error: _error } = useKegiatanAsesi()
   const navigate = useNavigate()
   const [showPage, setShowPage] = useState(false)
-  const [idIzin, setIdIzin] = useState<string | null>(null)
+  const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
+
+  // Fetch jenjang from data-dokumen API
+  const { jenjang } = useDataDokumenAsesmen(idIzin)
 
   // Fetch id_izin from list-asesi
   useEffect(() => {
@@ -50,7 +54,7 @@ export default function DashboardAsesiPage() {
           const result = await response.json()
           const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
           if (matchedAsesi?.id_izin) {
-            
+
             setIdIzin(matchedAsesi.id_izin)
           }
         }
@@ -63,14 +67,11 @@ export default function DashboardAsesiPage() {
   }, [kegiatan?.jadwal_id, user?.name])
 
   // Debug logging
-  
-  
-  
-  
-  
-  
-  
-  
+
+
+
+
+
 
   // Page entrance animation
   useEffect(() => {
@@ -78,9 +79,8 @@ export default function DashboardAsesiPage() {
   }, [])
 
   // Debug logging
-  
-  
-  
+
+
 
   const [, _setCurrentTime] = useState(new Date()) // Clock state reserved for future use
   const [countdown, setCountdown] = useState({
@@ -348,8 +348,8 @@ export default function DashboardAsesiPage() {
                       navigate(`/asesi/praasesmen`)
                     }
                     if (kegiatan?.tahap === "2") {
-                      // Check jenjang_id for low jenjang flow
-                      const jenjangId = parseInt(kegiatan?.jenjang_id || "0")
+                      // Check jenjang from data-dokumen API for low jenjang flow
+                      const jenjangId = parseInt(jenjang || "0")
                       if (jenjangId < 4) {
                         navigate(`/asesi/asesmen/${idIzin}/ia01`)
                       } else {
@@ -439,12 +439,12 @@ export default function DashboardAsesiPage() {
               </CardContent>
             </Card>
 
-            
+
           </div>
 
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
-            
+
             {/* Assessor Info */}
             <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
 
@@ -456,7 +456,7 @@ export default function DashboardAsesiPage() {
               </CardHeader>
 
               <CardContent className="p-6">
-                
+
                 {examData.assessors.length > 0 ? (
                   <div className="space-y-4">
                     {examData.assessors.map((assessor, index) => {

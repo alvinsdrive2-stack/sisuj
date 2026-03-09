@@ -67,13 +67,12 @@ export default function Ak02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const jenjangId = kegiatan?.jenjang_id || "0"
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Disable form for asesi and asesor_2 (only asesor_1 can fill)
   const isFormDisabled = !isAsesor1

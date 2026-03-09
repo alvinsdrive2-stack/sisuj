@@ -15,12 +15,12 @@ export default function AsesmenSelesaiPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList } = useDataDokumenAsesmen(id)
   const [countdown, setCountdown] = useState(3)
 
   // Get dynamic steps based on role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

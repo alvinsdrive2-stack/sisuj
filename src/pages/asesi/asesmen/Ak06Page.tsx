@@ -69,14 +69,13 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2 } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2 } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const jenjangId = kegiatan?.jenjang_id || "0"
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Logic: If asesor_2 exists, only asesor_2 can fill. Otherwise, asesor_1 fills.
   const hasAsesor2 = idAsesor2 !== null && idAsesor2 !== undefined

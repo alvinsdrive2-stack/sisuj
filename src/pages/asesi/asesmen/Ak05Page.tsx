@@ -34,9 +34,9 @@ export default function Ak05Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, namaAsesi } = useDataDokumenAsesmen(id)
-  const { kegiatan } = useKegiatanByRole()
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, namaAsesi } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps - AK.05 is only for asesor
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -52,8 +52,7 @@ export default function Ak05Page() {
   const canEdit = role === 'asesor_1'
 
   const resolvedAsesorRole = role || 'none'
-  const jenjangId = kegiatan?.jenjang_id || "0"
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, resolvedAsesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length)
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check

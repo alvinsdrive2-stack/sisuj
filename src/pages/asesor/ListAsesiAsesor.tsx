@@ -81,6 +81,8 @@ export default function ListAsesiAsesor() {
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
+  const [jenjang, setJenjang] = useState<string>('0')
+
   // Fetch kegiatan detail
   useEffect(() => {
     const fetchKegiatan = async () => {
@@ -98,6 +100,36 @@ export default function ListAsesiAsesor() {
     }
     fetchKegiatan()
   }, [jadwalId])
+
+  // Fetch jenjang from data-dokumen API
+  useEffect(() => {
+    const fetchJenjang = async () => {
+      if (asesiList.length === 0) return
+
+      const firstAsesiId = asesiList[0].id_izin
+      const token = localStorage.getItem("access_token")
+
+      try {
+        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${firstAsesiId}/data-dokumen`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          if (result.message === "Success" && result.data) {
+            setJenjang(result.data.jenjang || '0')
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching jenjang:', err)
+      }
+    }
+
+    fetchJenjang()
+  }, [asesiList])
 
   // Always call hook, use empty string as fallback
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
@@ -264,8 +296,8 @@ export default function ListAsesiAsesor() {
                 key={asesi.id_izin}
                 className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
                 onClick={() => {
-                  // Check jenjang_id for low jenjang flow
-                  const jenjangId = parseInt(kegiatan?.jenjang_id || "0")
+                  // Check jenjang from data-dokumen API for low jenjang flow
+                  const jenjangId = parseInt(jenjang || "0")
                   if (jenjangId < 4) {
                     navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`)
                   } else {

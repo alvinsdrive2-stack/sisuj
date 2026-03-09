@@ -103,7 +103,7 @@ export function getAsesmenSteps(
   jenjangId: string,
   isAsesor: boolean,
   asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none',
-  asesorCount: number
+  _asesorCount: number
 ): StepConfig[] {
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
 

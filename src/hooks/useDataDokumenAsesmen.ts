@@ -10,6 +10,7 @@ interface DataDokumenAsesmenData {
   jabatan_kerja: string
   nomor_skema: string
   tuk: string
+  jenjang: string
   id_asesor_1: number
   id_asesor_2: number
   nama_asesi: string
@@ -40,6 +41,7 @@ interface UseDataDokumenAsesmenResult {
   jabatanKerja: string
   nomorSkema: string
   tuk: string
+  jenjang: string
   asesorList: Asesor[]
   namaAsesor: string
   namaAsesi: string
@@ -66,6 +68,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     jabatanKerja: string
     nomorSkema: string
     tuk: string
+    jenjang: string
     asesorList: Asesor[]
     namaAsesor: string
     namaAsesi: string
@@ -87,6 +90,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     jabatanKerja: '',
     nomorSkema: '',
     tuk: '',
+    jenjang: '0',
     asesorList: [],
     namaAsesor: '',
     namaAsesi: '',
@@ -153,6 +157,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
               jabatanKerja: result.data.jabatan_kerja || '',
               nomorSkema: result.data.nomor_skema || '',
               tuk: result.data.tuk || '',
+              jenjang: result.data.jenjang || '0',
               asesorList,
               namaAsesor,
               namaAsesi: result.data.nama_asesi || '',

@@ -163,7 +163,7 @@ export default function Ia04aPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -187,8 +187,7 @@ export default function Ia04aPage() {
   })
 
   // Get dynamic steps based on asesor role
-  const jenjangId = kegiatan?.jenjang_id || "0"
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   useEffect(() => {
     const fetchData = async () => {

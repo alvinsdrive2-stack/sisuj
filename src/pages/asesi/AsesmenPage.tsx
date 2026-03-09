@@ -22,7 +22,6 @@ export default function AsesmenPage() {
 
     // Check jenjang_id to determine which flow to use
     const jenjangId = parseInt(kegiatan.jenjang_id || "0")
-    const isFirstStep = kegiatan.is_started === "0"
 
     // For jenjang < 4, start at IA01
     // For jenjang >= 4, start at IA04A

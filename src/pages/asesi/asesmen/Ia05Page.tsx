@@ -69,7 +69,7 @@ export default function Ia05Page() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
@@ -79,7 +79,7 @@ export default function Ia05Page() {
   const isAsesor1 = isAsesor && user?.id === idAsesor1
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor1 // Only asesor1 can edit umpan_balik
-  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -267,7 +267,7 @@ export default function Ia05Page() {
 
   const isQuestionAnswered = (soalId: number) => answers[soalId]
 
-  if (isLoading) {
+  if (isLoading || isDataLoading) {
     return <FullPageLoader text="Memuat data IA.05..." />
   }
 

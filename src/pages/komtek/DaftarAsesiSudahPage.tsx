@@ -8,10 +8,13 @@ import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
+import { DokumenViewerModal } from "@/components/direktur"
 
 interface KomtekFiles {
   ba_komtek?: string
+  spt_komtek?: string
   sk_komtek?: string
+  pleno_komtek?: string
 }
 
 export default function DaftarAsesiSudahPage() {
@@ -22,6 +25,7 @@ export default function DaftarAsesiSudahPage() {
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [komtekFiles, setKomtekFiles] = useState<KomtekFiles>({})
   const [komtekFilesLoading, setKomtekFilesLoading] = useState(false)
+  const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string } | null>(null)
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
@@ -89,11 +93,12 @@ export default function DaftarAsesiSudahPage() {
     return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const openFile = (url: string) => {
-    window.open(url, '_blank')
+  const openFile = (url: string, title: string) => {
+    setSelectedDokumen({ url, title })
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
@@ -229,7 +234,7 @@ export default function DaftarAsesiSudahPage() {
               variant="outline"
               className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
               disabled={!komtekFiles.ba_komtek}
-              onClick={() => komtekFiles.ba_komtek && openFile(komtekFiles.ba_komtek)}
+              onClick={() => komtekFiles.ba_komtek && openFile(komtekFiles.ba_komtek, 'BA Komtek')}
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
@@ -248,7 +253,7 @@ export default function DaftarAsesiSudahPage() {
               variant="outline"
               className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
               disabled={!komtekFiles.sk_komtek}
-              onClick={() => komtekFiles.sk_komtek && openFile(komtekFiles.sk_komtek)}
+              onClick={() => komtekFiles.sk_komtek && openFile(komtekFiles.sk_komtek, 'SK Komtek')}
             >
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
@@ -261,9 +266,56 @@ export default function DaftarAsesiSudahPage() {
               </div>
               {komtekFiles.sk_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
             </Button>
+
+            {/* SPT Komtek */}
+            <Button
+              variant="outline"
+              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!komtekFiles.spt_komtek}
+              onClick={() => komtekFiles.spt_komtek && openFile(komtekFiles.spt_komtek, 'SPT Komtek')}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block">SPT Komtek</span>
+                  <span className="text-xs text-muted-foreground">
+                    {komtekFiles.spt_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                  </span>
+                </div>
+              </div>
+              {komtekFiles.spt_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
+            </Button>
+
+            {/* Pleno Komtek */}
+            <Button
+              variant="outline"
+              className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+              disabled={!komtekFiles.pleno_komtek}
+              onClick={() => komtekFiles.pleno_komtek && openFile(komtekFiles.pleno_komtek, 'Pleno Komtek')}
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <div className="text-left">
+                  <span className="text-sm font-semibold block">Pleno Komtek</span>
+                  <span className="text-xs text-muted-foreground">
+                    {komtekFiles.pleno_komtek ? 'Klik untuk buka' : 'Belum tersedia'}
+                  </span>
+                </div>
+              </div>
+              {komtekFiles.pleno_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
+            </Button>
           </CardContent>
         </Card>
       </div>
     </div>
+
+    {/* Dokumen Viewer Modal */}
+    <DokumenViewerModal
+      isOpen={selectedDokumen !== null}
+      onClose={() => setSelectedDokumen(null)}
+      url={selectedDokumen?.url || null}
+      title={selectedDokumen?.title || ''}
+    />
+  </>
   )
 }

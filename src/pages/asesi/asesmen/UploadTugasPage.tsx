@@ -11,6 +11,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface TugasResponse {
@@ -61,7 +62,7 @@ export default function UploadTugasPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList } = useDataDokumenAsesmen(id)
+  const { asesorList, jenjang, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
   const { showSuccess, showError } = useToast()
 
   // Check if user is an asesor (view-only mode)
@@ -76,7 +77,7 @@ export default function UploadTugasPage() {
   const [showModal, setShowModal] = useState(false)
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps("0", isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -119,6 +120,16 @@ export default function UploadTugasPage() {
   useEffect(() => {
     fetchTugas()
   }, [id])
+
+  // Show loading while fetching jenjang data - MUST be after all hooks
+  if (isDataLoading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        <DashboardNavbar userName={user?.name} />
+        <FullPageLoader text="Memuat data..." />
+      </div>
+    )
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -532,7 +543,17 @@ export default function UploadTugasPage() {
 
         {/* Actions - hide for asesor */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04a`)}>
+          <ActionButton
+            variant="secondary"
+            onClick={() => {
+              const jenjangNum = parseInt(jenjang)
+              if (jenjangNum < 4) {
+                navigate(`/asesi/asesmen/${id}/ia03`)
+              } else {
+                navigate(`/asesi/asesmen/${id}/ia04a`)
+              }
+            }}
+          >
             Kembali
           </ActionButton>
           <ActionButton
@@ -540,7 +561,12 @@ export default function UploadTugasPage() {
             disabled={!uploadedTugas || !agreedChecklist}
             onClick={() => {
               if (!uploadedTugas || !agreedChecklist) return
-              navigate(`/asesi/asesmen/${id}/ia04b`)
+              const jenjangNum = parseInt(jenjang)
+              if (jenjangNum < 4) {
+                navigate(`/asesi/asesmen/${id}/uji`)
+              } else {
+                navigate(`/asesi/asesmen/${id}/ia04b`)
+              }
             }}
           >
             Lanjut

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle, ExternalLink } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -15,11 +15,15 @@ import { DokumenViewerModal } from "@/components/direktur"
 interface DokumenDirekturResponse {
   message: string
   data: {
-    sk_pelaksanaan_uji: string | null
+    sk_pelaksanaan_uji: {
+      link: string
+      is_approved: boolean
+    } | null
     spt_asesor: string | null
     spt_komtek: string | null
     sk_komtek: string | null
     ba_komtek: string | null
+    is_approved: boolean
   }
 }
 
@@ -40,12 +44,14 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data'
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { showError } = useToast()
+  const { showError, showSuccess } = useToast()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
   const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string } | null>(null)
   const [showTtdConfirmation, setShowTtdConfirmation] = useState(false)
+  const [isGeneratingSk, setIsGeneratingSk] = useState(false)
+  const [isApproved, setIsApproved] = useState<boolean | null>(null)
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
@@ -91,6 +97,7 @@ export default function DetailDokumenDirekturPage() {
         if (response.ok) {
           const result: DokumenDirekturResponse = await response.json()
           setDokumenDirektur(result.data)
+          setIsApproved(result.data.is_approved ?? null)
         } else {
           showError('Gagal memuat dokumen direktur')
         }
@@ -117,11 +124,22 @@ export default function DetailDokumenDirekturPage() {
     openDokumenModal(asesi.id_izin, asesi.nama, true)
   }
 
-  const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
-    key: config.key,
-    label: config.label,
-    url: dokumenDirektur?.[config.key] || null
-  }))
+  const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => {
+    // Special handling for sk_pelaksanaan_uji which is now an object
+    if (config.key === 'sk_pelaksanaan_uji') {
+      const obj = dokumenDirektur?.[config.key] as { link?: string; is_approved?: boolean } | null
+      return {
+        key: config.key,
+        label: config.label,
+        url: obj?.link || null
+      }
+    }
+    return {
+      key: config.key,
+      label: config.label,
+      url: dokumenDirektur?.[config.key] as string | null || null
+    }
+  })
 
   return (
     <>
@@ -196,13 +214,15 @@ export default function DetailDokumenDirekturPage() {
                 </div>
 
                 {/* Tanda Tangan Button - Single button for all direktur docs */}
-                <button
-                  onClick={() => setShowTtdConfirmation(true)}
-                  className="w-full px-4 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>TANDA TANGAN</span>
-                </button>
+                {isApproved !== true && (
+                  <button
+                    onClick={() => setShowTtdConfirmation(true)}
+                    className="w-full px-4 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>TANDA TANGAN</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -279,43 +299,30 @@ export default function DetailDokumenDirekturPage() {
                 Dokumen Direktur
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {direkturDocuments.map((doc) => {
-                  const hasDocument = !!doc.url
-                  return (
-                    <div
-                      key={doc.key}
-                      className={`p-3 border rounded-lg transition-all ${
-                        hasDocument
-                          ? 'border-slate-200 dark:border-slate-700 hover:border-primary hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer'
-                          : 'border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50'
-                      }`}
-                      onClick={() => {
-                        if (hasDocument && doc.url) {
-                          setSelectedDokumen({ url: doc.url, title: doc.label })
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          hasDocument ? 'bg-primary/10' : 'bg-slate-200 dark:bg-slate-700'
-                        }`}>
-                          <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">{doc.label}</h4>
-                          {!hasDocument ? (
-                            <p className="text-xs text-slate-500 dark:text-slate-400">Belum ada</p>
-                          ) : (
-                            <span className="text-xs text-primary">Lihat</span>
-                          )}
-                        </div>
+            <CardContent className="space-y-3">
+              {direkturDocuments.map((doc) => {
+                const hasDocument = !!doc.url
+                return (
+                  <Button
+                    key={doc.key}
+                    variant="outline"
+                    className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+                    disabled={!hasDocument}
+                    onClick={() => hasDocument && setSelectedDokumen({ url: doc.url!, title: doc.label })}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
+                      <div className="text-left">
+                        <span className="text-sm font-semibold block">{doc.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {hasDocument ? 'Klik untuk buka' : 'Belum tersedia'}
+                        </span>
                       </div>
                     </div>
-                  )
-                })}
-              </div>
+                    {hasDocument && <ExternalLink className="w-5 h-5 text-primary" />}
+                  </Button>
+                )
+              })}
             </CardContent>
           </Card>
         </div>
@@ -362,8 +369,8 @@ export default function DetailDokumenDirekturPage() {
               }
             `}</style>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-6 h-6 text-blue-900" />
               </div>
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Konfirmasi Tanda Tangan</h3>
@@ -397,17 +404,66 @@ export default function DetailDokumenDirekturPage() {
                 Batal
               </button>
               <button
-                onClick={() => {
-                  setShowTtdConfirmation(false)
-                  // Open the first available direktur document for signing
-                  const firstAvailableDoc = direkturDocuments.find(doc => doc.url !== null)
-                  if (firstAvailableDoc) {
-                    setSelectedDokumen({ url: firstAvailableDoc.url!, title: firstAvailableDoc.label })
+                onClick={async () => {
+                  if (!id) return
+
+                  setIsGeneratingSk(true)
+                  try {
+                    const token = localStorage.getItem("access_token")
+                    const response = await fetch(`https://backend.devgatensi.site/api/dokumen/sk/${id}`, {
+                      method: 'POST',
+                      headers: {
+                        "Accept": "application/json",
+                        "Authorization": `Bearer ${token}`,
+                      },
+                    })
+
+                    if (response.ok) {
+                      const result = await response.json()
+                      // Update dokumenDirektur with new URLs from response
+                      if (result.data) {
+                        setDokumenDirektur(prev => ({
+                          sk_pelaksanaan_uji: result.data.sk_pelaksanaan_uji ? {
+                            link: result.data.sk_pelaksanaan_uji.url,
+                            is_approved: true
+                          } : (prev?.sk_pelaksanaan_uji ?? null),
+                          spt_asesor: prev?.spt_asesor ?? null,
+                          spt_komtek: prev?.spt_komtek ?? null,
+                          sk_komtek: result.data.sk_komtek?.url ?? prev?.sk_komtek ?? null,
+                          ba_komtek: prev?.ba_komtek ?? null,
+                          is_approved: true,
+                        }))
+                        setIsApproved(true)
+                      }
+                      setShowTtdConfirmation(false)
+                      showSuccess('SK dokumen berhasil dibuat!')
+
+                      // Open the first available direktur document for signing
+                      const firstAvailableDoc = direkturDocuments.find(doc => doc.url !== null)
+                      if (firstAvailableDoc) {
+                        setSelectedDokumen({ url: firstAvailableDoc.url!, title: firstAvailableDoc.label })
+                      }
+                    } else {
+                      showError('Gagal membuat SK dokumen')
+                    }
+                  } catch (error) {
+                    console.error('Error generating SK:', error)
+                    showError('Terjadi kesalahan saat membuat SK')
+                  } finally {
+                    setIsGeneratingSk(false)
                   }
                 }}
-                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-blue-900 transition-colors font-medium"
+                disabled={isGeneratingSk}
+                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-blue-900 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Ya, Lanjutkan
+                {isGeneratingSk ? (
+                  <>
+                    <SimpleSpinner size="sm" />
+                    Memproses...
+                  </>
+                ) : (
+                  'Ya, Lanjutkan'
+                )}
               </button>
             </div>
           </div>

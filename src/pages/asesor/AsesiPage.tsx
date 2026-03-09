@@ -86,18 +86,16 @@ export default function AsesiPage() {
   const asesiIds = asesiList.map(a => a.id_izin)
   const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
 
-  // Debug absen data
-  
-
-  // State for asesor IDs from data-dokumen
-  const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({
+  // State for asesor IDs and jenjang from data-dokumen
+  const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null; jenjang: string }>({
     id_asesor_1: null,
-    id_asesor_2: null
+    id_asesor_2: null,
+    jenjang: '0'
   })
 
-  // Fetch asesor IDs from data-dokumen endpoint
+  // Fetch asesor IDs and jenjang from data-dokumen endpoint
   useEffect(() => {
-    const fetchAsesorIds = async () => {
+    const fetchAsesorData = async () => {
       if (asesiList.length === 0) return
 
       const firstAsesiId = asesiList[0].id_izin
@@ -116,16 +114,17 @@ export default function AsesiPage() {
           if (result.message === "Success" && result.data) {
             setAsesorIds({
               id_asesor_1: result.data.id_asesor_1,
-              id_asesor_2: result.data.id_asesor_2
+              id_asesor_2: result.data.id_asesor_2,
+              jenjang: result.data.jenjang || '0'
             })
           }
         }
       } catch (err) {
-        console.error('Error fetching asesor IDs:', err)
+        console.error('Error fetching asesor data:', err)
       }
     }
 
-    fetchAsesorIds()
+    fetchAsesorData()
   }, [asesiList])
 
   // Determine if user is asesor1 or asesor2
@@ -180,9 +179,16 @@ export default function AsesiPage() {
   }
 
   const handleViewAsesi = (idIzin: string) => {
+    // Check jenjang for low jenjang flow
+    const jenjangId = parseInt(asesorIds.jenjang || "0")
+
     // Navigate based on current phase
     if (kegiatan?.tahap === "2") {
-      navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+      if (jenjangId < 4) {
+        navigate(`/asesi/asesmen/${idIzin}/ia01`)
+      } else {
+        navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+      }
     } else if (kegiatan?.tahap === "1") {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     } else {
@@ -335,7 +341,7 @@ export default function AsesiPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Asesi List */}
       <Card>
         <CardHeader>
@@ -358,7 +364,7 @@ export default function AsesiPage() {
             </div>
           )}
 
-          
+
 
           <div className="space-y-3">
             {asesiList.map((asesi, index) => {

@@ -1,39 +1,179 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { WebcamModal } from "@/components/ui/WebcamModal"
+
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
+}
+
+interface Questions {
+  id: number
+  isi_nonsoal: string
+}
+
+interface Ia02Response {
+  message: string
+  data: {
+    barcodes?: {
+      asesi?: BarcodeData | null
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
+    questions: Questions
+  }
+}
+
+// Decode HTML entities
+const decodeHtmlEntities = (html: string) => {
+  const textArea = document.createElement('textarea')
+  textArea.innerHTML = html
+  return textArea.value
+}
+
+// Parse and convert unit listings to table
+const convertUnitListingsToTable = (html: string) => {
+  let decoded = decodeHtmlEntities(html)
+
+  // Pattern to match: Kelompok<br />Pekerjaan X<br /><br />No. Kode Unit Judul Unit<br />...
+  const unitListPattern = /Kelompok\s*<br\s*\/?>\s*Pekerjaan\s*(\d+)\s*<br\s*\/?>\s*<br\s*\/?>\s*No\.\s*Kode\s*Unit\s*Judul\s*Unit<br\s*\/?>([\s\S]*?)(?=<strong>|<p>|$)/gi
+
+  decoded = decoded.replace(unitListPattern, (match, kelompokNum, unitsContent) => {
+    // Split by <br /> and process
+    const lines = unitsContent.split(/<br\s*\/?>/i)
+    const units: Array<{ no: string, kode: string, judul: string }> = []
+    let currentUnit: { no: string, kode: string, judul: string } | null = null
+
+    console.log('IA02 Table Parse - kelompokNum:', kelompokNum)
+    console.log('IA02 Table Parse - lines:', lines)
+
+    for (const line of lines) {
+      const trimmedLine = line.trim()
+
+      // Skip empty lines - they don't end the unit
+      if (trimmedLine.length === 0) {
+        continue
+      }
+
+      // Check if line starts the next unit: "1. F.410100.001.01 Title"
+      const unitMatch = trimmedLine.match(/^(\d+)\.\s*([A-Z0-9\.]+)\s+(.+)$/)
+
+      if (unitMatch) {
+        // Save previous unit if exists
+        if (currentUnit) {
+          units.push(currentUnit)
+        }
+        // Start new unit
+        currentUnit = {
+          no: unitMatch[1],
+          kode: unitMatch[2],
+          judul: unitMatch[3].trim()
+        }
+      } else if (currentUnit) {
+        // Append to current unit's title (continuation line like "Kerja dan Lingkungan (K3-L)")
+        currentUnit.judul += ' ' + trimmedLine
+      }
+    }
+
+    // Don't forget the last unit
+    if (currentUnit) {
+      units.push(currentUnit)
+    }
+
+    // Clean up judul (remove extra whitespace)
+    units.forEach(unit => {
+      unit.judul = unit.judul.replace(/\s+/g, ' ').trim()
+    })
+
+    console.log('IA02 Table Parse - units parsed:', units)
+    console.log('IA02 Table Parse - units.length:', units.length, 'rowspan will be:', units.length)
+
+    if (units.length === 0) {
+      return match // Return original if no units found
+    }
+
+    // Build table
+    let tableHtml = `<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; border: 1px solid #000;">`
+    tableHtml += `<tbody>`
+
+    // Header row with Kelompok Pekerjaan cell that spans down
+    tableHtml += `<tr style="background: #fff; font-weight: bold;">`
+    tableHtml += `<th rowspan="${units.length + 1}" style="border: 1px solid #000; padding: 8px; text-align: center;">Kelompok Pekerjaan ${kelompokNum}</th>`
+    tableHtml += `<th style="border: 1px solid #000; padding: 8px; text-align: center;">No.</th>`
+    tableHtml += `<th style="border: 1px solid #000; padding: 8px; text-align: center;">Kode Unit</th>`
+    tableHtml += `<th style="border: 1px solid #000; padding: 8px; text-align: center;">Judul Unit</th>`
+    tableHtml += `</tr>`
+
+    units.forEach((unit) => {
+      tableHtml += `<tr>`
+      tableHtml += `<td style="border: 1px solid #000; padding: 8px; text-align: center;">${unit.no}</td>`
+      tableHtml += `<td style="border: 1px solid #000; padding: 8px;">${unit.kode}</td>`
+      tableHtml += `<td style="border: 1px solid #000; padding: 8px;">${unit.judul}</td>`
+      tableHtml += `</tr>`
+    })
+
+    tableHtml += `</tbody></table>`
+    console.log('IA02 Table Parse - generated table HTML:', tableHtml)
+    return tableHtml
+  })
+
+  return decoded
+}
 
 export default function Ia02Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
-  const { role: asesorRole } = useAsesorRole(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
   const { showSuccess, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
-  const [isLoading, setIsLoading] = useState(true)
+  // Get dynamic steps
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+
+  // Absen check
+  const {
+    showAwalModal,
+    submitAbsenAwal,
+    handleAwalModalClose,
+  } = useAbsenCheck({
+    phase: 'asesmen',
+    role: 'auto',
+    checkOnMount: true,
+    idIzin: id,
+    asesorList
+  })
+
+  const [questions, setQuestions] = useState<Questions | null>(null)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const jenjangId = kegiatan?.jenjang_id || "0"
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Get dynamic steps based on jenjang and asesor role
-  const asesmenSteps = getAsesmenSteps(jenjangId, isAsesor, asesorRole, asesorList.length)
-
+  // Fetch IA02 data
   useEffect(() => {
     const fetchData = async () => {
       if (authLoading) return
 
       if (!id) {
-        console.error("No id_izin found in user data")
+        console.error("No id_izin found")
         setIsLoading(false)
         return
       }
@@ -48,18 +188,30 @@ export default function Ia02Page() {
         })
 
         if (response.ok) {
-          const result = await response.json()
-          console.log("IA02 data:", result)
+          const result: Ia02Response = await response.json()
+          if (result.message === "Success" && result.data?.questions) {
+            // Set barcodes
+            if (result.data.barcodes) {
+              setBarcodes({
+                asesi: result.data.barcodes.asesi,
+                asesor1: result.data.barcodes.asesor1,
+                asesor2: result.data.barcodes.asesor2,
+              })
+            }
+
+            // Set questions
+            setQuestions(result.data.questions)
+          }
         }
-      } catch (error) {
-        console.error("Error fetching IA02:", error)
+      } catch (err) {
+        console.error("Error fetching IA02:", err)
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchData()
-  }, [id, authLoading, user, asesorList])
+  }, [id, authLoading])
 
   const handleNext = async () => {
     if (!agreedChecklist) {
@@ -70,7 +222,16 @@ export default function Ia02Page() {
     const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
 
-    if (jadwalId) {
+    console.log('IA02 QR Generation - jadwalId:', jadwalId, 'kegiatan:', kegiatan, 'barcodes:', barcodes)
+
+    // Generate QR for asesi if not exists
+    const existingAsesiQR = barcodes?.asesi?.url
+    const hasAsesiQR = !!existingAsesiQR && existingAsesiQR.length > 0
+
+    console.log('IA02 QR Check - existingAsesiQR:', existingAsesiQR, 'hasAsesiQR:', hasAsesiQR)
+
+    if (jadwalId && !hasAsesiQR) {
+      console.log('IA02: Attempting QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia02`)
       try {
         const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia02`, {
           method: 'POST',
@@ -84,11 +245,69 @@ export default function Ia02Page() {
           })
         })
 
+        console.log('IA02 QR Response status:', qrResponse.status)
+
         if (qrResponse.ok) {
-          console.log("QR IA02 generated")
+          const qrResult = await qrResponse.json()
+          console.log('IA02 QR Result:', qrResult)
+          if (qrResult.message === "Success" && qrResult.data?.url_image) {
+            setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
+          }
+        } else {
+          const errorData = await qrResponse.json().catch(() => ({ message: 'Unknown error' }))
+          console.error('IA02 QR POST failed:', qrResponse.status, errorData)
         }
       } catch (qrError) {
-        console.error('Error generating QR:', qrError)
+        console.error('IA02 Error generating asesi QR:', qrError)
+      }
+    } else {
+      console.log('IA02 QR POST skipped - jadwalId:', jadwalId, 'hasAsesiQR:', hasAsesiQR, 'existingAsesiQR:', existingAsesiQR)
+    }
+
+    // Generate QR for asesor if not exists
+    if (isAsesor && jadwalId) {
+      const asesorKey = isAsesor1 ? 'asesor1' : 'asesor2'
+      const existingAsesorQR = asesorKey === 'asesor1' ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+      const hasAsesorQR = !!existingAsesorQR && existingAsesorQR.length > 0
+
+      console.log('IA02 Asesor QR Check - asesorKey:', asesorKey, 'existingAsesorQR:', existingAsesorQR, 'hasAsesorQR:', hasAsesorQR)
+
+      if (!hasAsesorQR) {
+        console.log('IA02: Attempting Asesor QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia02`)
+        try {
+          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia02`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              id_jadwal: jadwalId
+            })
+          })
+
+          console.log('IA02 Asesor QR Response status:', qrResponse.status)
+
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            console.log('IA02 Asesor QR Result:', qrResult)
+            if (qrResult.message === "Success" && qrResult.data?.url_image) {
+              if (asesorKey === 'asesor1') {
+                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+              } else {
+                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+              }
+            }
+          } else {
+            const errorData = await qrResponse.json().catch(() => ({ message: 'Unknown error' }))
+            console.error('IA02 Asesor QR POST failed:', qrResponse.status, errorData)
+          }
+        } catch (qrError) {
+          console.error('IA02 Error generating asesor QR:', qrError)
+        }
+      } else {
+        console.log('IA02 Asesor QR POST skipped - hasAsesorQR:', hasAsesorQR, 'existingAsesorQR:', existingAsesorQR)
       }
     }
 
@@ -104,7 +323,7 @@ export default function Ia02Page() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'Arial, Helvetica, sans-serif' }}>
         <DashboardNavbar userName={user?.name} />
         <FullPageLoader text="Memuat data IA.02..." />
       </div>
@@ -112,9 +331,10 @@ export default function Ia02Page() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'Arial, sans-serif' }}>
       <DashboardNavbar userName={user?.name} />
 
+      {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
         <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
@@ -128,29 +348,157 @@ export default function Ia02Page() {
       </div>
 
       <ModularAsesiLayout currentStep={2} steps={asesmenSteps} id={id}>
+        {/* Title */}
         <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', letterSpacing: '1px' }}>
-            FR.IA.02. LEMBAR KERJA ASESMEN
+          <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
+            FR.IA.02. TPD - TUGAS PRAKTIK DEMONSTRASI
           </h1>
         </div>
 
-        <div style={{
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          padding: '40px',
-          textAlign: 'center',
-          marginBottom: '20px'
-        }}>
-          <p style={{ fontSize: '16px', color: '#666', marginBottom: '10px' }}>
-            Halaman ini sedang dalam pengembangan
-          </p>
-          <p style={{ fontSize: '14px', color: '#999' }}>
-            Formulir IA.02 akan ditampilkan di sini
-          </p>
-        </div>
+        {/* IDENTITAS Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '8px' }}>Skema Sertifikasi</td>
+              <td style={{ width: '5%', border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>Nomor</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textTransform: 'uppercase' }}>{nomorSkema || '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>TUK</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textTransform: 'uppercase' }}>{tuk || '-'}</td>
+            </tr>
+            {asesorList.length > 1 ? (
+              asesorList.map((asesor, idx) => (
+                <tr key={asesor.id}>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor {idx + 1}</td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+                  <td style={{ border: '1px solid #000', padding: '8px' }}>
+                    {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor</td>
+                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '8px' }}>
+                  {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+                </td>
+              </tr>
+            )}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesi</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || '-'}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>Tanggal</td>
+              <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+            </tr>
+          </tbody>
+        </table>
 
+        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Coret yang tidak perlu</p>
+
+        {/* QUESTIONS CONTENT */}
+        {questions && (
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '20px',
+              background: '#fff',
+              fontSize: '14px',
+              lineHeight: '1.6'
+            }}
+            dangerouslySetInnerHTML={{ __html: convertUnitListingsToTable(questions.isi_nonsoal) }}
+          />
+        )}
+
+        {/* TANDA TANGAN Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td colSpan={3} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}><b>Asesi</b></td>
+            </tr>
+            <tr>
+              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
+              <td style={{ width: '2%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda Tangan dan Tanggal</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img
+                      src={barcodes.asesi.url}
+                      alt="Tanda Tangan Asesi"
+                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                    />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+            </tr>
+            <tr>
+              <td colSpan={3} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}><b>Asesor</b></td>
+            </tr>
+            {asesorList.map((asesor, idx) => {
+              const asesorBarcode = idx === 0 ? barcodes?.asesor1 : barcodes?.asesor2
+              const label = asesorList.length > 1 ? `Nama Asesor ${idx + 1}` : 'Nama Asesor'
+              return (
+                <React.Fragment key={asesor.id}>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{label}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg{asesorList.length > 1 ? ` ${idx + 1}` : ''}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda Tangan dan Tanggal</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                    <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      {asesorBarcode?.url ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <img
+                            src={asesorBarcode.url}
+                            alt={`Tanda Tangan ${asesor.nama}`}
+                            style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                          />
+                          {asesorBarcode.tanggal && (
+                            <div style={{ fontSize: '11px', color: '#333' }}>
+                              {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                </React.Fragment>
+              )
+            })}
+          </tbody>
+        </table>
+
+        {/* Actions */}
         <div style={{ marginTop: '20px' }}>
+          {/* Pernyataan Checkbox */}
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
@@ -164,6 +512,7 @@ export default function Ia02Page() {
             </label>
           </div>
 
+          {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
@@ -174,6 +523,16 @@ export default function Ia02Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

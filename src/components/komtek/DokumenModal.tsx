@@ -19,6 +19,27 @@ interface DokumenItem {
   docType: string
 }
 
+// Document order based on jenjang
+const getDocumentOrder = (jenjang: string): string[] => {
+  const jenjangNum = parseInt(jenjang) || 0
+
+  if (jenjangNum < 4) {
+    // Jenjang 1-3: ia01, ia02, ia03 (no ia04a, ia04b)
+    return [
+      'apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01',
+      'ia01', 'ia02', 'ia03', 'ia05',
+      'ak02', 'ak03', 'ak05', 'ak06', 'tugas', 'foto_kegiatan'
+    ]
+  } else {
+    // Jenjang 4+: ia04a, ia04b (no ia01, ia02, ia03)
+    return [
+      'apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01',
+      'ia04a', 'ia04b', 'ia05',
+      'ak02', 'ak03', 'ak05', 'ak06', 'tugas', 'foto_kegiatan'
+    ]
+  }
+}
+
 interface RekomendasiData {
   komtek1?: { id: string; rekomendasi: string | null }
   komtek2?: { id: string; rekomendasi: string | null }
@@ -36,6 +57,7 @@ interface DokumenModalProps {
 
 export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
+  const [jenjang, setJenjang] = useState<string>('0')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<DokumenItem | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -53,6 +75,20 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
       setIsLoading(true)
       try {
         const token = localStorage.getItem("access_token")
+
+        // Fetch jenjang from data-dokumen API
+        const dataDokumenResponse = await fetch(`https://backend.devgatensi.site/api/asesmen/${asesiId}/data-dokumen`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+        if (dataDokumenResponse.ok) {
+          const dataResult = await dataDokumenResponse.json()
+          if (dataResult.data?.jenjang) {
+            setJenjang(dataResult.data.jenjang)
+          }
+        }
 
         // Fetch dokumen
         const response = await fetch(`https://backend.devgatensi.site/api/dokumen/asesi/${asesiId}`, {
@@ -109,18 +145,27 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
       setIsCompleted(false)
       setRekomendasiValue(null)
       setIsPreviewHovered(false)
+      setJenjang('0')
     }
   }, [isOpen])
 
-  // Build document list from data object
-  const documentList: DokumenItem[] = dokumenResponse?.data
-    ? Object.entries(dokumenResponse.data).map(([docType, url]) => ({
+  // Build document list from data object based on jenjang order
+  const documentList: DokumenItem[] = (() => {
+    if (!dokumenResponse?.data) return []
+
+    const order = getDocumentOrder(jenjang)
+    const data = dokumenResponse.data
+
+    // Filter and sort documents based on the order for this jenjang
+    return order
+      .filter(docType => docType in data) // Only include documents that exist in response
+      .map(docType => ({
         key: `${asesiId}-${docType}`,
-        label: docType.toUpperCase().replace('_', ' '),
-        url: url || null,
+        label: docType.toUpperCase().replace(/_/g, ' '),
+        url: data[docType] || null,
         docType: docType,
       }))
-    : []
+  })()
 
   // Get only documents that have URLs
   const documentsWithUrls = documentList.filter(doc => doc.url !== null)
