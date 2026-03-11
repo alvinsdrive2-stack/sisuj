@@ -35,6 +35,7 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
     }
     return href
   }
+
   const getStepStatus = (stepNumber: number) => {
     if (stepNumber < currentStep) return 'completed'
     if (stepNumber === currentStep) return 'active'
@@ -64,6 +65,11 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
     }
   }
 
+  const handleStepClick = (step: Step) => {
+    const href = getHref(step.href)
+    if (href) navigate(href)
+  }
+
   return (
     <div style={{
       position: 'sticky',
@@ -90,9 +96,22 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
         {steps.map((step, index) => {
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
+          const stepHref = getHref(step.href)
+          const isClickable = stepHref !== undefined
 
           return (
-            <div key={step.number} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: index < steps.length - 1 ? '24px' : '0', position: 'relative' }}>
+            <div
+              key={step.number}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                marginBottom: index < steps.length - 1 ? '24px' : '0',
+                position: 'relative',
+                cursor: isClickable ? 'pointer' : 'default'
+              }}
+              onClick={() => isClickable && handleStepClick(step)}
+              title={isClickable ? `Klik untuk ke ${step.label}` : undefined}
+            >
               {/* Step Circle */}
               <div
                 className={getStepCircleClassName(status)}
@@ -111,12 +130,18 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
                   fontWeight: status === 'pending' ? 'normal' : 'bold',
                   flexShrink: 0,
                   zIndex: 1,
-                  cursor: status !== 'pending' && step.href ? 'pointer' : 'default'
+                  transition: isClickable ? 'transform 0.2s ease, box-shadow 0.2s ease' : 'none',
                 }}
-                onClick={() => {
-                  if (status !== 'pending' && step.href) {
-                    const href = getHref(step.href)
-                    if (href) navigate(href)
+                onMouseEnter={(e) => {
+                  if (isClickable) {
+                    e.currentTarget.style.transform = 'scale(1.1)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isClickable) {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.boxShadow = 'none'
                   }
                 }}
               >

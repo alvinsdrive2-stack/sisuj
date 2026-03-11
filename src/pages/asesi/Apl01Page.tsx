@@ -261,12 +261,8 @@ export default function Apl01Page() {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            id_jadwal: jadwalId
-          })
         })
 
         if (qrResponse.ok) {
@@ -319,7 +315,7 @@ export default function Apl01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={2}>
+      <AsesiLayout currentStep={2} idIzin={idIzin}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>

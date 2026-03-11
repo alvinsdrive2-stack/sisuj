@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { File, Trash2, Check, FileImage, FileType } from 'lucide-react'
+import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
@@ -23,99 +23,134 @@ interface AnimatedCapsuleProps {
   onRemove: () => void
   isExcluded?: boolean // For API files that are excluded
   style?: React.CSSProperties
+  file?: { id: number; name: string; path: string } // Full file object for preview
+  isAsesor?: boolean
+  onView?: (file: { id: number; name: string; path: string }) => void
 }
 
-function AnimatedCapsule({ fileName, onRemove, isExcluded, style }: AnimatedCapsuleProps) {
+function AnimatedCapsule({ fileName, onRemove, isExcluded, style, file, isAsesor, onView }: AnimatedCapsuleProps) {
   const [isExiting, setIsExiting] = useState(false)
   const capsuleRef = useRef<HTMLSpanElement>(null)
 
   const handleRemove = () => {
+    if (isAsesor) return // Asesor cannot remove files
     setIsExiting(true)
     setTimeout(() => {
       onRemove()
     }, 200)
   }
 
+  const handleClick = () => {
+    if (isAsesor && file && onView) {
+      console.log('AnimatedCapsule clicked - Opening preview:', file.name)
+      onView(file)
+    }
+  }
+
   return (
     <span
       ref={capsuleRef}
+      onClick={handleClick}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
         gap: '8px',
         height: '38px',
-        background: isExcluded ? '#fee' : '#f5f5f5',
-        border: isExcluded ? '1px solid #fca5a5' : '1px solid #ddd',
+        background: isAsesor ? '#f1f5f9' : (isExcluded ? '#fee' : '#f5f5f5'),
+        border: isAsesor ? '1px solid #cbd5e1' : (isExcluded ? '1px solid #fca5a5' : '1px solid #ddd'),
         borderRadius: '6px',
         padding: '0 12px',
         fontSize: '12px',
         fontWeight: '500',
-        color: isExcluded ? '#991b1b' : '#333',
+        color: isAsesor ? '#0369a1' : (isExcluded ? '#991b1b' : '#333'),
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
         transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
         opacity: isExiting ? 0 : (isExcluded ? 0.6 : 1),
         transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        cursor: 'default',
+        cursor: isAsesor ? 'pointer' : 'default',
         userSelect: 'none',
         ...style,
       }}
       onMouseEnter={(e) => {
         if (!isExiting) {
-          e.currentTarget.style.background = isExcluded ? '#fecaca' : '#eee'
-          e.currentTarget.style.borderColor = isExcluded ? '#f87171' : '#ccc'
+          if (isAsesor) {
+            e.currentTarget.style.background = '#e2e8f0'
+            e.currentTarget.style.borderColor = '#94a3b8'
+          } else {
+            e.currentTarget.style.background = isExcluded ? '#fecaca' : '#eee'
+            e.currentTarget.style.borderColor = isExcluded ? '#f87171' : '#ccc'
+          }
         }
       }}
       onMouseLeave={(e) => {
         if (!isExiting) {
-          e.currentTarget.style.background = isExcluded ? '#fee' : '#f5f5f5'
-          e.currentTarget.style.borderColor = isExcluded ? '#fca5a5' : '#ddd'
+          if (isAsesor) {
+            e.currentTarget.style.background = '#f1f5f9'
+            e.currentTarget.style.borderColor = '#cbd5e1'
+          } else {
+            e.currentTarget.style.background = isExcluded ? '#fee' : '#f5f5f5'
+            e.currentTarget.style.borderColor = isExcluded ? '#fca5a5' : '#ddd'
+          }
         }
       }}
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <File size={14} style={{ color: isExcluded ? '#dc2626' : '#666' }} />
+        <File size={14} style={{ color: isAsesor ? '#0284c7' : (isExcluded ? '#dc2626' : '#666') }} />
         <span style={{
           maxWidth: '200px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
+          whiteSpace: 'nowrap',
+          color: isAsesor ? '#0284c7' : 'inherit'
         }}>
           {fileName}
         </span>
       </span>
-      <button
-        onClick={handleRemove}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: isExcluded ? '#dc2626' : '#999',
-          cursor: 'pointer',
-          padding: '0',
-          width: '24px',
-          height: '24px',
-          borderRadius: '4px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all 0.15s ease',
-          flexShrink: 0,
-        }}
-        onMouseEnter={(e) => {
-          if (!isExiting) {
-            e.currentTarget.style.background = isExcluded ? '#dc2626' : '#dc2626'
-            e.currentTarget.style.color = '#fff'
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isExiting) {
-            e.currentTarget.style.background = 'transparent'
-            e.currentTarget.style.color = isExcluded ? '#dc2626' : '#999'
-          }
-        }}
-        title={isExcluded ? 'Sertakan kembali' : 'Hapus dari jawaban'}
-      >
-        {isExcluded ? <Check size={12} /> : <Trash2 size={12} />}
-      </button>
+      {/* Show Eye icon for asesor, Trash/Check icon for asesi */}
+      {!isAsesor && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleRemove()
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: isExcluded ? '#dc2626' : '#999',
+            cursor: 'pointer',
+            padding: '0',
+            width: '24px',
+            height: '24px',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.15s ease',
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (!isExiting) {
+              e.currentTarget.style.background = isExcluded ? '#dc2626' : '#dc2626'
+              e.currentTarget.style.color = '#fff'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isExiting) {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = isExcluded ? '#dc2626' : '#999'
+            }
+          }}
+          title={isExcluded ? 'Sertakan kembali' : 'Hapus dari jawaban'}
+        >
+          {isExcluded ? <Check size={12} /> : <Trash2 size={12} />}
+        </button>
+      )}
+      {/* Show Eye icon for asesor */}
+      {isAsesor && (
+        <span style={{ display: 'flex', alignItems: 'center', color: '#0369a1', marginLeft: '4px' }}>
+          <Eye size={14} />
+        </span>
+      )}
     </span>
   )
 }
@@ -125,9 +160,11 @@ interface ServerFileCapsuleProps {
   file: { id: number; name: string; path: string }
   onDelete: (fileId: number) => void
   disabled?: boolean
+  isAsesor?: boolean
+  onView?: (file: { id: number; name: string; path: string }) => void
 }
 
-function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps) {
+function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: ServerFileCapsuleProps) {
   const [isExiting, setIsExiting] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
 
@@ -144,6 +181,26 @@ function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps)
     setShowConfirmDialog(false)
   }
 
+  const handleCapsuleClick = () => {
+    if (isAsesor && onView) {
+      console.log('Opening preview for file:', file.name)
+      onView(file)
+    }
+  }
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    console.log('Button clicked! isAsesor:', isAsesor, 'onView exists:', !!onView)
+    if (isAsesor && onView) {
+      console.log('Button clicked - Opening preview for file:', file.name)
+      onView(file)
+    } else if (!disabled) {
+      handleDelete()
+    }
+  }
+
+  console.log('ServerFileCapsule render - isAsesor:', isAsesor, 'disabled:', disabled, 'button should show:', isAsesor || !disabled)
+
   return (
     <>
       <ConfirmDialog
@@ -157,13 +214,14 @@ function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps)
         onCancel={() => setShowConfirmDialog(false)}
       />
       <span
+        onClick={handleCapsuleClick}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '8px',
           height: '38px',
-          background: '#f5f5f5',
-          border: '1px solid #ddd',
+          background: isAsesor ? '#e0f2fe' : '#f5f5f5',
+          border: isAsesor ? '1px solid #0ea5e9' : '1px solid #ddd',
           borderRadius: '6px',
           padding: '0 12px',
           fontSize: '12px',
@@ -173,19 +231,19 @@ function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps)
           transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
           opacity: isExiting ? 0 : 1,
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: 'default',
+          cursor: isAsesor ? 'pointer' : 'default',
           userSelect: 'none',
         }}
         onMouseEnter={(e) => {
           if (!isExiting) {
-            e.currentTarget.style.background = '#eee'
-            e.currentTarget.style.borderColor = '#ccc'
+            e.currentTarget.style.background = isAsesor ? '#bae6fd' : '#eee'
+            e.currentTarget.style.borderColor = isAsesor ? '#0284c7' : '#ccc'
           }
         }}
         onMouseLeave={(e) => {
           if (!isExiting) {
-            e.currentTarget.style.background = '#f5f5f5'
-            e.currentTarget.style.borderColor = '#ddd'
+            e.currentTarget.style.background = isAsesor ? '#e0f2fe' : '#f5f5f5'
+            e.currentTarget.style.borderColor = isAsesor ? '#0ea5e9' : '#ddd'
           }
         }}
       >
@@ -200,14 +258,16 @@ function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps)
             {file.name || 'Unknown file'}
           </span>
         </span>
-        {!disabled && (
+        {/* Show Eye icon for asesor (view mode), Trash icon for asesi (delete mode) */}
+        {(isAsesor || !disabled) && (
           <button
-            onClick={handleDelete}
+            onClick={handleButtonClick}
+            onMouseDown={() => console.log('Button mouse down!')}
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#999',
-              cursor: disabled ? 'not-allowed' : 'pointer',
+              color: isAsesor ? '#0284c7' : '#999',
+              cursor: 'pointer',
               padding: '0',
               width: '24px',
               height: '24px',
@@ -219,20 +279,25 @@ function ServerFileCapsule({ file, onDelete, disabled }: ServerFileCapsuleProps)
               flexShrink: 0,
             }}
             onMouseEnter={(e) => {
-              if (!isExiting && !disabled) {
-                e.currentTarget.style.background = '#dc2626'
-                e.currentTarget.style.color = '#fff'
+              if (!isExiting) {
+                if (isAsesor) {
+                  e.currentTarget.style.background = '#0284c7'
+                  e.currentTarget.style.color = '#fff'
+                } else if (!disabled) {
+                  e.currentTarget.style.background = '#dc2626'
+                  e.currentTarget.style.color = '#fff'
+                }
               }
             }}
             onMouseLeave={(e) => {
               if (!isExiting) {
                 e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = '#999'
+                e.currentTarget.style.color = isAsesor ? '#0284c7' : '#999'
               }
             }}
-            title="Hapus file dari server"
+            title={isAsesor ? "Lihat preview dokumen" : "Hapus file dari server"}
           >
-            <Trash2 size={12} />
+            {isAsesor ? <Eye size={12} /> : <Trash2 size={12} />}
           </button>
         )}
       </span>
@@ -415,6 +480,243 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
   )
 }
 
+// Document Preview Modal Component
+interface DocumentPreviewModalProps {
+  isOpen: boolean
+  onClose: () => void
+  file: { id: number; name: string; path: string } | null
+}
+
+function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalProps) {
+  console.log('DocumentPreviewModal render - isOpen:', isOpen, 'file:', file?.name)
+
+  if (!isOpen || !file) {
+    console.log('DocumentPreviewModal returning null - isOpen:', isOpen, 'file:', file)
+    return null
+  }
+
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isOpen || !file) return
+
+    const loadPreview = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      const ext = file.name.split('.').pop()?.toLowerCase()
+
+      // For images, show directly
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+        setIsLoading(false)
+      } else if (ext === 'pdf') {
+        // For PDF, embed directly
+        setIsLoading(false)
+      } else if (['doc', 'docx'].includes(ext || '')) {
+        // For documents, show as downloadable link (can't preview in browser)
+        setIsLoading(false)
+      } else {
+        // For other files, show as downloadable
+        setIsLoading(false)
+      }
+    }
+
+    loadPreview()
+  }, [isOpen, file])
+
+  const getFileTypeDisplay = () => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+    if (ext === 'pdf') return 'PDF Document'
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return 'Gambar'
+    if (['doc', 'docx'].includes(ext || '')) return 'Document Microsoft Word'
+    return 'File'
+  }
+
+  const renderPreview = () => {
+    const ext = file.name.split('.').pop()?.toLowerCase()
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return (
+        <img
+          src={file.path}
+          alt={file.name}
+          style={{
+            width: '100%',
+            maxHeight: '70vh',
+            objectFit: 'contain',
+            borderRadius: '8px'
+          }}
+        />
+      )
+    }
+
+    if (ext === 'pdf') {
+      return (
+        <iframe
+          src={file.path}
+          title={file.name}
+          style={{
+            width: '100%',
+            height: '70vh',
+            border: '1px solid #ddd',
+            borderRadius: '8px'
+          }}
+        />
+      )
+    }
+
+    return (
+      <div style={{
+        padding: '40px',
+        textAlign: 'center',
+        color: '#666'
+      }}>
+        <File size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+        <p style={{ marginBottom: '16px' }}>Preview tidak tersedia untuk jenis file ini</p>
+        <p style={{ fontSize: '14px' }}>Silakan download untuk melihat isi file</p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(0, 0, 0, 0.8)",
+        padding: "16px"
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: "12px",
+          width: "100%",
+          maxWidth: "900px",
+          maxHeight: "90vh",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px 20px",
+          borderBottom: "1px solid #e5e7eb"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Eye style={{ width: "20px", height: "20px", color: "#0066cc" }} />
+            <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#111827", margin: 0 }}>
+              {getFileTypeDisplay()}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "8px",
+              borderRadius: "8px",
+              color: "#6b7280"
+            }}
+          >
+            <X style={{ width: "20px", height: "20px" }} />
+          </button>
+        </div>
+
+        {/* File Info */}
+        <div style={{
+          padding: "12px 20px",
+          background: "#f9fafb",
+          borderBottom: "1px solid #e5e7eb"
+        }}>
+          <p style={{
+            fontSize: "13px",
+            fontWeight: "600",
+            color: "#374151",
+            margin: "0",
+            wordBreak: "break-all"
+          }}>
+            {file.name}
+          </p>
+        </div>
+
+        {/* Preview Content */}
+        <div style={{
+          flex: 1,
+          padding: "20px",
+          overflow: "auto",
+          background: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          {isLoading ? (
+            <div>Memuat preview...</div>
+          ) : error ? (
+            <div style={{ color: "#dc2626" }}>{error}</div>
+          ) : (
+            renderPreview()
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{
+          padding: "16px 20px",
+          borderTop: "1px solid #e5e7eb",
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "12px"
+        }}>
+          <a
+            href={file.path}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              padding: "10px 20px",
+              background: "#0066cc",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer",
+              textDecoration: "none"
+            }}
+          >
+            Download / Open in New Tab
+          </a>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 20px",
+              background: "#f3f4f6",
+              color: "#374151",
+              border: "none",
+              borderRadius: "8px",
+              fontSize: "14px",
+              fontWeight: "600",
+              cursor: "pointer"
+            }}
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface KUK {
   no_kuk: string
   judul_kuk: string
@@ -518,6 +820,11 @@ export default function Apl02Page() {
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
+  const [showPreview, setShowPreview] = useState(false)
+  const [selectedPreviewFile, setSelectedPreviewFile] = useState<{ id: number; name: string; path: string } | null>(null)
+
+  // Debug: log isAsesor value
+  console.log('Apl02Page render - isAsesor:', isAsesor, 'user role:', user?.role?.name)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: asesorList is available after useDataDokumenPraAsesmen is called
@@ -529,33 +836,85 @@ export default function Apl02Page() {
     asesorList: asesorList
   })
 
-  const handleCheckboxChange = (kukId: string, value: 'K' | 'BK') => {
+  const handleCheckboxChange = (kukId: string, value: 'K' | 'BK', unitId?: string, subunitId?: string) => {
     setKukChecklist(prev => {
       const current = prev[kukId]
       if (current === value) {
-        // Uncheck if clicking the same value
+        // Uncheck if clicking the same value - also uncheck all KUKs in same element
         const { [kukId]: _, ...rest } = prev
+        // Also uncheck all other KUKs in the same element
+        if (unitId && subunitId && apl02Data) {
+          const unit = apl02Data.units.find(u => u.id === unitId)
+          if (unit) {
+            const subunit = unit.subunits.find(s => s.id === subunitId)
+            if (subunit) {
+              subunit.kuk_list.forEach(kuk => {
+                const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
+                if (otherKukId !== kukId) {
+                  delete rest[otherKukId]
+                }
+              })
+            }
+          }
+        }
         return rest
       }
-      return { ...prev, [kukId]: value }
+      // Set value for this KUK and all KUKs in the same element
+      const updated = { ...prev, [kukId]: value }
+      if (unitId && subunitId && apl02Data) {
+        const unit = apl02Data.units.find(u => u.id === unitId)
+        if (unit) {
+          const subunit = unit.subunits.find(s => s.id === subunitId)
+          if (subunit) {
+            subunit.kuk_list.forEach(kuk => {
+              const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
+              updated[otherKukId] = value
+            })
+          }
+        }
+      }
+      return updated
     })
   }
 
-  const handleBuktiChange = (kukId: string, fileId: number) => {
+  const handleBuktiChange = (kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
     setKukBukti(prev => {
       const currentFiles = prev[kukId] || []
-      if (currentFiles.includes(fileId)) {
-        // Remove file if already selected
+      const isRemoving = currentFiles.includes(fileId)
+
+      if (isRemoving) {
+        // Remove file from this KUK only
         return {
           ...prev,
           [kukId]: currentFiles.filter(f => f !== fileId)
         }
       } else {
-        // Add file to selection
-        return {
+        // Add file to this KUK and all KUKs in the same element
+        const updated = {
           ...prev,
           [kukId]: [...currentFiles, fileId]
         }
+
+        // Auto-assign to all KUKs in the same element
+        if (unitId && subunitId && apl02Data) {
+          const unit = apl02Data.units.find(u => u.id === unitId)
+          if (unit) {
+            const subunit = unit.subunits.find(s => s.id === subunitId)
+            if (subunit) {
+              subunit.kuk_list.forEach(kuk => {
+                const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
+                if (otherKukId !== kukId) {
+                  const otherFiles = updated[otherKukId] || []
+                  if (!otherFiles.includes(fileId)) {
+                    updated[otherKukId] = [...otherFiles, fileId]
+                  }
+                }
+              })
+            }
+          }
+        }
+
+        return updated
       }
     })
   }
@@ -608,6 +967,61 @@ export default function Apl02Page() {
       console.error("Error deleting file:", error)
       showError('Terjadi kesalahan saat menghapus file')
     }
+  }
+
+  const uploadFiles = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    e.preventDefault()
+    const files = e.target.files
+    if (files && files.length > 0) {
+      try {
+        const token = localStorage.getItem("access_token")
+        const finalIdIzin = _idIzin || idIzin
+
+        if (!finalIdIzin) {
+          showWarning("ID Izin tidak ditemukan")
+          return
+        }
+
+        // Upload files to server
+        const formData = new FormData()
+        Array.from(files).forEach(file => {
+          formData.append('files[]', file)
+        })
+
+        const uploadResponse = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02/files`, {
+          method: 'POST',
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: formData,
+        })
+
+        if (uploadResponse.ok) {
+          const uploadResult = await uploadResponse.json()
+          if (uploadResult.message === "Files uploaded" && uploadResult.files) {
+            // Map server response to our format (original_name -> name)
+            const mappedFiles = uploadResult.files.map((f: any) => ({
+              id: f.id,
+              name: f.original_name || f.name,
+              path: f.path
+            }))
+            setUploadedFilesInfo(prev => [...prev, ...mappedFiles])
+            showSuccess(`${mappedFiles.length} file berhasil diupload`)
+          }
+        } else {
+          showError('Gagal upload file')
+        }
+      } catch (error) {
+        console.error('Error uploading files:', error)
+        showError('Terjadi kesalahan saat upload file')
+      }
+    }
+    e.target.value = ''
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    uploadFiles(e)
   }
 
   useEffect(() => {
@@ -1056,7 +1470,7 @@ export default function Apl02Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={3}>
+      <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin}>
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
                 APL-02 ASESMEN MANDIRI<br />{apl02Data?.jabatan_kerja || '-'}
@@ -1115,55 +1529,7 @@ export default function Apl02Page() {
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
             multiple
             style={{ display: 'none' }}
-            onChange={async (e) => {
-              const files = e.target.files
-              if (files && files.length > 0) {
-                try {
-                  const token = localStorage.getItem("access_token")
-                  const finalIdIzin = _idIzin || idIzin
-
-                  if (!finalIdIzin) {
-                    showWarning("ID Izin tidak ditemukan")
-                    return
-                  }
-
-                  // Upload files to server
-                  const formData = new FormData()
-                  Array.from(files).forEach(file => {
-                    formData.append('files[]', file)
-                  })
-
-                  const uploadResponse = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02/files`, {
-                    method: 'POST',
-                    headers: {
-                      "Accept": "application/json",
-                      "Authorization": `Bearer ${token}`,
-                    },
-                    body: formData,
-                  })
-
-                  if (uploadResponse.ok) {
-                    const uploadResult = await uploadResponse.json()
-                    if (uploadResult.message === "Files uploaded" && uploadResult.files) {
-                      // Map server response to our format (original_name -> name)
-                      const mappedFiles = uploadResult.files.map((f: any) => ({
-                        id: f.id,
-                        name: f.original_name || f.name,
-                        path: f.path
-                      }))
-                      setUploadedFilesInfo(prev => [...prev, ...mappedFiles])
-                      showSuccess(`${mappedFiles.length} file berhasil diupload`)
-                    }
-                  } else {
-                    showError('Gagal upload file')
-                  }
-                } catch (error) {
-                  console.error('Error uploading files:', error)
-                  showError('Terjadi kesalahan saat upload file')
-                }
-              }
-              e.target.value = ''
-            }}
+            onChange={handleFileUpload}
           />
 
           {/* Uploaded Files List */}
@@ -1179,6 +1545,13 @@ export default function Apl02Page() {
                     file={file}
                     onDelete={deleteFile}
                     disabled={isAsesor || isSaving}
+                    isAsesor={isAsesor}
+                    onView={(file) => {
+                      console.log('onView callback triggered - isAsesor:', isAsesor, 'file:', file)
+                      setSelectedPreviewFile(file)
+                      setShowPreview(true)
+                      console.log('State updated - showPreview:', true, 'selectedPreviewFile:', file)
+                    }}
                   />
                 ))}
               </div>
@@ -1320,7 +1693,7 @@ export default function Apl02Page() {
                             name={kukId}
                             value="K"
                             checked={isCheckedK}
-                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'K')}
+                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'K', unit.id, subunit.id)}
                             disabled={isAsesor || isSaving}
                           />
                         </td>
@@ -1329,7 +1702,7 @@ export default function Apl02Page() {
                             name={kukId}
                             value="BK"
                             checked={isCheckedBK}
-                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'BK')}
+                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'BK', unit.id, subunit.id)}
                             disabled={isAsesor || isSaving}
                           />
                         </td>
@@ -1345,7 +1718,7 @@ export default function Apl02Page() {
 
                             return (
                               <>
-                                {/* API Files as Static Capsules (can be excluded) */}
+                                {/* API Files as Static Capsules (can be excluded) - clickable for asesor to view */}
                                 {apiFiles.length > 0 && (
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                                     {apiFiles.map((file) => {
@@ -1354,17 +1727,26 @@ export default function Apl02Page() {
                                         <AnimatedCapsule
                                           key={file.id}
                                           fileName={file.name}
+                                          file={file}
                                           isExcluded={isExcluded}
+                                          isAsesor={isAsesor}
+                                          onView={(file) => {
+                                            console.log('API file onView triggered:', file.name)
+                                            setSelectedPreviewFile(file)
+                                            setShowPreview(true)
+                                          }}
                                           onRemove={() => {
-                                            setExcludedApiFileIds(prev => {
-                                              const newSet = new Set(prev)
-                                              if (newSet.has(file.id)) {
-                                                newSet.delete(file.id)
-                                              } else {
-                                                newSet.add(file.id)
-                                              }
-                                              return newSet
-                                            })
+                                            if (!isAsesor) {
+                                              setExcludedApiFileIds(prev => {
+                                                const newSet = new Set(prev)
+                                                if (newSet.has(file.id)) {
+                                                  newSet.delete(file.id)
+                                                } else {
+                                                  newSet.add(file.id)
+                                                }
+                                                return newSet
+                                              })
+                                            }
                                           }}
                                         />
                                       )
@@ -1372,25 +1754,34 @@ export default function Apl02Page() {
                                   </div>
                                 )}
 
-                                {/* User-selected Files as Animated Capsules (can be removed) */}
+                                {/* User-selected Files as Animated Capsules (can be removed by asesi only) */}
                                 {userUploadedFiles.length > 0 && (
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                                     {userUploadedFiles.map((file) => (
                                       <AnimatedCapsule
                                         key={file.id}
                                         fileName={file.name}
-                                        onRemove={() => removeBuktiFile(kukId, file.id)}
+                                        file={file}
+                                        isAsesor={isAsesor}
+                                        onView={(file) => {
+                                          console.log('User file onView triggered:', file.name)
+                                          setSelectedPreviewFile(file)
+                                          setShowPreview(true)
+                                        }}
+                                        onRemove={() => {
+                                          if (!isAsesor) removeBuktiFile(kukId, file.id)
+                                        }}
                                       />
                                     ))}
                                   </div>
                                 )}
 
-                                {/* Bukti Dropdown - no delay, uses own state */}
+                                {/* Bukti Dropdown - enabled for asesi, disabled for asesor */}
                                 <BuktiDropdown
                                   kukId={kukId}
                                   uploadedFiles={uploadedFilesInfo}
                                   selectedFileIds={selectedFileIds}
-                                  onSelectFile={handleBuktiChange}
+                                  onSelectFile={(kukId, fileId) => handleBuktiChange(kukId, fileId, unit.id, subunit.id)}
                                   disabled={isAsesor || isSaving}
                                 />
                               </>
@@ -1417,20 +1808,20 @@ export default function Apl02Page() {
             <tr>
               <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
                 <span style={{ fontWeight: 'bold' }}>Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan melalui pendekatan</span><br /><br />
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'not-allowed' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                   <CustomCheckbox
                     checked={metodeAsesmen === 'observasi'}
-                    onChange={() => {}}
-                    disabled
+                    onChange={() => isAsesor && setMetodeAsesmen('observasi')}
+                    disabled={!isAsesor}
                   />
                   <span>Observasi</span>
                 </label>
                 &nbsp;&nbsp;&nbsp;&nbsp;
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'not-allowed' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                   <CustomCheckbox
                     checked={metodeAsesmen === 'portofolio'}
-                    onChange={() => {}}
-                    disabled
+                    onChange={() => isAsesor && setMetodeAsesmen('portofolio')}
+                    disabled={!isAsesor}
                   />
                   <span>Portofolio</span>
                 </label>
@@ -1599,6 +1990,16 @@ export default function Apl02Page() {
         title="Absen Masuk Pra-Asesmen"
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
+      />
+
+      {/* Document Preview Modal for Asesor */}
+      <DocumentPreviewModal
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false)
+          setSelectedPreviewFile(null)
+        }}
+        file={selectedPreviewFile}
       />
     </div>
   )

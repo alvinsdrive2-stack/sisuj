@@ -4,14 +4,15 @@ import AsesiStepIndicator from "./AsesiStepIndicator"
 interface AsesiLayoutProps {
   children: ReactNode
   currentStep: number
+  idIzin?: string
 }
 
-export default function AsesiLayout({ children, currentStep }: AsesiLayoutProps) {
+export default function AsesiLayout({ children, currentStep, idIzin }: AsesiLayoutProps) {
   return (
     <div style={{ display: 'flex', gap: '30px', padding: '20px', maxWidth: '1100px', margin: '0 auto', alignItems: 'flex-start' }}>
       {/* Sidebar - Vertical Steps (Sticky) */}
       <div style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-        <AsesiStepIndicator currentStep={currentStep} />
+        <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} />
       </div>
 
       {/* Main Content */}

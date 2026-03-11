@@ -69,16 +69,15 @@ export default function Ia05Page() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const isAsesi = user?.role?.name?.toLowerCase() === 'asesi'
-  // Check if current asesor is asesor1 (can edit umpan_balik) or asesor2 (read-only)
-  const isAsesor1 = isAsesor && user?.id === idAsesor1
+  // Check if current user is asesor
   const canEditIa05 = isAsesi // Only asesi can answer the questions
-  const canEditUmpanBalik = isAsesor1 // Only asesor1 can edit umpan_balik
+  const canEditUmpanBalik = isAsesor // All asesor can edit umpan_balik
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)

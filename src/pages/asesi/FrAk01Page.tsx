@@ -194,17 +194,6 @@ export default function FrAk01Page() {
     navigate(-1)
   }
 
-  const handleBuktiChange = (buktiId: number, checked: boolean) => {
-    setFormData(prev => {
-      const current = prev.buktiYangDikumpulkan || []
-      if (checked) {
-        return { ...prev, buktiYangDikumpulkan: [...current, buktiId] }
-      } else {
-        return { ...prev, buktiYangDikumpulkan: current.filter(id => id !== buktiId) }
-      }
-    })
-  }
-
   // Handle absen akhir modal close - navigate after submission
   const handleAbsenAkhirModalClose = () => {
     setShowAkhirModal(false)
@@ -357,11 +346,12 @@ export default function FrAk01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={9}>
+      <AsesiLayout currentStep={9} idIzin={actualIdIzin}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR.AK.01 - PERSETUJUAN ASESMEN</h2>
           <p style={{ fontSize: '13px', color: '#666' }}>Isi atau lengkapi data formulir AK 01 di bawah ini</p>
+         
         </div>
 
         {/* Form Table */}
@@ -438,20 +428,22 @@ export default function FrAk01Page() {
                           {isFirstInRow && (
                             <>
                               <td style={{ padding: '2px 4px', border: 'none' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: '0.7' }}>
                                   <CustomCheckbox
                                     checked={formData.buktiYangDikumpulkan?.includes(bukti.id) || false}
-                                    onChange={() => handleBuktiChange(bukti.id, !formData.buktiYangDikumpulkan?.includes(bukti.id))}
+                                    onChange={() => {}}
+                                    disabled
                                   />
                                   {bukti.nama}
                                 </label>
                               </td>
                               {buktiList[index + 1] ? (
                                 <td style={{ padding: '2px 4px', border: 'none' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: '0.7' }}>
                                     <CustomCheckbox
                                       checked={formData.buktiYangDikumpulkan?.includes(buktiList[index + 1].id) || false}
-                                      onChange={() => handleBuktiChange(buktiList[index + 1].id, !formData.buktiYangDikumpulkan?.includes(buktiList[index + 1].id))}
+                                      onChange={() => {}}
+                                      disabled
                                     />
                                     {buktiList[index + 1].nama}
                                   </label>
@@ -651,7 +643,7 @@ export default function FrAk01Page() {
             Kembali
           </ActionButton>
           <ActionButton variant="primary" onClick={handleSave} disabled={!agreedChecklist}>
-            Selesai
+            {isAsesor ? 'Lanjut' : 'Selesai'}
           </ActionButton>
         </div>
       </AsesiLayout>

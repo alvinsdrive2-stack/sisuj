@@ -48,8 +48,8 @@ export default function Ak05Page() {
     }
   }, [isAsesor, authLoading, navigate])
 
-  // Only asesor 1 can edit
-  const canEdit = role === 'asesor_1'
+  // All asesor can edit (removed restriction to asesor_1 only)
+  const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length)

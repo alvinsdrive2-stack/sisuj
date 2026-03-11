@@ -118,7 +118,7 @@ export default function K3AsesmenPage() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={8}>
+      <AsesiLayout currentStep={8} idIzin={idIzin}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>

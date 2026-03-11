@@ -3,8 +3,42 @@
  * Tanda Tangan & Konfirmasi section - 100% width with thin borders
  */
 
-import { useState } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { CustomCheckbox } from "../ui/Checkbox"
+
+// ============== TYPES ==============
+interface Referensi {
+  id: number
+  nama: string
+  value: boolean
+}
+
+interface Subkategori {
+  id: number | null
+  nama: string
+  urut: number | null
+  referensis: Referensi[]
+}
+
+interface Kategori {
+  id: number | null
+  kategori: string | null
+  nama: string
+  urut: number | null
+  id_kelompok: number | null
+  subkategoris: Subkategori[]
+}
+
+interface KelompokForm {
+  id: number
+  nama: string | null
+  urut: number
+  kategoris: Kategori[]
+}
+
+interface ReferensiFormItem {
+  kelompok: KelompokForm
+}
 
 interface Mapa01TandaTanganProps {
   namaPenyusun?: string | null
@@ -15,6 +49,8 @@ interface Mapa01TandaTanganProps {
   barcodeValidator?: string | null
   noregPenyusun?: string | null
   noregValidator?: string | null
+  referensiForm?: ReferensiFormItem[]
+  isAsesor?: boolean
 }
 
 // ============== CONSTANTS ==============
@@ -57,18 +93,66 @@ export function Mapa01TandaTangan({
   barcodePenyusun,
   barcodeValidator,
   noregPenyusun,
-  noregValidator
+  noregValidator,
+  referensiForm,
+  isAsesor = false
 }: Mapa01TandaTanganProps) {
-  const [checkboxStates, setCheckboxStates] = useState({
-    manajerSertifikasi: false,
-    masterAssessor: false,
-    manajerPelatihan: false,
-    lainnya: false,
-  })
+  // Build checkbox states from referensiForm data
+  const initialCheckboxStates = useMemo(() => {
+    const states: Record<string, boolean> = {}
+    if (referensiForm) {
+      referensiForm.forEach((item) => {
+        const kelompok = item.kelompok
+        kelompok.kategoris?.forEach((kategori) => {
+          if (kategori.nama === "Orang yang relevan untuk dikonfirmasi") {
+            kategori.subkategoris?.forEach((subkategori) => {
+              subkategori.referensis?.forEach((ref) => {
+                states[`ref_${ref.id}`] = ref.value
+              })
+            })
+          }
+        })
+      })
+    }
+    return states
+  }, [referensiForm])
 
-  const toggleCheckbox = (key: keyof typeof checkboxStates) => {
-    setCheckboxStates(prev => ({ ...prev, [key]: !prev[key] }))
+  const [checkboxStates, setCheckboxStates] = useState<Record<string, boolean>>({})
+
+  // Sync checkbox states when referensiForm loads
+  useEffect(() => {
+    if (Object.keys(initialCheckboxStates).length > 0) {
+      setCheckboxStates(initialCheckboxStates)
+    }
+  }, [initialCheckboxStates])
+
+  const toggleCheckbox = (refId: number) => {
+    setCheckboxStates(prev => ({ ...prev, [`ref_${refId}`]: !prev[`ref_${refId}`] }))
   }
+
+  // Get "Orang yang relevan untuk dikonfirmasi" references dynamically
+  const getKonfirmasiReferences = () => {
+    if (!referensiForm) return []
+
+    const references: Array<{ id: number; nama: string }> = []
+
+    referensiForm.forEach((item) => {
+      const kelompok = item.kelompok
+      kelompok.kategoris?.forEach((kategori) => {
+        if (kategori.nama === "Orang yang relevan untuk dikonfirmasi") {
+          kategori.subkategoris?.forEach((subkategori) => {
+            subkategori.referensis?.forEach((ref) => {
+              references.push({ id: ref.id, nama: ref.nama })
+            })
+          })
+        }
+      })
+    })
+
+    return references
+  }
+
+  const konfirmasiReferences = getKonfirmasiReferences()
 
   const headerCellStyle = {
     ...cellStyles.header,
@@ -102,7 +186,7 @@ export function Mapa01TandaTangan({
       </h1>
       <p style={{ margin: 0 }}><br /></p>
 
-      {/* Konfirmasi Table */}
+      {/* Konfirmasi Table - Dynamic from API */}
       <table style={{ width: '100%', borderCollapse: 'collapse' as const }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '23pt' }}>
@@ -123,69 +207,38 @@ export function Mapa01TandaTangan({
             </td>
           </tr>
 
-          <tr style={{ height: '54pt' }}>
-            <td style={{ ...contentCellStyle, padding: '11px 20px' }}>
-              <div
-                onClick={() => toggleCheckbox('manajerSertifikasi')}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <CustomCheckbox checked={checkboxStates.manajerSertifikasi} onChange={() => {}} style={{ pointerEvents: 'none' }} />
-                <span style={{ fontSize: '12px', color: COLORS.BLACK }}>
-                  Manajer sertifikasi
-                </span>
-              </div>
-            </td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-          </tr>
-
-          <tr style={{ height: '53pt' }}>
-            <td style={{ ...contentCellStyle, padding: '6px 20px', lineHeight: '12px' }}>
-              <div
-                onClick={() => toggleCheckbox('masterAssessor')}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <CustomCheckbox checked={checkboxStates.masterAssessor} onChange={() => {}} style={{ pointerEvents: 'none' }} />
-                <span style={{ fontSize: '12px', color: COLORS.BLACK }}>
-                  Master Assessor / Master Trainer / Asesor Utama kompetensi
-                </span>
-              </div>
-            </td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-          </tr>
-
-          <tr style={{ height: '53pt' }}>
-            <td style={{ ...contentCellStyle, padding: '6px 20px', lineHeight: '12px' }}>
-              <div
-                onClick={() => toggleCheckbox('manajerPelatihan')}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <CustomCheckbox checked={checkboxStates.manajerPelatihan} onChange={() => {}} style={{ pointerEvents: 'none' }} />
-                <span style={{ fontSize: '12px', color: COLORS.BLACK }}>
-                  Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar
-                </span>
-              </div>
-            </td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-          </tr>
-
-          <tr style={{ height: '46pt' }}>
-            <td style={{ ...contentCellStyle, padding: '7px 20px' }}>
-              <div
-                onClick={() => toggleCheckbox('lainnya')}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}
-              >
-                <CustomCheckbox checked={checkboxStates.lainnya} onChange={() => {}} style={{ pointerEvents: 'none' }} />
-                <span style={{ fontSize: '12px', color: COLORS.BLACK }}>
-                  Lainnya:
-                </span>
-              </div>
-            </td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-            <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-          </tr>
+          {/* Dynamic rows from API */}
+          {konfirmasiReferences.map((ref) => (
+            <tr key={ref.id} style={{ height: ref.id === 104 ? '46pt' : '54pt' }}>
+              <td style={{
+                ...contentCellStyle,
+                padding: ref.id === 104 ? '7px 20px' : (ref.id === 102 || ref.id === 103 ? '6px 20px' : '11px 20px'),
+                lineHeight: ref.id === 102 || ref.id === 103 ? '12px' : undefined
+              }}>
+                <div
+                  onClick={() => isAsesor && toggleCheckbox(ref.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: isAsesor ? 'pointer' : 'default',
+                    userSelect: 'none'
+                  }}
+                >
+                  <CustomCheckbox
+                    checked={checkboxStates[`ref_${ref.id}`] ?? false}
+                    onChange={() => {}}
+                    style={{ pointerEvents: 'none', opacity: isAsesor ? 1 : 0.5 }}
+                  />
+                  <span style={{ fontSize: '12px', color: COLORS.BLACK }}>
+                    {ref.nama}
+                  </span>
+                </div>
+              </td>
+              <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
+              <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
+            </tr>
+          ))}
         </tbody>
       </table>
 

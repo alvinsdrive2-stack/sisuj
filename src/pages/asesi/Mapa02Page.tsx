@@ -155,18 +155,6 @@ export default function Mapa02Page() {
     navigate(-1)
   }
 
-  const handleCheckboxChange = (_kategori: string, refId: number, _kelompokIndex: number, potensi: number) => {
-    setSelectedPotensi(prev => {
-      // If clicking the same potensi that's already selected, uncheck it
-      if (prev[refId] === potensi) {
-        const { [refId]: _, ...rest } = prev
-        return rest
-      }
-      // Otherwise, set the new potensi for this refId
-      return { ...prev, [refId]: potensi }
-    })
-  }
-
   const isChecked = (_kategori: string, refId: number, _kelompokIndex: number, potensi: number) => {
     return selectedPotensi[refId] === potensi
   }
@@ -234,7 +222,7 @@ export default function Mapa02Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={5}>
+      <AsesiLayout currentStep={5} idIzin={idIzin}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>
@@ -327,12 +315,12 @@ export default function Mapa02Page() {
                         {[1, 2, 3, 4, 5].map((potensi) => (
                           <td
                             key={potensi}
-                            onClick={() => handleCheckboxChange("MAPA02_1", ref.id, kelompokIndex, potensi)}
-                            style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+                            style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'not-allowed', userSelect: 'none', background: '#f5f5f5' }}
                           >
                             <CustomCheckbox
                               checked={isChecked("MAPA02_1", ref.id, kelompokIndex, potensi)}
                               onChange={() => {}}
+                              disabled
                               style={{ pointerEvents: 'none' }}
                             />
                           </td>

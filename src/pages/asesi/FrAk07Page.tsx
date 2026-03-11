@@ -443,11 +443,14 @@ export default function FrAk07Page() {
       if (hasilPenyesuaianData) {
         hasilPenyesuaianData.kategoris[0]?.referensis.forEach(ref => {
           if (!ref.nama) return // Skip null nama
-          const textValue = textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')
+          // Get user input, or use API value as fallback
+          const userInput = textAnswers[ref.id]
+          // Send empty string to clear the field on backend
+          const finalValue = userInput !== undefined ? userInput : (typeof ref.jawaban === 'string' ? ref.jawaban : '')
           answers.push({
             referensi_id: ref.id,
             kelompok_id: hasilPenyesuaianData.id,
-            value: textValue
+            value: finalValue
           })
         })
       }
@@ -550,7 +553,7 @@ export default function FrAk07Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={6}>
+      <AsesiLayout currentStep={6} idIzin={idIzin}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>
@@ -810,7 +813,7 @@ export default function FrAk07Page() {
                       </td>
                       <td style={{ border: '1px solid #000', padding: '4px', fontSize: '14px', borderLeft:'none' }}>
                         <textarea
-                          value={textAnswers[ref.id] || (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
+                          value={textAnswers[ref.id] ?? (typeof ref.jawaban === 'string' ? ref.jawaban : '')}
                           onInput={(e) => {
                             const el = e.currentTarget
                             el.style.height = '24px'

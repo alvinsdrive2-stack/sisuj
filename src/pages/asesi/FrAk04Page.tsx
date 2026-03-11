@@ -143,36 +143,6 @@ export default function FrAk04Page() {
             if (apiData.barcodes) {
               setBarcodes(apiData.barcodes)
             }
-
-            // POST QR jika barcode asesi belum ada
-            if (!apiData.barcodes?.asesi?.url && kegiatan?.jadwal_id) {
-              try {
-                const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak04`, {
-                  method: 'POST',
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "Authorization": `Bearer ${token}`,
-                  },
-                  body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })
-                })
-
-                if (qrResponse.ok) {
-                  const qrResult = await qrResponse.json()
-                  if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                    setBarcodes({
-                      asesi: {
-                        url: qrResult.data.url_image,
-                        tanggal: new Date().toISOString(),
-                        nama: namaAsesi || user?.name || ''
-                      }
-                    })
-                  }
-                }
-              } catch (qrError) {
-                console.error("Error generating QR:", qrError)
-              }
-            }
           }
         } else {
           console.warn(`AK04 API returned ${ak04Response.status}`)
@@ -310,6 +280,40 @@ export default function FrAk04Page() {
         const result = await response.json()
         if (result.message === "AK04 successfully submitted") {
           showSuccess('FR AK 04 berhasil disimpan!')
+
+          // Generate QR hanya jika form diisi (ada jawaban checkbox atau alasan)
+          const hasAnswers = Object.keys(answers).length > 0
+          const hasAlasan = alasanBanding.trim().length > 0
+
+          if ((hasAnswers || hasAlasan) && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
+            try {
+              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak04`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  setBarcodes({
+                    asesi: {
+                      url: qrResult.data.url_image,
+                      tanggal: new Date().toISOString(),
+                      nama: namaAsesi || user?.name || ''
+                    }
+                  })
+                }
+              }
+            } catch (qrError) {
+              console.error("Error generating QR:", qrError)
+            }
+          }
+
           setTimeout(() => {
             navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
           }, 500)
@@ -349,7 +353,7 @@ export default function FrAk04Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={7}>
+      <AsesiLayout currentStep={7} idIzin={idIzin}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px' }}>

@@ -259,7 +259,7 @@ export default function Mapa01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={4}>
+      <AsesiLayout currentStep={4} idIzin={actualIdIzin}>
         {/* A4 Size Indicator */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '20px'}}>
           <div className="mapa01-container">
@@ -291,6 +291,8 @@ export default function Mapa01Page() {
             barcodeValidator={barcodeValidator}
             noregPenyusun={noregPenyusun}
             noregValidator={noregValidator}
+            referensiForm={mapaData?.referensi_form}
+            isAsesor={isAsesor}
           />
           </div>
 

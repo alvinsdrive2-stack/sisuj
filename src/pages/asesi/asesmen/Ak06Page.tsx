@@ -69,7 +69,7 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2 } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2 } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
@@ -77,11 +77,8 @@ export default function Ak06Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
-  // Logic: If asesor_2 exists, only asesor_2 can fill. Otherwise, asesor_1 fills.
-  const hasAsesor2 = idAsesor2 !== null && idAsesor2 !== undefined
-  const isFormDisabled = isAsesor && (
-    hasAsesor2 ? !isAsesor2 : !isAsesor1
-  )
+  // All asesor can fill (removed restriction to specific asesor)
+  const isFormDisabled = !isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {

@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom"
+
 interface Step {
   number: number
   label: string
@@ -5,6 +7,7 @@ interface Step {
 
 interface AsesiStepIndicatorProps {
   currentStep: number
+  idIzin?: string
 }
 
 const steps: Step[] = [
@@ -20,7 +23,29 @@ const steps: Step[] = [
   { number: 10, label: 'Selesai' },
 ]
 
-export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorProps) {
+// Step paths relative to idIzin
+const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
+  if (!idIzin) return null
+
+  const paths: Record<number, string | null> = {
+    1: `/asesi/praasesmen/${idIzin}`,
+    2: `/asesi/praasesmen/${idIzin}/apl01`,
+    3: `/asesi/praasesmen/${idIzin}/apl02`,
+    4: `/asesi/praasesmen/${idIzin}/mapa01`,
+    5: `/asesi/praasesmen/${idIzin}/mapa02`,
+    6: `/asesi/praasesmen/${idIzin}/fr-ak-07`,
+    7: `/asesi/praasesmen/${idIzin}/fr-ak-04`,
+    8: `/asesi/praasesmen/${idIzin}/k3-asesmen`,
+    9: `/asesi/praasesmen/${idIzin}/fr-ak-01`,
+    10: null, // Selesai - no navigation
+  }
+
+  return paths[stepNumber] || null
+}
+
+export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepIndicatorProps) {
+  const navigate = useNavigate()
+
   // Get the class name for the step circle based on status
   const getStepCircleClassName = (status: string) => {
     if (status === 'active') {
@@ -28,6 +53,7 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
     }
     return ''
   }
+
   const getStepStatus = (stepNumber: number) => {
     if (stepNumber < currentStep) return 'completed'
     if (stepNumber === currentStep) return 'active'
@@ -57,6 +83,13 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
     }
   }
 
+  const handleStepClick = (stepNumber: number) => {
+    const path = getStepPath(stepNumber, idIzin)
+    if (path) {
+      navigate(path)
+    }
+  }
+
   return (
     <div style={{
       position: 'sticky',
@@ -83,9 +116,22 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
         {steps.map((step, index) => {
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
+          const stepPath = getStepPath(step.number, idIzin)
+          const isClickable = stepPath !== null
 
           return (
-            <div key={step.number} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: index < steps.length - 1 ? '24px' : '0', position: 'relative' }}>
+            <div
+              key={step.number}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                marginBottom: index < steps.length - 1 ? '24px' : '0',
+                position: 'relative',
+                cursor: isClickable ? 'pointer' : 'default'
+              }}
+              onClick={() => isClickable && handleStepClick(step.number)}
+              title={isClickable ? `Klik untuk ke ${step.label}` : undefined}
+            >
               {/* Step Circle */}
               <div
                 className={getStepCircleClassName(status)}
@@ -104,7 +150,21 @@ export default function AsesiStepIndicator({ currentStep }: AsesiStepIndicatorPr
                   fontWeight: status === 'pending' ? 'normal' : 'bold',
                   flexShrink: 0,
                   zIndex: 1,
-                }}>
+                  transition: isClickable ? 'transform 0.2s ease, box-shadow 0.2s ease' : 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (isClickable) {
+                    e.currentTarget.style.transform = 'scale(1.1)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isClickable) {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }
+                }}
+              >
                 {status === 'completed' ? '\u2713' : step.number}
               </div>
               {/* Label */}

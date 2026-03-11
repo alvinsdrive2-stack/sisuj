@@ -74,8 +74,8 @@ export default function Ak02Page() {
   // Get dynamic steps
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
-  // Disable form for asesi and asesor_2 (only asesor_1 can fill)
-  const isFormDisabled = !isAsesor1
+  // All asesor can fill (removed restriction to asesor_1 only)
+  const isFormDisabled = !isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: absen akhir for asesi is now handled in Ak03Page

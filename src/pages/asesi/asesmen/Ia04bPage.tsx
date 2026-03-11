@@ -86,7 +86,7 @@ export default function Ia04bPage() {
     asesi?: BarcodeData
     asesor?: Record<string, BarcodeData>
   } | null>(null)
-  const canEdit = isAsesor1 // Only asesor1 can edit IA04B
+  const canEdit = isAsesor // All asesor can edit IA04B
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -164,11 +164,14 @@ export default function Ia04bPage() {
             const newAnswers: Record<number, 'ya' | 'tidak'> = {}
             const newJawabanAnswers: Record<number, string> = {}
             result.data.soal.forEach((soal) => {
+              // Only set answer if pencapaian is explicitly true or false
+              // If null/undefined, don't set anything (unchecked state)
               if (soal.pencapaian === true) {
                 newAnswers[soal.id] = 'ya'
-              } else {
+              } else if (soal.pencapaian === false) {
                 newAnswers[soal.id] = 'tidak'
               }
+              // If pencapaian is null/undefined, leave it unset (unchecked)
               // Initialize jawaban if exists
               if (soal.jawaban) {
                 newJawabanAnswers[soal.id] = soal.jawaban

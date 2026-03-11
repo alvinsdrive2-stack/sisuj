@@ -211,7 +211,7 @@ export default function PraAsesmenPage() {
       {/* Step Indicator */}
       
 
-      <AsesiLayout currentStep={1}>
+      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px' }}>Konfirmasi Data Diri</h2>

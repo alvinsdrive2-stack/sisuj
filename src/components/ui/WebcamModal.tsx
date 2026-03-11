@@ -285,7 +285,9 @@ export function WebcamModal({
         <div style={{
           position: "relative",
           width: "100%",
-          paddingTop: "100%",
+          maxWidth: "600px",
+          margin: "0 auto",
+          aspectRatio: "4/3",
           background: "#000",
           overflow: "hidden"
         }}>
