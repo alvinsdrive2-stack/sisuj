@@ -62,6 +62,9 @@ export default function PraAsesmenPage() {
   const [zoom, setZoom] = useState(1)
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
+  // DEBUG: Log when PraAsesmenPage mounts
+  console.log('[PraAsesmenPage] Component mounted', { userRole: user?.role?.name, idIzinFromUrl, isAsesor })
+
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // For PraAsesmenPage, asesorList is not available, so asesor will default to 'asesor1'
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

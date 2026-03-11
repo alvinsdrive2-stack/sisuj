@@ -339,20 +339,24 @@ export default function DashboardAsesiPage() {
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
                   onClick={() => {
+                    console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap, 'jenjang:', jenjang)
 
                     if (!idIzin) {
                       toast("ID Izin tidak ditemukan", "error")
                       return
                     }
                     if (kegiatan?.tahap === "1") {
+                      console.log('[Dashboard Button] Navigating to /asesi/praasesmen (confirmation page)')
                       navigate(`/asesi/praasesmen`)
                     }
                     if (kegiatan?.tahap === "2") {
                       // Check jenjang from data-dokumen API for low jenjang flow
                       const jenjangId = parseInt(jenjang || "0")
                       if (jenjangId < 4) {
+                        console.log('[Dashboard Button] Navigating to /asesi/asesmen/' + idIzin + '/ia01 (low jenjang)')
                         navigate(`/asesi/asesmen/${idIzin}/ia01`)
                       } else {
+                        console.log('[Dashboard Button] Navigating to /asesi/asesmen/' + idIzin + '/ia04a (high jenjang)')
                         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
                       }
                     }

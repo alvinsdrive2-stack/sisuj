@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react"
 import { authService, LoginRequest, CurrentUser } from "@/lib/auth-service"
 
 export type { CurrentUser }
@@ -17,10 +17,20 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const hasInitializedRef = useRef(false)
+  const isLoggingInRef = useRef(false)
 
   // Cek auth status saat mount
   useEffect(() => {
+    // Skip if already initialized or currently logging in
+    if (hasInitializedRef.current || isLoggingInRef.current) {
+      setIsLoading(false)
+      return
+    }
+
     const initAuth = async () => {
+      hasInitializedRef.current = true
+
       const token = authService.getToken()
 
       if (token) {
@@ -46,21 +56,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (credentials: LoginRequest): Promise<CurrentUser> => {
-    const response = await authService.login(credentials)
+    isLoggingInRef.current = true
 
-    // Simpan token dulu
-    authService.saveToken(response.data.access_token)
-
-    // Fetch full user data dari /auth/me
     try {
+      const response = await authService.login(credentials)
+
+      // Simpan token dulu
+      authService.saveToken(response.data.access_token)
+
+      // Fetch full user data dari /auth/me
       const userData = await authService.getCurrentUser()
 
       authService.saveUserData(userData)
       setUser(userData)
+      hasInitializedRef.current = true
+      setIsLoading(false)
       return userData // Return user data for immediate use
     } catch (error) {
       console.error("Failed to fetch user data:", error)
+      setIsLoading(false)
       throw error
+    } finally {
+      isLoggingInRef.current = false
     }
   }
 

@@ -27,9 +27,11 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
     if (!href) return undefined
     if (id && href.startsWith('/asesi/asesmen/')) {
       // Insert id after /asesi/asesmen/
+      // Example: /asesi/asesmen/ia01 -> /asesi/asesmen/{id}/ia01
       const parts = href.split('/')
-      if (parts[3] === 'asesmen') {
-        parts.splice(4, 0, id)
+      // parts = ['', 'asesi', 'asesmen', 'ia01']
+      if (parts[2] === 'asesmen') {
+        parts.splice(3, 0, id)
         return parts.join('/')
       }
     }
