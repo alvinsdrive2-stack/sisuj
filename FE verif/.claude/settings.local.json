@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\LSP\\\\penyatuan\\\\FE verif\\\\gatensi-frontend\" && npm run build)"
+    ]
+  }
+}
