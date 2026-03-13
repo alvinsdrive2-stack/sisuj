@@ -18,6 +18,7 @@ import {
   FileCheck
 } from "lucide-react"
 import { PulsingIcon } from "@/components/ui/PulsingIcon"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import loopVideo from "@/assets/Sequence 01.mp4"
@@ -31,6 +32,7 @@ export default function DashboardAsesiPage() {
   const { kegiatan, isLoading: _isLoading, error: _error } = useKegiatanAsesi()
   const navigate = useNavigate()
   const [showPage, setShowPage] = useState(false)
+  const [isPageLoading, setIsPageLoading] = useState(true)
   const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
 
   // Fetch jenjang from data-dokumen API
@@ -66,7 +68,7 @@ export default function DashboardAsesiPage() {
     fetchIdIzin()
   }, [kegiatan?.jadwal_id, user?.name])
 
-  // Debug logging
+  // Page entrance animation
 
 
 
@@ -75,7 +77,12 @@ export default function DashboardAsesiPage() {
 
   // Page entrance animation
   useEffect(() => {
-    setShowPage(true)
+    const timer = setTimeout(() => {
+      setIsPageLoading(false)
+      setShowPage(true)
+    }, 2000)
+
+    return () => clearTimeout(timer)
   }, [])
 
   // Debug logging
@@ -264,6 +271,16 @@ export default function DashboardAsesiPage() {
       }
     }
   }, [countdown, isButtonLocked, kegiatan?.is_started, kegiatan?.tahap])
+
+  // Show loading overlay
+  if (isPageLoading) {
+    return (
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <FullPageLoader text="Memuat dashboard..." />
+      </>
+    )
+  }
 
   return (
     <>

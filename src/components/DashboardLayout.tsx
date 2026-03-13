@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom"
 import DashboardSidebar from "./DashboardSidebar"
 import DashboardNavbar from "./DashboardNavbar"
 import { getRoleConfig } from "@/lib/rbac-config"
-import { PulseLogo } from "@/components/ui/loading-spinner"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import loopVideo from "@/assets/Sequence 01.mp4"
 
@@ -19,16 +19,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation()
   const [isPageLoading, setIsPageLoading] = useState(false)
   const [showContent, setShowContent] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Page transition on route change
   useEffect(() => {
     setIsPageLoading(true)
     setShowContent(false)
 
+    // Use 2 second delay for initial load, 200ms for subsequent navigation
+    const delay = isInitialLoad ? 2000 : 200
     const timer = setTimeout(() => {
       setIsPageLoading(false)
       setShowContent(true)
-    }, 200)
+      if (isInitialLoad) setIsInitialLoad(false)
+    }, delay)
 
     return () => clearTimeout(timer)
   }, [location.pathname])
@@ -49,9 +53,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
       <>
         <LoopingVideoBackground videoSrc={loopVideo} />
-        <div className="min-h-screen flex items-center justify-center">
-          <PulseLogo text="Memuat..." />
-        </div>
+        <FullPageLoader text="Memuat..." />
       </>
     )
   }
@@ -71,9 +73,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Page Loading Overlay */}
       {isPageLoading && (
-        <div className="page-loading-overlay">
-          <PulseLogo text="Memuat..." />
-        </div>
+        <FullPageLoader text="Memuat..." />
       )}
 
       {/* Main Content Area */}
