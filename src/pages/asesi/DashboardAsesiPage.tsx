@@ -202,13 +202,13 @@ export default function DashboardAsesiPage() {
       variant: "secondary",
       color: "text-slate-600"
     }
-    if (kegiatan.tahap === "1") {
+    if (kegiatan.tahap === 1) {
       phase = {
         title: "Pra-Asesmen",
         variant: "default",
         color: "text-primary"
       }
-    } else if (kegiatan.tahap === "2") {
+    } else if (kegiatan.tahap === 2) {
       phase = {
         title: "Asesmen",
         variant: "default",
@@ -362,11 +362,11 @@ export default function DashboardAsesiPage() {
                       toast("ID Izin tidak ditemukan", "error")
                       return
                     }
-                    if (kegiatan?.tahap === "1") {
+                    if (kegiatan?.tahap === 1) {
                       console.log('[Dashboard Button] Navigating to /asesi/praasesmen (confirmation page)')
                       navigate(`/asesi/praasesmen`)
                     }
-                    if (kegiatan?.tahap === "2") {
+                    if (kegiatan?.tahap === 2) {
                       // Check jenjang from data-dokumen API for low jenjang flow
                       const jenjangId = parseInt(jenjang || "0")
                       if (jenjangId < 4) {

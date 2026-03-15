@@ -129,17 +129,17 @@ export default function DashboardAsesor() {
                     <p className="text-xs text-slate-500">{kegiatan.tuk.alamat}</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {kegiatan.is_started_praasesmen === "0" && kegiatan.tahap === "0" && (
+                    {kegiatan.is_started_praasesmen === '0' && kegiatan.tahap === 0 && (
                       <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                         Belum Mulai
                       </Badge>
                     )}
-                    {kegiatan.is_started_praasesmen === "1" && kegiatan.tahap === "1" && (
+                    {kegiatan.is_started_praasesmen === "1" && kegiatan.tahap === 1 && (
                       <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
                         Pra-Asesmen
                       </Badge>
                     )}
-                    {kegiatan.is_started === "1" && kegiatan.tahap === "2" && (
+                    {kegiatan.is_started === "1" && kegiatan.tahap === 2 && (
                       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
                         Asesmen
                       </Badge>

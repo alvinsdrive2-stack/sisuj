@@ -183,13 +183,13 @@ export default function AsesiPage() {
     const jenjangId = parseInt(asesorIds.jenjang || "0")
 
     // Navigate based on current phase
-    if (kegiatan?.tahap === "2") {
+    if (kegiatan?.tahap === 2) {
       if (jenjangId < 4) {
         navigate(`/asesi/asesmen/${idIzin}/ia01`)
       } else {
         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
       }
-    } else if (kegiatan?.tahap === "1") {
+    } else if (kegiatan?.tahap === 1) {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     } else {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
@@ -241,17 +241,17 @@ export default function AsesiPage() {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h3 className="text-xl font-bold text-slate-800">{kegiatan.skema.nama}</h3>
-              {kegiatan.tahap === "0" && (
+              {kegiatan.tahap === 0 && (
                 <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">
                   Belum Mulai
                 </Badge>
               )}
-              {kegiatan.tahap === "1" && (
+              {kegiatan.tahap === 1 && (
                 <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">
                   Pra-Asesmen
                 </Badge>
               )}
-              {kegiatan.tahap === "2" && (
+              {kegiatan.tahap === 2 && (
                 <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
                   Asesmen
                 </Badge>
@@ -370,12 +370,12 @@ export default function AsesiPage() {
             {asesiList.map((asesi, index) => {
               const absen = absenData[asesi.id_izin]
 
-              const asesiStatus = kegiatan?.tahap === "2"
+              const asesiStatus = kegiatan?.tahap === 2
                 ? getAsesiAbsenStatus(absen, 'asesmen')
                 : getAsesiAbsenStatus(absen, 'praasesmen')
 
               const reviewStatus = asesorRole
-                ? (kegiatan?.tahap === "2"
+                ? (kegiatan?.tahap === 2
                     ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
                     : getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2))
                 : 'Butuh ditinjau'

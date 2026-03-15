@@ -180,12 +180,12 @@ export default function ListAsesiAdminTUK() {
                     Belum Mulai
                   </Badge>
                 )}
-                {kegiatan.tahap === "1" && (
+                {kegiatan.tahap === 1 && (
                   <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
                     Pra-Asesmen
                   </Badge>
                 )}
-                {kegiatan.tahap === "2" && (
+                {kegiatan.tahap === 2 && (
                   <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
                     Asesmen
                   </Badge>
@@ -260,9 +260,26 @@ export default function ListAsesiAdminTUK() {
                   </div>
                 </div>
               )}
-
+              {kegiatan && countdown && countdown.isPast && kegiatan?.tahap === 2 && (
+                <div className="relative">
+                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/10 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                          <Clock className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
+                      </div>
+                      <div>
+                        <div className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Sedang Berjalan</div>
+                        <div className="text-xs text-emerald-600 dark:text-emerald-400">Asesmen dimulai</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}      
               {/* Start Button - based on is_started and is_started_praasesmen */}
-              {kegiatan?.tahap === "0" && (
+              {kegiatan?.tahap === 0 && (
                 <Button
                   onClick={handleStartPraAsesmen}
                   disabled={startingPraAsesmen}
@@ -281,7 +298,7 @@ export default function ListAsesiAdminTUK() {
                   )}
                 </Button>
               )}
-              {kegiatan?.tahap === "1" && (
+              {kegiatan?.tahap === 1 && (
                 <Button
                   onClick={handleStartAsesmen}
                   disabled={startingAsesmen}
@@ -301,24 +318,7 @@ export default function ListAsesiAdminTUK() {
                 </Button>
               )}
 
-              {kegiatan && countdown && countdown.isPast && (
-                <div className="relative">
-                  <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-emerald-900/20 dark:to-emerald-800/10 rounded-2xl border border-emerald-200 dark:border-emerald-800">
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                          <Clock className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-bold text-emerald-700 dark:text-emerald-300">Sedang Berjalan</div>
-                        <div className="text-xs text-emerald-600 dark:text-emerald-400">Asesmen dimulai</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              
             </div>
           </div>
         </div>
