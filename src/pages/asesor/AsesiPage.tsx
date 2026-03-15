@@ -439,8 +439,6 @@ export default function AsesiPage() {
                 : 'Butuh ditinjau'
 
               // Asesi selalu bisa diklik untuk masuk ke praasesi/asesmen
-              const canClick = true
-
               return (
                 <div
                   key={asesi.id_izin}
