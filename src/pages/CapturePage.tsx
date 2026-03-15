@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCamera, faCheck, faSpinner, faExclamationTriangle, faRedo, faUserCheck, faImage } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { decryptCaptureData } from "@/utils/crypto"
 
 const API_BASE_URL = "https://backend.devgatensi.site/api"
 
@@ -97,30 +98,46 @@ export default function CapturePage() {
     expired?: boolean
   } | null>(null)
 
-  const token = searchParams.get("token")
-  const authFromUrl = searchParams.get("auth")
-  const jadwalIdFromUrl = searchParams.get("jadwalId")
+  const encryptedData = searchParams.get("data")
 
   // Verify token on mount
   useEffect(() => {
     const verifyToken = () => {
-      if (!token) {
+      if (!encryptedData) {
         setTokenData({ valid: false })
-        setError("Token tidak ditemukan")
-        setIsLoading(false)
-        return
-      }
-
-      if (!authFromUrl) {
-        setTokenData({ valid: false })
-        setError("Autentikasi tidak ditemukan")
+        setError("Data tidak ditemukan")
         setIsLoading(false)
         return
       }
 
       try {
+        const decrypted = decryptCaptureData(encryptedData)
+
+        if (!decrypted) {
+          setTokenData({ valid: false })
+          setError("Data tidak valid")
+          setIsLoading(false)
+          return
+        }
+
+        const { token, auth, jadwalId } = decrypted
+
+        if (!token) {
+          setTokenData({ valid: false })
+          setError("Token tidak ditemukan")
+          setIsLoading(false)
+          return
+        }
+
+        if (!auth) {
+          setTokenData({ valid: false })
+          setError("Autentikasi tidak ditemukan")
+          setIsLoading(false)
+          return
+        }
+
         const decoded = atob(token)
-        const [expiryStr, _random, jadwalId] = decoded.split(".")
+        const [expiryStr, _random] = decoded.split(".")
         const expiry = parseInt(expiryStr)
         const now = Date.now()
 
@@ -133,12 +150,13 @@ export default function CapturePage() {
 
         setTokenData({
           valid: true,
-          jadwalId: jadwalIdFromUrl || jadwalId,
-          authToken: decodeURIComponent(authFromUrl),
+          jadwalId,
+          authToken: auth,
+          type: decrypted.type,
         })
       } catch (e) {
         setTokenData({ valid: false })
-        setError("Token tidak valid")
+        setError("Data tidak valid")
         setIsLoading(false)
       } finally {
         setIsLoading(false)
@@ -146,7 +164,7 @@ export default function CapturePage() {
     }
 
     verifyToken()
-  }, [token, authFromUrl, jadwalIdFromUrl])
+  }, [encryptedData])
 
   const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -189,7 +207,7 @@ export default function CapturePage() {
       const imageFile = new File([compressedImageBlob], 'photo.jpg', { type: 'image/jpeg' })
 
       const formData = new FormData()
-      const type = searchParams.get("type") || "url_foto_bersama"
+      const type = tokenData?.type || "url_foto_bersama"
 
       // Strip 'url_' prefix from type to get form field name
       // e.g., 'url_foto_bersama' -> 'foto_bersama'
@@ -225,7 +243,7 @@ export default function CapturePage() {
   }
 
   const getTypeLabel = () => {
-    const type = searchParams.get("type") || "asesi"
+    const type = tokenData?.type || "asesi"
     switch (type) {
       case "asesi":
         return "Daftar Hadir Asesi"
@@ -243,7 +261,7 @@ export default function CapturePage() {
   }
 
   const getTypeIcon = () => {
-    const type = searchParams.get("type") || "asesi"
+    const type = tokenData?.type || "asesi"
     switch (type) {
       case "foto_bersama":
         return faImage

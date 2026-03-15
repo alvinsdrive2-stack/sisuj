@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "shadcn": "^3.6.3"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "autoprefixer": "^10.4.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "crypto-js": "^4.2.0",
     "html-react-parser": "^5.2.17",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.0",

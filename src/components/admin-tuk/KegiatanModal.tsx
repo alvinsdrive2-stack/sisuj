@@ -4,6 +4,7 @@ import { faClose, faCamera, faClock, faUpload, faImage, faUsers, faUserCheck, fa
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import QRCode from "qrcode"
+import { encryptCaptureData } from "@/utils/crypto"
 
 const API_BASE_URL = "https://backend.devgatensi.site/api"
 const CAPTURE_BASE_URL = "https://sisuj.vercel.app/capture"
@@ -96,8 +97,16 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
     if (isOpen && jadwalId && selectedField) {
       const token = generateTempToken()
       const authToken = localStorage.getItem("access_token") || ""
-      // Pass the field key (e.g., 'url_ttd_asesi_pra') as the type
-      const url = `${CAPTURE_BASE_URL}?token=${token}&type=${selectedField.key}&auth=${encodeURIComponent(authToken)}&jadwalId=${jadwalId}`
+
+      // Encrypt all data into single parameter
+      const encryptedData = encryptCaptureData({
+        token,
+        type: selectedField.key,
+        auth: authToken,
+        jadwalId
+      })
+
+      const url = `${CAPTURE_BASE_URL}?data=${encodeURIComponent(encryptedData)}`
 
       QRCode.toDataURL(url, {
         width: 200,
