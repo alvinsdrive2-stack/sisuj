@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faChevronLeft, faChevronRight, faEye, faClose, faCamera, faUsers, faClock, faQrcode, faUpload } from "@fortawesome/free-solid-svg-icons"
+import { faChevronLeft, faChevronRight, faEye, faClose, faCamera, faUsers, faClock, faQrcode, faUpload, faFilePdf, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import QRCode from "qrcode"
 import { useAbsenData, AbsenData } from "@/hooks/useAbsenData"
@@ -411,7 +411,7 @@ export function DaftarHadirModal({
           >
             <FontAwesomeIcon icon={faCamera} style={{ fontSize: '20px' }} />
             Buka Kamera
-            <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} />
+            <input type="file" accept="image/*,.pdf" capture="environment" style={{ display: 'none' }} />
           </label>
 
           <div style={{ color: '#9ca3af', fontSize: '13px' }}>atau</div>
@@ -432,7 +432,7 @@ export function DaftarHadirModal({
           }}>
             <FontAwesomeIcon icon={faCamera} />
             Upload dari Galeri
-            <input type="file" accept="image/*" style={{ display: 'none' }} />
+            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} />
           </label>
         </div>
       ) : (
@@ -498,7 +498,7 @@ export function DaftarHadirModal({
           >
             <FontAwesomeIcon icon={faCamera} />
             Upload dari Komputer
-            <input type="file" accept="image/*" style={{ display: 'none' }} />
+            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} />
           </label>
         </div>
       )}
@@ -661,18 +661,121 @@ export function DaftarHadirModal({
               }}>
                 {selectedNode.url ? (
                   <>
-                    <img
-                      src={selectedNode.url}
-                      alt={selectedNode.label}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain'
-                      }}
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.png'
-                      }}
-                    />
+                    {(() => {
+                      const url = selectedNode.url
+                      const isPdf = url?.toLowerCase().endsWith('.pdf')
+                      const isImage = url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
+
+                      if (isPdf) {
+                        return (
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            background: '#f3f4f6',
+                          }}>
+                            <div style={{
+                              padding: '12px 16px',
+                              background: '#fff',
+                              borderBottom: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FontAwesomeIcon icon={faFilePdf} style={{ fontSize: '20px', color: '#ef4444' }} />
+                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>PDF Document</span>
+                              </div>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '6px 12px',
+                                  background: '#3b82f6',
+                                  color: '#fff',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: '10px' }} />
+                                Buka
+                              </a>
+                            </div>
+                            <iframe
+                              src={url}
+                              style={{
+                                width: '100%',
+                                flex: 1,
+                                border: 'none',
+                              }}
+                              title={selectedNode.label}
+                            />
+                          </div>
+                        )
+                      } else if (isImage) {
+                        return (
+                          <img
+                            src={url}
+                            alt={selectedNode.label}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain'
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none'
+                            }}
+                          />
+                        )
+                      } else {
+                        return (
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '16px',
+                            background: '#f9fafb',
+                          }}>
+                            <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: '48px', color: '#6b7280' }} />
+                            <div style={{ textAlign: 'center' }}>
+                              <p style={{ fontSize: '14px', color: '#374151', fontWeight: '500', marginBottom: '8px' }}>
+                                File tidak dapat dipreview
+                              </p>
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '8px 16px',
+                                  background: '#3b82f6',
+                                  color: '#fff',
+                                  borderRadius: '6px',
+                                  fontSize: '13px',
+                                  fontWeight: '600',
+                                  textDecoration: 'none',
+                                }}
+                              >
+                                <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: '12px' }} />
+                                Buka File
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      }
+                    })()}
                     {/* Ganti Button - only when has photo */}
                     {selectedNode.canUpload && (
                       <label
@@ -711,7 +814,7 @@ export function DaftarHadirModal({
                         )}
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/*,.pdf"
                           style={{ display: 'none' }}
                           onChange={(e) => {
                             const file = e.target.files?.[0]
@@ -763,7 +866,7 @@ export function DaftarHadirModal({
                               Buka Kamera
                             </>
                           )}
-                          <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+                          <input type="file" accept="image/*,.pdf" capture="environment" style={{ display: 'none' }}
                             disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]

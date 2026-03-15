@@ -10,6 +10,77 @@ const API_BASE_URL = "https://backend.devgatensi.site/api"
 const PRIMARY_COLOR = "#0d2137"
 const PRIMARY_DARK = "#081624"
 
+// Image compression settings
+const MAX_IMAGE_SIZE = 500 * 1024 // 500KB
+const MAX_WIDTH = 1024
+const MAX_HEIGHT = 1024
+const QUALITY = 0.8
+
+// Compress image using Canvas
+const compressImage = (file: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width
+            width = MAX_WIDTH
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height
+            height = MAX_HEIGHT
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+
+        // Try to compress to target size
+        let quality = QUALITY
+        const tryCompress = () => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'))
+                return
+              }
+              if (blob.size <= MAX_IMAGE_SIZE || quality <= 0.1) {
+                resolve(blob)
+              } else {
+                quality -= 0.1
+                tryCompress()
+              }
+            },
+            'image/jpeg',
+            quality
+          )
+        }
+        tryCompress()
+      }
+      img.onerror = () => reject(new Error('Failed to load image'))
+    }
+    reader.onerror = () => reject(new Error('Failed to read file'))
+  })
+}
+
 export default function CapturePage() {
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
@@ -17,7 +88,7 @@ export default function CapturePage() {
   const [isSuccess, setIsSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [capturedImage, setCapturedImage] = useState<string | null>(null)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [compressedImageBlob, setCompressedImageBlob] = useState<Blob | null>(null)
   const [tokenData, setTokenData] = useState<{
     valid: boolean
     type?: string
@@ -77,30 +148,46 @@ export default function CapturePage() {
     verifyToken()
   }, [token, authFromUrl, jadwalIdFromUrl])
 
-  const handleCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setSelectedFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setCapturedImage(e.target?.result as string)
+      try {
+        // Compress image before setting
+        const compressedBlob = await compressImage(file)
+        setCompressedImageBlob(compressedBlob)
+
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setCapturedImage(e.target?.result as string)
+        }
+        reader.readAsDataURL(compressedBlob)
+      } catch (err) {
+        console.error('Compression error:', err)
+        // Fallback to original file if compression fails
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setCapturedImage(e.target?.result as string)
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
     }
   }
 
   const handleRetake = () => {
     setCapturedImage(null)
-    setSelectedFile(null)
+    setCompressedImageBlob(null)
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || !tokenData?.jadwalId || !tokenData?.authToken) return
+    if (!compressedImageBlob || !tokenData?.jadwalId || !tokenData?.authToken) return
 
     setIsUploading(true)
     setError(null)
 
     try {
+      // Create image file from compressed blob
+      const imageFile = new File([compressedImageBlob], 'photo.jpg', { type: 'image/jpeg' })
+
       const formData = new FormData()
       const type = searchParams.get("type") || "url_foto_bersama"
 
@@ -108,7 +195,7 @@ export default function CapturePage() {
       // e.g., 'url_foto_bersama' -> 'foto_bersama'
       // e.g., 'url_ttd_asesi_pra' -> 'ttd_asesi_pra'
       const fieldName = type.replace('url_', '')
-      formData.append(fieldName, selectedFile)
+      formData.append(fieldName, imageFile)
 
       // All uploads go to /bukti/{jadwalId}/kegiatan
       const endpoint = `${API_BASE_URL}/bukti/${tokenData.jadwalId}/kegiatan`
@@ -122,15 +209,11 @@ export default function CapturePage() {
         body: formData,
       })
 
-      
-      
-      
-
       if (response.ok) {
         setIsSuccess(true)
       } else {
         const result = await response.json().catch(() => ({ message: "Upload gagal" }))
-        
+
         setError(result.message || "Gagal mengupload foto")
       }
     } catch (e) {

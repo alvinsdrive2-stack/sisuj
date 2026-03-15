@@ -342,6 +342,64 @@ export default function AsesiPage() {
         </div>
       </div>
 
+      {/* Info Card - Keterangan Indikator & Status */}
+      <Card className="bg-blue-50/50 border-blue-100">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="font-semibold text-slate-700 flex items-center gap-2">
+              <span className="text-lg">💡</span>
+              <span>Informasi Panduan</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Klik Row */}
+              <div className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-medium text-slate-700">Klik pada baris asesi</span>
+                  <span className="text-slate-600"> untuk membuka halaman praasesi/asesmen asesi tersebut</span>
+                </div>
+              </div>
+
+              {/* Status Review */}
+              <div className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <div>
+                  <span className="font-medium text-slate-700">Perlu Ditinjau:</span>
+                  <span className="text-slate-600"> Asesor sudah mulai review awal dan perlu menyelesaikan review akhir</span>
+                </div>
+              </div>
+
+              {/* Indikator Hijau */}
+              <div className="flex items-center gap-2">
+                <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 flex-shrink-0">
+                  <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
+                </div>
+                <span className="text-slate-600">Asesi sudah selesai mengerjakan (absen selesai)</span>
+              </div>
+
+              {/* Indikator Kuning */}
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50 flex-shrink-0" />
+                <span className="text-slate-600">Asesi belum atau sedang mengerjakan</span>
+              </div>
+
+              {/* Badge Sudah Ditinjau */}
+              <div className="flex items-center gap-2">
+                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">Sudah ditinjau</Badge>
+                <span className="text-slate-600">Review asesor sudah selesai</span>
+              </div>
+
+              {/* Badge Perlu Ditinjau */}
+              <div className="flex items-center gap-2">
+                <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">Butuh ditinjau</Badge>
+                <span className="text-slate-600">Belum ada review atau review awal sudah dilakukan</span>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Asesi List */}
       <Card>
         <CardHeader>
@@ -380,18 +438,14 @@ export default function AsesiPage() {
                     : getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2))
                 : 'Butuh ditinjau'
 
-              // Only allow click if asesi has green indicator (absen selesai)
-              const canClick = asesiStatus === 'green'
+              // Asesi selalu bisa diklik untuk masuk ke praasesi/asesmen
+              const canClick = true
 
               return (
                 <div
                   key={asesi.id_izin}
-                  onClick={() => canClick && handleViewAsesi(asesi.id_izin)}
-                  className={`p-4 border border-slate-200 rounded-lg bg-white transition-all ${
-                    canClick
-                      ? 'hover:shadow-md hover:border-primary/30 cursor-pointer'
-                      : 'cursor-not-allowed opacity-70'
-                  }`}
+                  onClick={() => handleViewAsesi(asesi.id_izin)}
+                  className={`p-4 border border-slate-200 rounded-lg bg-white transition-all hover:shadow-md hover:border-primary/30 cursor-pointer`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

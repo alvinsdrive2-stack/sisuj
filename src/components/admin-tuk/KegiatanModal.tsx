@@ -37,6 +37,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
   const [isMobile, setIsMobile] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [selectedField, setSelectedField] = useState<UrlField | null>(null)
+  const [imageLoadError, setImageLoadError] = useState(false)
 
   // Get labels based on type
   const getTypeInfo = (): {
@@ -167,6 +168,11 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
     }
   }, [isOpen, isLoading, selectedField, type])
 
+  // Reset image load error when URL changes
+  useEffect(() => {
+    setImageLoadError(false)
+  }, [selectedField])
+
   // Reset when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -180,6 +186,14 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
     const url = data[field.key]
     return url && url !== '' ? url : null
   }
+
+  // Compute selectedUrl early (needed for useEffects)
+  const selectedUrl = selectedField ? getUrl(selectedField) : null
+  const isPdf = selectedUrl?.toLowerCase().endsWith('.pdf')
+
+  // Debug logging
+  console.log('[KegiatanModal] Field:', selectedField?.key, 'URL:', selectedUrl)
+  console.log('[KegiatanModal] isPdf:', isPdf, 'imageLoadError:', imageLoadError)
 
   const handleUpload = async (fieldKey: string, file: File) => {
     if (!jadwalId) return
@@ -217,9 +231,6 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
   }
 
   if (!isOpen) return null
-
-  const selectedUrl = selectedField ? getUrl(selectedField) : null
-  const isPdf = selectedUrl?.toLowerCase().endsWith('.pdf')
 
   return (
     <div
@@ -322,25 +333,27 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                     <>
                       {isPdf ? (
                         // PDF Preview
-                        <div style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          background: '#f3f4f6',
-                        }}>
+                        <>
+                          {console.log('[KegiatanModal] Rendering PDF iframe for URL:', selectedUrl)}
                           <div style={{
-                            padding: '12px 16px',
-                            background: '#fff',
-                            borderBottom: '1px solid #e5e7eb',
+                            width: '100%',
+                            height: '100%',
                             display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
+                            flexDirection: 'column',
+                            background: '#f3f4f6',
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <FontAwesomeIcon icon={faFilePdf} style={{ fontSize: '20px', color: '#ef4444' }} />
-                              <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>PDF Document</span>
-                            </div>
+                            <div style={{
+                              padding: '12px 16px',
+                              background: '#fff',
+                              borderBottom: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <FontAwesomeIcon icon={faFilePdf} style={{ fontSize: '20px', color: '#ef4444' }} />
+                                <span style={{ fontSize: '14px', fontWeight: '600', color: '#374151' }}>PDF Document</span>
+                              </div>
                             <a
                               href={selectedUrl}
                               target="_blank"
@@ -372,23 +385,69 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             title={selectedField.label}
                           />
                         </div>
+                        </>
                       ) : (
-                        // Image Preview
-                        <img
-                          src={selectedUrl}
-                          alt={selectedField.label}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'contain',
-                            background: '#fff',
-                          }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none'
-                          }}
-                        />
-                      )}
-                                         </>
+                        // Image Preview or try image for unknown file type
+                        !imageLoadError ? (
+                          <img
+                            src={selectedUrl}
+                            alt={selectedField.label}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'contain',
+                              background: '#fff',
+                            }}
+                            onLoad={() => {
+                              console.log('[KegiatanModal] Image loaded successfully!')
+                            }}
+                            onError={() => {
+                              console.log('[KegiatanModal] Image failed to load, URL:', selectedUrl)
+                              setImageLoadError(true)
+                            }}
+                          />
+                        ) : (
+                        // Unknown file type - show download link
+                        <div style={{
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '16px',
+                          background: '#f9fafb',
+                        }}>
+                          <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: '48px', color: '#6b7280' }} />
+                          <div style={{ textAlign: 'center' }}>
+                            <p style={{ fontSize: '14px', color: '#374151', fontWeight: '500', marginBottom: '8px' }}>
+                              File tidak dapat dipreview
+                            </p>
+                            <a
+                              href={selectedUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '8px 16px',
+                                background: '#3b82f6',
+                                color: '#fff',
+                                borderRadius: '6px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: '12px' }} />
+                              Buka File
+                            </a>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </>
                   ) : (
                     <div style={{
                       display: 'flex',
@@ -438,7 +497,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             )}
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/*,.pdf"
                               capture="environment"
                               style={{ display: 'none' }}
                               disabled={!!isUploading}
@@ -467,7 +526,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             Pilih dari Galeri
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/*,.pdf"
                               style={{ display: 'none' }}
                               disabled={!!isUploading}
                               onChange={(e) => {
@@ -547,7 +606,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             )}
                             <input
                               type="file"
-                              accept="image/*"
+                              accept="image/*,.pdf"
                               style={{ display: 'none' }}
                               disabled={!!isUploading}
                               onChange={(e) => {
