@@ -503,7 +503,7 @@ export default function Ia04aPage() {
     )
   }
 
-  const kelompokKerja = ia04aData?.kelompok_kerja.kelompok_kerja[0]
+  const kelompokKerja = ia04aData?.kelompok_kerja?.kelompok_kerja?.[0]
   const units = kelompokKerja?.units || []
 
   return (

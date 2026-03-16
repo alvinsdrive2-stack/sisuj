@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle, ExternalLink } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle, ExternalLink, Check } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -227,6 +227,43 @@ export default function DetailDokumenDirekturPage() {
             </div>
           </div>
         )}
+
+        {/* Info Card - Panduan Direktur */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-4 h-4 text-primary" />
+            <span className="text-sm font-semibold text-slate-700">Panduan Direktur</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Users className="w-3 h-3 text-primary" />
+              </div>
+              <div>
+                <span className="font-medium text-slate-700">Klik baris asesi</span>
+                <p className="text-slate-500">Untuk melihat detail dokumen asesi</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-3 h-3 text-emerald-500" />
+              </div>
+              <div>
+                <span className="font-medium text-slate-700">Badge Kompeten</span>
+                <p className="text-slate-500">Status kelulusan asesi</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileText className="w-3 h-3 text-blue-500" />
+              </div>
+              <div>
+                <span className="font-medium text-slate-700">Dokumen Direktur</span>
+                <p className="text-slate-500">Klik untuk melihat dokumen</p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Side by Side: Daftar Asesi (70%) + Dokumen Direktur (30%) */}
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">

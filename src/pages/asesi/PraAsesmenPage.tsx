@@ -211,6 +211,57 @@ export default function PraAsesmenPage() {
         </div>
       </div>
 
+      {/* Info Card - Panduan Asesi */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px 16px' }}>
+        <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d2137" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ minWidth: '16px' }}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Panduan Pra-Asesmen</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Periksa data diri</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Pastikan semua data sudah benar</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Cek dokumen pendukung</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Klik "Lihat Dokumen" untuk preview</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Lanjut ke APL 01</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Klik tombol biru untuk lanjut</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Step Indicator */}
       
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, AlertCircle } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -172,6 +172,43 @@ export default function DaftarAsesiSudahPage() {
           </div>
         </div>
       )}
+
+      {/* Info Card - Panduan Komtek */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <FileText className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-slate-700">Panduan Komtek</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Users className="w-3 h-3 text-primary" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Klik baris asesi</span>
+              <p className="text-slate-500">Untuk melihat detail dokumen asesi</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <FileText className="w-3 h-3 text-emerald-500" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Dokumen Komtek</span>
+              <p className="text-slate-500">Klik untuk buka dokumen tersedia</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertCircle className="w-3 h-3 text-slate-400" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Dokumen belum tersedia</span>
+              <p className="text-slate-500">Button akan disabled jika belum ada</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Split Layout: Asesi List & Dokumen */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

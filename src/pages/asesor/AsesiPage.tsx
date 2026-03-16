@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Clock, Calendar, MapPin, UserCheck} from "lucide-react"
+import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle } from "lucide-react"
 import { useKegiatanAsesor, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
@@ -44,11 +44,18 @@ function useCountdown(targetDate: string): CountdownTime {
       const difference = target - now
 
       if (difference <= 0) {
+        // Calculate elapsed time instead of zero
+        const elapsed = Math.abs(difference)
+        const totalMinutes = Math.floor(elapsed / (1000 * 60))
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        const seconds = Math.floor((elapsed % (1000 * 60)) / 1000)
+
         return {
           days: 0,
-          hours: 0,
-          minutes: 0,
-          seconds: 0,
+          hours,
+          minutes,
+          seconds,
           isPast: true
         }
       }
@@ -323,17 +330,32 @@ export default function AsesiPage() {
             ) : (
               <div className="relative">
                 <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border border-emerald-200">
-                  <div className="flex items-center gap-2">
-                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                        <Clock className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-30" />
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <Clock className="w-3 h-3 text-emerald-600 animate-pulse" />
+                      <span className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">Terlewati</span>
                     </div>
-                    <div>
-                      <div className="text-sm font-bold text-emerald-700">Sedang Berjalan</div>
-                      <div className="text-xs text-emerald-600">Asesmen dimulai</div>
+                    <div className="flex items-baseline justify-center gap-1">
+                      {countdown.hours > 0 && (
+                        <>
+                          <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                            {String(countdown.hours).padStart(2, '0')}
+                          </span>
+                          <span className="text-sm font-bold text-emerald-500">j</span>
+                          <span className="text-lg font-bold text-emerald-400">:</span>
+                        </>
+                      )}
+                      <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                        {String(countdown.minutes).padStart(2, '0')}
+                      </span>
+                      <span className="text-sm font-bold text-emerald-500">m</span>
+                      <span className="text-lg font-bold text-emerald-400">:</span>
+                      <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                        {String(countdown.seconds).padStart(2, '0')}
+                      </span>
+                      <span className="text-sm font-bold text-emerald-500">d</span>
                     </div>
+                    <div className="text-xs text-emerald-600 mt-1">Waktu Pengerjaan Asesi Telah Dimulai</div>
                   </div>
                 </div>
               </div>
@@ -343,62 +365,67 @@ export default function AsesiPage() {
       </div>
 
       {/* Info Card - Keterangan Indikator & Status */}
-      <Card className="bg-blue-50/50 border-blue-100">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 text-sm">
-            <div className="font-semibold text-slate-700 flex items-center gap-2">
-              <span className="text-lg">💡</span>
-              <span>Informasi Panduan</span>
+      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-slate-700">Panduan Singkat</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          {/* Klik baris */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Users className="w-3 h-3 text-primary" />
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Klik Row */}
-              <div className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <div>
-                  <span className="font-medium text-slate-700">Klik pada baris asesi</span>
-                  <span className="text-slate-600"> untuk membuka halaman praasesi/asesmen asesi tersebut</span>
-                </div>
-              </div>
-
-              {/* Status Review */}
-              <div className="flex items-start gap-2">
-                <span className="text-primary mt-0.5">•</span>
-                <div>
-                  <span className="font-medium text-slate-700">Perlu Ditinjau:</span>
-                  <span className="text-slate-600"> Asesor sudah mulai review awal dan perlu menyelesaikan review akhir</span>
-                </div>
-              </div>
-
-              {/* Indikator Hijau */}
-              <div className="flex items-center gap-2">
-                <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 flex-shrink-0">
-                  <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
-                </div>
-                <span className="text-slate-600">Asesi sudah selesai mengerjakan (absen selesai)</span>
-              </div>
-
-              {/* Indikator Kuning */}
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-yellow-500 shadow-lg shadow-yellow-500/50 flex-shrink-0" />
-                <span className="text-slate-600">Asesi belum atau sedang mengerjakan</span>
-              </div>
-
-              {/* Badge Sudah Ditinjau */}
-              <div className="flex items-center gap-2">
-                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">Sudah ditinjau</Badge>
-                <span className="text-slate-600">Review asesor sudah selesai</span>
-              </div>
-
-              {/* Badge Perlu Ditinjau */}
-              <div className="flex items-center gap-2">
-                <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">Butuh ditinjau</Badge>
-                <span className="text-slate-600">Belum ada review atau review awal sudah dilakukan</span>
-              </div>
+            <div>
+              <span className="font-medium text-slate-700">Klik baris asesi</span>
+              <p className="text-slate-500">Untuk membuka halaman praasesi/asesmen</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          {/* Indikator hijau */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="relative w-2.5 h-2.5">
+                <div className="absolute inset-0 rounded-full bg-emerald-500" />
+                <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+              </div>
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Hijau berkedip</span>
+              <p className="text-slate-500">Asesi sudah selesai mengerjakan</p>
+            </div>
+          </div>
+          {/* Indikator kuning */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Kuning</span>
+              <p className="text-slate-500">Asesi belum/sedang mengerjakan</p>
+            </div>
+          </div>
+          {/* Badge Sudah ditinjau */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Check className="w-3 h-3 text-emerald-500" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Sudah ditinjau</span>
+              <p className="text-slate-500">Review asesor sudah selesai</p>
+            </div>
+          </div>
+          {/* Badge Perlu ditinjau */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertCircle className="w-3 h-3 text-slate-400" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Perlu ditinjau</span>
+              <p className="text-slate-500">Review awal sudah mulai, perlu selesaikan</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Asesi List */}
       <Card>

@@ -110,16 +110,18 @@ export default function DashboardAsesiPage() {
       const diff = examDate.getTime() - now.getTime()
 
       if (diff <= 0) {
-        // Calculate how late (in minutes past the exam time)
+        // Calculate how late (elapsed time since exam started)
         const lateDiff = Math.abs(diff)
-        const lateMinutes = Math.floor(lateDiff / (1000 * 60))
-        const lateSeconds = Math.floor((lateDiff % (1000 * 60)) / 1000)
+        const totalMinutes = Math.floor(lateDiff / (1000 * 60))
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        const seconds = Math.floor((lateDiff % (1000 * 60)) / 1000)
 
         setCountdown({
           days: 0,
-          hours: 0,
-          minutes: lateMinutes,
-          seconds: lateSeconds,
+          hours,
+          minutes,
+          seconds,
           isLate: true
         })
         return
@@ -325,7 +327,11 @@ export default function DashboardAsesiPage() {
                   <p className="text-white/80">
                     {countdown.isLate ? (
                       <>
-                        Anda terlambat {countdown.minutes} menit {countdown.seconds} detik.
+                        {countdown.hours > 0 ? (
+                          <>Waktu pengerjaan telah berjalan {countdown.hours} jam {countdown.minutes} menit {countdown.seconds} detik.</>
+                        ) : (
+                          <>Waktu pengerjaan telah berjalan {countdown.minutes} menit {countdown.seconds} detik.</>
+                        )}
                         <br />
                         <span className="text-white font-semibold">Segera masuk ujian!</span>
                       </>
