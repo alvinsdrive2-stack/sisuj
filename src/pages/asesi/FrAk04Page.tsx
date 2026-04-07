@@ -35,7 +35,7 @@ interface Ak04Data {
 
 interface ApiResponse {
   message: string
-  data: Ak04Data | { data: Ak04Data }
+  data: Ak04Data | { data: Ak04Data }  // Supports both flat and nested structures
 }
 
 type AnswerType = boolean | null
@@ -113,16 +113,14 @@ export default function FrAk04Page() {
 
         if (ak04Response.ok) {
           const result: ApiResponse = await ak04Response.json()
-          
-          
 
           if (result.message === "Success") {
-            // Handle nested data.data structure (new API format) or direct data (old format)
-            const apiData = 'data' in result.data && 'kelompoks' in (result.data as { data: Ak04Data }).data
+            // Handle nested data.data structure or direct data
+            // Expected: { message: "Success", data: { kelompoks: [...], alasan: "...", barcodes: {...} } }
+            const apiData = ('data' in result.data && 'kelompoks' in (result.data as { data: Ak04Data }).data)
               ? (result.data as { data: Ak04Data }).data
               : result.data as Ak04Data
 
-            
             setAk04Data(apiData)
 
             // Load existing answers from API

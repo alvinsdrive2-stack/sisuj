@@ -211,9 +211,15 @@ export default function PraAsesmenPage() {
         </div>
       </div>
 
-      {/* Info Card - Panduan Asesi */}
+      
+
+      {/* Step Indicator */}
+      
+
+      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl}>
+{/* Info Card - Panduan Asesi */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px 16px' }}>
-        <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <div className='shadow-md' style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d2137" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ minWidth: '16px' }}>
               <circle cx="12" cy="12" r="10" />
@@ -254,7 +260,7 @@ export default function PraAsesmenPage() {
                 </svg>
               </div>
               <div>
-                <span style={{ fontWeight: '500', color: '#333' }}>Lanjut ke APL 01</span>
+                <span style={{ fontWeight: '500', color: '#333' }}>Lanjut ke dokumen berikutnya</span>
                 <p style={{ color: '#666', margin: '2px 0 0' }}>Klik tombol biru untuk lanjut</p>
               </div>
             </div>
@@ -262,10 +268,6 @@ export default function PraAsesmenPage() {
         </div>
       </div>
 
-      {/* Step Indicator */}
-      
-
-      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px' }}>Konfirmasi Data Diri</h2>

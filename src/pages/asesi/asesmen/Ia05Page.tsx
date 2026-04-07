@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -13,6 +14,7 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { kegiatanService } from "@/lib/kegiatan-service"
 
 interface Unit {
   id: number
@@ -71,6 +73,7 @@ export default function Ia05Page() {
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -180,6 +183,23 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('Umpan balik berhasil disimpan!')
+
+        // Generate QR after successful save
+        const jadwalId = kegiatan?.jadwal_id
+        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+        try {
+          if (jadwalId) {
+            console.log('Generating QR for IA05...', { id, jadwalId })
+            await kegiatanService.generateQRIa05(id, jadwalId)
+            console.log('✅ QR IA05 successfully generated!')
+          } else {
+            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+          }
+        } catch (qrError) {
+          console.error('❌ Failed to generate QR IA05:', qrError)
+          // Don't block navigation on QR failure
+        }
+
         // Navigate to AK02
         setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
       } else {
@@ -235,6 +255,23 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('IA 05 berhasil disimpan!')
+
+        // Generate QR after successful save
+        const jadwalId = kegiatan?.jadwal_id
+        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+        try {
+          if (jadwalId) {
+            console.log('Generating QR for IA05...', { id, jadwalId })
+            await kegiatanService.generateQRIa05(id, jadwalId)
+            console.log('✅ QR IA05 successfully generated!')
+          } else {
+            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+          }
+        } catch (qrError) {
+          console.error('❌ Failed to generate QR IA05:', qrError)
+          // Don't block navigation on QR failure
+        }
+
         // Navigate to next step based on asesmenSteps
         const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
         const nextStep = asesmenSteps[currentStepIndex + 1]

@@ -1,9 +1,9 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle } from "lucide-react"
-import { useKegiatanAsesor, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
+import { useKegiatanAsesorList, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
@@ -16,78 +16,76 @@ interface CountdownTime {
   isPast: boolean
 }
 
-function useCountdown(targetDate: string): CountdownTime {
-  const [timeLeft, setTimeLeft] = useState<CountdownTime>({
-    days: 0,
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
+// Helper function to calculate countdown (non-hook version for use in render)
+function calculateCountdown(targetDate: string): CountdownTime {
+  if (!targetDate) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isPast: false
+    }
+  }
+
+  const target = new Date(targetDate).getTime()
+  const now = new Date().getTime()
+  const difference = target - now
+
+  if (difference <= 0) {
+    const elapsed = Math.abs(difference)
+    const totalMinutes = Math.floor(elapsed / (1000 * 60))
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    const seconds = Math.floor((elapsed % (1000 * 60)) / 1000)
+
+    return {
+      days: 0,
+      hours,
+      minutes,
+      seconds,
+      isPast: true
+    }
+  }
+
+  return {
+    days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+    hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+    minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+    seconds: Math.floor((difference % (1000 * 60)) / 1000),
     isPast: false
-  })
-
-  useEffect(() => {
-    if (!targetDate) {
-      setTimeLeft({
-        days: 0,
-        hours: 0,
-        minutes: 0,
-        seconds: 0,
-        isPast: false
-      })
-      return
-    }
-
-    const target = new Date(targetDate).getTime()
-
-    const calculateTimeLeft = () => {
-      const now = new Date().getTime()
-      const difference = target - now
-
-      if (difference <= 0) {
-        // Calculate elapsed time instead of zero
-        const elapsed = Math.abs(difference)
-        const totalMinutes = Math.floor(elapsed / (1000 * 60))
-        const hours = Math.floor(totalMinutes / 60)
-        const minutes = totalMinutes % 60
-        const seconds = Math.floor((elapsed % (1000 * 60)) / 1000)
-
-        return {
-          days: 0,
-          hours,
-          minutes,
-          seconds,
-          isPast: true
-        }
-      }
-
-      return {
-        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((difference % (1000 * 60)) / 1000),
-        isPast: false
-      }
-    }
-
-    setTimeLeft(calculateTimeLeft())
-
-    const timer = setInterval(() => {
-      setTimeLeft(calculateTimeLeft())
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [targetDate])
-
-  return timeLeft
+  }
 }
 
 export default function AsesiPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesor()
-  const jadwalId = kegiatan?.jadwal_id
+  const { jadwalId } = useParams<{ jadwalId: string }>()
+
+  // Debug logging
+  console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
+
+  const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesorList()
+  const currentKegiatan = kegiatans.find(k => k.jadwal_id === jadwalId) || kegiatans[0]
   const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
-  const countdown = useCountdown(kegiatan?.tanggal_uji || "")
+
+  // State for countdowns - keyed by jadwal_id
+  const [countdowns, setCountdowns] = useState<Record<string, CountdownTime>>({})
+
+  // Update countdowns every second
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const newCountdowns: Record<string, CountdownTime> = {}
+      kegiatans.forEach(kegiatan => {
+        newCountdowns[kegiatan.jadwal_id] = calculateCountdown(kegiatan.tanggal_uji || "")
+      })
+      setCountdowns(newCountdowns)
+    }
+
+    updateCountdowns()
+    const timer = setInterval(updateCountdowns, 1000)
+    return () => clearInterval(timer)
+  }, [kegiatans])
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
@@ -190,13 +188,13 @@ export default function AsesiPage() {
     const jenjangId = parseInt(asesorIds.jenjang || "0")
 
     // Navigate based on current phase
-    if (kegiatan?.tahap === 2) {
+    if (currentKegiatan?.tahap === 2) {
       if (jenjangId < 4) {
         navigate(`/asesi/asesmen/${idIzin}/ia01`)
       } else {
         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
       }
-    } else if (kegiatan?.tahap === 1) {
+    } else if (currentKegiatan?.tahap === 1) {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     } else {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
@@ -214,7 +212,7 @@ export default function AsesiPage() {
     )
   }
 
-  if (kegiatanError && !kegiatan) {
+  if (kegiatanError && !currentKegiatan) {
     return (
       <div className="text-center py-12">
         <p className="text-red-500 mb-4">Gagal memuat kegiatan: {kegiatanError}</p>
@@ -223,12 +221,23 @@ export default function AsesiPage() {
     )
   }
 
-  if (!kegiatan) {
+  if (!kegiatans || kegiatans.length === 0) {
     return (
       <div className="text-center py-12">
         <UserCheck className="w-16 h-16 mx-auto mb-4 text-slate-400" />
         <h3 className="text-xl font-semibold text-slate-800 mb-2">Tidak Ada Kegiatan</h3>
         <p className="text-slate-600">Anda belum memiliki jadwal asesmen yang ditugaskan</p>
+      </div>
+    )
+  }
+
+  if (!currentKegiatan) {
+    return (
+      <div className="text-center py-12">
+        <UserCheck className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+        <h3 className="text-xl font-semibold text-slate-800 mb-2">Kegiatan Tidak Ditemukan</h3>
+        <p className="text-slate-600">Kegiatan dengan ID tersebut tidak tersedia</p>
+        <Button onClick={() => navigate("/asesor/dashboard")} className="mt-4">Kembali ke Dashboard</Button>
       </div>
     )
   }
@@ -241,128 +250,136 @@ export default function AsesiPage() {
         <p className="text-slate-600">Asesi yang ditugaskan pada jadwal asesmen ini</p>
       </div>
 
-      {/* Kegiatan Detail */}
-      <div className="p-6 border border-slate-200 rounded-xl bg-white">
-        <div className="flex gap-6">
-          {/* Left: Kegiatan Info */}
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h3 className="text-xl font-bold text-slate-800">{kegiatan.skema.nama}</h3>
-              {kegiatan.tahap === 0 && (
-                <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">
-                  Belum Mulai
-                </Badge>
-              )}
-              {kegiatan.tahap === 1 && (
-                <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">
-                  Pra-Asesmen
-                </Badge>
-              )}
-              {kegiatan.tahap === 2 && (
-                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
-                  Asesmen
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-slate-600 mb-3">{kegiatan.tuk.nama}</p>
+      {/* Kegiatan Detail - Single */}
+      {currentKegiatan && (
+        <div className="p-6 border border-slate-200 rounded-xl bg-white">
+          {(() => {
+            const cd = countdowns[currentKegiatan.jadwal_id] || { days: 0, hours: 0, minutes: 0, seconds: 0, isPast: false }
+            return (
+              <div className="flex gap-6">
+                {/* Left: Kegiatan Info */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold text-slate-800">{currentKegiatan.skema?.nama}</h3>
+                    {currentKegiatan.tahap === 0 && (
+                      <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">
+                        Belum Mulai
+                      </Badge>
+                    )}
+                    {currentKegiatan.tahap === 1 && (
+                      <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200">
+                        Pra-Asesmen
+                      </Badge>
+                    )}
+                    {currentKegiatan.tahap === 2 && (
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">
+                        Asesmen
+                      </Badge>
+                    )}
+                  </div>
 
-            <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-primary" />
-                {new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-primary" />
-                {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-primary" />
-                {kegiatan.tuk.alamat}
-              </div>
-            </div>
-          </div>
+                  <p className="text-sm text-slate-600 mb-3">{currentKegiatan.tuk?.nama}</p>
 
-          {/* Right: Countdown */}
-          <div className="w-[18%] flex items-center justify-center">
-            {!countdown.isPast ? (
-              <div className="relative">
-                <div className="relative p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5">
-                  <div className="absolute inset-0 rounded-2xl border-2 border-primary/30 animate-pulse" />
-
-                  <div className="relative text-center">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Clock className="w-3 h-3 text-primary animate-pulse" />
-                      <span className="text-[10px] font-medium text-primary/80 uppercase tracking-wider">Countdown</span>
+                  <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-primary" />
+                      {new Date(currentKegiatan.tanggal_uji || '').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
-
-                    <div className="flex items-baseline justify-center gap-1">
-                      {countdown.days > 0 && (
-                        <>
-                          <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                            {countdown.days}
-                          </span>
-                          <span className="text-sm font-bold text-primary/60">d</span>
-                          <span className="text-2xl font-bold text-primary/40">:</span>
-                        </>
-                      )}
-                      <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                        {String(countdown.hours).padStart(2, '0')}
-                      </span>
-                      <span className="text-lg font-bold text-primary/40 animate-pulse">:</span>
-                      <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                        {String(countdown.minutes).padStart(2, '0')}
-                      </span>
-                      <span className="text-lg font-bold text-primary/40 animate-pulse">:</span>
-                      <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
-                        {String(countdown.seconds).padStart(2, '0')}
-                      </span>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-primary" />
+                      {new Date(currentKegiatan.tanggal_uji || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                     </div>
-
-                    <div className="mt-2 h-1 bg-primary/20 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-1000 ease-linear"
-                        style={{ width: `${((60 - countdown.seconds) / 60) * 100}%` }}
-                      />
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      {currentKegiatan.tuk?.alamat}
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="relative">
-                <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border border-emerald-200">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Clock className="w-3 h-3 text-emerald-600 animate-pulse" />
-                      <span className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">Terlewati</span>
+
+                {/* Right: Countdown */}
+                <div className="w-[18%] flex flex-col items-center justify-center gap-3">
+                  {!cd.isPast ? (
+                    <div className="relative">
+                      <div className="relative p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 shadow-lg shadow-primary/5">
+                        <div className="absolute inset-0 rounded-2xl border-2 border-primary/30 animate-pulse" />
+
+                        <div className="relative text-center">
+                          <div className="flex items-center justify-center gap-1 mb-2">
+                            <Clock className="w-3 h-3 text-primary animate-pulse" />
+                            <span className="text-[10px] font-medium text-primary/80 uppercase tracking-wider">Countdown</span>
+                          </div>
+
+                          <div className="flex items-baseline justify-center gap-1">
+                            {cd.days > 0 && (
+                              <>
+                                <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                                  {cd.days}
+                                </span>
+                                <span className="text-sm font-bold text-primary/60">d</span>
+                                <span className="text-2xl font-bold text-primary/40">:</span>
+                              </>
+                            )}
+                            <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                              {String(cd.hours).padStart(2, '0')}
+                            </span>
+                            <span className="text-lg font-bold text-primary/40 animate-pulse">:</span>
+                            <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                              {String(cd.minutes).padStart(2, '0')}
+                            </span>
+                            <span className="text-lg font-bold text-primary/40 animate-pulse">:</span>
+                            <span className="text-3xl font-black bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent tabular-nums">
+                              {String(cd.seconds).padStart(2, '0')}
+                            </span>
+                          </div>
+
+                          <div className="mt-2 h-1 bg-primary/20 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all duration-1000 ease-linear"
+                              style={{ width: `${((60 - cd.seconds) / 60) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-baseline justify-center gap-1">
-                      {countdown.hours > 0 && (
-                        <>
-                          <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
-                            {String(countdown.hours).padStart(2, '0')}
-                          </span>
-                          <span className="text-sm font-bold text-emerald-500">j</span>
-                          <span className="text-lg font-bold text-emerald-400">:</span>
-                        </>
-                      )}
-                      <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
-                        {String(countdown.minutes).padStart(2, '0')}
-                      </span>
-                      <span className="text-sm font-bold text-emerald-500">m</span>
-                      <span className="text-lg font-bold text-emerald-400">:</span>
-                      <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
-                        {String(countdown.seconds).padStart(2, '0')}
-                      </span>
-                      <span className="text-sm font-bold text-emerald-500">d</span>
+                  ) : (
+                    <div className="relative">
+                      <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-2xl border shadow-md border-emerald-200">
+                        <div className="text-center">
+                          <div className="flex items-center justify-center gap-1 mb-2">
+                            <Clock className="w-3 h-3 text-emerald-600 animate-pulse" />
+                            <span className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider">Terlewati</span>
+                          </div>
+                          <div className="flex items-baseline justify-center gap-1">
+                            {cd.hours > 0 && (
+                              <>
+                                <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                                  {String(cd.hours).padStart(2, '0')}
+                                </span>
+                                <span className="text-sm font-bold text-emerald-500">j</span>
+                                <span className="text-lg font-bold text-emerald-400">:</span>
+                              </>
+                            )}
+                            <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                              {String(cd.minutes).padStart(2, '0')}
+                            </span>
+                            <span className="text-sm font-bold text-emerald-500">m</span>
+                            <span className="text-lg font-bold text-emerald-400">:</span>
+                            <span className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent tabular-nums">
+                              {String(cd.seconds).padStart(2, '0')}
+                            </span>
+                            <span className="text-sm font-bold text-emerald-500">d</span>
+                          </div>
+                          <div className="text-xs text-emerald-600 mt-1">Waktu Pengerjaan Asesi Telah Dimulai</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-emerald-600 mt-1">Waktu Pengerjaan Asesi Telah Dimulai</div>
-                  </div>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
+            )
+          })()}
         </div>
-      </div>
+      )}
 
       {/* Info Card - Keterangan Indikator & Status */}
       <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -455,12 +472,12 @@ export default function AsesiPage() {
             {asesiList.map((asesi, index) => {
               const absen = absenData[asesi.id_izin]
 
-              const asesiStatus = kegiatan?.tahap === 2
+              const asesiStatus = currentKegiatan?.tahap === 2
                 ? getAsesiAbsenStatus(absen, 'asesmen')
                 : getAsesiAbsenStatus(absen, 'praasesmen')
 
               const reviewStatus = asesorRole
-                ? (kegiatan?.tahap === 2
+                ? (currentKegiatan?.tahap === 2
                     ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
                     : getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2))
                 : 'Butuh ditinjau'

@@ -100,7 +100,9 @@ export function useKegiatanAsesor(enabled = true) {
       setError(null)
       try {
         const response = await kegiatanService.getKegiatanAsesor()
-        setKegiatanRef.current?.(response.data)
+        // API now returns array - take first item for backward compatibility
+        const kegiatanArray = response.data
+        setKegiatanRef.current?.(kegiatanArray?.[0] || null)
       } catch (err) {
         console.error('Error fetching kegiatan asesor:', err)
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesor")
@@ -112,6 +114,40 @@ export function useKegiatanAsesor(enabled = true) {
   }, [enabled])
 
   return { kegiatan, isLoading, error }
+}
+
+// New hook for getting all kegiatan asesor (full array)
+export function useKegiatanAsesorList(enabled = true) {
+  const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
+  const [isLoading, setIsLoading] = useState(enabled)
+  const [error, setError] = useState<string | null>(null)
+
+  const setKegiatansRef = useRef(setKegiatans)
+  setKegiatansRef.current = setKegiatans
+
+  useEffect(() => {
+    if (!enabled) {
+      setIsLoading(false)
+      return
+    }
+
+    const fetchKegiatanAsesor = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await kegiatanService.getKegiatanAsesor()
+        setKegiatansRef.current?.(response.data || [])
+      } catch (err) {
+        console.error('Error fetching kegiatan asesor:', err)
+        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesor")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchKegiatanAsesor()
+  }, [enabled])
+
+  return { kegiatans, isLoading, error }
 }
 
 export function useKegiatanAsesi(enabled = true) {
@@ -134,7 +170,15 @@ export function useKegiatanAsesi(enabled = true) {
 
       try {
         const response = await kegiatanService.getKegiatanAsesi()
-        setKegiatanRef.current?.(response.data)
+        // API may return array or single object - handle both cases
+        const kegiatanData = response.data
+        // Check if data is an array
+        if (Array.isArray(kegiatanData)) {
+          setKegiatanRef.current?.(kegiatanData?.[0] || null)
+        } else {
+          // Single object case
+          setKegiatanRef.current?.(kegiatanData || null)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
       } finally {

@@ -106,7 +106,7 @@ export default function LoginPage() {
             <div className="mb-5 mt-12 text-center">
               <h2 className="text-xl font-bold text-slate-800 mb-2">Selamat Datang!</h2>
               <p className="text-slate-600 text-sm">
-                Masuk untuk mengakses sistem ujian kompetensi Gatensi
+                Masuk untuk mengakses Sistem Uji Kompetensi
               </p>
             </div>
 

@@ -84,7 +84,7 @@ export interface KegiatanWithId extends KegiatanAsesor {
 
 export interface KegiatanAsesorResponse {
   message: string
-  data: KegiatanAsesor
+  data: KegiatanAsesor[]
 }
 
 // Paginated response for admin TUK
@@ -428,6 +428,54 @@ class KegiatanService {
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to generate QR APL 01" }))
       throw new Error(error.message || "Failed to generate QR APL 01")
+    }
+
+    return response.json()
+  }
+
+  // Generate QR for IA05
+  async generateQRIa05(idIzin: string, jadwalId: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/qr/${idIzin}/ia05`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id_jadwal: jadwalId
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to generate QR IA05" }))
+      throw new Error(error.message || "Failed to generate QR IA05")
+    }
+
+    return response.json()
+  }
+
+  // Generate QR for Ujian
+  async generateQRUjian(idIzin: string, jadwalId: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/qr/${idIzin}/ia05`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id_jadwal: jadwalId
+      })
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to generate QR Ujian" }))
+      throw new Error(error.message || "Failed to generate QR Ujian")
     }
 
     return response.json()

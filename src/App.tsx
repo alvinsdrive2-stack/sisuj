@@ -96,7 +96,6 @@ function App() {
           {/* Public Routes */}
           <Route path="/capture" element={<CapturePage />} />
           <Route path="/attendance" element={<AttendancePage />} />
-          <Route path="/attendance" element={<AttendancePage />} />
           <Route
             path="/login"
             element={
@@ -209,7 +208,136 @@ function App() {
                     <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
                     <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
                     <Route path="assessment" element={<div className="p-4"><h2 className="text-xl font-bold">Penilaian</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="asesi" element={<AsesiPage />} />
+                    <Route path="asesi/:jadwalId" element={<AsesiPage />} />
+                    <Route path="" element={<Navigate to="dashboard" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </AsesorRoute>
+            }
+          />
+
+          {/* Protected Routes - Asesi */}
+          <Route
+            path="/asesi/dashboard"
+            element={
+              <AsesiRoute>
+                <DashboardAsesiPage />
+              </AsesiRoute>
+            }
+          />
+          <Route
+            path="/asesi/praasesmen"
+            element={
+              <AsesiOrAsesorRoute>
+                <PraAsesmenPage />
+              </AsesiOrAsesorRoute>
+            }
+          />
+
+          {/* Protected Routes - Admin LSP */}
+          <Route
+            path="/admin-lsp/*"
+            element={
+              <AdminLSPRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<DashboardAdminLSP />} />
+                    <Route path="reports" element={<div className="p-4"><h2 className="text-xl font-bold">Laporan Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="users" element={<div className="p-4"><h2 className="text-xl font-bold">Manajemen User</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="settings" element={<div className="p-4"><h2 className="text-xl font-bold">Pengaturan</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="" element={<Navigate to="dashboard" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </AdminLSPRoute>
+            }
+          />
+
+          {/* Protected Routes - Direktur */}
+          <Route
+            path="/direktur/*"
+            element={
+              <DirekturLSPRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="tandatangan" element={<TandatanganDirektur />} />
+                    <Route path="sudah-ditandatangani" element={<SudahDitandatangani />} />
+                    <Route path="sudah-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
+                    <Route path="belum-ditandatangani" element={<BelumDitandatangani />} />
+                    <Route path="belum-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
+                    <Route path="" element={<Navigate to="tandatangan" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </DirekturLSPRoute>
+            }
+          />
+
+          {/* Protected Routes - Komtek */}
+          <Route
+            path="/komtek/*"
+            element={
+              <KomtekRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="tandatangan" element={<TandatanganKomtek />} />
+                    <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
+                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
+                    <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
+                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                    <Route path="" element={<Navigate to="tandatangan" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </KomtekRoute>
+            }
+          />
+
+          {/* Protected Routes - Manajer Sertifikasi */}
+          <Route
+            path="/manajer/*"
+            element={
+              <ManajerSertifikasiRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<DashboardManajer />} />
+                    <Route path="monitoring" element={<div className="p-4"><h2 className="text-xl font-bold">Monitoring Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="asesi" element={<div className="p-4"><h2 className="text-xl font-bold">Daftar Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="" element={<Navigate to="dashboard" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </ManajerSertifikasiRoute>
+            }
+          />
+
+          {/* Protected Routes - Admin TUK */}
+          <Route
+            path="/admin-tuk/*"
+            element={
+              <AdminTUKRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<DashboardAdminTUK />} />
+                    <Route path="list-asesi/:jadwalId" element={<ListAsesiAdminTUK />} />
+                    <Route path="verification" element={<div className="p-4"><h2 className="text-xl font-bold">Verifikasi Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="activity" element={<div className="p-4"><h2 className="text-xl font-bold">Kegiatan</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="" element={<Navigate to="dashboard" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </AdminTUKRoute>
+            }
+          />
+
+          {/* Protected Routes - Asesor */}
+          <Route
+            path="/asesor/*"
+            element={
+              <AsesorRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="dashboard" element={<DashboardAsesor />} />
+                    <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
+                    <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="assessment" element={<div className="p-4"><h2 className="text-xl font-bold">Penilaian</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                    <Route path="asesi/:jadwalId" element={<AsesiPage />} />
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
                 </DashboardLayout>

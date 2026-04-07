@@ -4,12 +4,14 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowLeft, faLightbulb } from '@fortawesome/free-solid-svg-icons'
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { kegiatanService } from "@/lib/kegiatan-service"
 
 interface Unit {
   id: number
@@ -115,6 +117,7 @@ export default function UjianPage() {
   const { id } = useParams<{ id?: string }>()
   const { jabatanKerja, asesorList } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
+  const { kegiatan } = useKegiatanByRole()
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const canEdit = !isAsesor
@@ -414,6 +417,22 @@ export default function UjianPage() {
     try {
       await saveAnswer()
       showSuccess('Ujian berhasil diselesaikan!')
+
+      // Generate QR after successful save
+      const jadwalId = kegiatan?.jadwal_id
+      console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+      try {
+        if (jadwalId) {
+          console.log('Generating QR for Ujian...', { id, jadwalId })
+          await kegiatanService.generateQRUjian(id, jadwalId)
+          console.log('✅ QR Ujian successfully generated!')
+        } else {
+          console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+        }
+      } catch (qrError) {
+        console.error('❌ Failed to generate QR Ujian:', qrError)
+        // Don't block navigation on QR failure
+      }
 
       // For asesi, redirect to AK02; for asesor, redirect to selesai
       const redirectTarget = isAsesor ? 'selesai' : 'ak02'

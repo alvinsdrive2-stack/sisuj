@@ -88,9 +88,11 @@ export default function ListAsesiAsesor() {
     const fetchKegiatan = async () => {
       try {
         const response = await kegiatanService.getKegiatanAsesor()
-        // Filter by jadwalId
-        if (response.data.jadwal_id === jadwalId) {
-          setKegiatan(response.data)
+        // API now returns array - find the matching kegiatan
+        const kegiatanArray = response.data
+        const matchedKegiatan = kegiatanArray?.find(k => k.jadwal_id === jadwalId)
+        if (matchedKegiatan) {
+          setKegiatan(matchedKegiatan)
         }
       } catch (err) {
         console.error('Error fetching kegiatan:', err)

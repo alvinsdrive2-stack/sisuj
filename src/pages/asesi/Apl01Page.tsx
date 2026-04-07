@@ -57,6 +57,7 @@ interface UnitKompetensi {
 interface BuktiPersyaratan {
   no: string
   bukti: string
+  checked: boolean
 }
 
 interface BuktiAdministratif {
@@ -87,6 +88,7 @@ interface ApiResponse {
     bukti_persyaratan?: Array<{
       no: string
       bukti: string
+      checked: boolean
     }>
     bukti_administratif?: Array<{
       no: string
@@ -726,7 +728,7 @@ anda pada saat ini.</span>
                   <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-                      <CustomCheckbox checked={false} onChange={() => {}} disabled />
+                      <CustomCheckbox checked={bukti.checked} onChange={() => {}} disabled />
                     </div>
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
