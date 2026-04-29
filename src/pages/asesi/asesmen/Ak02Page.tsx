@@ -67,15 +67,16 @@ export default function Ak02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabled = !isAsesor
+  const showPortofolio = parseInt(jenjang || '0') >= 4
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: absen akhir for asesi is now handled in Ak03Page
@@ -182,6 +183,7 @@ export default function Ak02Page() {
     }
 
     fetchData()
+// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [id, authLoading])
 
   if (isLoading) {
@@ -290,10 +292,10 @@ export default function Ak02Page() {
         {/* MATRIKS KOMPETENSI Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
               <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Unit kompetensi</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Observasi demonstrasi</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Portofolio</th>
+              {showPortofolio && <th style={{ border: '1px solid #000', padding: '6px' }}>Portofolio</th>}
               <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan wawancara</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan lisan</th>
               <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan tertulis</th>
@@ -314,14 +316,16 @@ export default function Ak02Page() {
                     style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
-                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                  <CustomCheckbox
-                    checked={evidenceChecks[unit.id]?.portofolio || false}
-                    onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
-                    disabled={isFormDisabled}
-                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
-                  />
-                </td>
+                {showPortofolio && (
+                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
+                    <CustomCheckbox
+                      checked={evidenceChecks[unit.id]?.portofolio || false}
+                      onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
+                      disabled={isFormDisabled}
+                      style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                    />
+                  </td>
+                )}
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.pertanyaan_wawancara || false}
@@ -552,7 +556,7 @@ export default function Ak02Page() {
                   const answers = unitKompetensi.map((unit) => ({
                     id_unit_kompetensi: unit.id,
                     observasi: evidenceChecks[unit.id]?.observasi || false,
-                    portofolio: evidenceChecks[unit.id]?.portofolio || false,
+                    ...(showPortofolio ? { portofolio: evidenceChecks[unit.id]?.portofolio || false } : {}),
                     pertanyaan_wawancara: evidenceChecks[unit.id]?.pertanyaan_wawancara || false,
                     pertanyaan_lisan: evidenceChecks[unit.id]?.pertanyaan_lisan || false,
                     pertanyaan_tertulis: evidenceChecks[unit.id]?.pertanyaan_tertulis || false,

@@ -150,11 +150,11 @@ export default function DashboardAdminTUK() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h4>
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.skema?.nama || '-'}</h4>
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''} • {kegiatan.tuk.nama.toUpperCase()}
+                        {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''} • {kegiatan.tuk?.nama?.toUpperCase() || ''}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk.alamat}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(kegiatan.is_started, String(kegiatan.tahap || "1"))}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -13,6 +13,8 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
+import { ASESOR_SIGNATURE_POLLING_INTERVAL_MS } from "@/lib/polling-config"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 // ============== ANIMATED COMPONENTS ==============
@@ -803,7 +805,7 @@ export default function Apl02Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, namaAsesi, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get jadwal_id from kegiatan
@@ -1024,11 +1026,9 @@ export default function Apl02Page() {
     uploadFiles(e)
   }
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const initialFetchDone = useRef(false)
 
-    const fetchData = async () => {
+  const fetchData = useCallback(async () => {
       try {
         const token = localStorage.getItem("access_token")
 
@@ -1175,18 +1175,59 @@ export default function Apl02Page() {
       } finally {
         setIsLoading(false)
       }
-    }
+  }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi])
 
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    if ((isAsesor && idIzin) || kegiatan) {
+      initialFetchDone.current = true
+      window.scrollTo(0, 0)
       fetchData()
     }
-  }, [kegiatan, user, isAsesor, idIzinFromUrl])
+  }, [kegiatan, isAsesor, idIzin, fetchData])
+
+  // Check if all asesor signatures exist across all subunits
+  const allAsesorSigned = (() => {
+    if (isAsesor || asesorList.length === 0) return true
+    const subunits = Object.values(subunitBarcodes)
+    if (subunits.length === 0) return false
+    return subunits.every(sb => {
+      if (!sb.asesor1?.url) return false
+      if (asesorList.length >= 2 && !sb.asesor2?.url) return false
+      return true
+    })
+  })()
+
+  const missingAsesorLabels = (() => {
+    if (isAsesor || asesorList.length === 0 || allAsesorSigned) return []
+    const missing: string[] = []
+    const subunits = Object.values(subunitBarcodes)
+    const anyMissingAsesor1 = subunits.some(sb => !sb.asesor1?.url)
+    const anyMissingAsesor2 = asesorList.length >= 2 && subunits.some(sb => !sb.asesor2?.url)
+    if (anyMissingAsesor1) missing.push("Asesor 1")
+    if (anyMissingAsesor2) missing.push("Asesor 2")
+    return missing
+  })()
+
+  // Polling for asesor signatures
+  useEffect(() => {
+    if (isAsesor || allAsesorSigned) return
+    const interval = setInterval(async () => {
+      if (document.visibilityState !== "visible") return
+      await fetchData()
+    }, ASESOR_SIGNATURE_POLLING_INTERVAL_MS)
+    return () => clearInterval(interval)
+  }, [isAsesor, allAsesorSigned, fetchData])
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      return
+    }
+
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
 
@@ -1492,7 +1533,8 @@ export default function Apl02Page() {
             )}
           </div>
 
-          {/* Drop Zone */}
+          {/* Drop Zone - asesor only */}
+          {isAsesor && (
           <div
             onClick={() => document.getElementById('file-upload-input')?.click()}
             style={{
@@ -1522,6 +1564,7 @@ export default function Apl02Page() {
             </p>
             <p style={{ fontSize: '11px', color: '#888', margin: '6px 0 0 0' }}>PDF, JPG, PNG, DOC, DOCX (Maks. 5MB per file)</p>
           </div>
+          )}
 
           <input
             id="file-upload-input"
@@ -1694,7 +1737,7 @@ export default function Apl02Page() {
                             value="K"
                             checked={isCheckedK}
                             onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'K', unit.id, subunit.id)}
-                            disabled={isAsesor || isSaving}
+                            disabled={true}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
@@ -1703,7 +1746,7 @@ export default function Apl02Page() {
                             value="BK"
                             checked={isCheckedBK}
                             onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'BK', unit.id, subunit.id)}
-                            disabled={isAsesor || isSaving}
+                            disabled={true}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
@@ -1816,15 +1859,19 @@ export default function Apl02Page() {
                   />
                   <span>Observasi</span>
                 </label>
-                &nbsp;&nbsp;&nbsp;&nbsp;
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
-                  <CustomCheckbox
-                    checked={metodeAsesmen === 'portofolio'}
-                    onChange={() => isAsesor && setMetodeAsesmen('portofolio')}
-                    disabled={!isAsesor}
-                  />
-                  <span>Portofolio</span>
-                </label>
+                {parseInt(jenjang || '0') >= 4 && (
+                  <>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
+                      <CustomCheckbox
+                        checked={metodeAsesmen === 'portofolio'}
+                        onChange={() => isAsesor && setMetodeAsesmen('portofolio')}
+                        disabled={!isAsesor}
+                      />
+                      <span>Portofolio</span>
+                    </label>
+                  </>
+                )}
               </td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
             </tr>
@@ -1971,12 +2018,18 @@ export default function Apl02Page() {
           </label>
         </div>
 
+        <AsesorSignatureGuard
+          missingAsesorLabels={missingAsesorLabels}
+          allAsesorSigned={allAsesorSigned}
+          isAsesor={isAsesor}
+        />
+
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSubmit}>
+          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSubmit}>
             {isSaving ? "Menyimpan..." : "Simpan & Selesaikan"}
           </ActionButton>
         </div>

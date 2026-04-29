@@ -8,10 +8,12 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface BarcodeData {
@@ -79,13 +81,13 @@ export default function Ia03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Asesor-only editable (asesi read-only)
   const isFormDisabled = !isAsesor1
@@ -145,8 +147,9 @@ export default function Ia03Page() {
   const memoizedKelompokKerja = useMemo(() => kelompokKerjaData, [kelompokKerjaData])
 
   // Fetch IA03 data
-  useEffect(() => {
-    const fetchData = async () => {
+  const initialFetchDone = useRef(false)
+
+  const fetchData = useCallback(async () => {
       if (authLoading) return
 
       if (!id) {
@@ -209,10 +212,22 @@ export default function Ia03Page() {
       } finally {
         setIsLoading(false)
       }
-    }
-
-    fetchData()
   }, [id, authLoading])
+
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    initialFetchDone.current = true
+    fetchData()
+// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
+  }, [fetchData])
+
+  // Polling for asesor signatures
+  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
+    fetchDataFn: fetchData,
+    isAsesor,
+    barcodes,
+    asesorCount: asesorList.length,
+  })
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
@@ -231,6 +246,12 @@ export default function Ia03Page() {
   const handleNext = async () => {
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
+      return
+    }
+
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
 
@@ -674,12 +695,71 @@ export default function Ia03Page() {
             </label>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
+          {/* PENYUSUN DAN VALIDATOR */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }} cellSpacing="0">
+            <tbody>
+              <tr style={{ height: '28pt' }}>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
+              </tr>
+              <tr style={{ height: '91pt' }}>
+                <td rowSpan={2} style={{ border: '1px solid #000', padding: '15px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '15px' }}>Penyusun</span></td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', background: '#fff' }}><span style={{ fontSize: '12px', textAlign: 'center' }}>1</span></td>
+                <td style={{ border: '1px solid #000', padding: '7px 8px', background: '#fff', fontSize: '12px' }}>{namaPenyusun || ''}</td>
+                <td style={{ border: '1px solid #000', padding: '13px 8px', background: '#fff', fontSize: '12px' }}>{noregPenyusun || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '8px', background: '#fff', textAlign: 'center' }}>
+                  {barcodePenyusun ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                    </div>
+                  ) : ''}
+                </td>
+              </tr>
+              <tr style={{ height: '23pt' }}>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+              </tr>
+              <tr style={{ height: '68pt' }}>
+                <td rowSpan={2} style={{ border: '1px solid #000', padding: '18px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '18px' }}>Validator</span></td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', background: '#fff' }}><span style={{ fontSize: '12px', textAlign: 'center' }}>1</span></td>
+                <td style={{ border: '1px solid #000', padding: '7px 8px', background: '#fff', fontSize: '12px' }}>{namaValidator || ''}</td>
+                <td style={{ border: '1px solid #000', padding: '13px 8px', background: '#fff', fontSize: '12px' }}>{noregValidator || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '8px', background: '#fff', textAlign: 'center' }}>
+                  {barcodeValidator ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <img src={barcodeValidator} alt="QR Validator" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                    </div>
+                  ) : ''}
+                </td>
+              </tr>
+              <tr style={{ height: '23pt' }}>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+              </tr>
+            </tbody>
+          </table>
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleNext}>
+            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
               Lanjut
             </ActionButton>
           </div>

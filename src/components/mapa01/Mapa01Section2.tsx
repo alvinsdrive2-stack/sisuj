@@ -45,10 +45,30 @@ interface KelompokKerja {
 
 interface Mapa01Section2Props {
   kelompokKerja: KelompokKerja[]
+  jenjang?: string
+  metode?: string
+}
+
+// Derive column flags from jenjang + metode
+function deriveMetodeFlags(jenjang?: string, metode?: string) {
+  const j = parseInt(jenjang || '0', 10)
+  const m = (metode || '').toLowerCase()
+
+  if (j >= 1 && j <= 3) {
+    return { L: true, TL: false, T: true, CL: true, DIT: false, DPT: true, PW: false, VP: false, VPK: false }
+  }
+  if (j > 3 && m === 'portofolio') {
+    return { L: false, TL: true, T: true, CL: false, DIT: false, DPT: false, PW: true, VP: true, VPK: true }
+  }
+  if (j > 3 && m === 'observasi') {
+    return { L: true, TL: false, T: true, CL: false, DIT: true, DPT: true, PW: false, VP: false, VPK: false }
+  }
+  return { L: false, TL: false, T: false, CL: false, DIT: false, DPT: false, PW: false, VP: false, VPK: false }
 }
 
 // ============== COMPONENTS ==============
-export function Mapa01Section2({ kelompokKerja }: Mapa01Section2Props) {
+export function Mapa01Section2({ kelompokKerja, jenjang, metode }: Mapa01Section2Props) {
+  const metodeFlags = deriveMetodeFlags(jenjang, metode)
   const headerStyle = {
     ...createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin),
     backgroundColor: COLORS.RED,
@@ -78,21 +98,27 @@ export function Mapa01Section2({ kelompokKerja }: Mapa01Section2Props) {
 
       {/* Loop Kelompok Kerja */}
       {kelompokKerja.map((kelompok) => (
-        <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} />
+        <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} metodeFlags={metodeFlags} />
       ))}
     </>
   )
 }
 
-interface Mapa01KelompokPekerjaProps {
-  kelompok: KelompokKerja
+interface MetodeFlags {
+  L: boolean; TL: boolean; T: boolean
+  CL: boolean; DIT: boolean; DPT: boolean; PW: boolean; VP: boolean; VPK: boolean
 }
 
-function Mapa01KelompokPekerja({ kelompok }: Mapa01KelompokPekerjaProps) {
+interface Mapa01KelompokPekerjaProps {
+  kelompok: KelompokKerja
+  metodeFlags: MetodeFlags
+}
+
+function Mapa01KelompokPekerja({ kelompok, metodeFlags }: Mapa01KelompokPekerjaProps) {
   return (
     <>
       <Mapa01KelompokTable kelompok={kelompok} />
-      <Mapa01MetodeTable units={kelompok.units} />
+      <Mapa01MetodeTable units={kelompok.units} metodeFlags={metodeFlags} />
     </>
   )
 }
@@ -180,9 +206,10 @@ function Mapa01KelompokTable({ kelompok }: Mapa01KelompokTableProps) {
 
 interface Mapa01MetodeTableProps {
   units: Unit[]
+  metodeFlags: MetodeFlags
 }
 
-function Mapa01MetodeTable({ units }: Mapa01MetodeTableProps) {
+function Mapa01MetodeTable({ units, metodeFlags }: Mapa01MetodeTableProps) {
   const headerCellStyle = createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin);
 
   return (
@@ -291,6 +318,7 @@ function Mapa01MetodeTable({ units }: Mapa01MetodeTableProps) {
               key={unit.id_unit}
               unit={unit}
               idx={idx}
+              metodeFlags={metodeFlags}
             />
           ))}
         </tbody>
@@ -304,129 +332,69 @@ function Mapa01MetodeTable({ units }: Mapa01MetodeTableProps) {
 interface Mapa01UnitAssessmentProps {
   unit: Unit
   idx: number
+  metodeFlags: MetodeFlags
 }
 
-function Mapa01UnitAssessment({ unit, idx }: Mapa01UnitAssessmentProps) {
+function Mapa01UnitAssessment({ unit, idx, metodeFlags }: Mapa01UnitAssessmentProps) {
   const cellStyle = createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin);
+  const f = metodeFlags
 
   return (
     <tr style={{ height: 'auto' }}>
       {/* Unit Kompetensi column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0, fontSize: '12px', lineHeight: '13pt' }}>
-          {idx + 1}. {unit.nama_unit}
-        </p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff' }}>
+        <p style={{ margin: 0, fontSize: '12px', lineHeight: '13pt' }}>{idx + 1}. {unit.nama_unit}</p>
       </td>
 
       {/* Bukti-Bukti column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0, fontSize: '12px', lineHeight: '12pt' }}>
-          Hasil tanya jawab tentang:
-        </p>
-        <p style={{ margin: '4px 0 0 0', fontSize: '12px', lineHeight: '12pt' }}>
-          {unit.nama_unit}
-        </p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff' }}>
+        <p style={{ margin: 0, fontSize: '12px', lineHeight: '12pt' }}>Hasil tanya jawab tentang:</p>
+        <p style={{ margin: '4px 0 0 0', fontSize: '12px', lineHeight: '12pt' }}>{unit.nama_unit}</p>
       </td>
 
       {/* L column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br />L</p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.L ? 'L' : ''}</p>
       </td>
 
       {/* T L column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br /></p>
-        <p style={{ fontWeight: 'bold', fontSize: '11px', margin: 0 }}></p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.TL ? 'T L' : ''}</p>
       </td>
 
       {/* T column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '11px', textAlign: 'center' }}>T</p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.T ? 'T' : ''}</p>
       </td>
 
       {/* Observasi Langsung column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br /></p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.L ? '' : ''}</p>
       </td>
 
       {/* Kegiatan Terstruktur column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br /></p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.DIT ? 'DIT' : f.CL ? 'CL' : ''}</p>
       </td>
 
-      {/* Tanya Jawab column (DPT) */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0, fontWeight: 'bold', fontSize: '11px', textAlign: 'center' }}>DPT</p>
+      {/* Tanya Jawab column */}
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.DPT ? 'DPT' : f.PW ? 'PW' : ''}</p>
       </td>
 
       {/* Verifikasi Portfolio column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br /></p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.VP ? 'VP' : ''}</p>
       </td>
 
       {/* Reviu Produk column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff' }}>
         <p style={{ margin: 0 }}><br /></p>
       </td>
 
       {/* Verifikasi Pihak Ketiga column */}
-      <td style={{
-        ...cellStyle,
-        padding: '6px 8px',
-        verticalAlign: 'middle',
-        background: '#fff'
-      }}>
-        <p style={{ margin: 0 }}><br /></p>
+      <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff', textAlign: 'center' }}>
+        <p style={{ fontWeight: 'bold', fontSize: '11px' }}>{f.VPK ? 'VPK' : ''}</p>
       </td>
     </tr>
   )

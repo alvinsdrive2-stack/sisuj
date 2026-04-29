@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { authService, LoginRequest, CurrentUser } from "@/lib/auth-service"
 
 export type { CurrentUser }
@@ -17,47 +17,51 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const hasInitializedRef = useRef(false)
-  const isLoggingInRef = useRef(false)
 
   // Cek auth status saat mount
   useEffect(() => {
-    // Skip if already initialized or currently logging in
-    if (hasInitializedRef.current || isLoggingInRef.current) {
-      setIsLoading(false)
-      return
-    }
+    let cancelled = false
 
     const initAuth = async () => {
-      hasInitializedRef.current = true
-
       const token = authService.getToken()
+      console.log('[AuthContext] initAuth - token exists:', !!token)
 
       if (token) {
         try {
           // Fetch fresh user data from API to get latest fields (including noreg)
           const userData = await authService.getCurrentUser()
-          authService.saveUserData(userData)
-          setUser(userData)
+          if (!cancelled) {
+            authService.saveUserData(userData)
+            setUser(userData)
+          }
         } catch (error) {
           console.error('[AuthContext] Failed to fetch user data:', error)
           // Fallback to localStorage if API fails
           const cachedUserData = authService.getUserData()
-          if (cachedUserData) {
-            setUser(cachedUserData)
+          console.log('[AuthContext] Cached user data exists:', !!cachedUserData)
+          if (!cancelled) {
+            if (cachedUserData) {
+              setUser(cachedUserData)
+            } else {
+              // No cached data and API failed — clear stale token
+              console.warn('[AuthContext] No cached data, clearing token')
+              authService.removeToken()
+            }
           }
         }
       }
 
-      setIsLoading(false)
+      if (!cancelled) {
+        setIsLoading(false)
+      }
     }
 
     initAuth()
+
+    return () => { cancelled = true }
   }, [])
 
   const login = async (credentials: LoginRequest): Promise<CurrentUser> => {
-    isLoggingInRef.current = true
-
     try {
       const response = await authService.login(credentials)
 
@@ -69,15 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       authService.saveUserData(userData)
       setUser(userData)
-      hasInitializedRef.current = true
       setIsLoading(false)
-      return userData // Return user data for immediate use
+      return userData
     } catch (error) {
       console.error("Failed to fetch user data:", error)
       setIsLoading(false)
       throw error
-    } finally {
-      isLoggingInRef.current = false
     }
   }
 

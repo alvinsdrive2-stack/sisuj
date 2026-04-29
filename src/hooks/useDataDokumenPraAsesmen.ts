@@ -9,6 +9,8 @@ interface Asesor {
 interface DataDokumenPraAsesmenData {
   jabatan_kerja: string
   nomor_skema: string
+  jenjang: string
+  metode?: string
   tuk: string
   id_asesor_1: number
   id_asesor_2: number
@@ -38,6 +40,8 @@ interface DataDokumenPraAsesmenResponse {
 interface UseDataDokumenPraAsesmenResult {
   jabatanKerja: string
   nomorSkema: string
+  jenjang: string
+  metode: string
   tuk: string
   asesorList: Asesor[]
   namaAsesor: string
@@ -61,6 +65,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
   const [data, setData] = useState<{
     jabatanKerja: string
     nomorSkema: string
+    jenjang: string
+    metode: string
     tuk: string
     asesorList: Asesor[]
     namaAsesor: string
@@ -79,6 +85,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
   }>({
     jabatanKerja: '',
     nomorSkema: '',
+    jenjang: '0',
+    metode: '',
     tuk: '',
     asesorList: [],
     namaAsesor: '',
@@ -142,6 +150,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
             setData({
               jabatanKerja: result.data.jabatan_kerja || '',
               nomorSkema: result.data.nomor_skema || '',
+              jenjang: result.data.jenjang || '0',
+              metode: result.data.metode || '',
               tuk: result.data.tuk || '',
               asesorList,
               namaAsesor,

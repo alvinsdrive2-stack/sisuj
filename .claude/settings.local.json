@@ -17,7 +17,12 @@
       "Bash(powershell -Command \"Select-String -Path ''C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\skdirektur.html'' -Pattern ''<img'' -Context 0,5 | Select-Object -First 3\")",
       "Bash(git show:*)",
       "Bash(sed:*)",
-      "Bash(find -name \"*.php\" -type f 2>/dev/null | head -30)"
+      "Bash(find -name \"*.php\" -type f 2>/dev/null | head -30)",
+      "mcp__ide__getDiagnostics",
+      "Bash(grep -v \"^ />$\")",
+      "Bash(awk 'NR==550{print; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia08\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia08Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia09\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia09Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia10\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia10Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; next}1' src/App.tsx)",
+      "Bash(mv temp_App.tsx src/App.tsx)",
+      "Bash(git checkout *)"
     ]
   },
   "enableAllProjectMcpServers": true,

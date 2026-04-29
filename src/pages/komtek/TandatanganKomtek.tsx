@@ -69,8 +69,8 @@ export default function TandatanganKomtek() {
                   skemaSertifikasi={doc.skema.nama}
                   jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                   documentInfo={[
-                    { icon: User, label: "Asesor", value: `${doc.asesor.nama.toUpperCase()}${doc.asesor2 ? ` & ${doc.asesor2.nama.toUpperCase()}` : ''}` },
-                    { icon: FileText, label: "TUK", value: doc.tuk.nama.toUpperCase() },
+                    { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
+                    { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '' },
                     { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                     { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                   ]}

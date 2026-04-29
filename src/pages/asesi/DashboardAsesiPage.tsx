@@ -188,9 +188,9 @@ export default function DashboardAsesiPage() {
     // Add second asesor if exists (asesor2)
     if (kegiatan.asesor2?.nama) {
       assessors.push({
-        name: kegiatan.asesor2.nama,
-        nip: kegiatan.asesor2.noreg || "-",
-        license: kegiatan.asesor2.noreg || "-"
+        name: kegiatan.asesor2?.nama || '',
+        nip: kegiatan.asesor2?.noreg || "-",
+        license: kegiatan.asesor2?.noreg || "-"
       })
     }
 
@@ -219,7 +219,7 @@ export default function DashboardAsesiPage() {
     }
 
     return {
-      scheme: kegiatan.skema.nama,
+      scheme: kegiatan.skema?.nama || "-",
       schemeCode: `SK-${kegiatan.skema_id}`,
       unit: {
         title: "Unit Kompetensi",
@@ -229,8 +229,8 @@ export default function DashboardAsesiPage() {
       schedule: {
         date: tanggalUji.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
         time: `${tanggalUji.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
-        venue: kegiatan.tuk.nama,
-        address: kegiatan.tuk.alamat
+        venue: kegiatan.tuk?.nama || "-",
+        address: kegiatan.tuk?.alamat || "-"
       },
       assessors,
       status: kegiatan.is_started === "1" ? "in-progress" : "scheduled"

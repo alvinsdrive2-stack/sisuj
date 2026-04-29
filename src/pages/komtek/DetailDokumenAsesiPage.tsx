@@ -189,7 +189,7 @@ export default function DetailDokumenAsesiPage() {
                   {kegiatan.skema.nama}
                 </h3>
                 <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
-                  {kegiatan.tuk.nama.toUpperCase()} • {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''}
+                  {kegiatan.tuk?.nama?.toUpperCase() || ''} • {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''}
                 </p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '13px', color: '#6b7280' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

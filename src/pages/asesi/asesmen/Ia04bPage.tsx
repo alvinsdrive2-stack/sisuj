@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,11 +8,13 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Soal {
@@ -42,7 +44,7 @@ type BarcodeData = {
   nama: string
 }
 
-interface Ia04bResponse {
+interface ApiResponse {
   message: string
   data: {
     barcodes?: {
@@ -55,27 +57,23 @@ interface Ia04bResponse {
       nama_dokumen: string
     }
     soal: Soal[]
-    rekomendasi: Rekomendasi
+    rekomendasi?: Rekomendasi
   }
-}
-
-interface ApiResponse {
-  message: string
-  data: Ia04bResponse["data"]
 }
 
 export default function Ia04bPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
-  const [ia04bData, setIa04bData] = useState<Ia04bResponse["data"] | null>(null)
+  const [ia04bData, setIa04bData] = useState<ApiResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'ya' | 'tidak'>>({})
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -87,7 +85,7 @@ export default function Ia04bPage() {
     asesor?: Record<string, BarcodeData>
   } | null>(null)
   const canEdit = isAsesor // All asesor can edit IA04B
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -98,8 +96,9 @@ export default function Ia04bPage() {
     asesorList
   })
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const initialFetchDone = useRef(false)
+
+  const fetchData = useCallback(async () => {
       if (authLoading) return
       if (!id) {
         console.error("No id_izin found in user data")
@@ -181,9 +180,9 @@ export default function Ia04bPage() {
             setJawabanAnswers(newJawabanAnswers)
 
             // Initialize rekomendasi from API response
-            if (result.data.rekomendasi.rekomendasi === true) {
+            if (result.data.rekomendasi?.rekomendasi === true) {
               setRekomendasi('kompeten')
-            } else {
+            } else if (result.data.rekomendasi?.rekomendasi === false) {
               setRekomendasi('belum_kompeten')
             }
 
@@ -197,10 +196,21 @@ export default function Ia04bPage() {
       } finally {
         setIsLoading(false)
       }
-    }
-
-    fetchData()
   }, [id, authLoading])
+
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    initialFetchDone.current = true
+    fetchData()
+  }, [fetchData])
+
+  // Polling for asesor signatures
+  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
+    fetchDataFn: fetchData,
+    isAsesor,
+    barcodes,
+    asesorCount: asesorList.length,
+  })
 
   const handleAnswerChange = (soalId: number, value: 'ya' | 'tidak') => {
     setAnswers(prev => ({
@@ -236,7 +246,7 @@ export default function Ia04bPage() {
 
       // Build rekomendasi
       const rekomendasiPayload = {
-        soal_id: ia04bData.rekomendasi.id,
+        soal_id: ia04bData.rekomendasi?.id!,
         value: rekomendasi === 'kompeten' // 'kompeten' = true, 'belum_kompeten' = false
       }
 
@@ -265,6 +275,12 @@ export default function Ia04bPage() {
   const handleSave = async () => {
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu.')
+      return
+    }
+
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
 
@@ -499,7 +515,7 @@ export default function Ia04bPage() {
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000' }}>
-            FR.IA.04.B  {ia04bData?.dokumen.nama_dokumen || 'LEMBAR PERIKSA KEGIATAN TERSTRUKTUR'}
+            FR.IA.04.B  {ia04bData?.dokumen?.nama_dokumen || 'LEMBAR PERIKSA KEGIATAN TERSTRUKTUR'}
           </h1>
         </div>
 
@@ -672,7 +688,7 @@ export default function Ia04bPage() {
           <tbody>
             <tr>
               <td style={{ width: '30%', fontWeight: 'bold', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
-                {ia04bData?.rekomendasi.soal || 'Rekomendasi Asesor:'}
+                {ia04bData?.rekomendasi?.soal || 'Rekomendasi Asesor:'}
               </td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 Asesi telah memenuhi/belum memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan:<br /><br />
@@ -793,13 +809,13 @@ export default function Ia04bPage() {
                 <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                     <img
-                      src={barcodes.asesor.asesor2.url}
+                      src={barcodes.asesor.asesor2?.url}
                       alt="Tanda Tangan Asesor 2"
                       style={{ height: '50px', width: '50px', objectFit: 'contain' }}
                     />
-                    {barcodes.asesor.asesor2.tanggal && (
+                    {barcodes.asesor.asesor2?.tanggal && (
                       <div style={{ fontSize: '11px', color: '#333' }}>
-                        {new Date(barcodes.asesor.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(barcodes.asesor.asesor2?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
                     )}
                   </div>
@@ -825,12 +841,18 @@ export default function Ia04bPage() {
             </div>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/upload-tugas`)}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
+            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
               {isSaving ? 'Menyimpan...' : 'Selesai'}
             </ActionButton>
           </div>
@@ -846,7 +868,7 @@ export default function Ia04bPage() {
         cancelText="Belum"
         onConfirm={() => {
           setShowConfirmDialog(false)
-          setTimeout(() => navigate(`/asesi/asesmen/${id}/uji`), 100)
+          setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 100)
         }}
         onCancel={() => setShowConfirmDialog(false)}
       />

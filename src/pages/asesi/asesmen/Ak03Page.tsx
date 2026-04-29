@@ -44,11 +44,12 @@ export default function Ak03Page() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, asesorList } = useDataDokumenAsesmen(id)
+  const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Disable form for asesor (only asesi can fill)
   const isFormDisabled = isAsesor
@@ -126,6 +127,7 @@ export default function Ak03Page() {
     }
 
     fetchData()
+// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [id, authLoading])
 
   if (isLoading) {

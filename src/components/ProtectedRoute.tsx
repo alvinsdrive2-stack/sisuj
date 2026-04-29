@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { Permission, getRoleConfig, UserRole } from "@/lib/rbac-config"
@@ -20,13 +20,14 @@ export default function ProtectedRoute({
   allowAsesorWithNoreg = false
 }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading, user } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return <FullPageLoader text="Memuat..." />
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   const userRoleName = user?.role?.name as UserRole | undefined

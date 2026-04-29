@@ -24,8 +24,11 @@ interface AspekAPI {
 }
 
 interface DimensiKompetensiAPI {
-  id: number
-  nama: string
+  task_skills?: string
+  task_management_skills?: string
+  contingency_management_skills?: string
+  job_role_environment_skills?: string
+  transfer_skills?: string
 }
 
 interface BarcodeData {
@@ -69,13 +72,13 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2 } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2 } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // All asesor can fill (removed restriction to specific asesor)
   const isFormDisabled = !isAsesor
@@ -102,6 +105,7 @@ export default function Ak06Page() {
   const [aspekItems, setAspekItems] = useState<AspekItem[]>([])
   const [rekomendasiPrinsip, setRekomendasiPrinsip] = useState('')
   const [rekomendasiDimensi, setRekomendasiDimensi] = useState('')
+  const [dimensiKompetensi, setDimensiKompetensi] = useState<DimensiKompetensiAPI | null>(null)
   const [komentarAsesor, setKomentarAsesor] = useState<Record<number, string>>({})
   const [feedbackData, setFeedbackData] = useState<{
     rekomendasi1: string
@@ -159,6 +163,11 @@ export default function Ak06Page() {
             setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
             setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
 
+            // Set dimensi kompetensi
+            if (result.data.dimensi_kompetensi) {
+              setDimensiKompetensi(result.data.dimensi_kompetensi as DimensiKompetensiAPI)
+            }
+
             // Set barcodes data
             setBarcodes(result.data.barcodes || {
               asesi: null,
@@ -177,6 +186,7 @@ export default function Ak06Page() {
     }
 
     fetchData()
+// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [id, authLoading, asesorList])
 
   // Map komentar asesor when feedback data and asesorList are available
@@ -531,11 +541,11 @@ export default function Ak06Page() {
                 <b>Konsistensi keputusan asesmen</b><br />
                 Bukti dari berbagai asesmen diperiksa untuk konsistensi dimensi kompetensi
               </td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>L/DIT<br/> T/DPT</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>L/DIT<br/> T/DPT</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>L/DIT<br/> T/DPT</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>L/DIT<br/> T/DPT</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>L/DIT<br/> T/DPT</td>
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_skills || 'L/DIT<br/> T/DPT' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_management_skills || 'L/DIT<br/> T/DPT' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.contingency_management_skills || 'L/DIT<br/> T/DPT' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.job_role_environment_skills || 'L/DIT<br/> T/DPT' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.transfer_skills || 'L/DIT<br/> T/DPT' }} />
             </tr>
 
             <tr>

@@ -29,6 +29,7 @@ interface Referensi {
   id: number
   nama: string
   isdefault: number | null
+  potensi_asesi_index: number
 }
 
 interface ReferensiForm {
@@ -59,7 +60,7 @@ export default function Mapa02Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema } = useDataDokumen(idIzin)
+  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -122,13 +123,14 @@ export default function Mapa02Page() {
           if (result.message === "Success") {
             setMapaData(result.data)
             // Initialize selected potensi with default values
-            // isdefault indicates which column (1-5) is pre-selected for each reference
+            // potensi_asesi_index indicates which column (1-5) is pre-selected
             const initialSelected: Record<number, number> = {}
             result.data.referensi_form.forEach(refForm => {
               if (refForm.kategori === "MAPA02_1") {
                 refForm.referensis.forEach(ref => {
-                  if (ref.isdefault === 1) {
-                    initialSelected[ref.id] = 1 // Default to column 1
+                  // Use potensi_asesi_index to determine the column
+                  if (ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
+                    initialSelected[ref.id] = ref.potensi_asesi_index
                   }
                 })
               }
@@ -353,6 +355,59 @@ export default function Mapa02Page() {
               <div dangerouslySetInnerHTML={{ __html: keteranganReferensi.referensis[0]?.nama || '' }} />
             </div>
           )}
+
+          {/* PENYUSUN DAN VALIDATOR */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }} cellSpacing="0">
+            <tbody>
+              <tr style={{ height: '28pt' }}>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
+                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
+              </tr>
+              <tr style={{ height: '91pt' }}>
+                <td rowSpan={2} style={{ border: '1px solid #000', padding: '15px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '15px' }}>Penyusun</span></td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', background: '#fff' }}><span style={{ fontSize: '12px', textAlign: 'center' }}>1</span></td>
+                <td style={{ border: '1px solid #000', padding: '7px 8px', background: '#fff', fontSize: '12px' }}>{namaPenyusun || ''}</td>
+                <td style={{ border: '1px solid #000', padding: '13px 8px', background: '#fff', fontSize: '12px' }}>{noregPenyusun || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '8px', background: '#fff', textAlign: 'center' }}>
+                  {barcodePenyusun ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                    </div>
+                  ) : ''}
+                </td>
+              </tr>
+              <tr style={{ height: '23pt' }}>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+              </tr>
+              <tr style={{ height: '68pt' }}>
+                <td rowSpan={2} style={{ border: '1px solid #000', padding: '18px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '18px' }}>Validator</span></td>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', background: '#fff' }}><span style={{ fontSize: '12px', textAlign: 'center' }}>1</span></td>
+                <td style={{ border: '1px solid #000', padding: '7px 8px', background: '#fff', fontSize: '12px' }}>{namaValidator || ''}</td>
+                <td style={{ border: '1px solid #000', padding: '13px 8px', background: '#fff', fontSize: '12px' }}>{noregValidator || '-'}</td>
+                <td style={{ border: '1px solid #000', padding: '8px', background: '#fff', textAlign: 'center' }}>
+                  {barcodeValidator ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <img src={barcodeValidator} alt="QR Validator" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                    </div>
+                  ) : ''}
+                </td>
+              </tr>
+              <tr style={{ height: '23pt' }}>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+                <td style={{ border: '1px solid #000', padding: '1px 8px', background: '#fff' }}></td>
+              </tr>
+            </tbody>
+          </table>
           {/* Agreement Checklist */}
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
@@ -366,6 +421,9 @@ export default function Mapa02Page() {
               </span>
             </label>
           </div>
+
+          
+
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>

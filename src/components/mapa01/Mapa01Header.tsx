@@ -6,11 +6,13 @@
 interface Mapa01HeaderProps {
   judul?: string
   nomor?: string
+  skkni?: string
 }
 
 export function Mapa01Header({
   judul = '',
-  nomor = ''
+  nomor = '',
+  skkni = ''
 }: Mapa01HeaderProps) {
   return (
     <>
@@ -100,6 +102,42 @@ export function Mapa01Header({
               background: '#fff'
             }}>
               {nomor}
+            </td>
+          </tr>
+          <tr>
+            <td style={{
+              border: '1px solid #000',
+              padding: '6px 8px',
+              verticalAlign: 'middle',
+              background: '#fff'
+            }}>
+              {/* Empty cell */}
+            </td>
+            <td style={{
+              border: '1px solid #000',
+              padding: '6px 8px',
+              verticalAlign: 'middle',
+              textAlign: 'left',
+              background: '#fff'
+            }}>
+              SKKNI
+            </td>
+            <td style={{
+              border: '1px solid #000',
+              padding: '6px 8px',
+              verticalAlign: 'middle',
+              textAlign: 'left',
+              background: '#fff'
+            }}>
+              :
+            </td>
+            <td style={{
+              border: '1px solid #000',
+              padding: '6px 8px',
+              verticalAlign: 'middle',
+              background: '#fff'
+            }}>
+              {skkni}
             </td>
           </tr>
         </tbody>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,10 +8,12 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Unit {
@@ -91,6 +93,8 @@ function parseListContent(content: string): { type: 'ol' | 'ul' | 'p', items: Li
   const cleanContent = decodeHtmlEntities(content)
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/&nbsp;/gi, ' ')
+    // Add newline before bullet points (●) if there's text before them
+    .replace(/(\S)\s*([•\-\*])/g, '$1\n$2')
     .trim()
 
   // Check for numbered list (1., 2., 3., etc)
@@ -163,7 +167,7 @@ export default function Ia04aPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -187,10 +191,11 @@ export default function Ia04aPage() {
   })
 
   // Get dynamic steps based on asesor role
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const initialFetchDone = useRef(false)
+
+  const fetchData = useCallback(async () => {
       // Wait for auth to load
       if (authLoading) {
         return
@@ -266,14 +271,31 @@ export default function Ia04aPage() {
       } finally {
         setIsLoading(false)
       }
-    }
-
-    fetchData()
   }, [id, authLoading, user, asesorList])
+
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    initialFetchDone.current = true
+    fetchData()
+  }, [fetchData])
+
+  // Polling for asesor signatures
+  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
+    fetchDataFn: fetchData,
+    isAsesor,
+    barcodes,
+    asesorCount: asesorList.length,
+  })
 
   const handleNext = async () => {
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
+      return
+    }
+
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
 
@@ -841,12 +863,18 @@ export default function Ia04aPage() {
             </label>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleNext}>
+            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
               Lanjut
             </ActionButton>
           </div>

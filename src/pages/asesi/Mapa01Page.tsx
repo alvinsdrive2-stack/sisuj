@@ -75,6 +75,7 @@ interface Mapa01Data {
     kelompok_kerja: KelompokKerja[]
   }
   referensi_form: ReferensiFormItem[]
+  skkni?: string
 }
 
 interface ApiResponse {
@@ -91,7 +92,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -285,14 +286,19 @@ export default function Mapa01Page() {
           <Mapa01Header
             judul={jabatanKerja?.toUpperCase() || mapaData?.kelompok_kerja.nama_dokumen}
             nomor={nomorSkema?.toUpperCase() || mapaData?.kelompok_kerja.kode}
+            skkni={mapaData?.skkni}
           />
 
           {/* STATIC: Section 1 - Pendekatan Asesmen */}
-          <Mapa01Section1 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} />
+          <Mapa01Section1 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} skkni={mapaData?.skkni} />
 
           {/* DYNAMIC/LOOPING: Section 2 - Kelompok Pekerjaan dari API */}
           {mapaData && (
-            <Mapa01Section2 kelompokKerja={mapaData.kelompok_kerja.kelompok_kerja} />
+            <Mapa01Section2
+              kelompokKerja={mapaData.kelompok_kerja.kelompok_kerja}
+              jenjang={jenjang}
+              metode={metode}
+            />
           )}
 
           {/* STATIC: Section 3 - Modifikasi */}

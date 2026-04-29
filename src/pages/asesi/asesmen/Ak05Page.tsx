@@ -130,6 +130,7 @@ export default function Ak05Page() {
     }
 
     fetchData()
+// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [id, authLoading])
 
   const handleSave = async () => {

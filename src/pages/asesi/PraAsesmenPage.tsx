@@ -56,6 +56,7 @@ export default function PraAsesmenPage() {
   const { user } = useAuth()
   const [data, setData] = useState<PersonalData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isConfirming, setIsConfirming] = useState(false)
   const { kegiatan } = useKegiatanAsesi()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
@@ -110,18 +111,19 @@ export default function PraAsesmenPage() {
   }, [])
 
   const handleConfirm = async () => {
-    // For asesor, skip the list-asesi fetch and navigate directly
-    if (isAsesor && idIzinFromUrl) {
-      navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
-      return
-    }
-
-    if (!kegiatan) {
-      toast("Tidak ada kegiatan aktif", "error")
-      return
-    }
-
+    setIsConfirming(true)
     try {
+      // For asesor, skip the list-asesi fetch and navigate directly
+      if (isAsesor && idIzinFromUrl) {
+        navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
+        return
+      }
+
+      if (!kegiatan) {
+        toast("Tidak ada kegiatan aktif", "error")
+        return
+      }
+
       const token = localStorage.getItem("access_token")
 
       // Fetch id_izin dari list-asesi endpoint
@@ -148,6 +150,8 @@ export default function PraAsesmenPage() {
       navigate(`/asesi/praasesmen/${kegiatan.jadwal_id}/apl01`)
     } catch (error) {
       toast("Gagal mengambil data kegiatan", "error")
+    } finally {
+      setIsConfirming(false)
     }
   }
 
@@ -341,12 +345,12 @@ export default function PraAsesmenPage() {
                 <tr>
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Skema Sertifikasi</td>
                   <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
-                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.skema.nama}</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.skema?.nama || '-'}</td>
                 </tr>
                 <tr>
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Tempat Uji Kompetensi</td>
                   <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
-                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.tuk.nama}</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.tuk?.nama || '-'}</td>
                 </tr>
                 <tr>
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Tanggal</td>
@@ -376,12 +380,16 @@ export default function PraAsesmenPage() {
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>{doc.label}</td>
                   <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
                   <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>
-                    <button
-                      onClick={() => openDocument(docUrl, doc.label)}
-                      style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
-                    >
-                      Lihat Dokumen
-                    </button>
+                    {docUrl ? (
+                      <button
+                        onClick={() => openDocument(docUrl, doc.label)}
+                        style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
+                      >
+                        Lihat Dokumen
+                      </button>
+                    ) : (
+                      <span style={{ color: '#999', fontSize: '13px' }}>Tidak ada</span>
+                    )}
                   </td>
                 </tr>
               )
@@ -398,11 +406,11 @@ export default function PraAsesmenPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={() => navigate(-1)}>
+          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isConfirming}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" onClick={handleConfirm}>
-            Data Sudah Benar, Lanjut ke APL 01
+          <ActionButton variant="primary" onClick={handleConfirm} disabled={isConfirming}>
+            {isConfirming ? 'Memproses...' : 'Data Sudah Benar, Lanjut ke APL 01'}
           </ActionButton>
         </div>
       </AsesiLayout>

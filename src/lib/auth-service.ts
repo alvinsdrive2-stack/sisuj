@@ -131,10 +131,11 @@ class AuthService {
 
     if (!response.ok) {
       // If unauthorized, clear token and throw error
+      console.warn('[AuthService] /auth/me returned status:', response.status)
       if (response.status === 401) {
         this.removeToken()
       }
-      throw new Error("Failed to get current user")
+      throw new Error(`Failed to get current user (status: ${response.status})`)
     }
 
     const result: MeResponse = await response.json()

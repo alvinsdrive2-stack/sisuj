@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -37,6 +37,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccessLoader, setShowSuccessLoader] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+  const from = (location.state as { from?: string })?.from
   const { login, isLoading } = useAuth()
   const { showSuccess } = useToast()
 
@@ -67,7 +69,7 @@ export default function LoginPage() {
         setShowSuccessLoader(true)
         preloadDashboardImages()
         await new Promise(resolve => setTimeout(resolve, 2000))
-        navigate(roleConfiguration?.defaultRoute || "/dashboard")
+        navigate(from || roleConfiguration?.defaultRoute || "/dashboard")
       } else {
         console.error("No role found for user")
         setErrorMessage("Role pengguna tidak ditemukan")

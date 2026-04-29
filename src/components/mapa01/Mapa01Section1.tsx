@@ -42,6 +42,7 @@ interface ReferensiFormItem {
 interface Mapa01Section1Props {
   referensiForm?: ReferensiFormItem[]
   isAsesor?: boolean
+  skkni?: string
 }
 
 // ============== CONSTANTS ==============
@@ -172,7 +173,7 @@ function CheckboxItem({ text, indent = '10pt', checked = false, onToggle }: Chec
 }
 
 // ============== MAIN COMPONENT ==============
-export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Section1Props) {
+export function Mapa01Section1({ referensiForm, isAsesor = false, skkni }: Mapa01Section1Props) {
   // Build checkbox states from referensiForm data
   const initialCheckboxStates = useMemo(() => {
     const states: Record<string, boolean> = {}
@@ -513,7 +514,7 @@ export function Mapa01Section1({ referensiForm, isAsesor = false }: Mapa01Sectio
             </TableCell>
             <TableCell style={cellStyles.contentBottom} colSpan={3}>
               <CheckboxItem
-                text="Standar Kompetensi"
+                text={`Standar Kompetensi (${skkni || '-'})`}
                 checked={getCheckedState("Tolok ukur asesmen", "Standar Kompetensi", "skkni")}
                 onToggle={isAsesor ? () => toggleCheckbox("skkni") : undefined}
               />

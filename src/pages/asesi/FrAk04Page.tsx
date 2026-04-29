@@ -255,7 +255,7 @@ export default function FrAk04Page() {
       const answersArray = Object.entries(answers).map(([referensiId, jawaban]) => ({
         referensi_id: Number(referensiId),
         kelompok_id: kelompokId,
-        jawaban: jawaban === true
+        jawaban: jawaban === true ? true : null
       }))
 
       const payload = {

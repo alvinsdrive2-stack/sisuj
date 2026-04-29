@@ -71,7 +71,7 @@ export default function Ia05Page() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
@@ -81,7 +81,7 @@ export default function Ia05Page() {
   // Check if current user is asesor
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor // All asesor can edit umpan_balik
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -98,6 +98,13 @@ export default function Ia05Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [isPernyataanAgreed, setIsPernyataanAgreed] = useState(false)
   const [umpanBalik, setUmpanBalik] = useState<string>('')
+
+  // Barcodes state untuk cek tanda tangan asesor
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string } | null
+    asesor1?: { url: string; tanggal: string; nama: string } | null
+    asesor2?: { url: string; tanggal: string; nama: string } | null
+  } | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,6 +128,21 @@ export default function Ia05Page() {
               return numA - numB
             })
             setIa05Data({ ...result.data, soal: sortedSoal })
+
+            // Fetch barcodes untuk cek tanda tangan asesor
+            try {
+              const barcodeResponse = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/barcodes`, {
+                headers: { "Authorization": `Bearer ${token}` }
+              })
+              if (barcodeResponse.ok) {
+                const barcodeResult = await barcodeResponse.json()
+                if (barcodeResult.message === "Success") {
+                  setBarcodes(barcodeResult.data)
+                }
+              }
+            } catch (e) {
+              console.error("Error fetching barcodes:", e)
+            }
 
             // Initialize answers from jawaban_asesi
             const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
@@ -383,6 +405,8 @@ export default function Ia05Page() {
 
         <div style={{ fontSize: '14px', color: '#666', marginBottom: '10px' }}>*Coret yang tidak perlu</div>
 
+        
+
         {/* SOAL Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
@@ -479,11 +503,22 @@ export default function Ia05Page() {
             ))}
           </tbody>
         </table>
+{/* Summary Row - Asesor selalu lihat, Asesi hanya lihat jika semua asesor ttd */}
+          {(() => {
+            // Asesor selalu bisa lihat
+            if (isAsesor) return true
 
-        {/* LANJUTAN IA05 - Only visible to asesor (view-only) */}
-        {isAsesor && (
+            // Asesi hanya lihat jika semua asesor sudah ttd
+            const expectedAsesors = asesorList.length
+            const asesor1Signed = !!barcodes?.asesor1?.url
+            const asesor2Signed = !!barcodes?.asesor2?.url
+
+            if (expectedAsesors === 0) return false
+            if (expectedAsesors === 1) return asesor1Signed
+            return asesor1Signed && asesor2Signed
+          })() && (
           <div style={{ marginTop: '20px' }}>
-            <h2 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>FR.05.C. LEMBAR JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
+            <h2 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>FR. IA.05.C. LEMBAR JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#f8f8f8' }}>
               <tbody>
                 <tr>
@@ -529,11 +564,39 @@ export default function Ia05Page() {
                   )
                 })}
 
-                {/* Summary Row */}
+                
                 
               </tbody>
             </table>
           </div>
+          )}
+
+          {/* Ringkasan Jawaban - Tanpa Rekomendasi/K/BK - Hanya Asesor */}
+        {isAsesor && (
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>FR. IA.05.B. LEMBAR KUNCI JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
+            <thead>
+              <tr style={{ background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <th colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Lembar Jawaban</th>
+              </tr>
+              <tr style={{ background: '#c28ea0', fontWeight: 'bold', textAlign: 'center' }}>
+                <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>No.</th>
+                <th style={{ width: '90%', border: '1px solid #000', padding: '6px' }}>Jawaban</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ia05Data?.soal.map((soal) => (
+                <tr key={`summary-${soal.id}`}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{soal.no}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    <span style={{ fontWeight: 'bold' }}>{soal.kunci_jawaban}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )}
 
         {/* UMPAN BALIK UNTUK ASESI - Only visible for asesor */}

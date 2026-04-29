@@ -2,13 +2,16 @@ import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface BuktiAsesmen {
@@ -52,12 +55,14 @@ interface Ak01ApiResponse {
       asesor2?: BarcodeData | null
     }
     items: BuktiAsesmen[]
+    waktu?: string
   }
 }
 
 export default function FrAk01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
@@ -73,8 +78,10 @@ export default function FrAk01Page() {
     buktiYangDikumpulkan: []
   })
   const [loading, setLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [waktuAk01, setWaktuAk01] = useState('')
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji } = useDataDokumenPraAsesmen(actualIdIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -118,77 +125,90 @@ export default function FrAk01Page() {
 
   const { hariTanggal, waktu } = formatTanggalUji(tanggalUji)
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const initialFetchDone = useRef(false)
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
+  const fetchData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
 
-        // Use idIzin from URL params or fetch from list-asesi
-        let fetchedIdIzin = idIzin
+      // Use idIzin from URL params or fetch from list-asesi
+      let fetchedIdIzin = idIzin
 
-        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          })
-
-          if (listAsesiResponse.ok) {
-            const listResult = await listAsesiResponse.json()
-            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              fetchedIdIzin = listResult.list_asesi[0].id_izin
-              setActualIdIzin(fetchedIdIzin)
-            }
-          }
-        }
-
-        if (!fetchedIdIzin) {
-          setLoading(false)
-          return
-        }
-
-        // Fetch bukti asesmen options
-        const buktiRes = await fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/ak01`, {
+      if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         })
-        if (buktiRes.ok) {
-          const result: Ak01ApiResponse = await buktiRes.json()
 
-          // Set bukti list and barcodes
-          const data = result.data?.items || []
-          setBuktiList(data)
-
-          // Set barcodes from response
-          if (result.data?.barcodes) {
-            setBarcodes(result.data.barcodes)
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+            fetchedIdIzin = listResult.list_asesi[0].id_izin
+            setActualIdIzin(fetchedIdIzin)
           }
+        }
+      }
 
-          // Set checked items from jawaban field
-          const checkedIds = data
-            .filter((item: any) => item.jawaban === true)
-            .map((item: any) => item.id)
-          setFormData(prev => ({ ...prev, buktiYangDikumpulkan: checkedIds }))
+      if (!fetchedIdIzin) {
+        setLoading(false)
+        return
+      }
+
+      // Fetch bukti asesmen options
+      const buktiRes = await fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/ak01`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (buktiRes.ok) {
+        const result: Ak01ApiResponse = await buktiRes.json()
+
+        // Set bukti list and barcodes
+        const data = result.data?.items || []
+        setBuktiList(data)
+
+        // Set barcodes from response
+        if (result.data?.barcodes) {
+          setBarcodes(result.data.barcodes)
         }
 
-        setLoading(false)
-      } catch (error) {
-        setLoading(false)
-      }
-    }
+        // Set checked items from jawaban field
+        const checkedIds = data
+          .filter((item: any) => item.jawaban === true)
+          .map((item: any) => item.id)
+        setFormData(prev => ({ ...prev, buktiYangDikumpulkan: checkedIds }))
 
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
-      fetchData()
+        // Set waktu from API response
+        if (result.data?.waktu) {
+          setWaktuAk01(result.data.waktu)
+        }
+      }
+
+      setLoading(false)
+    } catch (error) {
+      setLoading(false)
     }
   }, [idIzin, kegiatan, isAsesor])
+
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    if ((isAsesor && idIzin) || kegiatan) {
+      initialFetchDone.current = true
+      window.scrollTo(0, 0)
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor, fetchData])
+
+  // Polling for asesor signatures
+  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
+    fetchDataFn: fetchData,
+    isAsesor,
+    barcodes,
+    asesorCount: asesorList.length,
+  })
 
   const handleBack = () => {
     navigate(-1)
@@ -210,6 +230,13 @@ export default function FrAk01Page() {
   }
 
   const handleSave = async () => {
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+      return
+    }
+
+    setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
 
@@ -226,7 +253,7 @@ export default function FrAk01Page() {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, waktu: waktuAk01 }),
       })
 
       if (response.ok) {
@@ -235,6 +262,8 @@ export default function FrAk01Page() {
           const currentAsesorId = String(user?.id)
           const isAsesor1 = asesorList.length === 0 || asesorList.findIndex(a => String(a.id) === currentAsesorId) === 0
           const barcodeKey = isAsesor1 ? 'asesor1' : 'asesor2'
+
+          console.log('[FR-AK-01] Asesor QR:', { currentAsesorId, isAsesor1, barcodeKey, asesorList, barcodes })
 
           // Only generate QR if not exists
           if (!barcodes?.[barcodeKey]?.url) {
@@ -321,6 +350,8 @@ export default function FrAk01Page() {
       }
     } catch (error) {
       console.error('Error saving:', error)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -473,14 +504,35 @@ export default function FrAk01Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Waktu</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{waktu || formData.waktu || ''} - Selesai</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                <input
+                  type="text"
+                  value={waktuAk01 || waktu || formData.waktu || ''}
+                  onChange={(e) => setWaktuAk01(e.target.value)}
+                  style={{
+                    width: '100%',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    padding: '4px 8px',
+                    fontSize: '13px',
+                    fontFamily: 'Arial, Helvetica, sans-serif',
+                  }}
+                  placeholder="Contoh: 07:00 - Selesai"
+                />
+              </td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tukPelaksanaan || ''}</td>
             </tr>
-
+                  
+                  <tr>
+              <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                <span style={{ fontWeight: 'bold' }}>Asesi :</span><br /><br />
+                Bahwa saya telah mendapatkan penjelasan terkait hak dan prosedur banding asesmen dari asesor.
+              </td>
+            </tr>
             {/* Pernyataan Asesor */}
             <tr>
               <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
@@ -512,13 +564,13 @@ export default function FrAk01Page() {
                       Tanda tangan Asesor 1 :<br />
                       {barcodes?.asesor1?.url ? (
                         <>
-                          <img src={barcodes.asesor1.url} alt="Tanda Tangan Asesor 1" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                          <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor 1" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                           <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesor1.nama?.toUpperCase()}
+                            {barcodes.asesor1?.nama?.toUpperCase()}
                           </div>
                           {barcodes?.asesor1?.tanggal && (
                             <span style={{ fontSize: '10px', color: '#666' }}>
-                              {new Date(barcodes.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              {new Date(barcodes.asesor1?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                           )}
                         </>
@@ -532,9 +584,9 @@ export default function FrAk01Page() {
                       Tanda tangan Asesor 2 :<br />
                       {barcodes?.asesor2?.url ? (
                         <>
-                          <img src={barcodes.asesor2.url} alt="Tanda Tangan Asesor 2" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                          <img src={barcodes.asesor2?.url} alt="Tanda Tangan Asesor 2" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                           <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesor2.nama?.toUpperCase()}
+                            {barcodes.asesor2?.nama?.toUpperCase()}
                           </div>
                           {barcodes?.asesor2?.tanggal && (
                             <span style={{ fontSize: '10px', color: '#666' }}>
@@ -555,13 +607,13 @@ export default function FrAk01Page() {
                       Tanda tangan Asesi :<br />
                       {barcodes?.asesi?.url ? (
                         <>
-                          <img src={barcodes.asesi.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                          <img src={barcodes.asesi?.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                           <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesi.nama?.toUpperCase()}
+                            {barcodes.asesi?.nama?.toUpperCase()}
                           </div>
                           {barcodes?.asesi?.tanggal && (
                             <span style={{ fontSize: '10px', color: '#666' }}>
-                              {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              {new Date(barcodes.asesi?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                           )}
                         </>
@@ -580,13 +632,13 @@ export default function FrAk01Page() {
                     Tanda tangan Asesor :<br />
                     {barcodes?.asesor1?.url ? (
                       <>
-                        <img src={barcodes.asesor1.url} alt="Tanda Tangan Asesor" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                        <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                         <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                          {barcodes.asesor1.nama?.toUpperCase()}
+                          {barcodes.asesor1?.nama?.toUpperCase()}
                         </div>
                         {barcodes?.asesor1?.tanggal && (
                           <span style={{ fontSize: '10px', color: '#666' }}>
-                            {new Date(barcodes.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(barcodes.asesor1?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </span>
                         )}
                       </>
@@ -637,13 +689,19 @@ export default function FrAk01Page() {
           </label>
         </div>
 
+        <AsesorSignatureGuard
+          missingAsesorLabels={missingAsesorLabels}
+          allAsesorSigned={allAsesorSigned}
+          isAsesor={isAsesor}
+        />
+
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <ActionButton variant="secondary" onClick={handleBack}>
+          <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" onClick={handleSave} disabled={!agreedChecklist}>
-            {isAsesor ? 'Lanjut' : 'Selesai'}
+          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)}>
+            {isSaving ? 'Memproses...' : (isAsesor ? 'Lanjut' : 'Selesai')}
           </ActionButton>
         </div>
       </AsesiLayout>

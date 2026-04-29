@@ -63,6 +63,7 @@ export default function UploadTugasPage() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { asesorList, jenjang, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
+  const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError } = useToast()
 
   // Check if user is an asesor (view-only mode)
@@ -74,10 +75,11 @@ export default function UploadTugasPage() {
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedTugas, setUploadedTugas] = useState<{ url: string; extension: string; fileName: string } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const [showModal, setShowModal] = useState(false)
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -545,6 +547,7 @@ export default function UploadTugasPage() {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <ActionButton
             variant="secondary"
+            disabled={isNavigating}
             onClick={() => {
               const jenjangNum = parseInt(jenjang)
               if (jenjangNum < 4) {
@@ -558,18 +561,19 @@ export default function UploadTugasPage() {
           </ActionButton>
           <ActionButton
             variant="primary"
-            disabled={!uploadedTugas || !agreedChecklist}
+            disabled={isNavigating || !uploadedTugas || !agreedChecklist}
             onClick={() => {
               if (!uploadedTugas || !agreedChecklist) return
+              setIsNavigating(true)
               const jenjangNum = parseInt(jenjang)
               if (jenjangNum < 4) {
-                navigate(`/asesi/asesmen/${id}/uji`)
+                navigate(isAsesor ? `/asesi/asesmen/${id}/ia05` : `/asesi/asesmen/${id}/uji`)
               } else {
-                navigate(`/asesi/asesmen/${id}/ia04b`)
+                navigate(`/asesi/asesmen/${id}/ia04a`)
               }
             }}
           >
-            Lanjut
+            {isNavigating ? 'Memproses...' : 'Lanjut'}
           </ActionButton>
         </div>
       </ModularAsesiLayout>

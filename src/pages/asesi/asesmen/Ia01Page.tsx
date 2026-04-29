@@ -166,17 +166,21 @@ export default function Ia01Page() {
               })
             }
 
-            // Set dokumen_id
-            setDokumenId(result.data.kelompok_kerja.id)
+            // Set dokumen_id (handle both nested and flat structure)
+            const dokumenIdValue = result.data.kelompok_kerja?.id || result.data.kelompok_kerja?.[0]?.id || null
+            setDokumenId(dokumenIdValue)
 
-            // Set kelompok kerja data
-            setKelompokKerjaData(result.data.kelompok_kerja.kelompok_kerja)
+            // Set kelompok kerja data (handle both nested and flat API structure)
+            const kelompokData = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
+            setKelompokKerjaData(Array.isArray(kelompokData) ? kelompokData : [])
 
             // Initialize answers and feedback from existing data
             const answers: Record<number, SoalAnswer> = {}
             let firstUmpanBalik = ''
 
-            result.data.kelompok_kerja.kelompok_kerja.forEach((kelompok) => {
+            // Handle both nested and flat API structure for iteration
+            const kelompokList = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
+            ;(Array.isArray(kelompokList) ? kelompokList : []).forEach((kelompok) => {
               // Get first feedback as the main umpan balik
               if (!firstUmpanBalik && kelompok.umpan_balik) {
                 firstUmpanBalik = kelompok.umpan_balik
@@ -199,7 +203,8 @@ export default function Ia01Page() {
             setUmpanBalik(firstUmpanBalik)
 
             // Expand all by default
-            setExpandedKelompok(new Set(result.data.kelompok_kerja.kelompok_kerja.map(k => k.id)))
+            const kelompokForExpand = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
+            setExpandedKelompok(new Set((Array.isArray(kelompokForExpand) ? kelompokForExpand : []).map(k => k.id)))
           }
         }
       } catch (err) {

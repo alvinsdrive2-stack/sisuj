@@ -64,6 +64,9 @@ import Ia04aPage from './pages/asesi/asesmen/Ia04aPage'
 import UploadTugasPage from './pages/asesi/asesmen/UploadTugasPage'
 import Ia04bPage from './pages/asesi/asesmen/Ia04bPage'
 import Ia05Page from './pages/asesi/asesmen/Ia05Page'
+import Ia08Page from './pages/asesi/asesmen/Ia08Page'
+import Ia09Page from './pages/asesi/asesmen/Ia09Page'
+import Ia10Page from './pages/asesi/asesmen/Ia10Page'
 import UjianPage from './pages/asesi/asesmen/UjianPage'
 import Ak02Page from './pages/asesi/asesmen/Ak02Page'
 import Ak03Page from './pages/asesi/asesmen/Ak03Page'
@@ -511,9 +514,9 @@ function App() {
           <Route
             path="/asesi/asesmen/:id/ia05"
             element={
-              <AsesorRoute>
+              <AsesiOrAsesorRoute>
                 <Ia05Page />
-              </AsesorRoute>
+              </AsesiOrAsesorRoute>
             }
           />
           <Route
@@ -546,6 +549,30 @@ function App() {
               <AsesorRoute>
                 <Ak06Page />
               </AsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia08"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia08Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia09"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia09Page />
+              </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/ia10"
+            element={
+              <AsesiOrAsesorRoute>
+                <Ia10Page />
+              </AsesiOrAsesorRoute>
             }
           />
           <Route

@@ -25,7 +25,7 @@ export const ASESMEN_STEPS_ASESI: StepConfig[] = [
   { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
   { number: 2, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
   { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'Ujian', href: '/asesi/asesmen/uji' },
+  { number: 4, label: 'Ujian', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
   { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
@@ -37,7 +37,7 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
   { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
   { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
   { number: 4, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 5, label: 'Ujian', href: '/asesi/asesmen/uji' },
+  { number: 5, label: 'Ujian', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
   { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
@@ -95,18 +95,59 @@ export const ASESMEN_STEPS_ASESOR_2: StepConfig[] = [
   { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
+// Portofolio Method Steps (jenjang >= 4, metode = portofolio)
+export const ASESMEN_STEPS_PORTOFOLIO_ASESI: StepConfig[] = [
+  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 6, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_1: StepConfig[] = [
+  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 6, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_2: StepConfig[] = [
+  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 5, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 6, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
 // Default asesmen steps (backward compatibility)
 export const ASESMEN_STEPS: StepConfig[] = ASESMEN_STEPS_ASESI
 
-// Get asesmen steps based on jenjang_id and asesor role
+// Get asesmen steps based on jenjang_id, metode, and asesor role
 export function getAsesmenSteps(
   jenjangId: string,
   isAsesor: boolean,
-  asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none',
-  _asesorCount: number
+  asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none' | undefined,
+  _asesorCount: number,
+  metode?: string
 ): StepConfig[] {
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
+  const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
+  // Portofolio method (jenjang >= 4)
+  if (isPortofolio && !isLowJenjang) {
+    if (!isAsesor) return ASESMEN_STEPS_PORTOFOLIO_ASESI
+    if (asesorRole === 'asesor_1') return ASESMEN_STEPS_PORTOFOLIO_ASESOR_1
+    return ASESMEN_STEPS_PORTOFOLIO_ASESOR_2
+  }
+
+  // Low jenjang or observasi method
   if (!isAsesor) {
     return isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI
   }

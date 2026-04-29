@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -7,10 +7,11 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
-import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 
 interface Referensi {
@@ -74,7 +75,6 @@ export default function FrAk07Page() {
   const { user } = useAuth()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const { isAsesor1 } = useAsesorRole(idIzinFromUrl)
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
@@ -83,8 +83,8 @@ export default function FrAk07Page() {
   // Get jadwal_id from kegiatan
   const jadwalId = kegiatan?.jadwal_id
 
-  // Other sections: asesi and asesor_1 can edit, asesor_2 cannot
-  const isFormDisabled = isAsesor && !isAsesor1
+  // Only asesor can edit FR-AK-07, asesi cannot
+  const isFormDisabled = !isAsesor
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
@@ -129,9 +129,9 @@ export default function FrAk07Page() {
     }
     if (apiBarcodes.asesor2 && asesorList[1]) {
       transformedAsesor[String(asesorList[1].id)] = {
-        url: apiBarcodes.asesor2.url,
-        tanggal: apiBarcodes.asesor2.tanggal,
-        nama: apiBarcodes.asesor2.nama
+        url: apiBarcodes.asesor2?.url || '',
+        tanggal: apiBarcodes.asesor2?.tanggal || '',
+        nama: apiBarcodes.asesor2?.nama || ''
       }
     }
 
@@ -144,114 +144,122 @@ export default function FrAk07Page() {
     }
   }, [barcodes, asesorList])
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const initialFetchDone = useRef(false)
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
+  const fetchData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
 
-        // Use idIzin from URL params
-        let actualIdIzin = idIzin
+      // Use idIzin from URL params
+      let actualIdIzin = idIzin
 
-        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          // Fetch id_izin from list-asesi endpoint if not in URL
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          })
-
-          if (listAsesiResponse.ok) {
-            const listResult = await listAsesiResponse.json()
-            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              actualIdIzin = listResult.list_asesi[0].id_izin
-            }
-          }
-        }
-
-        if (!actualIdIzin) {
-          setIsLoading(false)
-          return
-        }
-
-        // Fetch AK 07 data
-        const ak07Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak07`, {
+      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        // Fetch id_izin from list-asesi endpoint if not in URL
+        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         })
 
-        if (ak07Response.ok) {
-          const result: ApiResponse = await ak07Response.json()
-          if (result.message === "Success") {
-            // Handle nested data.data structure (new API format) or direct data (old format)
-            const apiData = result.data?.data || result.data
-            const kelompoks = apiData?.kelompoks || []
-            setAk07Data(kelompoks)
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+            actualIdIzin = listResult.list_asesi[0].id_izin
+          }
+        }
+      }
 
-            // Set barcodes raw from API - will be transformed in separate effect
-            if (apiData?.barcodes) {
-              setBarcodes(apiData.barcodes as any)
-            }
+      if (!actualIdIzin) {
+        setIsLoading(false)
+        return
+      }
 
-            // Set textAnswers from API (for string jawaban or object with text)
-            const newTextAnswers: Record<number, string> = {}
-            kelompoks.forEach((item: Ak07DataItem) => {
-              item.kategoris.forEach(kategori => {
-                kategori.referensis.forEach(ref => {
-                  // Handle object jawaban format: { bool: boolean, text: string }
-                  if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'text' in ref.jawaban) {
-                    newTextAnswers[ref.id] = ref.jawaban.text
-                  } else if (typeof ref.jawaban === 'string' && ref.jawaban) {
-                    newTextAnswers[ref.id] = ref.jawaban
-                  }
-                })
-              })
-            })
-            setTextAnswers(newTextAnswers)
+      // Fetch AK 07 data
+      const ak07Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak07`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-            // Set selectedReferences from API (for boolean jawaban: true or object with bool: true)
-            const newSelectedReferences: SelectedReferences = {}
-            kelompoks.forEach((item: Ak07DataItem) => {
-              item.kategoris.forEach(kategori => {
-                if (kategori.id) {
-                  const key = `${kategori.id}_${item.id}`
-                  const refIds = kategori.referensis
-                    .filter(ref => {
-                      // Handle object jawaban format
-                      if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
-                        return ref.jawaban.bool === true
-                      }
-                      return ref.jawaban === true
-                    })
-                    .map(ref => ref.id)
-                  if (refIds.length > 0) {
-                    newSelectedReferences[key] = new Set(refIds)
-                  }
+      if (ak07Response.ok) {
+        const result: ApiResponse = await ak07Response.json()
+        if (result.message === "Success") {
+          // Handle nested data.data structure (new API format) or direct data (old format)
+          const apiData = result.data?.data || result.data
+          const kelompoks = apiData?.kelompoks || []
+          setAk07Data(kelompoks)
+
+          // Set barcodes raw from API - will be transformed in separate effect
+          if (apiData?.barcodes) {
+            setBarcodes(apiData.barcodes as any)
+          }
+
+          // Set textAnswers from API (for string jawaban or object with text)
+          const newTextAnswers: Record<number, string> = {}
+          kelompoks.forEach((item: Ak07DataItem) => {
+            item.kategoris.forEach(kategori => {
+              kategori.referensis.forEach(ref => {
+                // Handle object jawaban format: { bool: boolean, text: string }
+                if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'text' in ref.jawaban) {
+                  newTextAnswers[ref.id] = ref.jawaban.text
+                } else if (typeof ref.jawaban === 'string' && ref.jawaban) {
+                  newTextAnswers[ref.id] = ref.jawaban
                 }
               })
             })
-            setSelectedReferences(newSelectedReferences)
-          }
-        } else {
-          console.warn(`AK07 API returned ${ak07Response.status}`)
-        }
-      } catch (error) {
-      } finally {
-        setIsLoading(false)
-      }
-    }
+          })
+          setTextAnswers(newTextAnswers)
 
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
-      fetchData()
+          // Set selectedReferences from API (for boolean jawaban: true or object with bool: true)
+          const newSelectedReferences: SelectedReferences = {}
+          kelompoks.forEach((item: Ak07DataItem) => {
+            item.kategoris.forEach(kategori => {
+              if (kategori.id) {
+                const key = `${kategori.id}_${item.id}`
+                const refIds = kategori.referensis
+                  .filter(ref => {
+                    // Handle object jawaban format
+                    if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
+                      return ref.jawaban.bool === true
+                    }
+                    return ref.jawaban === true
+                  })
+                  .map(ref => ref.id)
+                if (refIds.length > 0) {
+                  newSelectedReferences[key] = new Set(refIds)
+                }
+              }
+            })
+          })
+          setSelectedReferences(newSelectedReferences)
+        }
+      } else {
+        console.warn(`AK07 API returned ${ak07Response.status}`)
+      }
+    } catch (error) {
+    } finally {
+      setIsLoading(false)
     }
   }, [idIzin, kegiatan, isAsesor])
+
+  useEffect(() => {
+    if (initialFetchDone.current) return
+    if ((isAsesor && idIzin) || kegiatan) {
+      initialFetchDone.current = true
+      window.scrollTo(0, 0)
+      fetchData()
+    }
+  }, [idIzin, kegiatan, isAsesor, fetchData])
+
+  // Polling for asesor signatures
+  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
+    fetchDataFn: fetchData,
+    isAsesor,
+    barcodes,
+    asesorCount: asesorList.length,
+  })
 
   const handleBack = () => {
     navigate(-1)
@@ -303,64 +311,19 @@ export default function FrAk07Page() {
       return
     }
 
-    // Asesor_2 hanya generate QR/tanda tangan tanpa save form data
-    if (isFormDisabled) {
-      const token = localStorage.getItem("access_token")
-      let actualIdIzin = idIzin
-
-      // Asesor uses idIzin from URL (no need to fetch list-asesi)
-      if (!actualIdIzin) {
-        showWarning("ID Izin tidak ditemukan")
-        return
-      }
-
-      // Generate QR untuk asesor_2
-      if (jadwalId) {
-        try {
-          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak07`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              id_jadwal: jadwalId
-            })
-          })
-
-          if (qrResponse.ok) {
-            const qrResult = await qrResponse.json()
-            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-              const currentAsesorId = String(user?.id)
-              setBarcodes(prev => ({
-                asesi: prev?.asesi,
-                asesor: {
-                  ...prev?.asesor,
-                  [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                }
-              }))
-              showSuccess('Tanda tangan berhasil disimpan!')
-              setTimeout(() => {
-                navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
-              }, 500)
-              return
-            }
-          } else {
-            showError('Gagal generate tanda tangan')
-          }
-        } catch (qrError) {
-          console.error('Error generating QR:', qrError)
-          showError('Gagal generate tanda tangan')
-        }
-      }
-
-      // Jika gagal generate QR, tetap navigate ke next page
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
 
-    // Asesi dan asesor_1 - save data dulu
+    // Asesor (asesor1 dan asesor2) save data
+    // Asesi cannot edit, only navigate after asesor signed
+    if (!isAsesor) {
+      navigate(`/asesi/praasesmen/${idIzin}/fr-ak-04`)
+      return
+    }
+
     let actualIdIzin = idIzin
     if (!actualIdIzin && kegiatan?.jadwal_id) {
       const token = localStorage.getItem("access_token")
@@ -473,6 +436,7 @@ export default function FrAk07Page() {
       }
 
       // Generate QR jika jadwalId tersedia
+      console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
       if (jadwalId) {
         try {
           const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak07`, {
@@ -939,12 +903,18 @@ export default function FrAk07Page() {
             </label>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
+            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
             </ActionButton>
           </div>

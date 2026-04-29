@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom"
+import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { UserRole } from "@/lib/rbac-config"
@@ -24,13 +24,14 @@ interface RoleRouteProps {
  */
 export default function RoleRoute({ children, allowedRoles, fallback }: RoleRouteProps) {
   const { user, isLoading, isAuthenticated } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return <FullPageLoader text="Memuat..." />
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   const userRoleName = user.role?.name as UserRole | undefined
@@ -190,6 +191,7 @@ export function AnyAdminRoute({ children, fallback }: { children: React.ReactNod
  */
 export function AsesiOrAsesorRoute({ children, fallback }: { children: React.ReactNode; fallback?: string }) {
   const { user, isLoading, isAuthenticated } = useAuth()
+  const location = useLocation()
 
   console.log('[AsesiOrAsesorRoute] Render:', { isLoading, isAuthenticated, userRole: user?.role?.name, hasUser: !!user })
 
@@ -200,7 +202,7 @@ export function AsesiOrAsesorRoute({ children, fallback }: { children: React.Rea
 
   if (!isAuthenticated || !user) {
     console.log('[AsesiOrAsesorRoute] Not authenticated, redirecting to /login')
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   const userRoleName = user.role?.name as UserRole | undefined

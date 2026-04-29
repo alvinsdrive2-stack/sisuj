@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,9 +41,19 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data'
   { key: 'ba_komtek', label: 'BA Komtek' },
 ]
 
+const EMBED_BLOCKED_DOMAINS = ['lspgatensi.id']
+
+function isEmbedBlocked(url: string | null): boolean {
+  if (!url) return true
+  return EMBED_BLOCKED_DOMAINS.some(domain => url.includes(domain))
+}
+
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isSudah = location.pathname.includes('/sudah-ditandatangani/')
+  const backPath = isSudah ? '/direktur/sudah-ditandatangani' : '/direktur/belum-ditandatangani'
   const { showError, showSuccess } = useToast()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
@@ -149,7 +159,7 @@ export default function DetailDokumenDirekturPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/direktur/tandatangan")}
+            onClick={() => navigate(backPath)}
             className="hover:bg-primary/10"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -179,9 +189,9 @@ export default function DetailDokumenDirekturPage() {
                   )}
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
-                  {kegiatan.tuk.nama.toUpperCase()}
+                  {kegiatan.tuk?.nama?.toUpperCase() || ''}
                 </p> 
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Asesor | {kegiatan.asesor.nama.toUpperCase()}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama.toUpperCase()}` : ''}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Asesor | {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''}</p>
 
                 <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
@@ -345,7 +355,14 @@ export default function DetailDokumenDirekturPage() {
                     variant="outline"
                     className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
                     disabled={!hasDocument}
-                    onClick={() => hasDocument && setSelectedDokumen({ url: doc.url!, title: doc.label })}
+                    onClick={() => {
+                      if (!hasDocument) return
+                      if (isEmbedBlocked(doc.url)) {
+                        window.open(doc.url!, '_blank', 'noopener,noreferrer')
+                      } else {
+                        setSelectedDokumen({ url: doc.url!, title: doc.label })
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-3">
                       <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
