@@ -167,12 +167,29 @@ export default function Ia01Page() {
             }
 
             // Set dokumen_id (handle both nested and flat structure)
-            const dokumenIdValue = result.data.kelompok_kerja?.id || result.data.kelompok_kerja?.[0]?.id || null
+            let dokumenIdValue: number | null = null
+            const kk = result.data.kelompok_kerja
+            if (kk) {
+              if ('id' in kk && typeof kk.id === 'number') {
+                dokumenIdValue = kk.id
+              } else if (Array.isArray(kk) && kk.length > 0) {
+                const first = kk[0] as { id?: number }
+                dokumenIdValue = first?.id ?? null
+              }
+            }
             setDokumenId(dokumenIdValue)
 
             // Set kelompok kerja data (handle both nested and flat API structure)
-            const kelompokData = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
-            setKelompokKerjaData(Array.isArray(kelompokData) ? kelompokData : [])
+            let kelompokData: KelompokKerjaItem[] = []
+            const kkData = result.data.kelompok_kerja
+            if (kkData) {
+              if ('kelompok_kerja' in kkData && Array.isArray((kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja)) {
+                kelompokData = (kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja
+              } else if (Array.isArray(kkData)) {
+                kelompokData = kkData as KelompokKerjaItem[]
+              }
+            }
+            setKelompokKerjaData(kelompokData)
 
             // Initialize answers and feedback from existing data
             const answers: Record<number, SoalAnswer> = {}

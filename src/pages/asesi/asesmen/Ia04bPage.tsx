@@ -73,7 +73,6 @@ export default function Ia04bPage() {
   const [ia04bData, setIa04bData] = useState<ApiResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'ya' | 'tidak'>>({})
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)

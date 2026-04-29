@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -290,13 +290,13 @@ export default function Ia10Page() {
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.ya}
-                    onChange={(e) => handleYaChange(p.id, e.target.checked)}
+                    onChange={() => handleYaChange(p.id, !p.ya)}
                   />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.tidak}
-                    onChange={(e) => handleTidakChange(p.id, e.target.checked)}
+                    onChange={() => handleTidakChange(p.id, !p.tidak)}
                   />
                 </td>
               </tr>

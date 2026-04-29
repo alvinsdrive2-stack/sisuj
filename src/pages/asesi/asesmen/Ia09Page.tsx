@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -34,7 +34,7 @@ export default function Ia09Page() {
     metode,
     asesorList,
     namaAsesi,
-    namaAsesor,
+    namaAsesor: _namaAsesor,
     tanggalUji,
   } = useDataDokumenAsesmen(id)
   const { isAsesor } = useKegiatanByRole()
@@ -328,13 +328,13 @@ export default function Ia09Page() {
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.k}
-                    onChange={(e) => handleKChange(p.id, e.target.checked)}
+                    onChange={() => handleKChange(p.id, !p.k)}
                   />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.bk}
-                    onChange={(e) => handleBKChange(p.id, e.target.checked)}
+                    onChange={() => handleBKChange(p.id, !p.bk)}
                   />
                 </td>
               </tr>

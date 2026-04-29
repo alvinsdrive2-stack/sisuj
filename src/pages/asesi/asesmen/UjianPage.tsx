@@ -151,7 +151,6 @@ export default function UjianPage() {
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [isGeneratingQR, setIsGeneratingQR] = useState(false)
   const [selectedOption, setSelectedOption] = useState<'A' | 'B' | 'C' | 'D' | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const prevIndexRef = useRef(currentIndex)
