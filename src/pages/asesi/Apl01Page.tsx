@@ -11,6 +11,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface DataPribadi {
   nama: string
@@ -181,7 +182,7 @@ export default function Apl01Page() {
         }
 
         // Fetch APL 01 data
-        const apl01Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${idIzin}/apl01`, {
+        const apl01Response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -259,7 +260,7 @@ export default function Apl01Page() {
 
       // Generate QR jika belum ada
       if (!barcodes?.asesi?.url && jadwalId) {
-        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${targetIdIzin}/apl01`, {
+        const qrResponse = await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',

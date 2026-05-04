@@ -11,6 +11,7 @@ import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useToast } from "@/contexts/ToastContext"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
 import { DokumenViewerModal } from "@/components/direktur"
+import { API_BASE_URL } from "@/config/api"
 
 interface DokumenDirekturResponse {
   message: string
@@ -97,7 +98,7 @@ export default function DetailDokumenDirekturPage() {
 
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/direktur/files/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/direktur/files/${id}`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -464,7 +465,7 @@ export default function DetailDokumenDirekturPage() {
                   setIsGeneratingSk(true)
                   try {
                     const token = localStorage.getItem("access_token")
-                    const response = await fetch(`https://backend.devgatensi.site/api/dokumen/sk/${id}`, {
+                    const response = await fetch(`${API_BASE_URL}/dokumen/sk/${id}`, {
                       method: 'POST',
                       headers: {
                         "Accept": "application/json",

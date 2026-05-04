@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
@@ -11,7 +11,9 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowLeft, faLightbulb } from '@fortawesome/free-solid-svg-icons'
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { kegiatanService } from "@/lib/kegiatan-service"
+import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
   id: number
@@ -156,52 +158,37 @@ export default function UjianPage() {
   const prevIndexRef = useRef(currentIndex)
   const violationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: UjianResponse = await response.json()
-          if (result.message === "Success") {
-            const sortedSoal = result.data.soal.sort((a, b) => {
-              const numA = parseInt(a.no) || 0
-              const numB = parseInt(b.no) || 0
-              return numA - numB
-            })
-            setSoalList(sortedSoal)
-            setDokumen(result.data.dokumen)
-
-            const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
-            sortedSoal.forEach((soal) => {
-              if (soal.jawaban_asesi) {
-                newAnswers[soal.id] = soal.jawaban_asesi as 'A' | 'B' | 'C' | 'D'
-              }
-            })
-            setAnswers(newAnswers)
-
-            if (sortedSoal.length > 0 && sortedSoal[0].jawaban_asesi) {
-              setSelectedOption(sortedSoal[0].jawaban_asesi as 'A' | 'B' | 'C' | 'D')
-            }
+  const fetchUjianData = useCallback(async () => {
+    if (!id) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const result: UjianResponse = await response.json()
+        if (result.message === "Success") {
+          const sortedSoal = result.data.soal.sort((a, b) => (parseInt(a.no) || 0) - (parseInt(b.no) || 0))
+          setSoalList(sortedSoal)
+          setDokumen(result.data.dokumen)
+          const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
+          sortedSoal.forEach(soal => { if (soal.jawaban_asesi) newAnswers[soal.id] = soal.jawaban_asesi as 'A' | 'B' | 'C' | 'D' })
+          setAnswers(newAnswers)
+          if (sortedSoal.length > 0 && sortedSoal[0].jawaban_asesi) {
+            setSelectedOption(sortedSoal[0].jawaban_asesi as 'A' | 'B' | 'C' | 'D')
           }
         }
-      } catch (error) {
-        console.error("Error fetching ujian data:", error)
-      } finally {
-        setIsLoading(false)
       }
+    } catch (error) {
+      console.error("Error fetching ujian data:", error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
   }, [id])
+
+  useEffect(() => { fetchUjianData() }, [fetchUjianData])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchUjianData })
 
   useEffect(() => {
     if (soalList[currentIndex]) {
@@ -352,7 +339,7 @@ export default function UjianPage() {
         answers: answersPayload
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -9,7 +9,9 @@ import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface PersonalData {
   nama: string
@@ -79,36 +81,38 @@ export default function PraAsesmenPage() {
   useEffect(() => {
     // Scroll to top when component mounts
     window.scrollTo(0, 0)
-
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch("https://backend.devgatensi.site/api/praasesmen/kebenaran-data", {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (!response.ok) {
-          throw new Error("Gagal memuat data")
-        }
-
-        const result: ApiResponse = await response.json()
-        if (result.success) {
-          setData(result.data)
-        } else {
-          throw new Error("Data tidak ditemukan")
-        }
-      } catch (error) {
-        toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
   }, [])
+
+  const fetchPraAsesmenData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch("" + API_BASE_URL + "/praasesmen/kebenaran-data", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Gagal memuat data")
+      }
+
+      const result: ApiResponse = await response.json()
+      if (result.success) {
+        setData(result.data)
+      } else {
+        throw new Error("Data tidak ditemukan")
+      }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
+
+  useAsesmenSSE({ path: `/praasesmen/${idIzinFromUrl}/sse`, onUpdate: fetchPraAsesmenData })
 
   const handleConfirm = async () => {
     setIsConfirming(true)
@@ -127,7 +131,7 @@ export default function PraAsesmenPage() {
       const token = localStorage.getItem("access_token")
 
       // Fetch id_izin dari list-asesi endpoint
-      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+      const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,

@@ -4,6 +4,7 @@ import { faFile, faFileText, faChevronLeft, faChevronRight, faEye, faClose, faCh
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import kompetenImg from "@/assets/kompeten.png"
 import tidakKompetenImg from "@/assets/tidak-kompeten.png"
+import { API_BASE_URL } from "@/config/api"
 
 interface DokumenResponse {
   message: string
@@ -77,7 +78,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
         const token = localStorage.getItem("access_token")
 
         // Fetch jenjang from data-dokumen API
-        const dataDokumenResponse = await fetch(`https://backend.devgatensi.site/api/asesmen/${asesiId}/data-dokumen`, {
+        const dataDokumenResponse = await fetch(`${API_BASE_URL}/asesmen/${asesiId}/data-dokumen`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -91,7 +92,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
         }
 
         // Fetch dokumen
-        const response = await fetch(`https://backend.devgatensi.site/api/dokumen/asesi/${asesiId}`, {
+        const response = await fetch(`${API_BASE_URL}/dokumen/asesi/${asesiId}`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -108,7 +109,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
         const currentUserId = currentUser?.id?.toString()
 
         if (currentUserId) {
-          const rekomendasiResponse = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesiId}`, {
+          const rekomendasiResponse = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesiId}`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -211,7 +212,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
     setIsSubmitting(true)
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesiId}`, {
+      const response = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesiId}`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
@@ -7,7 +7,9 @@ import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface K3Response {
   message: string
@@ -38,39 +40,38 @@ export default function K3AsesmenPage() {
     asesorList: [] // asesorList not available in this page
   })
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const fetchK3Data = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/praasesmen/file-k3`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-    const fetchPdfUrl = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-
-        // If no idIzin, we'll use the base endpoint
-        const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/file-k3`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: K3Response = await response.json()
-          if (result.message === "Success" && result.data?.file) {
-            setPdfUrl(result.data.file)
-          }
-        } else {
-          console.warn(`K3 API returned ${response.status}`)
+      if (response.ok) {
+        const result: K3Response = await response.json()
+        if (result.message === "Success" && result.data?.file) {
+          setPdfUrl(result.data.file)
         }
-      } catch (error) {
-        console.error("Error fetching K3 PDF:", error)
-      } finally {
-        setIsLoading(false)
+      } else {
+        console.warn(`K3 API returned ${response.status}`)
       }
+    } catch (error) {
+      console.error("Error fetching K3 PDF:", error)
+    } finally {
+      setIsLoading(false)
     }
+  }, [])
 
-    fetchPdfUrl()
-  }, [idIzin])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    fetchK3Data()
+  }, [idIzin, fetchK3Data])
+
+  // SSE: auto-refresh when another user saves
+  useAsesmenSSE({ path: `/praasesmen/${idIzin}/sse`, onUpdate: fetchK3Data })
 
   const handleBack = () => {
     navigate(-1)

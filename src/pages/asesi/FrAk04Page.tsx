@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -10,7 +10,9 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Referensi {
   id: number
@@ -57,6 +59,7 @@ export default function FrAk04Page() {
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
   const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
+  const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
 
   // Only asesi can edit this form
   const isFormDisabled = isAsesor
@@ -70,93 +73,82 @@ export default function FrAk04Page() {
     asesorList: asesorList
   })
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const fetchAk04Data = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      let resolvedIdIzin = idIzin
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-
-        // Use idIzin from URL params
-        let actualIdIzin = idIzin
-
-        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          // Fetch id_izin from list-asesi endpoint if not in URL
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          })
-
-          if (listAsesiResponse.ok) {
-            const listResult = await listAsesiResponse.json()
-            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              actualIdIzin = listResult.list_asesi[0].id_izin
-            }
-          }
-        }
-
-        if (!actualIdIzin) {
-          setIsLoading(false)
-          return
-        }
-
-        // Fetch AK 04 data
-        const ak04Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak04`, {
+      if (!resolvedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
         })
 
-        if (ak04Response.ok) {
-          const result: ApiResponse = await ak04Response.json()
-
-          if (result.message === "Success") {
-            // Handle nested data.data structure or direct data
-            // Expected: { message: "Success", data: { kelompoks: [...], alasan: "...", barcodes: {...} } }
-            const apiData = ('data' in result.data && 'kelompoks' in (result.data as { data: Ak04Data }).data)
-              ? (result.data as { data: Ak04Data }).data
-              : result.data as Ak04Data
-
-            setAk04Data(apiData)
-
-            // Load existing answers from API
-            const initialAnswers: Record<number, AnswerType> = {}
-            apiData.kelompoks.forEach(kelompok => {
-              kelompok.referensis.forEach(ref => {
-                initialAnswers[ref.id] = ref.jawaban
-              })
-            })
-            setAnswers(initialAnswers)
-
-            // Load existing alasan
-            if (apiData.alasan) {
-              setAlasanBanding(apiData.alasan)
-            }
-
-            // Load barcodes
-            if (apiData.barcodes) {
-              setBarcodes(apiData.barcodes)
-            }
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+            resolvedIdIzin = listResult.list_asesi[0].id_izin
           }
-        } else {
-          console.warn(`AK04 API returned ${ak04Response.status}`)
         }
-      } catch (error) {
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
-      fetchData()
+      if (!resolvedIdIzin) {
+        setIsLoading(false)
+        return
+      }
+
+      setActualIdIzin(resolvedIdIzin)
+
+      const ak04Response = await fetch(`${API_BASE_URL}/praasesmen/${resolvedIdIzin}/ak04`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (ak04Response.ok) {
+        const result: ApiResponse = await ak04Response.json()
+
+        if (result.message === "Success") {
+          const apiData = ('data' in result.data && 'kelompoks' in (result.data as { data: Ak04Data }).data)
+            ? (result.data as { data: Ak04Data }).data
+            : result.data as Ak04Data
+
+          setAk04Data(apiData)
+
+          const initialAnswers: Record<number, AnswerType> = {}
+          apiData.kelompoks.forEach(kelompok => {
+            kelompok.referensis.forEach(ref => {
+              initialAnswers[ref.id] = ref.jawaban
+            })
+          })
+          setAnswers(initialAnswers)
+
+          if (apiData.alasan) setAlasanBanding(apiData.alasan)
+          if (apiData.barcodes) setBarcodes(apiData.barcodes)
+        }
+      } else {
+        console.warn(`AK04 API returned ${ak04Response.status}`)
+      }
+    } catch (error) {
+    } finally {
+      setIsLoading(false)
     }
-  }, [idIzin, kegiatan, isAsesor])
+  }, [idIzin, isAsesor, kegiatan])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (isAsesor && idIzin) {
+      fetchAk04Data()
+    } else if (kegiatan) {
+      fetchAk04Data()
+    }
+  }, [idIzin, kegiatan, isAsesor, fetchAk04Data])
+
+  // SSE: auto-refresh when another user saves
+  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchAk04Data })
 
   const handleBack = () => {
     navigate(-1)
@@ -198,7 +190,7 @@ export default function FrAk04Page() {
       const token = localStorage.getItem("access_token")
 
       if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -231,7 +223,7 @@ export default function FrAk04Page() {
       const token = localStorage.getItem("access_token")
 
       if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -264,7 +256,7 @@ export default function FrAk04Page() {
       }
 
       // POST to backend
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak04`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak04`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +277,7 @@ export default function FrAk04Page() {
 
           if ((hasAnswers || hasAlasan) && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak04`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak04`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

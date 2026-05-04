@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -11,13 +11,63 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { API_BASE_URL } from "@/config/api"
+
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
+}
+
+interface ReferensiItem {
+  id: number
+  nama: string
+  id_kelompok: number
+  no: number
+  jawaban?: string
+}
+
+interface DataPihak {
+  id: number
+  nama: string
+  tempat_kerja: string
+  alamat: string
+  telepon: string
+  no: number
+}
 
 interface PertanyaanYaTidak {
   id: number
   pertanyaan: string
   ya: boolean
   tidak: boolean
+}
+
+interface EssayQuestion {
+  id: number
+  pertanyaan: string
+  jawaban: string
+}
+
+interface Ia10Response {
+  message: string
+  data?: {
+    dokumen_id?: number
+    referensi_form?: {
+      "1"?: ReferensiItem[]
+      "2"?: ReferensiItem[]
+      "3"?: ReferensiItem[]
+      "4"?: ReferensiItem[]
+    }
+    barcodes?: {
+      asesi?: BarcodeData | null
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
+  }
 }
 
 export default function Ia10Page() {
@@ -34,7 +84,8 @@ export default function Ia10Page() {
     namaAsesi,
     tanggalUji,
   } = useDataDokumenAsesmen(id)
-  const { isAsesor } = useKegiatanByRole()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(
     jenjang,
@@ -57,50 +108,204 @@ export default function Ia10Page() {
   })
 
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [pertanyaanList, setPertanyaanList] = useState<PertanyaanYaTidak[]>([
-    {
-      id: 1,
-      pertanyaan: "Apakah asesi bekerja dengan mempertimbangkan Kesehatan, Keamanan dan Keselamatan Kerja?",
-      ya: false,
-      tidak: false,
-    },
-    {
-      id: 2,
-      pertanyaan: "Apakah asesi berinteraksi dengan harmonis didalam kelompoknya?",
-      ya: false,
-      tidak: false,
-    },
-    {
-      id: 3,
-      pertanyaan: "Apakah asesi dapat mengelola tugas-tugas secara bersamaan?",
-      ya: false,
-      tidak: false,
-    },
-    {
-      id: 4,
-      pertanyaan: "Apakah asesi dapat dengan cepat beradaptasi dengan peralatan dan lingkungan yang baru?",
-      ya: false,
-      tidak: false,
-    },
-  ])
+  const [isSaving, setIsSaving] = useState(false)
+  const [dataPihak, setDataPihak] = useState<DataPihak[]>([])
+  const [pertanyaanYaTidakList, setPertanyaanYaTidakList] = useState<PertanyaanYaTidak[]>([])
+  const [essayList, setEssayList] = useState<EssayQuestion[]>([])
+  const [additionalList, setAdditionalList] = useState<ReferensiItem[]>([])
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
 
-  useEffect(() => {
-    if (!authLoading) {
+  const fetchIa10Data = useCallback(async () => {
+    if (!id || authLoading) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia10`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const result: Ia10Response = await response.json()
+        if (result.message === "Success" && result.data) {
+          if (result.data.referensi_form?.["1"]) {
+            const pihak = result.data.referensi_form["1"]
+            setDataPihak(pihak.map((item: any) => ({
+              id: item.id,
+              nama: item.nama || "",
+              tempat_kerja: item.tempat_kerja || "",
+              alamat: item.alamat || "",
+              telepon: item.telepon || "",
+              no: item.no || 1,
+            })))
+          }
+          if (result.data.referensi_form?.["2"]) {
+            setPertanyaanYaTidakList(result.data.referensi_form["2"].map((item: any) => ({ id: item.id, pertanyaan: item.nama, ya: false, tidak: false })))
+          }
+          if (result.data.referensi_form?.["3"]) {
+            setEssayList(result.data.referensi_form["3"].map((item: any) => ({ id: item.id, pertanyaan: item.nama, jawaban: "" })))
+          }
+          if (result.data.referensi_form?.["4"]) {
+            setAdditionalList(result.data.referensi_form["4"].map((item: any) => ({ id: item.id, nama: item.nama, id_kelompok: item.id_kelompok, no: item.no })))
+          }
+          if (result.data.barcodes) {
+            setBarcodes({ asesi: result.data.barcodes.asesi, asesor1: result.data.barcodes.asesor1, asesor2: result.data.barcodes.asesor2 })
+          }
+          if (result.data.dokumen_id) {
+            setDokumenId(result.data.dokumen_id)
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching IA10:", err)
+    } finally {
       setIsLoading(false)
     }
-  }, [authLoading])
+  }, [id, authLoading])
 
-  const handleYaChange = (id: number, checked: boolean) => {
-    setPertanyaanList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ya: checked, tidak: checked ? false : p.tidak } : p))
-    )
+  useEffect(() => { fetchIa10Data() }, [fetchIa10Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa10Data })
+
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
+
+  const handleYaChange = (id: number, value: boolean) => {
+    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, ya: value, tidak: value ? false : p.tidak } : p))
   }
 
-  const handleTidakChange = (id: number, checked: boolean) => {
-    setPertanyaanList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, tidak: checked, ya: checked ? false : p.ya } : p))
-    )
+  const handleTidakChange = (id: number, value: boolean) => {
+    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, tidak: value, ya: value ? false : p.ya } : p))
+  }
+
+  const handleEssayChange = (id: number, value: string) => {
+    setEssayList(prev => prev.map(e => e.id === id ? { ...e, jawaban: value } : e))
+  }
+
+  const handleAdditionalChange = (id: number, value: string) => {
+    setAdditionalList(prev => prev.map(a => a.id === id ? { ...a, jawaban: value } : a))
+  }
+
+  const handleDataPihakChange = (idx: number, field: keyof DataPihak, value: string) => {
+    setDataPihak(prev => prev.map((d, i) => i === idx ? { ...d, [field]: value } : d))
+  }
+
+  const handleSave = async () => {
+    if (!agreedChecklist) return
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+
+      const payload = {
+        dokumen_id: dokumenId,
+        ...(dataPihak[0] ? {
+          nama_pengawas: dataPihak[0].nama,
+          tempat_kerja: dataPihak[0].tempat_kerja,
+          alamat: dataPihak[0].alamat,
+          telepon: dataPihak[0].telepon,
+        } : {}),
+        answers: pertanyaanYaTidakList.map(p => ({
+          referensi_id: p.id,
+          answer: p.ya,
+        })),
+        essay_answers: [
+          ...essayList.map(e => ({
+            referensi_id: e.id,
+            essay_answer: e.jawaban,
+          })),
+          ...additionalList.map(a => ({
+            referensi_id: a.id,
+            essay_answer: a.jawaban || "",
+          })),
+        ],
+      }
+
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia10`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        // Generate QR for asesor if needed
+        if (isAsesor) {
+          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+          if (!existingAsesorQR) {
+            try {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia10`, {
+                method: "POST",
+                headers: {
+                  "Accept": "application/json",
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+              })
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  if (isAsesor1) {
+                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
+                  } else {
+                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
+                  }
+                }
+              }
+            } catch (qrErr) {
+              console.error("Error generating QR:", qrErr)
+            }
+          }
+        }
+
+        // Generate QR for asesi if needed
+        if (!barcodes?.asesi?.url) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia10`, {
+              method: "POST",
+              headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+              body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+            })
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: namaAsesi || "" } }))
+              }
+            }
+          } catch (qrErr) {
+            console.error("Error generating QR:", qrErr)
+          }
+        }
+
+        // Navigate to next step
+        const currentStepIndex = asesmenSteps.findIndex((s) => s.href.includes("ia10"))
+        const nextStep = asesmenSteps[currentStepIndex + 1]
+        if (nextStep) {
+          const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
+          setTimeout(() => navigate(nextPath), 500)
+        }
+      }
+    } catch (err) {
+      console.error("Error saving IA10:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
@@ -267,10 +472,55 @@ export default function Ia10Page() {
         {/* Data Pihak */}
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px", fontSize: "13px", background: "#fff", border: "2px solid #000" }}>
           <tbody>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Nama Pengawas/penyelia/atasan/orang lain di perusahaan :</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Tempat kerja :</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Alamat :</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Telepon :</td></tr>
+            {dataPihak.map((d, idx) => (
+              <tr key={d.id}>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  <b>{(d.no || idx + 1)}. {d.nama}</b>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "6px" }}>
+                    <div>
+                      <label style={{ fontSize: "12px" }}>Nama:</label>
+                      <input
+                        type="text"
+                        value={d.nama}
+                        onChange={e => handleDataPihakChange(idx, "nama", e.target.value)}
+                        disabled={isAsesor}
+                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12px" }}>Tempat Kerja:</label>
+                      <input
+                        type="text"
+                        value={d.tempat_kerja}
+                        onChange={e => handleDataPihakChange(idx, "tempat_kerja", e.target.value)}
+                        disabled={isAsesor}
+                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12px" }}>Alamat:</label>
+                      <input
+                        type="text"
+                        value={d.alamat}
+                        onChange={e => handleDataPihakChange(idx, "alamat", e.target.value)}
+                        disabled={isAsesor}
+                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "12px" }}>Telepon:</label>
+                      <input
+                        type="text"
+                        value={d.telepon}
+                        onChange={e => handleDataPihakChange(idx, "telepon", e.target.value)}
+                        disabled={isAsesor}
+                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
+                      />
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
@@ -284,50 +534,74 @@ export default function Ia10Page() {
             </tr>
           </thead>
           <tbody>
-            {pertanyaanList.map((p) => (
+            {pertanyaanYaTidakList.map((p) => (
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox
-                    checked={p.ya}
-                    onChange={() => handleYaChange(p.id, !p.ya)}
-                  />
+                  <CustomCheckbox checked={p.ya} onChange={() => !isAsesor && handleYaChange(p.id, !p.ya)} disabled={true} />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox
-                    checked={p.tidak}
-                    onChange={() => handleTidakChange(p.id, !p.tidak)}
-                  />
+                  <CustomCheckbox checked={p.tidak} onChange={() => !isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={true} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-            <b>
+
         {/* Essay Questions */}
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px", fontSize: "13px", background: "#fff", border: "2px solid #000" }}>
           <tbody>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Apa hubungan Anda dengan asesi?</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Berapa lama Anda bekerja dengan asesi?</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Seberapa dekat Anda bekerja dengan asesi di area yang dinilai?</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Apa pengalaman teknis dan / atau kualifikasi Anda di bidang yang dinilai? (termasuk asesmen atau kualifikasi pelatihan)</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px" }}>Secara keseluruhan, apakah Anda yakin asesi melakukan sesuai standar yang diminta oleh unit kompetensi secara konsisten?</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px", height: "80px" }}>Identifikasi kebutuhan pelatihan lebih lanjut untuk asesi:</td></tr>
-            <tr><td style={{ border: "1px solid #000", padding: "6px", height: "60px" }}>Ada komentar lain:</td></tr>
+            {essayList.map((e) => (
+              <tr key={e.id}>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  <b>{e.pertanyaan}</b>
+                  <textarea
+                    value={e.jawaban}
+                    onChange={(ev) => handleEssayChange(e.id, ev.target.value)}
+                    disabled={isAsesor}
+                    style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
+                  />
+                </td>
+              </tr>
+            ))}
+            {additionalList.map((a) => (
+              <tr key={a.id}>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  <b>{a.no}. {a.nama}</b>
+                  <textarea
+                    value={a.jawaban || ""}
+                    onChange={(ev) => handleAdditionalChange(a.id, ev.target.value)}
+                    disabled={isAsesor}
+                    style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
+                  />
+                </td>
+              </tr>
+            ))}
+            {/* Signature rows */}
             <tr>
               <td style={{ border: "1px solid #000", padding: "6px" }}>
-                Tanda tangan Asesor 1: <span style={{ float: "right" }}>Tanggal:</span>
-                <div style={{ height: "60px" }}></div>
+                <b>Tanda Tangan Asesor 1:</b> {barcodes?.asesor1?.url ? (
+                  <span style={{ float: "right" }}>
+                    <img src={barcodes.asesor1.url} alt="TTD" style={{ height: "40px" }} />
+                    {barcodes.asesor1.tanggal && <span> {new Date(barcodes.asesor1.tanggal).toLocaleDateString("id-ID")}</span>}
+                  </span>
+                ) : <span style={{ float: "right" }}>Tanggal: </span>}
               </td>
             </tr>
-            <tr>
-              <td style={{ border: "1px solid #000", padding: "6px" }}>
-                Tanda tangan Asesor 2: <span style={{ float: "right" }}>Tanggal:</span>
-                <div style={{ height: "60px" }}></div>
-              </td>
-            </tr>
+            {asesorList.length > 1 && (
+              <tr>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  <b>Tanda Tangan Asesor 2:</b> {barcodes?.asesor2?.url ? (
+                    <span style={{ float: "right" }}>
+                      <img src={barcodes.asesor2.url} alt="TTD" style={{ height: "40px" }} />
+                      {barcodes.asesor2.tanggal && <span> {new Date(barcodes.asesor2.tanggal).toLocaleDateString("id-ID")}</span>}
+                    </span>
+                  ) : <span style={{ float: "right" }}>Tanggal: </span>}
+                </td>
+              </tr>
+            )}
           </tbody>
-        </table></b>
+        </table>
 
         {/* Footer */}
         <div style={{ fontSize: "10px", marginTop: "10px", color: "#666" }}>
@@ -361,8 +635,8 @@ export default function Ia10Page() {
           </div>
 
           <AsesorSignatureGuard
-            missingAsesorLabels={[]}
-            allAsesorSigned={true}
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
             isAsesor={isAsesor}
           />
 
@@ -372,17 +646,10 @@ export default function Ia10Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={!agreedChecklist}
-              onClick={() => {
-                const currentStepIndex = asesmenSteps.findIndex((s) => s.href.includes("ia10"))
-                const nextStep = asesmenSteps[currentStepIndex + 1]
-                if (nextStep) {
-                  const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
-                  navigate(nextPath)
-                }
-              }}
+              disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)}
+              onClick={handleSave}
             >
-              Lanjut
+              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
             </ActionButton>
           </div>
         </div>

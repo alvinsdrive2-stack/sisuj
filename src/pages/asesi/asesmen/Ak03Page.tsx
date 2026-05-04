@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -7,11 +7,15 @@ import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface SoalAPI {
   id: number
@@ -35,7 +39,18 @@ interface Ak03Response {
   data: {
     soal: SoalAPI[]
     catatan: string
+    barcodes?: {
+      asesi?: BarcodeData | null
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
   }
+}
+
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
 }
 
 export default function Ak03Page() {
@@ -46,9 +61,7 @@ export default function Ak03Page() {
   const { jenjang, asesorList } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-
-  // Get dynamic steps
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const { isAsesor } = useKegiatanByRole()
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Disable form for asesor (only asesi can fill)
@@ -77,58 +90,56 @@ export default function Ak03Page() {
   const [catatanUmum, setCatatanUmum] = useState('')
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
 
-  // Fetch soal data
-  useEffect(() => {
-    const fetchData = async () => {
-      // Wait for auth to load
-      if (authLoading) {
-        return
-      }
+  const fetchAk03Data = useCallback(async () => {
+    if (authLoading) return
+    if (!id) { setIsLoading(false); return }
 
-      if (!id) {
-        console.error("No id_izin found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak03`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: Ak03Response = await response.json()
-          if (result.message === "Success" && result.data?.soal) {
-            // Transform API data to FeedbackItem format
-            const items: FeedbackItem[] = result.data.soal.map((soal) => ({
-              id: soal.id,
-              pertanyaan: soal.soal,
-              ya: soal.is_kompeten || false,
-              tidak: !soal.is_kompeten,
-              catatan: soal.catatan || '',
-            }))
-            setFeedbackItems(items)
-            // Set catatan umum from API
-            setCatatanUmum(result.data.catatan || '')
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak03`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const result: Ak03Response = await response.json()
+        if (result.message === "Success" && result.data?.soal) {
+          const items: FeedbackItem[] = result.data.soal.map((soal) => ({
+            id: soal.id, pertanyaan: soal.soal,
+            ya: soal.is_kompeten || false, tidak: !soal.is_kompeten,
+            catatan: soal.catatan || '',
+          }))
+          setFeedbackItems(items)
+          setCatatanUmum(result.data.catatan || '')
+          if (result.data.barcodes) {
+            setBarcodes({ asesi: result.data.barcodes.asesi, asesor1: result.data.barcodes.asesor1, asesor2: result.data.barcodes.asesor2 })
           }
-        } else {
-          console.warn(`AK03 API returned ${response.status}`)
         }
-      } catch (err) {
-        console.error("Error fetching AK03:", err)
-      } finally {
-        setIsLoading(false)
       }
+    } catch (err) {
+      console.error("Error fetching AK03:", err)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
-// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [id, authLoading])
+
+  useEffect(() => { fetchAk03Data() }, [fetchAk03Data])
+
+  // SSE: auto-refresh when another user saves (handles barcode updates too)
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk03Data })
+
+  // Manual signature check (SSE-only — no polling)
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   if (isLoading) {
     return (
@@ -192,7 +203,7 @@ export default function Ak03Page() {
         catatan: item.catatan,
       }))
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak03`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak03`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -333,12 +344,18 @@ export default function Ak03Page() {
             </label>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleSave}>
+            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
               Selesai
             </ActionButton>
           </div>

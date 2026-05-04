@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,11 +8,13 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Kuk {
   id: number
@@ -135,104 +137,104 @@ export default function Ia01Page() {
   }
 
   // Fetch IA01 data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (authLoading) return
+  const fetchIa01Data = useCallback(async () => {
+    if (authLoading) return
 
-      if (!id) {
-        console.error("No id_izin found")
-        setIsLoading(false)
-        return
-      }
+    if (!id) {
+      console.error("No id_izin found")
+      setIsLoading(false)
+      return
+    }
 
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia01`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia01`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-        if (response.ok) {
-          const result: Ia01Response = await response.json()
-          if (result.message === "Success" && result.data?.kelompok_kerja) {
-            // Set barcodes
-            if (result.data.barcodes) {
-              setBarcodes({
-                asesi: result.data.barcodes.asesi,
-                asesor1: result.data.barcodes.asesor1,
-                asesor2: result.data.barcodes.asesor2,
-              })
+      if (response.ok) {
+        const result: Ia01Response = await response.json()
+        if (result.message === "Success" && result.data?.kelompok_kerja) {
+          // Set barcodes
+          if (result.data.barcodes) {
+            setBarcodes({
+              asesi: result.data.barcodes.asesi,
+              asesor1: result.data.barcodes.asesor1,
+              asesor2: result.data.barcodes.asesor2,
+            })
+          }
+
+          // Set dokumen_id (handle both nested and flat structure)
+          let dokumenIdValue: number | null = null
+          const kk = result.data.kelompok_kerja
+          if (kk) {
+            if ('id' in kk && typeof kk.id === 'number') {
+              dokumenIdValue = kk.id
+            } else if (Array.isArray(kk) && kk.length > 0) {
+              const first = kk[0] as { id?: number }
+              dokumenIdValue = first?.id ?? null
+            }
+          }
+          setDokumenId(dokumenIdValue)
+
+          // Set kelompok kerja data (handle both nested and flat API structure)
+          let kelompokData: KelompokKerjaItem[] = []
+          const kkData = result.data.kelompok_kerja
+          if (kkData) {
+            if ('kelompok_kerja' in kkData && Array.isArray((kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja)) {
+              kelompokData = (kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja
+            } else if (Array.isArray(kkData)) {
+              kelompokData = kkData as KelompokKerjaItem[]
+            }
+          }
+          setKelompokKerjaData(kelompokData)
+
+          // Initialize answers and feedback from existing data
+          const answers: Record<number, SoalAnswer> = {}
+          let firstUmpanBalik = ''
+
+          // Handle both nested and flat API structure for iteration
+          const kelompokList = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
+          ;(Array.isArray(kelompokList) ? kelompokList : []).forEach((kelompok) => {
+            // Get first feedback as the main umpan balik
+            if (!firstUmpanBalik && kelompok.umpan_balik) {
+              firstUmpanBalik = kelompok.umpan_balik
             }
 
-            // Set dokumen_id (handle both nested and flat structure)
-            let dokumenIdValue: number | null = null
-            const kk = result.data.kelompok_kerja
-            if (kk) {
-              if ('id' in kk && typeof kk.id === 'number') {
-                dokumenIdValue = kk.id
-              } else if (Array.isArray(kk) && kk.length > 0) {
-                const first = kk[0] as { id?: number }
-                dokumenIdValue = first?.id ?? null
-              }
-            }
-            setDokumenId(dokumenIdValue)
-
-            // Set kelompok kerja data (handle both nested and flat API structure)
-            let kelompokData: KelompokKerjaItem[] = []
-            const kkData = result.data.kelompok_kerja
-            if (kkData) {
-              if ('kelompok_kerja' in kkData && Array.isArray((kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja)) {
-                kelompokData = (kkData as { kelompok_kerja: KelompokKerjaItem[] }).kelompok_kerja
-              } else if (Array.isArray(kkData)) {
-                kelompokData = kkData as KelompokKerjaItem[]
-              }
-            }
-            setKelompokKerjaData(kelompokData)
-
-            // Initialize answers and feedback from existing data
-            const answers: Record<number, SoalAnswer> = {}
-            let firstUmpanBalik = ''
-
-            // Handle both nested and flat API structure for iteration
-            const kelompokList = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
-            ;(Array.isArray(kelompokList) ? kelompokList : []).forEach((kelompok) => {
-              // Get first feedback as the main umpan balik
-              if (!firstUmpanBalik && kelompok.umpan_balik) {
-                firstUmpanBalik = kelompok.umpan_balik
-              }
-
-              // Set answers from soal
-              kelompok.units.forEach((unit) => {
-                unit.subunits.forEach((subunit) => {
-                  subunit.soal.forEach((soal) => {
-                    answers[soal.id] = {
-                      pencapaian: soal.pencapaian,
-                      penilaian_lanjut: soal.penilaian_lanjut,
-                    }
-                  })
+            // Set answers from soal
+            kelompok.units.forEach((unit) => {
+              unit.subunits.forEach((subunit) => {
+                subunit.soal.forEach((soal) => {
+                  answers[soal.id] = {
+                    pencapaian: soal.pencapaian,
+                    penilaian_lanjut: soal.penilaian_lanjut,
+                  }
                 })
               })
             })
+          })
 
-            setSoalAnswers(answers)
-            setUmpanBalik(firstUmpanBalik)
+          setSoalAnswers(answers)
+          setUmpanBalik(firstUmpanBalik)
 
-            // Expand all by default
-            const kelompokForExpand = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
-            setExpandedKelompok(new Set((Array.isArray(kelompokForExpand) ? kelompokForExpand : []).map(k => k.id)))
-          }
+          // Expand all by default
+          const kelompokForExpand = result.data.kelompok_kerja?.kelompok_kerja || result.data.kelompok_kerja || []
+          setExpandedKelompok(new Set((Array.isArray(kelompokForExpand) ? kelompokForExpand : []).map(k => k.id)))
         }
-      } catch (err) {
-        console.error("Error fetching IA01:", err)
-      } finally {
-        setIsLoading(false)
       }
+    } catch (err) {
+      console.error("Error fetching IA01:", err)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
   }, [id, authLoading])
+
+  useEffect(() => { fetchIa01Data() }, [fetchIa01Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa01Data })
 
   if (isLoading) {
     return (
@@ -700,7 +702,7 @@ export default function Ia01Page() {
 
                   console.log('Sending IA01 payload:', payload)
 
-                  const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia01`, {
+                  const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia01`, {
                     method: 'POST',
                     headers: {
                       "Accept": "application/json",
@@ -725,9 +727,9 @@ export default function Ia01Page() {
                     console.log('QR Check for asesor - existingAsesorQR:', existingAsesorQR, 'hasAsesorQR:', hasAsesorQR)
 
                     if (isAsesor && jadwalId && !hasAsesorQR) {
-                      console.log('Attempting asesor QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia01`)
+                      console.log('Attempting asesor QR POST to:', `${API_BASE_URL}/qr/${id}/ia01`)
                       try {
-                        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia01`, {
+                        const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia01`, {
                           method: 'POST',
                           headers: {
                             'Accept': 'application/json',
@@ -770,7 +772,7 @@ export default function Ia01Page() {
 
                     if (jadwalId && !hasAsesiQR) {
                       try {
-                        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia01`, {
+                        const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia01`, {
                           method: 'POST',
                           headers: {
                             'Accept': 'application/json',

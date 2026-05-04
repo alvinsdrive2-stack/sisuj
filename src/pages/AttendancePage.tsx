@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCamera, faCheck, faSpinner, faExclamationTriangle, faRedo, faUserCheck, faImage } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 
 // Primary color: HSL(222, 80%, 25%) = #0d2137
 const PRIMARY_COLOR = "#0d2137"

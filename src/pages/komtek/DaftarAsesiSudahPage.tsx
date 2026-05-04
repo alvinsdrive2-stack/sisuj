@@ -9,6 +9,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
 import { DokumenViewerModal } from "@/components/direktur"
+import { API_BASE_URL } from "@/config/api"
 
 interface KomtekFiles {
   ba_komtek?: string
@@ -38,7 +39,7 @@ export default function DaftarAsesiSudahPage() {
       setKomtekFilesLoading(true)
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/komtek/files/${jadwalId}`, {
+        const response = await fetch(`${API_BASE_URL}/komtek/files/${jadwalId}`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,

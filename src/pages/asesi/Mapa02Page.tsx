@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -10,7 +10,9 @@ import { useDataDokumen } from "@/hooks/useDataDokumen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
   id_unit: number
@@ -63,6 +65,7 @@ export default function Mapa02Page() {
   const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
+  const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -77,81 +80,61 @@ export default function Mapa02Page() {
     asesorList: [] // asesorList not available in this page
   })
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const fetchMapa02Data = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      let resolvedIdIzin = idIzin
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-
-        // Use idIzin from URL params
-        let actualIdIzin = idIzin
-
-        if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          // Fetch id_izin from list-asesi endpoint if not in URL
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          })
-
-          if (listAsesiResponse.ok) {
-            const listResult = await listAsesiResponse.json()
-            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              actualIdIzin = listResult.list_asesi[0].id_izin
-            }
-          }
-        }
-
-        if (!actualIdIzin) {
-          setIsLoading(false)
-          return
-        }
-
-        // Fetch MAPA 02 data
-        const mapa02Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa02`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+      if (!resolvedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
         })
-
-        if (mapa02Response.ok) {
-          const result: ApiResponse = await mapa02Response.json()
-          if (result.message === "Success") {
-            setMapaData(result.data)
-            // Initialize selected potensi with default values
-            // potensi_asesi_index indicates which column (1-5) is pre-selected
-            const initialSelected: Record<number, number> = {}
-            result.data.referensi_form.forEach(refForm => {
-              if (refForm.kategori === "MAPA02_1") {
-                refForm.referensis.forEach(ref => {
-                  // Use potensi_asesi_index to determine the column
-                  if (ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
-                    initialSelected[ref.id] = ref.potensi_asesi_index
-                  }
-                })
-              }
-            })
-            setSelectedPotensi(initialSelected)
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi?.[0]?.id_izin) {
+            resolvedIdIzin = listResult.list_asesi[0].id_izin
           }
-        } else {
-          console.warn(`MAPA02 API returned ${mapa02Response.status}`)
         }
-      } catch (error) {
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
-      fetchData()
+      if (!resolvedIdIzin) { setIsLoading(false); return }
+
+      setActualIdIzin(resolvedIdIzin)
+
+      const mapa02Response = await fetch(`${API_BASE_URL}/praasesmen/${resolvedIdIzin}/mapa02`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+
+      if (mapa02Response.ok) {
+        const result: ApiResponse = await mapa02Response.json()
+        if (result.message === "Success") {
+          setMapaData(result.data)
+          const initialSelected: Record<number, number> = {}
+          result.data.referensi_form.forEach(refForm => {
+            if (refForm.kategori === "MAPA02_1") {
+              refForm.referensis.forEach(ref => {
+                if (ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
+                  initialSelected[ref.id] = ref.potensi_asesi_index
+                }
+              })
+            }
+          })
+          setSelectedPotensi(initialSelected)
+        }
+      }
+    } catch (error) {
+    } finally {
+      setIsLoading(false)
     }
-  }, [idIzin, kegiatan, isAsesor])
+  }, [idIzin, isAsesor, kegiatan])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (isAsesor && idIzin) fetchMapa02Data()
+    else if (kegiatan) fetchMapa02Data()
+  }, [idIzin, kegiatan, isAsesor, fetchMapa02Data])
+
+  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchMapa02Data })
 
   const handleBack = () => {
     navigate(-1)
@@ -174,7 +157,7 @@ export default function Mapa02Page() {
       // Get actual idIzin
       let actualIdIzin = idIzin
       if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -188,7 +171,7 @@ export default function Mapa02Page() {
         }
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa02`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/mapa02`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

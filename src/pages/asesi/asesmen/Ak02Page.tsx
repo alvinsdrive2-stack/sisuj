@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -12,7 +12,10 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface UnitKompetensiAPI {
   id: number
@@ -109,82 +112,75 @@ export default function Ak02Page() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch unit kompetensi data
-  useEffect(() => {
-    const fetchData = async () => {
-      // Wait for auth to load
-      if (authLoading) {
-        return
-      }
-
-      if (!id) {
-        console.error("No id_izin found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak02`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: Ak02Response = await response.json()
-          if (result.message === "Success" && result.data?.data_unit_kompetensi) {
-            // Set barcodes from API
-            if (result.data.barcodes) {
-              setBarcodes({
-                asesi: result.data.barcodes.asesi,
-                asesor1: result.data.barcodes.asesor1,
-                asesor2: result.data.barcodes.asesor2,
-              })
-            }
-
-            // Transform API data and set evidenceChecks
-            const units: UnitKompetensi[] = []
-            const checks: Record<number, EvidenceCheck> = {}
-
-            result.data.data_unit_kompetensi.forEach((unit) => {
-              units.push({
-                id: unit.id,
-                kode: unit.kode,
-                nama: unit.nama,
-              })
-
-              checks[unit.id] = {
-                observasi: unit.observasi,
-                portofolio: unit.portofolio,
-                pertanyaan_wawancara: unit.pertanyaan_wawancara,
-                pertanyaan_lisan: unit.pertanyaan_lisan,
-                pertanyaan_tertulis: unit.pertanyaan_tertulis,
-                proyek_kerja: unit.proyek_kerja,
-              }
-            })
-
-            setUnitKompetensi(units)
-            setEvidenceChecks(checks)
-
-            // Set other fields from API
-            setIsKompeten(result.data.is_kompeten ?? null)
-            setTindakLanjut(result.data.tindak_lanjut || '')
-            setKomentar(result.data.komentar || '')
-          }
-        } else {
-          console.warn(`Unit Kompetensi AK02 API returned ${response.status}`)
-        }
-      } catch (err) {
-        console.error("Error fetching unit kompetensi AK02:", err)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchAk02Data = useCallback(async () => {
+    if (authLoading) return
+    if (!id) {
+      setIsLoading(false)
+      return
     }
 
-    fetchData()
-// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak02`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result: Ak02Response = await response.json()
+        if (result.message === "Success" && result.data?.data_unit_kompetensi) {
+          if (result.data.barcodes) {
+            setBarcodes({
+              asesi: result.data.barcodes.asesi,
+              asesor1: result.data.barcodes.asesor1,
+              asesor2: result.data.barcodes.asesor2,
+            })
+          }
+
+          const units: UnitKompetensi[] = []
+          const checks: Record<number, EvidenceCheck> = {}
+
+          result.data.data_unit_kompetensi.forEach((unit) => {
+            units.push({ id: unit.id, kode: unit.kode, nama: unit.nama })
+            checks[unit.id] = {
+              observasi: unit.observasi,
+              portofolio: unit.portofolio,
+              pertanyaan_wawancara: unit.pertanyaan_wawancara,
+              pertanyaan_lisan: unit.pertanyaan_lisan,
+              pertanyaan_tertulis: unit.pertanyaan_tertulis,
+              proyek_kerja: unit.proyek_kerja,
+            }
+          })
+
+          setUnitKompetensi(units)
+          setEvidenceChecks(checks)
+          setIsKompeten(result.data.is_kompeten ?? null)
+          setTindakLanjut(result.data.tindak_lanjut || '')
+          setKomentar(result.data.komentar || '')
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching AK02:", err)
+    } finally {
+      setIsLoading(false)
+    }
   }, [id, authLoading])
+
+  useEffect(() => { fetchAk02Data() }, [fetchAk02Data])
+
+  // SSE: auto-refresh when another user saves
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk02Data })
+
+  // Manual signature check (SSE-only — no polling)
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   if (isLoading) {
     return (
@@ -513,6 +509,12 @@ export default function Ak02Page() {
             </label>
           </div>
 
+          <AsesorSignatureGuard
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
+            isAsesor={isAsesor}
+          />
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton
@@ -532,7 +534,7 @@ export default function Ak02Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={!agreedChecklist}
+              disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)}
               onClick={async () => {
                 if (!agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
@@ -563,7 +565,7 @@ export default function Ak02Page() {
                     proyek_kerja: evidenceChecks[unit.id]?.proyek_kerja || false,
                   }))
 
-                  const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak02`, {
+                  const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak02`, {
                     method: 'POST',
                     headers: {
                       "Accept": "application/json",
@@ -588,7 +590,7 @@ export default function Ak02Page() {
 
                       if (jadwalId && !existingAsesorQR) {
                         try {
-                          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak02`, {
+                          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak02`, {
                             method: 'POST',
                             headers: {
                               'Accept': 'application/json',
@@ -632,7 +634,7 @@ export default function Ak02Page() {
 
                       if (jadwalId && !existingAsesiQR) {
                         try {
-                          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak02`, {
+                          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak02`, {
                             method: 'POST',
                             headers: {
                               'Accept': 'application/json',

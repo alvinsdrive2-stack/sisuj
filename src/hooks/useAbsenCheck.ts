@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/toast"
 
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 
 interface AbsenData {
   // Praasesmen - Asesi

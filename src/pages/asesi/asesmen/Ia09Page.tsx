@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -11,7 +11,16 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { API_BASE_URL } from "@/config/api"
+
+interface BarcodeData {
+  url: string
+  tanggal: string
+  nama: string
+}
 
 interface Pertanyaan {
   id: number
@@ -20,6 +29,28 @@ interface Pertanyaan {
   kesimpulan: string
   k: boolean
   bk: boolean
+}
+
+interface BuktiItem {
+  id: number
+  no: string
+  nama: string
+}
+
+interface Ia09Response {
+  message: string
+  data?: {
+    soal?: {
+      "1"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
+      "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
+    }
+    dokumen?: { id: number; nama_dokumen: string }
+    barcodes?: {
+      asesi?: BarcodeData | null
+      asesor1?: BarcodeData | null
+      asesor2?: BarcodeData | null
+    }
+  }
 }
 
 export default function Ia09Page() {
@@ -37,7 +68,8 @@ export default function Ia09Page() {
     namaAsesor: _namaAsesor,
     tanggalUji,
   } = useDataDokumenAsesmen(id)
-  const { isAsesor } = useKegiatanByRole()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(
     jenjang,
@@ -60,36 +92,170 @@ export default function Ia09Page() {
   })
 
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([
-    {
-      id: 1,
-      no: "1",
-      pertanyaan:
-        "Mengapa penting menerapkan ketentuan perencanaan sesuai prosedur, dan apa dampaknya jika diabaikan?",
-      kesimpulan:
-        "Penerapan ketentuan yang benar memastikan proses perencanaan berjalan efisien dan dapat dipertanggungjawabkan. Jika prosedur diabaikan maka dapat terjadi risiko kesalahan desain dan kegagalan struktur.",
-      k: false,
-      bk: false,
-    },
-  ])
+  const [isSaving, setIsSaving] = useState(false)
+  const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
+  const [buktiList, setBuktiList] = useState<BuktiItem[]>([])
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
+  } | null>(null)
 
-  useEffect(() => {
-    if (!authLoading) {
+  const fetchIa09Data = useCallback(async () => {
+    if (!id || authLoading) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia09`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const result: Ia09Response = await response.json()
+        if (result.message === "Success" && result.data) {
+          if (result.data.soal?.["1"]) {
+            const buktiItems = result.data.soal["1"].map((item: any, index: number) => ({
+              id: item.id || index + 1, no: item.no || String(index + 1), nama: item.soal || "-",
+            }))
+            setBuktiList(buktiItems)
+          }
+          if (result.data.soal?.["2"]) {
+            const pertanyaanData = result.data.soal["2"].map((item: any) => ({
+              id: item.id, no: item.no || "1", pertanyaan: item.soal || "-", kesimpulan: "", k: false, bk: false,
+            }))
+            setPertanyaanList(pertanyaanData)
+          }
+          if (result.data.barcodes) {
+            setBarcodes({ asesi: result.data.barcodes.asesi, asesor1: result.data.barcodes.asesor1, asesor2: result.data.barcodes.asesor2 })
+          }
+          if (result.data.dokumen?.id) {
+            setDokumenId(result.data.dokumen.id)
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching IA09:", err)
+    } finally {
       setIsLoading(false)
     }
-  }, [authLoading])
+  }, [id, authLoading])
 
-  const handleKChange = (id: number, checked: boolean) => {
-    setPertanyaanList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, k: checked, bk: checked ? false : p.bk } : p))
-    )
+  useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa09Data })
+
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
+
+  const handleKChange = (id: number, value: boolean) => {
+    setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, k: value, bk: value ? false : p.bk } : p))
   }
 
-  const handleBKChange = (id: number, checked: boolean) => {
-    setPertanyaanList((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, bk: checked, k: checked ? false : p.k } : p))
-    )
+  const handleBKChange = (id: number, value: boolean) => {
+    setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
+  }
+
+  const handleSave = async () => {
+    if (!agreedChecklist) {
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+
+      // POST answers
+      const payload = {
+        dokumen_id: dokumenId,
+        answers: pertanyaanList.map(p => ({
+          soal_id: p.id,
+          kesimpulan: p.kesimpulan,
+          is_kompeten: p.k,
+        })),
+      }
+
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia09`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        // Generate QR for asesor if needed
+        if (isAsesor) {
+          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+          if (!existingAsesorQR) {
+            try {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia09`, {
+                method: "POST",
+                headers: {
+                  "Accept": "application/json",
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${token}`,
+                },
+                body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+              })
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  if (isAsesor1) {
+                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
+                  } else {
+                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
+                  }
+                }
+              }
+            } catch (qrErr) {
+              console.error("Error generating QR:", qrErr)
+            }
+          }
+        }
+
+        // Generate QR for asesi if needed
+        if (!barcodes?.asesi?.url) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia09`, {
+              method: "POST",
+              headers: {
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+              body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+            })
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: namaAsesi || "" } }))
+              }
+            }
+          } catch (qrErr) {
+            console.error("Error generating QR:", qrErr)
+          }
+        }
+
+        // Navigate to next step
+        const currentStepIndex = asesmenSteps.findIndex((s) => s.href.includes("ia09"))
+        const nextStep = asesmenSteps[currentStepIndex + 1]
+        if (nextStep) {
+          const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
+          setTimeout(() => navigate(nextPath), 500)
+        }
+      }
+    } catch (err) {
+      console.error("Error saving IA09:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
@@ -284,18 +450,12 @@ export default function Ia09Page() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>1</td>
-              <td style={{ border: "1px solid #000", padding: "6px" }}>Referensi Kerja</td>
-            </tr>
-            <tr>
-              <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>2</td>
-              <td style={{ border: "1px solid #000", padding: "6px" }}>Laporan Pekerjaan</td>
-            </tr>
-            <tr>
-              <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>3</td>
-              <td style={{ border: "1px solid #000", padding: "6px" }}>Dokumentasi Pekerjaan</td>
-            </tr>
+            {buktiList.map((b) => (
+              <tr key={b.id}>
+                <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{b.no}</td>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>{b.nama}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
@@ -323,18 +483,38 @@ export default function Ia09Page() {
             {pertanyaanList.map((p) => (
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
-                <td style={{ border: "1px solid #000", padding: "6px" }}>{p.pertanyaan}</td>
-                <td style={{ border: "1px solid #000", padding: "6px" }}>{p.kesimpulan}</td>
+                <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>{p.pertanyaan}</td>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  <textarea
+                    value={p.kesimpulan}
+                    onChange={(e) => {
+                      setPertanyaanList(prev => prev.map(item =>
+                        item.id === p.id ? { ...item, kesimpulan: e.target.value } : item
+                      ))
+                    }}
+                    disabled={isAsesor}
+                    style={{
+                      width: "100%",
+                      minHeight: "60px",
+                      border: "1px solid #ccc",
+                      padding: "4px",
+                      fontSize: "12px",
+                      resize: "vertical",
+                    }}
+                  />
+                </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.k}
-                    onChange={() => handleKChange(p.id, !p.k)}
+                    onChange={() => !isAsesor && handleKChange(p.id, !p.k)}
+                    disabled={true}
                   />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.bk}
-                    onChange={() => handleBKChange(p.id, !p.bk)}
+                    onChange={() => !isAsesor && handleBKChange(p.id, !p.bk)}
+                    disabled={true}
                   />
                 </td>
               </tr>
@@ -370,7 +550,18 @@ export default function Ia09Page() {
             <tr>
               <td style={{ border: "1px solid #000", padding: "6px" }}>Tanda tangan dan Tanggal</td>
               <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>:</td>
-              <td style={{ border: "1px solid #000", padding: "6px", height: "60px" }}></td>
+              <td style={{ border: "1px solid #000", padding: "6px", height: "60px", textAlign: "center" }}>
+                {barcodes?.asesi?.url ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                    <img src={barcodes.asesi.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
+                    {barcodes.asesi.tanggal && (
+                      <div style={{ fontSize: "11px" }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString("id-ID")}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
             </tr>
 
             {/* Asesor 1 */}
@@ -396,7 +587,18 @@ export default function Ia09Page() {
             <tr>
               <td style={{ border: "1px solid #000", padding: "6px" }}>Tanda tangan dan Tanggal</td>
               <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>:</td>
-              <td style={{ border: "1px solid #000", padding: "6px", height: "60px" }}></td>
+              <td style={{ border: "1px solid #000", padding: "6px", height: "60px", textAlign: "center" }}>
+                {barcodes?.asesor1?.url ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                    <img src={barcodes.asesor1.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
+                    {barcodes.asesor1.tanggal && (
+                      <div style={{ fontSize: "11px" }}>
+                        {new Date(barcodes.asesor1.tanggal).toLocaleDateString("id-ID")}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
             </tr>
 
             {/* Asesor 2 */}
@@ -424,7 +626,18 @@ export default function Ia09Page() {
                 <tr>
                   <td style={{ border: "1px solid #000", padding: "6px" }}>Tanda tangan dan Tanggal</td>
                   <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>:</td>
-                  <td style={{ border: "1px solid #000", padding: "6px", height: "60px" }}></td>
+                  <td style={{ border: "1px solid #000", padding: "6px", height: "60px", textAlign: "center" }}>
+                    {barcodes?.asesor2?.url ? (
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                        <img src={barcodes.asesor2.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
+                        {barcodes.asesor2.tanggal && (
+                          <div style={{ fontSize: "11px" }}>
+                            {new Date(barcodes.asesor2.tanggal).toLocaleDateString("id-ID")}
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+                  </td>
                 </tr>
               </>
             )}
@@ -456,8 +669,8 @@ export default function Ia09Page() {
           </div>
 
           <AsesorSignatureGuard
-            missingAsesorLabels={[]}
-            allAsesorSigned={true}
+            missingAsesorLabels={missingAsesorLabels}
+            allAsesorSigned={allAsesorSigned}
             isAsesor={isAsesor}
           />
 
@@ -467,17 +680,10 @@ export default function Ia09Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={!agreedChecklist}
-              onClick={() => {
-                const currentStepIndex = asesmenSteps.findIndex((s) => s.href.includes("ia09"))
-                const nextStep = asesmenSteps[currentStepIndex + 1]
-                if (nextStep) {
-                  const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
-                  navigate(nextPath)
-                }
-              }}
+              disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)}
+              onClick={handleSave}
             >
-              Lanjut
+              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
             </ActionButton>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCloudUploadAlt, faEye, faCheck, faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -12,7 +12,9 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface TugasResponse {
   message: string
@@ -91,37 +93,27 @@ export default function UploadTugasPage() {
   })
 
   // Fetch existing tugas
-  const fetchTugas = async () => {
+  const fetchTugas = useCallback(async () => {
     if (!id) return
-
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/tugas`, {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/tugas`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
       })
-
       if (response.ok) {
         const result: TugasResponse = await response.json()
-        
         if (result.message === "Success" && result.data?.url) {
-          setUploadedTugas({
-            url: result.data.url,
-            extension: result.data.extension,
-            fileName: `Tugas.${result.data.extension}`
-          })
+          setUploadedTugas({ url: result.data.url, extension: result.data.extension, fileName: `Tugas.${result.data.extension}` })
         }
       }
     } catch (error) {
       console.error("Error fetching tugas:", error)
     }
-  }
-
-  useEffect(() => {
-    fetchTugas()
   }, [id])
+
+  useEffect(() => { fetchTugas() }, [fetchTugas])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchTugas })
 
   // Show loading while fetching jenjang data - MUST be after all hooks
   if (isDataLoading) {
@@ -149,7 +141,7 @@ export default function UploadTugasPage() {
       const formData = new FormData()
       formData.append('file', selectedFile)
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/tugas`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/tugas`, {
         method: 'POST',
         headers: {
           "Authorization": `Bearer ${token}`,

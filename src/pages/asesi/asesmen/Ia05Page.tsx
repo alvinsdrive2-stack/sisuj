@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,6 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -15,6 +16,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { kegiatanService } from "@/lib/kegiatan-service"
+import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
   id: number
@@ -106,66 +108,53 @@ export default function Ia05Page() {
     asesor2?: { url: string; tanggal: string; nama: string } | null
   } | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!id) return
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: ApiResponse = await response.json()
-          if (result.message === "Success") {
-            // Sort soal by no (numeric)
-            const sortedSoal = result.data.soal.sort((a, b) => {
-              const numA = parseInt(a.no) || 0
-              const numB = parseInt(b.no) || 0
-              return numA - numB
+  const fetchIa05Data = useCallback(async () => {
+    if (!id) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+        headers: { "Authorization": `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const result: ApiResponse = await response.json()
+        if (result.message === "Success") {
+          const sortedSoal = result.data.soal.sort((a, b) => {
+            const numA = parseInt(a.no) || 0
+            const numB = parseInt(b.no) || 0
+            return numA - numB
+          })
+          setIa05Data({ ...result.data, soal: sortedSoal })
+          try {
+            const barcodeResponse = await fetch(`${API_BASE_URL}/asesmen/${id}/barcodes`, {
+              headers: { "Authorization": `Bearer ${token}` }
             })
-            setIa05Data({ ...result.data, soal: sortedSoal })
-
-            // Fetch barcodes untuk cek tanda tangan asesor
-            try {
-              const barcodeResponse = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/barcodes`, {
-                headers: { "Authorization": `Bearer ${token}` }
-              })
-              if (barcodeResponse.ok) {
-                const barcodeResult = await barcodeResponse.json()
-                if (barcodeResult.message === "Success") {
-                  setBarcodes(barcodeResult.data)
-                }
+            if (barcodeResponse.ok) {
+              const barcodeResult = await barcodeResponse.json()
+              if (barcodeResult.message === "Success") {
+                setBarcodes(barcodeResult.data)
               }
-            } catch (e) {
-              console.error("Error fetching barcodes:", e)
             }
-
-            // Initialize answers from jawaban_asesi
-            const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
-            sortedSoal.forEach((soal) => {
-              if (soal.jawaban_asesi) {
-                newAnswers[soal.id] = soal.jawaban_asesi as 'A' | 'B' | 'C' | 'D'
-              }
-            })
-            setAnswers(newAnswers)
-            if (result.data.umpan_balik) {
-              setUmpanBalik(result.data.umpan_balik)
+          } catch (e) { console.error("Error fetching barcodes:", e) }
+          const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
+          sortedSoal.forEach((soal) => {
+            if (soal.jawaban_asesi) {
+              newAnswers[soal.id] = soal.jawaban_asesi as 'A' | 'B' | 'C' | 'D'
             }
-          }
+          })
+          setAnswers(newAnswers)
+          if (result.data.umpan_balik) setUmpanBalik(result.data.umpan_balik)
         }
-      } catch (error) {
-        console.error("Error fetching IA.05 data:", error)
-      } finally {
-        setIsLoading(false)
       }
+    } catch (error) {
+      console.error("Error fetching IA.05 data:", error)
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchData()
   }, [id])
+
+  useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa05Data })
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') => {
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
@@ -194,7 +183,7 @@ export default function Ia05Page() {
         umpan_balik: umpanBalik
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -266,7 +255,7 @@ export default function Ia05Page() {
         umpan_balik: umpanBalik || undefined
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia05`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

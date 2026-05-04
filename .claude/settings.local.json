@@ -22,7 +22,20 @@
       "Bash(grep -v \"^ />$\")",
       "Bash(awk 'NR==550{print; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia08\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia08Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia09\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia09Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; for\\(i=1;i<=25;i++\\)print \"          <Route\"; print \"            path=\\\\\"/asesi/asesmen/:id/ia10\\\\\"\"; print \"            element={\"; print \"              <AsesiOrAsesorRoute>\"; print \"                <Ia10Page />\"; print \"              </AsesiOrAsesorRoute>\"; print \"            }\"; print \"          />\"; next}1' src/App.tsx)",
       "Bash(mv temp_App.tsx src/App.tsx)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(grep *)",
+      "Bash(node *)",
+      "Bash(vercel env *)",
+      "Skill(update-config)",
+      "WebSearch",
+      "PowerShell(python -c \"import fitz; print\\(fitz.__version__\\)\")",
+      "PowerShell(docker --version 2>&1)",
+      "Bash(python pdf_to_html.py \"C:/Users/Alvia/Downloads/docs direktur'/DOKUMEN LEGALITAS DI SISTEM UJI/B.003-B - SK PENETAPAN HASIL SERTIFIKASI KOMPETENSI.pdf\" \"C:/Users/Alvia/Downloads/docs direktur'/DOKUMEN LEGALITAS DI SISTEM UJI/B.003-B.html\")",
+      "Bash(python pdf_to_html_real.py \"C:/Users/Alvia/Downloads/docs direktur'/DOKUMEN LEGALITAS DI SISTEM UJI/B.003-B - SK PENETAPAN HASIL SERTIFIKASI KOMPETENSI.pdf\" \"C:/Users/Alvia/Downloads/docs direktur'/DOKUMEN LEGALITAS DI SISTEM UJI/B.003-B-real.html\")",
+      "Bash(python *)",
+      "Bash(Select-Object -First 30)",
+      "Bash(identify \"C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\kop surat-1.png\")",
+      "Bash(powershell *)"
     ]
   },
   "enableAllProjectMcpServers": true,

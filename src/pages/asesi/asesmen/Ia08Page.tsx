@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -12,8 +12,10 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
   url: string
@@ -42,23 +44,17 @@ interface WawancaraItem {
   checked: boolean
 }
 
-interface Ia08Response {
-  message: string
-  data?: {
-    barcodes?: {
-      asesi?: BarcodeData | null
-      asesor1?: BarcodeData | null
-      asesor2?: BarcodeData | null
-    }
-    portfolio_items?: PortfolioItem[]
-    wawancara_items?: WawancaraItem[]
-    bukti_tambahan?: string
-    rekomendasi_kompeten?: boolean
-    rekomendasi_unit?: string
-    rekomendasi_elemen?: string
-    rekomendasi_kuk?: string
-  }
+interface Ia08Referensi {
+  id: number
+  nama: string
+  id_kelompok: number
+  id_kategori: number | null
+  id_subkategori: number | null
+  kategori_rel: { id: number; nama: string; no: string } | null
+  kelompok_rel: { id: number; kategori: string; no: string; urut: number; nama: string | null }
+  subkategori_rel: { id: number; nama: string; no: string } | null
 }
+
 
 export default function Ia08Page() {
   const navigate = useNavigate()
@@ -67,6 +63,7 @@ export default function Ia08Page() {
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
 
@@ -108,46 +105,105 @@ export default function Ia08Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+  const [_ia08Referensi, setIa08Referensi] = useState<Ia08Referensi[]>([])
+  const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  useEffect(() => {
-    if (!authLoading) {
-      setIsLoading(false)
-    }
-  }, [authLoading])
+  // Extractable fetch function — called on mount and by SSE events
+  const fetchIa08Data = useCallback(async () => {
+    if (!id || authLoading) return
 
-  // Polling for asesor signatures
-  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
-    fetchDataFn: async () => {
-      // Re-fetch to get updated barcodes
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia08`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (response.ok) {
-          const result: Ia08Response = await response.json()
-          if (result.data?.barcodes) {
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia08`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.message === "Success" && result.data) {
+          // Map soal.1 (referensi) to portfolio items
+          if (result.data.soal?.["1"]) {
+            const referensiItems = result.data.soal["1"].map((item: any, index: number) => ({
+              id: item.id || index + 1,
+              dokumen: item.soal || "-",
+              valid_ya: false,
+              valid_tidak: false,
+              asli_ya: false,
+              asli_tidak: false,
+              terkini_ya: false,
+              terkini_tidak: false,
+              memadai_ya: false,
+              memadai_tidak: false,
+            }))
+            setPortfolioItems(referensiItems)
+          }
+
+          // Map soal.2 (unit/kuk) to wawancara items
+          if (result.data.soal?.["2"]) {
+            const wawancaraData = result.data.soal["2"].map((item: any, index: number) => ({
+              id: item.id || index + 1,
+              unit_kompetensi: item.unit?.kode || "-",
+              no_elemen: parseInt(item.no) || index + 1,
+              materi: item.subunit?.nama || "-",
+              checked: false,
+            }))
+            setWawancaraItems(wawancaraData)
+          }
+
+          // Set bukti tambahan from soal.3 if exists
+          if (result.data.soal?.["3"] && result.data.soal["3"][0]) {
+            setBuktiTambahan(result.data.soal["3"][0].soal || "")
+          }
+
+          // Set barcodes if exists
+          if (result.data.barcodes) {
             setBarcodes({
               asesi: result.data.barcodes.asesi,
               asesor1: result.data.barcodes.asesor1,
               asesor2: result.data.barcodes.asesor2,
             })
           }
+
+          // Set referensi
+          if (result.data.referensi) {
+            setIa08Referensi(result.data.referensi)
+          }
+
+          // Store dokumen_id for POST
+          if (result.data.dokumen_id) {
+            setDokumenId(result.data.dokumen_id)
+          }
         }
-      } catch (err) {
-        console.error("Error refetching IA08:", err)
       }
-    },
-    isAsesor,
-    barcodes,
-    asesorCount: asesorList.length,
-  })
+    } catch (err) {
+      console.error("Error fetching IA08:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id, authLoading])
+
+  // Initial fetch
+  useEffect(() => {
+    fetchIa08Data()
+  }, [fetchIa08Data])
+
+  // SSE: auto-refresh when another user saves
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa08Data })
+
+  // Manual signature check (SSE-only — no polling)
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   const handlePortfolioCheck = (id: number, field: keyof PortfolioItem) => {
     if (isFormDisabled) return
@@ -186,16 +242,26 @@ export default function Ia08Page() {
       const token = localStorage.getItem("access_token")
 
       const payload = {
-        portfolio_items: portfolioItems,
-        wawancara_items: wawancaraItems,
+        dokumen_id: dokumenId,
+        apl2_answers: portfolioItems.map(item => ({
+          soal_id: item.id,
+          valid: item.valid_ya,
+          asli: item.asli_ya,
+          terkini: item.terkini_ya,
+          memadai: item.memadai_ya,
+        })),
+        unit_answers: wawancaraItems.map(item => ({
+          soal_id: item.id,
+          is_checked: item.checked,
+        })),
         bukti_tambahan: buktiTambahan,
-        rekomendasi_kompeten: rekomendasiKompeten,
+        is_kompeten: rekomendasiKompeten,
         rekomendasi_unit: rekomendasiKompeten === false ? rekomendasiUnit : null,
         rekomendasi_elemen: rekomendasiKompeten === false ? rekomendasiElemen : null,
         rekomendasi_kuk: rekomendasiKompeten === false ? rekomendasiKuk : null,
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia08`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia08`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -210,10 +276,10 @@ export default function Ia08Page() {
 
         // Generate QR for asesor
         if (isAsesor && kegiatan?.jadwal_id) {
-          const existingAsesorQR = barcodes?.asesor1?.url
+          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
           if (!existingAsesorQR) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia08`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia08`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',
@@ -225,7 +291,11 @@ export default function Ia08Page() {
               if (qrResponse.ok) {
                 const qrResult = await qrResponse.json()
                 if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  if (isAsesor1) {
+                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  } else {
+                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  }
                 }
               }
             } catch (qrError) {
@@ -237,7 +307,7 @@ export default function Ia08Page() {
         // Generate QR for asesi
         if (kegiatan?.jadwal_id && !barcodes?.asesi?.url) {
           try {
-            const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia08`, {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia08`, {
               method: 'POST',
               headers: {
                 'Accept': 'application/json',

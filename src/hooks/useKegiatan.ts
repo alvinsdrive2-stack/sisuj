@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { kegiatanService, Kegiatan, KegiatanAsesor, KegiatanWithId, AsesiItem } from "@/lib/kegiatan-service"
+import { API_BASE_URL } from "@/config/api"
 
 export type { KegiatanAsesor, KegiatanWithId, AsesiItem }
 
@@ -360,7 +361,7 @@ export function useAbsenData(asesiIds: string[], enabled = true) {
         await Promise.all(
           asesiIds.map(async (idIzin) => {
             try {
-              const response = await fetch(`https://backend.devgatensi.site/api/dokumen/absen/${idIzin}`, {
+              const response = await fetch(`${API_BASE_URL}/dokumen/absen/${idIzin}`, {
                 headers: {
                   "Accept": "application/json",
                   "Authorization": `Bearer ${token}`,
@@ -434,7 +435,7 @@ export function useRekomendasiStatus(kegiatans: KegiatanAsesor[], enabled = true
         kegiatans.map(async (kegiatan) => {
           try {
             // First get list asesi for this kegiatan
-            const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+            const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
               headers: {
                 "Accept": "application/json",
                 "Authorization": `Bearer ${token}`,
@@ -453,7 +454,7 @@ export function useRekomendasiStatus(kegiatans: KegiatanAsesor[], enabled = true
             await Promise.all(
               asesiList.map(async (asesi: AsesiItem) => {
                 try {
-                  const rekomendasiResponse = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesi.id_izin}`, {
+                  const rekomendasiResponse = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesi.id_izin}`, {
                     headers: {
                       "Accept": "application/json",
                       "Authorization": `Bearer ${token}`,
@@ -532,7 +533,7 @@ export function useAsesiRekomendasiStatus(asesiList: AsesiItem[], enabled = true
       await Promise.all(
         asesiList.map(async (asesi) => {
           try {
-            const response = await fetch(`https://backend.devgatensi.site/api/komtek/rekomendasi/${asesi.id_izin}`, {
+            const response = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesi.id_izin}`, {
               headers: {
                 "Accept": "application/json",
                 "Authorization": `Bearer ${token}`,

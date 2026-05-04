@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,11 +8,13 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
   url: string
@@ -168,50 +170,50 @@ export default function Ia02Page() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch IA02 data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (authLoading) return
+  const fetchIa02Data = useCallback(async () => {
+    if (authLoading) return
 
-      if (!id) {
-        console.error("No id_izin found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia02`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: Ia02Response = await response.json()
-          if (result.message === "Success" && result.data?.questions) {
-            // Set barcodes
-            if (result.data.barcodes) {
-              setBarcodes({
-                asesi: result.data.barcodes.asesi,
-                asesor1: result.data.barcodes.asesor1,
-                asesor2: result.data.barcodes.asesor2,
-              })
-            }
-
-            // Set questions
-            setQuestions(result.data.questions)
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching IA02:", err)
-      } finally {
-        setIsLoading(false)
-      }
+    if (!id) {
+      console.error("No id_izin found")
+      setIsLoading(false)
+      return
     }
 
-    fetchData()
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia02`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result: Ia02Response = await response.json()
+        if (result.message === "Success" && result.data?.questions) {
+          // Set barcodes
+          if (result.data.barcodes) {
+            setBarcodes({
+              asesi: result.data.barcodes.asesi,
+              asesor1: result.data.barcodes.asesor1,
+              asesor2: result.data.barcodes.asesor2,
+            })
+          }
+
+          // Set questions
+          setQuestions(result.data.questions)
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching IA02:", err)
+    } finally {
+      setIsLoading(false)
+    }
   }, [id, authLoading])
+
+  useEffect(() => { fetchIa02Data() }, [fetchIa02Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa02Data })
 
   const handleNext = async () => {
     if (!agreedChecklist) {
@@ -231,9 +233,9 @@ export default function Ia02Page() {
     console.log('IA02 QR Check - existingAsesiQR:', existingAsesiQR, 'hasAsesiQR:', hasAsesiQR)
 
     if (jadwalId && !hasAsesiQR) {
-      console.log('IA02: Attempting QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia02`)
+      console.log('IA02: Attempting QR POST to:', `${API_BASE_URL}/qr/${id}/ia02`)
       try {
-        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia02`, {
+        const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia02`, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -273,9 +275,9 @@ export default function Ia02Page() {
       console.log('IA02 Asesor QR Check - asesorKey:', asesorKey, 'existingAsesorQR:', existingAsesorQR, 'hasAsesorQR:', hasAsesorQR)
 
       if (!hasAsesorQR) {
-        console.log('IA02: Attempting Asesor QR POST to:', `https://backend.devgatensi.site/api/qr/${id}/ia02`)
+        console.log('IA02: Attempting Asesor QR POST to:', `${API_BASE_URL}/qr/${id}/ia02`)
         try {
-          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia02`, {
+          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia02`, {
             method: 'POST',
             headers: {
               'Accept': 'application/json',

@@ -8,13 +8,14 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
   url: string
@@ -160,7 +161,7 @@ export default function Ia03Page() {
 
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia03`, {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia03`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -218,16 +219,17 @@ export default function Ia03Page() {
     if (initialFetchDone.current) return
     initialFetchDone.current = true
     fetchData()
-// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
   }, [fetchData])
 
-  // Polling for asesor signatures
-  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
-    fetchDataFn: fetchData,
-    isAsesor,
-    barcodes,
-    asesorCount: asesorList.length,
-  })
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchData })
+
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
@@ -278,7 +280,7 @@ export default function Ia03Page() {
         umpan_balik: umpanBalik
       }
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia03`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia03`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -298,7 +300,7 @@ export default function Ia03Page() {
 
         if (jadwalId && !hasAsesiQR) {
           try {
-            const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia03`, {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia03`, {
               method: 'POST',
               headers: {
                 'Accept': 'application/json',
@@ -329,7 +331,7 @@ export default function Ia03Page() {
 
           if (!hasAsesorQR) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia03`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia03`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',

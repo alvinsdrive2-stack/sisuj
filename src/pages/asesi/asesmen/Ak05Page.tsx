@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,11 +8,13 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 type BarcodeData = {
   url: string
@@ -89,49 +91,48 @@ export default function Ak05Page() {
   const [isLoading, setIsLoading] = useState(true)
 
   // Fetch AK05 data - GET only
-  useEffect(() => {
-    const fetchData = async () => {
-      if (authLoading || !id) return
+  const fetchAk05Data = useCallback(async () => {
+    if (authLoading || !id) return
 
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak05`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-        if (response.ok) {
-          const result = await response.json()
-          if (result.message === "Success" && result.data) {
-            // kompeten: true = K, false = BK
-            setAk05Data({
-              kompeten: result.data.kompeten || false,
-              keterangan: result.data.answers?.keterangan || '',
-              aspek_positif_negatif: result.data.answers?.aspek || '',
-              pencatatan_penolakan: result.data.answers?.pencatatan_penolakan || '',
-              saran: result.data.answers?.saran || '',
-              catatan: result.data.answers?.catatan || '',
+      if (response.ok) {
+        const result = await response.json()
+        if (result.message === "Success" && result.data) {
+          // kompeten: true = K, false = BK
+          setAk05Data({
+            kompeten: result.data.kompeten || false,
+            keterangan: result.data.answers?.keterangan || '',
+            aspek_positif_negatif: result.data.answers?.aspek || '',
+            pencatatan_penolakan: result.data.answers?.pencatatan_penolakan || '',
+            saran: result.data.answers?.saran || '',
+            catatan: result.data.answers?.catatan || '',
+          })
+          // Handle barcodes
+          if (result.data.barcodes) {
+            setBarcodes({
+              asesor1: result.data.barcodes.asesor1 || null,
+              asesor2: result.data.barcodes.asesor2 || null,
             })
-            // Handle barcodes
-            if (result.data.barcodes) {
-              setBarcodes({
-                asesor1: result.data.barcodes.asesor1 || null,
-                asesor2: result.data.barcodes.asesor2 || null,
-              })
-            }
           }
         }
-      } catch (err) {
-        console.error("Error fetching AK05:", err)
       }
-      setIsLoading(false)
+    } catch (err) {
+      console.error("Error fetching AK05:", err)
     }
-
-    fetchData()
-// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
+    setIsLoading(false)
   }, [id, authLoading])
+
+  useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk05Data })
 
   const handleSave = async () => {
     if (!id) {
@@ -143,7 +144,7 @@ export default function Ak05Page() {
       const token = localStorage.getItem("access_token")
 
       // POST AK05 data
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak05`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -171,7 +172,7 @@ export default function Ak05Page() {
 
           if (jadwalId) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak05`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak05`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',

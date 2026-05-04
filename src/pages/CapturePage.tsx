@@ -5,7 +5,7 @@ import { faCamera, faCheck, faSpinner, faExclamationTriangle, faRedo, faUserChec
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { decryptCaptureData } from "@/utils/crypto"
 
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 
 // Primary color: HSL(222, 80%, 25%) = #0d2137
 const PRIMARY_COLOR = "#0d2137"

@@ -10,9 +10,10 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Referensi {
   id: number
@@ -155,7 +156,7 @@ export default function FrAk07Page() {
 
       if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
         // Fetch id_izin from list-asesi endpoint if not in URL
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -176,7 +177,7 @@ export default function FrAk07Page() {
       }
 
       // Fetch AK 07 data
-      const ak07Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak07`, {
+      const ak07Response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak07`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -253,13 +254,15 @@ export default function FrAk07Page() {
     }
   }, [idIzin, kegiatan, isAsesor, fetchData])
 
-  // Polling for asesor signatures
-  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
-    fetchDataFn: fetchData,
-    isAsesor,
-    barcodes,
-    asesorCount: asesorList.length,
-  })
+  useAsesmenSSE({ path: `/praasesmen/${idIzin}/sse`, onUpdate: fetchData })
+
+  const asesor1Signed = !!(barcodes?.asesor1?.url || (asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url))
+  const asesor2Signed = !!(barcodes?.asesor2?.url || (asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url))
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   const handleBack = () => {
     navigate(-1)
@@ -327,7 +330,7 @@ export default function FrAk07Page() {
     let actualIdIzin = idIzin
     if (!actualIdIzin && kegiatan?.jadwal_id) {
       const token = localStorage.getItem("access_token")
-      const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
+      const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -420,7 +423,7 @@ export default function FrAk07Page() {
 
       // POST to backend
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/ak07`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak07`, {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -439,7 +442,7 @@ export default function FrAk07Page() {
       console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
       if (jadwalId) {
         try {
-          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${actualIdIzin}/ak07`, {
+          const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak07`, {
             method: 'POST',
             headers: {
               'Accept': 'application/json',

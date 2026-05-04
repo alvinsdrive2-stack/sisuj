@@ -16,6 +16,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { ASESOR_SIGNATURE_POLLING_INTERVAL_MS } from "@/lib/polling-config"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 // ============== ANIMATED COMPONENTS ==============
 
@@ -932,7 +933,7 @@ export default function Apl02Page() {
     try {
       const token = localStorage.getItem("access_token")
 
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/apl02/files/${fileId}`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/apl02/files/${fileId}`, {
         method: 'DELETE',
         headers: {
           "Accept": "application/json",
@@ -990,7 +991,7 @@ export default function Apl02Page() {
           formData.append('files[]', file)
         })
 
-        const uploadResponse = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02/files`, {
+        const uploadResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/files`, {
           method: 'POST',
           headers: {
             "Accept": "application/json",
@@ -1039,7 +1040,7 @@ export default function Apl02Page() {
         let fetchedIdIzin: string | null = idIzin || null
 
         if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -1062,19 +1063,19 @@ export default function Apl02Page() {
 
         // Fetch data-dokumen, apl02, and files in parallel
         const [dataDokumenResponse, apl02Response, filesResponse] = await Promise.all([
-          fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/data-dokumen`, {
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/data-dokumen`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
             },
           }),
-          fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/apl02`, {
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
             },
           }),
-          fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/apl02/files`, {
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02/files`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -1231,7 +1232,7 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesor, generate QR lalu navigate
+    // Jika asesor, POST metode lalu generate QR
     if (isAsesor) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (!finalIdIzin) {
@@ -1248,93 +1249,104 @@ export default function Apl02Page() {
       const existingBarcode = firstSubunitId ? subunitBarcodes[firstSubunitId] : null
       const hasExistingAsesorQR = isAsesor1 ? existingBarcode?.asesor1?.url : existingBarcode?.asesor2?.url
 
-      // Generate QR untuk asesor hanya jika belum ada
-      if (jadwalId && !hasExistingAsesorQR) {
-        setIsSaving(true)
-        try {
-          const token = localStorage.getItem("access_token")
+      setIsSaving(true)
+      try {
+        const token = localStorage.getItem("access_token")
 
-          
+        // POST metode ke apl02 endpoint
+        const metodeResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            metode: metodeAsesmen,
+            is_dilanjutkan: true,
+            answers: apl02Data ? apl02Data.units.flatMap(unit =>
+              unit.subunits.map(subunit => ({
+                subunit_id: parseInt(subunit.id),
+                kompeten: subunit.kompeten ?? true,
+                file_ids: subunit.files.map(f => f.id)
+              }))
+            ) : []
+          }),
+        })
 
-          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${finalIdIzin}/apl02`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              id_jadwal: jadwalId
-            })
-          })
-
-          
-
-          if (qrResponse.ok) {
-            const qrResult = await qrResponse.json()
-            
-
-            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-              // Tentukan asesor1 atau asesor2 berdasarkan index di asesorList
-              
-              const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-              
-
-              // Kalau ga ketemu di list, default ke asesor1
-              const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-              const isAsesor2 = asesorIndex === 1
-
-              // Ambil semua subunit IDs dari apl02Data
-              const subunitIds: string[] = []
-              apl02Data?.units.forEach(unit => {
-                unit.subunits.forEach(subunit => {
-                  subunitIds.push(subunit.id)
-                })
-              })
-
-              
-
-              // Update atau buat barcode entries untuk semua subunit
-              setSubunitBarcodes(prev => {
-                const updated = { ...prev }
-                subunitIds.forEach(subunitId => {
-                  const existing = updated[subunitId]
-                  updated[subunitId] = {
-                    asesi: existing?.asesi || { url: null, tanggal: null, nama: null },
-                    asesor1: isAsesor1
-                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
-                      : existing?.asesor1 || null,
-                    asesor2: isAsesor2
-                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
-                      : existing?.asesor2 || null
-                  }
-                })
-                
-                return updated
-              })
-
-              showSuccess('Dokumen berhasil ditandatangani!')
-              // Delay sedikit biar user bisa lihat QR sebelum navigate
-              setTimeout(() => {
-                navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
-              }, 1500)
-              return
-            } else {
-              
-            }
-          } else {
-            
-          }
-        } catch (qrError) {
-          console.error('Error generating QR:', qrError)
-        } finally {
-          setIsSaving(false)
+        if (!metodeResponse.ok) {
+          showError('Gagal menyimpan metode asesmen')
         }
-      } else {
-        
-      }
 
-      navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+        // Generate QR untuk asesor hanya jika belum ada
+        if (jadwalId && !hasExistingAsesorQR) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                id_jadwal: jadwalId
+              })
+            })
+
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
+                const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+                const isAsesor2 = asesorIndex === 1
+
+                const subunitIds: string[] = []
+                apl02Data?.units.forEach(unit => {
+                  unit.subunits.forEach(subunit => {
+                    subunitIds.push(subunit.id)
+                  })
+                })
+
+                setSubunitBarcodes(prev => {
+                  const updated = { ...prev }
+                  subunitIds.forEach(subunitId => {
+                    const existing = updated[subunitId]
+                    updated[subunitId] = {
+                      asesi: existing?.asesi || { url: null, tanggal: null, nama: null },
+                      asesor1: isAsesor1
+                        ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
+                        : existing?.asesor1 || null,
+                      asesor2: isAsesor2
+                        ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
+                        : existing?.asesor2 || null
+                    }
+                  })
+                  return updated
+                })
+
+                showSuccess('Dokumen berhasil ditandatangani!')
+                setTimeout(() => {
+                  navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+                }, 1500)
+                return
+              }
+            }
+          } catch (qrError) {
+            console.error('Error generating QR:', qrError)
+          }
+        }
+
+        showSuccess('Metode asesmen berhasil disimpan!')
+        setTimeout(() => {
+          navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+        }, 500)
+      } catch (error) {
+        console.error('Error saving metode:', error)
+        showError('Gagal menyimpan metode asesmen')
+      } finally {
+        setIsSaving(false)
+      }
       return
     }
 
@@ -1409,7 +1421,7 @@ export default function Apl02Page() {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${finalIdIzin}/apl02`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -1433,7 +1445,7 @@ export default function Apl02Page() {
 
           if (hasMissingBarcode) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${finalIdIzin}/apl02`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',

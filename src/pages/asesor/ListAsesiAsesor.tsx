@@ -7,6 +7,7 @@ import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
+import { API_BASE_URL } from "@/config/api"
 
 interface CountdownTime {
   days: number
@@ -112,7 +113,7 @@ export default function ListAsesiAsesor() {
       const token = localStorage.getItem("access_token")
 
       try {
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${firstAsesiId}/data-dokumen`, {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${firstAsesiId}/data-dokumen`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,

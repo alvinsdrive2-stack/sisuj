@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/toast"
 import QRCode from "qrcode"
 import { encryptCaptureData } from "@/utils/crypto"
 
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 const CAPTURE_BASE_URL = "https://sisuj.vercel.app/capture"
 
 type KegiatanType = 'foto_bersama' | 'daftar_hadir_asesi' | 'daftar_hadir_asesor'

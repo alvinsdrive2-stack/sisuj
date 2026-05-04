@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 export default function Apl02SuccessPage() {
   const navigate = useNavigate()
@@ -40,7 +41,7 @@ export default function Apl02SuccessPage() {
 
       try {
         const token = localStorage.getItem("access_token")
-        const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,

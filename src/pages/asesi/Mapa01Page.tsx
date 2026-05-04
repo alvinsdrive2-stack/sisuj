@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -19,7 +19,9 @@ import {
 // import { uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator" // Commented: not currently used
 import "@/components/mapa01/Mapa01.css"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
   id_unit: number
@@ -110,74 +112,49 @@ export default function Mapa01Page() {
     asesorList: asesorList
   })
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const fetchMapa01Data = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      let fetchedIdIzin = idIzin
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-
-        // Use idIzin from URL params or fetch from list-asesi
-        let fetchedIdIzin = idIzin
-
-        // Skip fetching kegiatan/list-asesi when accessed by asesor
-        // (asesor already has idIzin from URL)
-        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          const listAsesiResponse = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          })
-
-          if (listAsesiResponse.ok) {
-            const listResult = await listAsesiResponse.json()
-            if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              fetchedIdIzin = listResult.list_asesi[0].id_izin
-              setActualIdIzin(fetchedIdIzin)
-            }
-          }
-        }
-
-        if (!fetchedIdIzin) {
-          setIsLoading(false)
-          return
-        }
-
-        setActualIdIzin(fetchedIdIzin)
-
-        // Fetch MAPA 01 data
-        const mapa01Response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${fetchedIdIzin}/mapa01`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+      if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
         })
-
-        if (mapa01Response.ok) {
-          const result: ApiResponse = await mapa01Response.json()
-          if (result.message === "Success") {
-            setMapaData(result.data)
+        if (listAsesiResponse.ok) {
+          const listResult = await listAsesiResponse.json()
+          if (listResult.message === "Success" && listResult.list_asesi?.[0]?.id_izin) {
+            fetchedIdIzin = listResult.list_asesi[0].id_izin
           }
-        } else {
-          console.warn(`MAPA01 API returned ${mapa01Response.status} - Section 2 will be hidden`)
         }
-      } catch (error) {
-        console.error("Error fetching MAPA 01:", error)
-      } finally {
-        setIsLoading(false)
       }
-    }
 
-    // For asesor, fetch immediately when idIzin is available
-    // For asesi, wait for kegiatan to be fetched
-    if (isAsesor && idIzin) {
-      fetchData()
-    } else if (kegiatan) {
-      fetchData()
+      if (!fetchedIdIzin) { setIsLoading(false); return }
+
+      setActualIdIzin(fetchedIdIzin)
+
+      const mapa01Response = await fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/mapa01`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+
+      if (mapa01Response.ok) {
+        const result: ApiResponse = await mapa01Response.json()
+        if (result.message === "Success") setMapaData(result.data)
+      }
+    } catch (error) {
+      console.error("Error fetching MAPA 01:", error)
+    } finally {
+      setIsLoading(false)
     }
-  }, [kegiatan, idIzin, isAsesor])
+  }, [idIzin, isAsesor, kegiatan])
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    if (isAsesor && idIzin) fetchMapa01Data()
+    else if (kegiatan) fetchMapa01Data()
+  }, [kegiatan, idIzin, isAsesor, fetchMapa01Data])
+
+  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchMapa01Data })
 
   const handleBack = () => {
     navigate(-1)
@@ -199,7 +176,7 @@ export default function Mapa01Page() {
         jabatanKerja?.toUpperCase() || mapaData?.kelompok_kerja?.nama_dokumen || '',
         nomorSkema?.toUpperCase() || mapaData?.kelompok_kerja?.kode || '',
         mapaData,
-        `https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01/upload`,
+        `${API_BASE_URL}/praasesmen/${actualIdIzin}/mapa01/upload`,
         token || '',
         {
           idIzin: actualIdIzin,
@@ -231,7 +208,7 @@ export default function Mapa01Page() {
     try {
       const token = localStorage.getItem("access_token")
 
-      const response = await fetch(`https://backend.devgatensi.site/api/praasesmen/${actualIdIzin}/mapa01`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/mapa01`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

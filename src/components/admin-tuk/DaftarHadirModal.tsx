@@ -6,7 +6,7 @@ import QRCode from "qrcode"
 import { useAbsenData, AbsenData } from "@/hooks/useAbsenData"
 import { toast } from "@/components/ui/toast"
 
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 
 interface DaftarHadirModalProps {
   isOpen: boolean

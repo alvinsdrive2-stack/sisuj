@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -8,11 +8,13 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface AspekAPI {
   aspek_id: string
@@ -122,72 +124,69 @@ export default function Ak06Page() {
   })
 
   // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (authLoading) {
-        return
-      }
+  const fetchAk06Data = useCallback(async () => {
+    if (authLoading) return
 
-      if (!id) {
-        console.error("No id_izin found")
-        setIsLoading(false)
-        return
-      }
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak06`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: Ak06Response = await response.json()
-          
-          if (result.message === "Success" && result.data) {
-            // Transform aspek data
-            const aspek: AspekItem[] = result.data.aspek.map((item) => ({
-              id: item.aspek_id,
-              nama: item.nama,
-              validitas: item.validitas || false,
-              reliabel: item.reliabel || false,
-              fleksibel: item.fleksibel || false,
-              adil: item.adil || false,
-            }))
-            setAspekItems(aspek)
-
-            // Set feedback data
-            setFeedbackData(result.data.feedback || null)
-            setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
-            setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
-
-            // Set dimensi kompetensi
-            if (result.data.dimensi_kompetensi) {
-              setDimensiKompetensi(result.data.dimensi_kompetensi as DimensiKompetensiAPI)
-            }
-
-            // Set barcodes data
-            setBarcodes(result.data.barcodes || {
-              asesi: null,
-              asesor1: null,
-              asesor2: null
-            })
-          }
-        } else {
-          console.warn(`AK06 API returned ${response.status}`)
-        }
-      } catch (err) {
-        console.error("Error fetching AK06:", err)
-      } finally {
-        setIsLoading(false)
-      }
+    if (!id) {
+      console.error("No id_izin found")
+      setIsLoading(false)
+      return
     }
 
-    fetchData()
-// Handler: Tanda Tangan only (for asesor without QR)  const handleTandaTangan = async () => {    if (!id || !kegiatan?.jadwal_id) {      showWarning('Data tidak lengkap')      return    }    setIsGeneratingQR(true)    try {      const token = localStorage.getItem("access_token")      const response = await fetch(, {        method: 'POST',        headers: {          'Accept': 'application/json',          'Content-Type': 'application/json',          'Authorization': ,        },        body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })      })      if (response.ok) {        const qrResult = await response.json()        if (qrResult.message === "Success" && qrResult.data?.url_image) {          setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))          showSuccess('Tanda tangan berhasil!')        }      } else {        showError('Gagal generate QR')      }    } catch (err) {      console.error('Error generating QR:', err)      showError('Terjadi kesalahan')    } finally {      setIsGeneratingQR(false)    }  }
-  }, [id, authLoading, asesorList])
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak06`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result: Ak06Response = await response.json()
+
+        if (result.message === "Success" && result.data) {
+          // Transform aspek data
+          const aspek: AspekItem[] = result.data.aspek.map((item) => ({
+            id: item.aspek_id,
+            nama: item.nama,
+            validitas: item.validitas || false,
+            reliabel: item.reliabel || false,
+            fleksibel: item.fleksibel || false,
+            adil: item.adil || false,
+          }))
+          setAspekItems(aspek)
+
+          // Set feedback data
+          setFeedbackData(result.data.feedback || null)
+          setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
+          setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
+
+          // Set dimensi kompetensi
+          if (result.data.dimensi_kompetensi) {
+            setDimensiKompetensi(result.data.dimensi_kompetensi as DimensiKompetensiAPI)
+          }
+
+          // Set barcodes data
+          setBarcodes(result.data.barcodes || {
+            asesi: null,
+            asesor1: null,
+            asesor2: null
+          })
+        }
+      } else {
+        console.warn(`AK06 API returned ${response.status}`)
+      }
+    } catch (err) {
+      console.error("Error fetching AK06:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [id, authLoading])
+
+  useEffect(() => { fetchAk06Data() }, [fetchAk06Data])
+
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk06Data })
 
   // Map komentar asesor when feedback data and asesorList are available
   useEffect(() => {
@@ -245,7 +244,7 @@ export default function Ak06Page() {
         adil: item.adil || null,
       }))
 
-      const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ak06`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak06`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -271,7 +270,7 @@ export default function Ak06Page() {
 
           if (jadwalId && !existingAsesorQR) {
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ak06`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak06`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',

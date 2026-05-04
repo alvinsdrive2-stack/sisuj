@@ -8,13 +8,14 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesorSignaturePolling } from "@/hooks/useAsesorSignaturePolling"
+import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
   id_unit: number
@@ -214,7 +215,7 @@ export default function Ia04aPage() {
         
         
 
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -279,13 +280,15 @@ export default function Ia04aPage() {
     fetchData()
   }, [fetchData])
 
-  // Polling for asesor signatures
-  const { allAsesorSigned, missingAsesorLabels } = useAsesorSignaturePolling({
-    fetchDataFn: fetchData,
-    isAsesor,
-    barcodes,
-    asesorCount: asesorList.length,
-  })
+  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchData })
+
+  const asesor1Signed = !!(asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url)
+  const asesor2Signed = !!(asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url)
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   const handleNext = async () => {
     if (!agreedChecklist) {
@@ -336,7 +339,7 @@ export default function Ia04aPage() {
       }
 
       try {
-        const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+        const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
@@ -381,7 +384,7 @@ export default function Ia04aPage() {
     // Asesor_1: simpan umpan balik, lalu generate QR
     if (isAsesor1WithUmpan && umpanBalikSoalId) {
       try {
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${id}/ia04a`, {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
           method: 'POST',
           headers: {
             "Accept": "application/json",
@@ -411,7 +414,7 @@ export default function Ia04aPage() {
               return
             }
             try {
-              const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',
@@ -472,7 +475,7 @@ export default function Ia04aPage() {
       // Generate QR untuk asesi
       if (jadwalId) {
         try {
-          const qrResponse = await fetch(`https://backend.devgatensi.site/api/qr/${id}/ia04a`, {
+          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
             method: 'POST',
             headers: {
               'Accept': 'application/json',

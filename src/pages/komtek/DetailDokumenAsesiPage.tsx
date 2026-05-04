@@ -6,6 +6,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
+import { API_BASE_URL } from "@/config/api"
 
 interface Asesor {
   jadwal_id: string
@@ -77,7 +78,7 @@ export default function DetailDokumenAsesiPage() {
 
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/dokumen/asesi/${id}`, {
+        const response = await fetch(`${API_BASE_URL}/dokumen/asesi/${id}`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,

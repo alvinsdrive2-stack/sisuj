@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
+import { API_BASE_URL } from "@/config/api"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
@@ -37,6 +38,7 @@ export default function DashboardAsesiPage() {
 
   // Fetch jenjang from data-dokumen API
   const { jenjang } = useDataDokumenAsesmen(idIzin)
+  const { metode } = useDataDokumenAsesmen(idIzin)
 
   // Fetch id_izin from list-asesi
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function DashboardAsesiPage() {
 
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        const response = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -376,10 +378,10 @@ export default function DashboardAsesiPage() {
                       // Check jenjang from data-dokumen API for low jenjang flow
                       const jenjangId = parseInt(jenjang || "0")
                       if (jenjangId < 4) {
-                        console.log('[Dashboard Button] Navigating to /asesi/asesmen/' + idIzin + '/ia01 (low jenjang)')
                         navigate(`/asesi/asesmen/${idIzin}/ia01`)
+                      } else if (metode === "portofolio") {
+                        navigate(`/asesi/asesmen/${idIzin}/ia08`)
                       } else {
-                        console.log('[Dashboard Button] Navigating to /asesi/asesmen/' + idIzin + '/ia04a (high jenjang)')
                         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
                       }
                     }

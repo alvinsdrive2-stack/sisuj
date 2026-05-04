@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { API_BASE_URL } from "@/config/api"
 
 interface Asesor {
   id: number
@@ -125,7 +126,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
 
       try {
         const token = localStorage.getItem("access_token")
-        const response = await fetch(`https://backend.devgatensi.site/api/asesmen/${idIzin}/data-dokumen`, {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${idIzin}/data-dokumen`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,

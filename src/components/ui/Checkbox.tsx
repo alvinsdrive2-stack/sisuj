@@ -20,7 +20,7 @@ export function CustomCheckbox({
   const uniqueId = id || `checkbox-${Math.random().toString(36).substring(7)}`
 
   return (
-    <div className={`checkbox-wrapper ${className}`} style={style}>
+    <div className={`checkbox-wrapper ${className}`} style={{...style, cursor: disabled ? 'not-allowed' : 'auto'}}>
       <input
         type="checkbox"
         id={uniqueId}
@@ -33,7 +33,6 @@ export function CustomCheckbox({
         className="check-box"
         style={{
           opacity: disabled ? 0.5 : 1,
-          pointerEvents: disabled ? 'none' : 'auto',
         }}
       >
       </label>
