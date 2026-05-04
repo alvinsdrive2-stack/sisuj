@@ -486,6 +486,12 @@ html {
   pointer-events: auto;
 }
 
+/* Disabled checkbox — cursor not-allowed */
+.checkbox-wrapper input[type="checkbox"]:disabled + .check-box {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .checkbox-wrapper {
   pointer-events: auto;
 }
