@@ -13,8 +13,7 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { ASESOR_SIGNATURE_POLLING_INTERVAL_MS } from "@/lib/polling-config"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -45,7 +44,6 @@ function AnimatedCapsule({ fileName, onRemove, isExcluded, style, file, isAsesor
 
   const handleClick = () => {
     if (isAsesor && file && onView) {
-      console.log('AnimatedCapsule clicked - Opening preview:', file.name)
       onView(file)
     }
   }
@@ -186,23 +184,18 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
 
   const handleCapsuleClick = () => {
     if (isAsesor && onView) {
-      console.log('Opening preview for file:', file.name)
       onView(file)
     }
   }
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    console.log('Button clicked! isAsesor:', isAsesor, 'onView exists:', !!onView)
     if (isAsesor && onView) {
-      console.log('Button clicked - Opening preview for file:', file.name)
       onView(file)
     } else if (!disabled) {
       handleDelete()
     }
   }
-
-  console.log('ServerFileCapsule render - isAsesor:', isAsesor, 'disabled:', disabled, 'button should show:', isAsesor || !disabled)
 
   return (
     <>
@@ -265,7 +258,6 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
         {(isAsesor || !disabled) && (
           <button
             onClick={handleButtonClick}
-            onMouseDown={() => console.log('Button mouse down!')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -491,10 +483,7 @@ interface DocumentPreviewModalProps {
 }
 
 function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalProps) {
-  console.log('DocumentPreviewModal render - isOpen:', isOpen, 'file:', file?.name)
-
   if (!isOpen || !file) {
-    console.log('DocumentPreviewModal returning null - isOpen:', isOpen, 'file:', file)
     return null
   }
 
@@ -725,7 +714,7 @@ interface KUK {
   judul_kuk: string
 }
 
-interface File {
+interface ServerFile {
   id: number
   name: string
   path: string
@@ -749,7 +738,7 @@ interface Subunit {
   judul_elemen: string
   kompeten?: boolean
   kuk_list: KUK[]
-  files: File[]
+  files: ServerFile[]
   barcodes?: SubunitBarcodes
 }
 
@@ -798,6 +787,226 @@ type Apl02Data = {
   units: Unit[]
 }
 
+// Floating modal for selecting doc type before upload
+function FileTypeModal({
+  isOpen,
+  stagingFiles,
+  fileDocTypes,
+  setFileDocTypes,
+  fileCustomTypes,
+  setFileCustomTypes,
+  isUploading,
+  onClose,
+  onUpload,
+}: {
+  isOpen: boolean
+  stagingFiles: ServerFile[]
+  fileDocTypes: Record<string, string>
+  setFileDocTypes: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  fileCustomTypes: Record<string, string>
+  setFileCustomTypes: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  isUploading: boolean
+  onClose: () => void
+  onUpload: () => void
+}) {
+  if (!isOpen) return null
+
+  const DOC_TYPES = ['Ijazah', 'Referensi Kerja', 'Sertifikat Pelatihan', 'Laporan Pekerjaan', 'Dokumentasi Pekerjaan', 'Lainnya'] as const
+
+  const isValid = () => stagingFiles.every((_, idx) => {
+    const dt = fileDocTypes[String(idx)]
+    if (!dt) return false
+    if (dt === 'Lainnya') {
+      const custom = fileCustomTypes[String(idx)]?.trim() || ''
+      if (!custom) return false
+      if (/[^a-zA-Z0-9\s]/.test(custom)) return false
+      return true
+    }
+    return true
+  })
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: '16px',
+    }}>
+      <div style={{
+        backgroundColor: '#fff', borderRadius: '12px', padding: '24px',
+        maxWidth: '480px', width: '100%', maxHeight: '80vh', overflow: 'auto',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+      }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '700', margin: '0 0 12px 0', color: '#1e293b' }}>
+          Pilih Jenis Dokumen
+        </h3>
+        <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 20px 0' }}>
+          Tentukan jenis dokumen untuk setiap file yang akan diupload.
+        </p>
+
+        {stagingFiles.map((file, idx) => {
+          const key = String(idx)
+          const ext = file.name.includes('.') ? '.' + file.name.split('.').pop() : ''
+          const selectedType = fileDocTypes[key]
+          const displayName = selectedType
+            ? (selectedType === 'Lainnya'
+                ? (fileCustomTypes[key]?.trim() || file.name)
+                : selectedType + ext)
+            : file.name
+
+          return (
+            <div key={key} style={{
+              border: '1px solid #e2e8f0', borderRadius: '8px',
+              padding: '12px', marginBottom: '12px', background: '#f8fafc',
+            }}>
+              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M4 1L4 15H12V5L8 1H4Z" fill="#94a3b8" stroke="#64748b" strokeWidth="1"/>
+                  <path d="M8 1V5H12" fill="#cbd5e1" stroke="#64748b" strokeWidth="1"/>
+                </svg>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+              </div>
+              <select
+                value={fileDocTypes[key] || ''}
+                onChange={(e) => {
+                  setFileDocTypes(prev => ({ ...prev, [key]: e.target.value }))
+                  if (e.target.value !== 'Lainnya') {
+                    setFileCustomTypes(prev => {
+                      const next = { ...prev }
+                      delete next[key]
+                      return next
+                    })
+                  }
+                }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', background: '#fff', color: fileDocTypes[key] ? '#1e293b' : '#94a3b8', outline: 'none' }}
+              >
+                <option value="">-- Pilih Jenis Dokumen --</option>
+                {DOC_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
+              </select>
+              {fileDocTypes[key] === 'Lainnya' && (
+                <input
+                  type="text" placeholder="Tuliskan jenis dokumen..."
+                  value={fileCustomTypes[key] || ''}
+                  onChange={(e) => setFileCustomTypes(prev => ({ ...prev, [key]: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', marginTop: '8px', boxSizing: 'border-box', outline: 'none' }}
+                />
+              )}
+            </div>
+          )
+        })}
+
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', border: '1px solid #e2e8f0', backgroundColor: '#fff', color: '#64748b', fontSize: '14px', fontWeight: '600', borderRadius: '8px', cursor: 'pointer' }}>
+            Batal
+          </button>
+          <button onClick={onUpload} disabled={isUploading || !isValid()} style={{ padding: '10px 20px', border: 'none', backgroundColor: (isUploading || !isValid()) ? '#94a3b8' : '#00488f', color: '#fff', fontSize: '14px', fontWeight: '600', borderRadius: '8px', cursor: (isUploading || !isValid()) ? 'not-allowed' : 'pointer' }}>
+            {isUploading ? 'Mengupload...' : 'Upload'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Memoized KUK row — only re-renders when its own state changes
+interface KukRowProps {
+  kukId: string
+  unitId: string
+  subunitId: string
+  kukNo: string
+  kukJudul: string
+  isCheckedK: boolean
+  isCheckedBK: boolean
+  isAsesor: boolean
+  isSaving: boolean
+  onCheckRadio: (kukId: string, value: 'K' | 'BK', unitId: string, subunitId: string) => void
+  apiFiles: Array<{ id: number; name: string; path: string }>
+  excludedApiFileIds: Set<number>
+  onToggleExclude: (fileId: number) => void
+  selectedFileIds: number[]
+  uploadedFilesInfo: Array<{ id: number; name: string; path: string }>
+  onRemoveBukti: (kukId: string, fileId: number) => void
+  onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
+  onViewFile: (file: { id: number; name: string; path: string }) => void
+}
+
+const KukRow = React.memo(function KukRow({
+  kukId, unitId, subunitId, kukNo, kukJudul, isCheckedK, isCheckedBK, isAsesor, isSaving,
+  onCheckRadio, apiFiles, excludedApiFileIds, onToggleExclude,
+  selectedFileIds, uploadedFilesInfo, onRemoveBukti, onSelectBukti, onViewFile,
+}: KukRowProps) {
+  const userUploadedFiles = selectedFileIds
+    .map(id => uploadedFilesInfo.find(f => f.id === id))
+    .filter((f): f is { id: number; name: string; path: string } => f !== undefined)
+
+  return (
+    <tr>
+      <td style={{ border: '1px solid #000', padding: '4px', verticalAlign: 'top' }}>
+        {kukNo} {kukJudul}
+      </td>
+      <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
+        <CustomRadio
+          name={kukId}
+          value="K"
+          checked={isCheckedK}
+          onChange={() => onCheckRadio(kukId, 'K', unitId, subunitId)}
+          disabled={isAsesor || isSaving}
+        />
+      </td>
+      <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
+        <CustomRadio
+          name={kukId}
+          value="BK"
+          checked={isCheckedBK}
+          onChange={() => onCheckRadio(kukId, 'BK', unitId, subunitId)}
+          disabled={isAsesor || isSaving}
+        />
+      </td>
+      <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
+        {apiFiles.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+            {apiFiles.map((file) => {
+              const isExcluded = excludedApiFileIds.has(file.id)
+              return (
+                <AnimatedCapsule
+                  key={file.id}
+                  fileName={file.name}
+                  file={file}
+                  isExcluded={isExcluded}
+                  isAsesor={isAsesor}
+                  onView={onViewFile}
+                  onRemove={() => onToggleExclude(file.id)}
+                />
+              )
+            })}
+          </div>
+        )}
+        {userUploadedFiles.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+            {userUploadedFiles.map((file) => (
+              <AnimatedCapsule
+                key={file.id}
+                fileName={file.name}
+                file={file}
+                isAsesor={isAsesor}
+                onView={onViewFile}
+                onRemove={() => onRemoveBukti(kukId, file.id)}
+              />
+            ))}
+          </div>
+        )}
+        <BuktiDropdown
+          kukId={kukId}
+          uploadedFiles={uploadedFilesInfo}
+          selectedFileIds={selectedFileIds}
+          onSelectFile={(_kukId, fileId) => onSelectBukti(kukId, fileId, unitId, subunitId)}
+          disabled={isAsesor || isSaving}
+        />
+      </td>
+    </tr>
+  )
+})
+
 export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -827,22 +1036,27 @@ export default function Apl02Page() {
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<{ id: number; name: string; path: string } | null>(null)
 
   // File type modal state
-  const DOC_TYPES = [
-    'Ijazah',
-    'Referensi Kerja',
-    'Sertifikat Pelatihan',
-    'Laporan Pekerjaan',
-    'Dokumentasi Pekerjaan',
-    'Lainnya'
-  ] as const
   const [showFileTypeModal, setShowFileTypeModal] = useState(false)
-  const [pendingFiles, setPendingFiles] = useState<Array<{ id: number; name: string; path: string }>>([])
-  const [fileDocTypes, setFileDocTypes] = useState<Record<number, string>>({}) // file id -> doc type
-  const [fileCustomTypes, setFileCustomTypes] = useState<Record<number, string>>({}) // file id -> custom text for "Lainnya"
+  // stagingFiles holds raw File objects from client — no upload until user confirms
+  const [stagingFiles, setStagingFiles] = useState<ServerFile[]>([])
+  const [fileDocTypes, setFileDocTypes] = useState<Record<string, string>>({}) // client index -> doc type
+  const [fileCustomTypes, setFileCustomTypes] = useState<Record<string, string>>({}) // client index -> custom text for "Lainnya"
   const [isUploading, setIsUploading] = useState(false)
 
-  // Debug: log isAsesor value
-  console.log('Apl02Page render - isAsesor:', isAsesor, 'user role:', user?.role?.name)
+  // Stable callbacks for memoized KukRow children
+  const onViewFile = useCallback((file: { id: number; name: string; path: string }) => {
+    setSelectedPreviewFile(file)
+    setShowPreview(true)
+  }, [])
+
+  const handleToggleExclude = useCallback((fileId: number) => {
+    setExcludedApiFileIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(fileId)) newSet.delete(fileId)
+      else newSet.add(fileId)
+      return newSet
+    })
+  }, [])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: asesorList is available after useDataDokumenPraAsesmen is called
@@ -854,7 +1068,7 @@ export default function Apl02Page() {
     asesorList: asesorList
   })
 
-  const handleCheckboxChange = (kukId: string, value: 'K' | 'BK', unitId?: string, subunitId?: string) => {
+  const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK', unitId?: string, subunitId?: string) => {
     setKukChecklist(prev => {
       const current = prev[kukId]
       if (current === value) {
@@ -893,9 +1107,9 @@ export default function Apl02Page() {
       }
       return updated
     })
-  }
+  }, [apl02Data])
 
-  const handleBuktiChange = (kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
+  const handleBuktiChange = useCallback((kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
     setKukBukti(prev => {
       const currentFiles = prev[kukId] || []
       const isRemoving = currentFiles.includes(fileId)
@@ -935,14 +1149,23 @@ export default function Apl02Page() {
         return updated
       }
     })
-  }
+  }, [apl02Data])
 
-  const removeBuktiFile = (kukId: string, fileId: number) => {
+  // Stable callbacks for KukRow — defined after handleCheckboxChange & handleBuktiChange
+  const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK', unitId: string, subunitId: string) => {
+    handleCheckboxChange(kukId, value, unitId, subunitId)
+  }, [handleCheckboxChange])
+
+  const handleRemoveBukti = useCallback((kukId: string, fileId: number) => {
     setKukBukti(prev => ({
       ...prev,
       [kukId]: (prev[kukId] || []).filter(f => f !== fileId)
     }))
-  }
+  }, [])
+
+  const handleSelectBukti = useCallback((kukId: string, fileId: number, unitId: string, subunitId: string) => {
+    handleBuktiChange(kukId, fileId, unitId, subunitId)
+  }, [handleBuktiChange])
 
   const deleteFile = async (fileId: number) => {
     try {
@@ -990,57 +1213,92 @@ export default function Apl02Page() {
   const uploadFiles = async (fileList: FileList | null): Promise<void> => {
     if (!fileList || fileList.length === 0) return
     const files = Array.from(fileList)
-    setIsUploading(true)
-      try {
-        const token = localStorage.getItem("access_token")
-        const finalIdIzin = _idIzin || idIzin
-
-        if (!finalIdIzin) {
-          showWarning("ID Izin tidak ditemukan")
-          return
-        }
-
-        // Upload files to server
-        const formData = new FormData()
-        files.forEach(file => {
-          formData.append('files[]', file)
-        })
-
-        const uploadResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/files`, {
-          method: 'POST',
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formData,
-        })
-
-        if (uploadResponse.ok) {
-          const uploadResult = await uploadResponse.json()
-          if (uploadResult.message === "Files uploaded" && uploadResult.files) {
-            const mappedFiles = uploadResult.files.map((f: any) => ({
-              id: f.id,
-              name: f.original_name || f.name,
-              path: f.path
-            }))
-            // Open floating modal for document type selection
-            setPendingFiles(mappedFiles)
-            setShowFileTypeModal(true)
-          }
-        } else {
-          showError('Gagal upload file')
-        }
-      } catch (error) {
-        console.error('Error uploading files:', error)
-        showError('Terjadi kesalahan saat upload file')
-      } finally {
-        setIsUploading(false)
-      }
+    // Stage files client-side, open modal for doc type selection before upload
+    setStagingFiles(files as unknown as ServerFile[])
+    setFileDocTypes({})
+    setFileCustomTypes({})
+    setShowFileTypeModal(true)
   }
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     uploadFiles(e.target.files)
     e.target.value = ''
+  }
+
+  const handleUploadFiles = async () => {
+    const isValid = stagingFiles.every((_, idx) => {
+      const dt = fileDocTypes[String(idx)]
+      if (!dt) return false
+      if (dt === 'Lainnya') {
+        const custom = fileCustomTypes[String(idx)]?.trim() || ''
+        if (!custom) return false
+        if (/[^a-zA-Z0-9\s]/.test(custom)) return false
+        return true
+      }
+      return true
+    })
+    if (!isValid) {
+      showWarning('Pilih jenis dokumen untuk semua file (Lainnya: minimal 1 kata, tanpa simbol)')
+      return
+    }
+    setIsUploading(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const finalIdIzin = _idIzin || idIzin
+      if (!finalIdIzin) {
+        showWarning("ID Izin tidak ditemukan")
+        return
+      }
+      const renamedFiles = stagingFiles.map((f, idx) => {
+        const ext = f.name.includes('.') ? '.' + f.name.split('.').pop() : ''
+        const dtype = fileDocTypes[String(idx)]
+        let newName = f.name
+        if (dtype === 'Lainnya') {
+          const custom = fileCustomTypes[String(idx)]?.trim()
+          if (custom) newName = custom + ext
+        } else if (dtype) {
+          newName = dtype + ext
+        }
+        return new globalThis.File([f as unknown as Blob], newName, { type: (f as unknown as { type: string }).type })
+      })
+      const formData = new FormData()
+      renamedFiles.forEach(file => {
+        formData.append('files[]', file)
+      })
+      const uploadResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/files`, {
+        method: 'POST',
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        body: formData,
+      })
+      if (uploadResponse.ok) {
+        const uploadResult = await uploadResponse.json()
+        if (uploadResult.message === "Files uploaded" && uploadResult.files) {
+          const mappedFiles = uploadResult.files.map((f: any) => ({
+            id: f.id, name: f.original_name || f.name, path: f.path
+          }))
+          setUploadedFilesInfo(prev => [...prev, ...mappedFiles])
+          showSuccess(`${stagingFiles.length} file berhasil diupload`)
+        }
+      } else {
+        showError('Gagal upload file')
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error)
+      showError('Terjadi kesalahan saat upload file')
+    } finally {
+      setIsUploading(false)
+      setShowFileTypeModal(false)
+      setStagingFiles([])
+      setFileDocTypes({})
+      setFileCustomTypes({})
+    }
+  }
+
+  const handleCloseFileModal = () => {
+    setShowFileTypeModal(false)
+    setStagingFiles([])
+    setFileDocTypes({})
+    setFileCustomTypes({})
   }
 
   const initialFetchDone = useRef(false)
@@ -1203,9 +1461,29 @@ export default function Apl02Page() {
     }
   }, [kegiatan, isAsesor, idIzin, fetchData])
 
+  // Check if asesi has signed
+  const asesiHasSigned = (() => {
+    if (isAsesor) return true
+    const subunits = Object.values(subunitBarcodes)
+    if (subunits.length === 0) return false
+    return subunits.some(sb => sb.asesi?.url)
+  })()
+
+  // Check if asesor has signed (for current asesor)
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return true
+    const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+    const firstSubunitId = Object.keys(subunitBarcodes)[0]
+    if (!firstSubunitId) return false
+    const barcode = subunitBarcodes[firstSubunitId]
+    return isAsesor1 ? !!barcode?.asesor1?.url : !!barcode?.asesor2?.url
+  })()
+
   // Check if all asesor signatures exist across all subunits
   const allAsesorSigned = (() => {
-    if (isAsesor || asesorList.length === 0) return true
+    if (isAsesor) return true
+    if (asesorList.length === 0) return false // Asesi: need asesor data first
     const subunits = Object.values(subunitBarcodes)
     if (subunits.length === 0) return false
     return subunits.every(sb => {
@@ -1214,6 +1492,10 @@ export default function Apl02Page() {
       return true
     })
   })()
+
+  const allSigned = isAsesor
+    ? asesorHasSigned  // Asesor: only check if this asesor has signed
+    : asesiHasSigned && allAsesorSigned  // Asesi: check asesi + all asesor
 
   const missingAsesorLabels = (() => {
     if (isAsesor || asesorList.length === 0 || allAsesorSigned) return []
@@ -1226,15 +1508,11 @@ export default function Apl02Page() {
     return missing
   })()
 
-  // Polling for asesor signatures
-  useEffect(() => {
-    if (isAsesor || allAsesorSigned) return
-    const interval = setInterval(async () => {
-      if (document.visibilityState !== "visible") return
-      await fetchData()
-    }, ASESOR_SIGNATURE_POLLING_INTERVAL_MS)
-    return () => clearInterval(interval)
-  }, [isAsesor, allAsesorSigned, fetchData])
+  // SSE for real-time signature updates (replaces polling)
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${_idIzin || idIzin}`,
+    onUpdate: fetchData
+  })
 
   const handleSubmit = async () => {
     if (!agreedChecklist) {
@@ -1242,9 +1520,21 @@ export default function Apl02Page() {
       return
     }
 
-    // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+    // Jika asesi sudah ttd & semua asesor sudah ttd → redirect ke halaman berikutnya
+    if (!isAsesor && asesiHasSigned && allAsesorSigned) {
+      const finalIdIzin = _idIzin || idIzin
+      if (finalIdIzin) {
+        navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+      }
+      return
+    }
+
+    // Jika asesor sudah ttd → redirect ke halaman berikutnya
+    if (isAsesor && asesorHasSigned) {
+      const finalIdIzin = idIzinFromUrl || _idIzin
+      if (finalIdIzin) {
+        navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+      }
       return
     }
 
@@ -1342,9 +1632,6 @@ export default function Apl02Page() {
                 })
 
                 showSuccess('Dokumen berhasil ditandatangani!')
-                setTimeout(() => {
-                  navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
-                }, 1500)
                 return
               }
             }
@@ -1354,9 +1641,6 @@ export default function Apl02Page() {
         }
 
         showSuccess('Metode asesmen berhasil disimpan!')
-        setTimeout(() => {
-          navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
-        }, 500)
       } catch (error) {
         console.error('Error saving metode:', error)
         showError('Gagal menyimpan metode asesmen')
@@ -1417,7 +1701,7 @@ export default function Apl02Page() {
     // asesi sends kompeten: null, asesor sends kompeten: true/false
     const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
       subunit_id: subunitId,
-      kompeten: isAsesor ? data.statuses.every(s => s === 'K') : null,
+      kompeten: data.statuses.every(s => s === 'K'),
       file_ids: Array.from(data.allFileIds)
     }))
 
@@ -1502,10 +1786,8 @@ export default function Apl02Page() {
           }
         }
 
-        showSuccess('APL 02 berhasil disimpan!')
-        setTimeout(() => {
-          navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
-        }, 500)
+        showSuccess('APL 02 berhasil ditandatangani!')
+        publishUpdate()
       } else {
         showError('Gagal menyimpan data APL 02')
       }
@@ -1728,10 +2010,8 @@ export default function Apl02Page() {
                     disabled={isAsesor || isSaving}
                     isAsesor={isAsesor}
                     onView={(file) => {
-                      console.log('onView callback triggered - isAsesor:', isAsesor, 'file:', file)
                       setSelectedPreviewFile(file)
                       setShowPreview(true)
-                      console.log('State updated - showPreview:', true, 'selectedPreviewFile:', file)
                     }}
                   />
                 ))}
@@ -1861,115 +2141,28 @@ export default function Apl02Page() {
                   {/* KUK Rows */}
                   {subunit.kuk_list.map((kuk) => {
                     const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                    const isCheckedK = kukChecklist[kukId] === 'K'
-                    const isCheckedBK = kukChecklist[kukId] === 'BK'
-
                     return (
-                      <tr key={kuk.no_kuk}>
-                        <td style={{ border: '1px solid #000', padding: '4px', verticalAlign: 'top' }}>
-                          {kuk.no_kuk} {kuk.judul_kuk}
-                        </td>
-                        <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-                          <CustomRadio
-                            name={kukId}
-                            value="K"
-                            checked={isCheckedK}
-                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'K', unit.id, subunit.id)}
-                            disabled={isAsesor || isSaving}
-                          />
-                        </td>
-                        <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-                          <CustomRadio
-                            name={kukId}
-                            value="BK"
-                            checked={isCheckedBK}
-                            onChange={() => !isAsesor && !isSaving && handleCheckboxChange(kukId, 'BK', unit.id, subunit.id)}
-                            disabled={isAsesor || isSaving}
-                          />
-                        </td>
-                        <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
-                          {(() => {
-                            const selectedFileIds = kukBukti[kukId] || []
-
-                            // Get API files (from subunit.files) and user-uploaded files
-                            const apiFiles = subunit.files || []
-                            const userUploadedFiles = selectedFileIds
-                              .map(id => uploadedFilesInfo.find(f => f.id === id))
-                              .filter((f): f is { id: number; name: string; path: string } => f !== undefined)
-
-                            return (
-                              <>
-                                {/* API Files as Static Capsules (can be excluded) - clickable for asesor to view */}
-                                {apiFiles.length > 0 && (
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                    {apiFiles.map((file) => {
-                                      const isExcluded = excludedApiFileIds.has(file.id)
-                                      return (
-                                        <AnimatedCapsule
-                                          key={file.id}
-                                          fileName={file.name}
-                                          file={file}
-                                          isExcluded={isExcluded}
-                                          isAsesor={isAsesor}
-                                          onView={(file) => {
-                                            console.log('API file onView triggered:', file.name)
-                                            setSelectedPreviewFile(file)
-                                            setShowPreview(true)
-                                          }}
-                                          onRemove={() => {
-                                            if (!isAsesor) {
-                                              setExcludedApiFileIds(prev => {
-                                                const newSet = new Set(prev)
-                                                if (newSet.has(file.id)) {
-                                                  newSet.delete(file.id)
-                                                } else {
-                                                  newSet.add(file.id)
-                                                }
-                                                return newSet
-                                              })
-                                            }
-                                          }}
-                                        />
-                                      )
-                                    })}
-                                  </div>
-                                )}
-
-                                {/* User-selected Files as Animated Capsules (can be removed by asesi only) */}
-                                {userUploadedFiles.length > 0 && (
-                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                                    {userUploadedFiles.map((file) => (
-                                      <AnimatedCapsule
-                                        key={file.id}
-                                        fileName={file.name}
-                                        file={file}
-                                        isAsesor={isAsesor}
-                                        onView={(file) => {
-                                          console.log('User file onView triggered:', file.name)
-                                          setSelectedPreviewFile(file)
-                                          setShowPreview(true)
-                                        }}
-                                        onRemove={() => {
-                                          if (!isAsesor) removeBuktiFile(kukId, file.id)
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-
-                                {/* Bukti Dropdown - enabled for asesi, disabled for asesor */}
-                                <BuktiDropdown
-                                  kukId={kukId}
-                                  uploadedFiles={uploadedFilesInfo}
-                                  selectedFileIds={selectedFileIds}
-                                  onSelectFile={(kukId, fileId) => handleBuktiChange(kukId, fileId, unit.id, subunit.id)}
-                                  disabled={isAsesor || isSaving}
-                                />
-                              </>
-                            )
-                          })()}
-                        </td>
-                      </tr>
+                      <KukRow
+                        key={kukId}
+                        kukId={kukId}
+                        unitId={unit.id}
+                        subunitId={subunit.id}
+                        kukNo={kuk.no_kuk}
+                        kukJudul={kuk.judul_kuk}
+                        isCheckedK={kukChecklist[kukId] === 'K'}
+                        isCheckedBK={kukChecklist[kukId] === 'BK'}
+                        isAsesor={isAsesor}
+                        isSaving={isSaving}
+                        onCheckRadio={handleCheckRadio}
+                        apiFiles={subunit.files || []}
+                        excludedApiFileIds={excludedApiFileIds}
+                        onToggleExclude={handleToggleExclude}
+                        selectedFileIds={kukBukti[kukId] || []}
+                        uploadedFilesInfo={uploadedFilesInfo}
+                        onRemoveBukti={handleRemoveBukti}
+                        onSelectBukti={handleSelectBukti}
+                        onViewFile={onViewFile}
+                      />
                     )
                   })}
                 </React.Fragment>
@@ -2143,7 +2336,6 @@ export default function Apl02Page() {
           </tbody>
         </table>
 
-        {/* Agreement Checklist */}
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <CustomCheckbox
@@ -2156,19 +2348,21 @@ export default function Apl02Page() {
           </label>
         </div>
 
-        <AsesorSignatureGuard
-          missingAsesorLabels={missingAsesorLabels}
-          allAsesorSigned={allAsesorSigned}
-          isAsesor={isAsesor}
-        />
-
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSubmit}>
-            {isSaving ? "Menyimpan..." : "Simpan & Selesaikan"}
+          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSubmit}>
+            {isSaving ? "Menyimpan..." : (
+              allSigned
+                ? 'Lanjut ke MAPA-01'
+                : isAsesor
+                  ? asesorHasSigned ? 'Lanjut ke MAPA-01' : 'Simpan & Tanda Tangan'
+                  : asesiHasSigned
+                    ? allAsesorSigned ? 'Lanjut ke MAPA-01' : `Menunggu TTD: ${missingAsesorLabels.join(', ')}`
+                    : 'Simpan & Tanda Tangan'
+            )}
           </ActionButton>
         </div>
       </AsesiLayout>
@@ -2194,236 +2388,17 @@ export default function Apl02Page() {
       />
 
       {/* Floating File Type Modal */}
-      {showFileTypeModal && pendingFiles.length > 0 && (() => {
-        const isValid = () => pendingFiles.every(f => {
-          const dt = fileDocTypes[f.id]
-          if (!dt) return false
-          if (dt === 'Lainnya') {
-            const custom = fileCustomTypes[f.id]?.trim() || ''
-            if (!custom) return false
-            if (/[^a-zA-Z0-9\s]/.test(custom)) return false
-            return true
-          }
-          return true
-        })
-
-        const handleSave = () => {
-          if (!isValid()) {
-            showWarning('Pilih jenis dokumen untuk semua file (Lainnya: minimal 1 kata, tanpa simbol)')
-            return
-          }
-          const renamedFiles = pendingFiles.map(f => {
-            const ext = f.name.includes('.') ? '.' + f.name.split('.').pop() : ''
-            const dtype = fileDocTypes[f.id]
-            let newName = f.name
-            if (dtype === 'Lainnya') {
-              const custom = fileCustomTypes[f.id]?.trim()
-              if (custom) newName = custom + ext
-            } else if (dtype) {
-              newName = dtype + ext
-            }
-            return { ...f, name: newName }
-          })
-          setUploadedFilesInfo(prev => [...prev, ...renamedFiles])
-          showSuccess(`${pendingFiles.length} file berhasil diupload`)
-          setShowFileTypeModal(false)
-          setPendingFiles([])
-          setFileDocTypes({})
-          setFileCustomTypes({})
-        }
-
-        const handleCancel = () => {
-          pendingFiles.forEach(f => deleteFile(f.id))
-          setShowFileTypeModal(false)
-          setPendingFiles([])
-          setFileDocTypes({})
-          setFileCustomTypes({})
-        }
-
-        return (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '16px',
-          }}>
-            <style>{`
-              @keyframes fileTypeFadeIn {
-                from { opacity: 0; transform: scale(0.95); }
-                to { opacity: 1; transform: scale(1); }
-              }
-            `}</style>
-            <div style={{
-              backgroundColor: '#fff',
-              borderRadius: '12px',
-              padding: '24px',
-              maxWidth: '480px',
-              width: '100%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              animation: 'fileTypeFadeIn 0.2s ease-out',
-            }}>
-              <h3 style={{
-                fontSize: '18px',
-                fontWeight: '700',
-                margin: '0 0 12px 0',
-                color: '#1e293b',
-              }}>
-                Pilih Jenis Dokumen
-              </h3>
-              <p style={{
-                fontSize: '14px',
-                color: '#64748b',
-                margin: '0 0 20px 0',
-                lineHeight: '1.5',
-              }}>
-                Tentukan jenis dokumen untuk setiap file yang diupload.
-              </p>
-
-              {pendingFiles.map((file) => {
-                const ext = file.name.includes('.') ? '.' + file.name.split('.').pop() : ''
-                const selectedType = fileDocTypes[file.id]
-                const displayName = selectedType
-                  ? (selectedType === 'Lainnya'
-                      ? (fileCustomTypes[file.id]?.trim() || file.name)
-                      : selectedType + ext)
-                  : file.name
-
-                return (
-                <div key={file.id} style={{
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '12px',
-                  background: '#f8fafc',
-                }}>
-                  <div style={{
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    color: '#1e293b',
-                    marginBottom: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M4 1L4 15H12V5L8 1H4Z" fill="#94a3b8" stroke="#64748b" strokeWidth="1"/>
-                      <path d="M8 1V5H12" fill="#cbd5e1" stroke="#64748b" strokeWidth="1"/>
-                    </svg>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
-                  </div>
-                  <select
-                    value={fileDocTypes[file.id] || ''}
-                    onChange={(e) => {
-                      setFileDocTypes(prev => ({ ...prev, [file.id]: e.target.value }))
-                      if (e.target.value !== 'Lainnya') {
-                        setFileCustomTypes(prev => {
-                          const next = { ...prev }
-                          delete next[file.id]
-                          return next
-                        })
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      fontSize: '13px',
-                      background: '#fff',
-                      color: fileDocTypes[file.id] ? '#1e293b' : '#94a3b8',
-                      outline: 'none',
-                    }}
-                  >
-                    <option value="">-- Pilih Jenis Dokumen --</option>
-                    {DOC_TYPES.map(dt => (
-                      <option key={dt} value={dt}>{dt}</option>
-                    ))}
-                  </select>
-                  {fileDocTypes[file.id] === 'Lainnya' && (
-                    <input
-                      type="text"
-                      placeholder="Tuliskan jenis dokumen..."
-                      value={fileCustomTypes[file.id] || ''}
-                      onChange={(e) => setFileCustomTypes(prev => ({ ...prev, [file.id]: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '13px',
-                        marginTop: '8px',
-                        boxSizing: 'border-box',
-                        outline: 'none',
-                      }}
-                    />
-                  )}
-                </div>
-                )
-              })}
-
-              <div style={{
-                display: 'flex',
-                gap: '12px',
-                justifyContent: 'flex-end',
-              }}>
-                <button
-                  onClick={handleCancel}
-                  style={{
-                    padding: '10px 20px',
-                    border: '1px solid #e2e8f0',
-                    backgroundColor: '#fff',
-                    color: '#64748b',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fff'
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleSave}
-                  style={{
-                    padding: '10px 20px',
-                    border: 'none',
-                    backgroundColor: '#00488f',
-                    color: '#fff',
-                    fontSize: '14px',
-                    fontWeight: '600',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00488fcc'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#00488f'
-                  }}
-                >
-                  Simpan
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      <FileTypeModal
+        isOpen={showFileTypeModal}
+        stagingFiles={stagingFiles}
+        fileDocTypes={fileDocTypes}
+        setFileDocTypes={setFileDocTypes}
+        fileCustomTypes={fileCustomTypes}
+        setFileCustomTypes={setFileCustomTypes}
+        isUploading={isUploading}
+        onClose={handleCloseFileModal}
+        onUpload={handleUploadFiles}
+      />
     </div>
   )
 }

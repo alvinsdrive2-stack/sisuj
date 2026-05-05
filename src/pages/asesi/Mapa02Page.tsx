@@ -6,11 +6,11 @@ import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
-import { useDataDokumen } from "@/hooks/useDataDokumen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -62,13 +62,18 @@ export default function Mapa02Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumen(idIzin)
+  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string }
+    asesor1?: { url: string; tanggal: string; nama: string } | null
+    asesor2?: { url: string; tanggal: string; nama: string } | null
+  } | null>(null)
   const [selectedPotensi, setSelectedPotensi] = useState<Record<number, number>>({})
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -77,7 +82,7 @@ export default function Mapa02Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: [] // asesorList not available in this page
+    asesorList: asesorList
   })
 
   const fetchMapa02Data = useCallback(async () => {
@@ -109,6 +114,9 @@ export default function Mapa02Page() {
         const result: ApiResponse = await mapa02Response.json()
         if (result.message === "Success") {
           setMapaData(result.data)
+          if ((result.data as any).barcodes) {
+            setBarcodes((result.data as any).barcodes)
+          }
           const initialSelected: Record<number, number> = {}
           result.data.referensi_form.forEach(refForm => {
             if (refForm.kategori === "MAPA02_1") {
@@ -134,7 +142,21 @@ export default function Mapa02Page() {
     else if (kegiatan) fetchMapa02Data()
   }, [idIzin, kegiatan, isAsesor, fetchMapa02Data])
 
-  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchMapa02Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin}`,
+    onUpdate: fetchMapa02Data
+  })
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    asesor1Signed && (asesorList.length < 2 || asesor2Signed)
+  ))
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
@@ -181,6 +203,7 @@ export default function Mapa02Page() {
 
       if (response.ok) {
         showSuccess('MAPA 02 berhasil disimpan!')
+        publishUpdate()
         setTimeout(() => {
           navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-07`)
         }, 500)
@@ -392,18 +415,21 @@ export default function Mapa02Page() {
             </tbody>
           </table>
           {/* Agreement Checklist */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
-                style={{ marginTop: '2px', cursor: 'pointer' }}
+                disabled={allSigned}
+                style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen MAPA 02 (Matriks Pengembangan dan Penilaian Asesmen) ini dengan sebenar-benarnya.
               </span>
             </label>
           </div>
+          )}
 
           
 
@@ -412,8 +438,8 @@ export default function Mapa02Page() {
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 07" : "Simpan & Lanjut"}
             </ActionButton>
           </div>
         </div>

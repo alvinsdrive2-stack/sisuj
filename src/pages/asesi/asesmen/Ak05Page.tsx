@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -61,12 +61,10 @@ export default function Ak05Page() {
   const {
     showAwalModal,
     showAkhirModal,
-    setShowAkhirModal,
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
     handleAkhirModalClose,
-    shouldShowAkhirModal,
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -85,10 +83,12 @@ export default function Ak05Page() {
     catatan: '',
   })
   const [barcodes, setBarcodes] = useState<{
+    asesi?: BarcodeData | null
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
-  }>({ asesor1: null, asesor2: null })
+  }>({ asesi: null, asesor1: null, asesor2: null })
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
 
   // Fetch AK05 data - GET only
   const fetchAk05Data = useCallback(async () => {
@@ -118,6 +118,7 @@ export default function Ak05Page() {
           // Handle barcodes
           if (result.data.barcodes) {
             setBarcodes({
+              asesi: result.data.barcodes.asesi || null,
               asesor1: result.data.barcodes.asesor1 || null,
               asesor2: result.data.barcodes.asesor2 || null,
             })
@@ -132,14 +133,43 @@ export default function Ak05Page() {
 
   useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk05Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchAk05Data
+  })
+
+  // Sign-then-redirect + view-only
+  const asesiHasSigned = !!barcodes.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes.asesor1?.url : !!barcodes.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes.asesor1?.url && (asesorList.length < 2 || !!barcodes.asesor2?.url)
+  ))
 
   const handleSave = async () => {
+    // If user already signed → navigate to next page
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak05'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!id) {
       showWarning('ID tidak ditemukan')
       return
     }
 
+    setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
 
@@ -198,6 +228,7 @@ export default function Ak05Page() {
             } catch (qrError) {
               console.error('Error generating QR:', qrError)
             }
+            publishUpdate()
           }
         }
       } else {
@@ -208,21 +239,14 @@ export default function Ak05Page() {
       console.error('Error saving AK05:', err)
       showError('Terjadi kesalahan. Silakan coba lagi.')
       return
-    }
-
-    // Check if absen akhir is needed
-    const needAbsenAkhir = await shouldShowAkhirModal()
-    if (needAbsenAkhir) {
-      setShowAkhirModal(true)
-    } else {
-      setTimeout(() => navigate(`/asesi/asesmen/${id}/ak06`), 500)
+    } finally {
+      setIsSaving(false)
     }
   }
 
   // Handle absen akhir submit
   const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
     await submitAbsenAkhir(imageBlob)
-    setTimeout(() => navigate(`/asesi/asesmen/${id}/ak06`), 500)
   }
 
   if (isLoading) {
@@ -233,6 +257,8 @@ export default function Ak05Page() {
       </div>
     )
   }
+
+  const formDisabled = !canEdit || allSigned
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -311,23 +337,23 @@ export default function Ak05Page() {
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                 <CustomCheckbox
                   checked={ak05Data.kompeten}
-                  onChange={() => canEdit && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
-                  style={{ cursor: canEdit ? 'pointer' : 'not-allowed', opacity: canEdit ? 1 : 0.6 }}
+                  onChange={() => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
+                  style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
                 />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                 <CustomCheckbox
                   checked={!ak05Data.kompeten}
-                  onChange={() => canEdit && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
-                  style={{ cursor: canEdit ? 'pointer' : 'not-allowed', opacity: canEdit ? 1 : 0.6 }}
+                  onChange={() => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
+                  style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
                 />
               </td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.keterangan}
-                  onChange={(e) => canEdit && setAk05Data(prev => ({ ...prev, keterangan: e.target.value }))}
-                  disabled={!canEdit}
-                  style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: canEdit ? 'text' : 'not-allowed' }}
+                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, keterangan: e.target.value }))}
+                  disabled={formDisabled}
+                  style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Keterangan..."
                 />
               </td>
@@ -347,9 +373,9 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.aspek_positif_negatif}
-                  onChange={(e) => canEdit && setAk05Data(prev => ({ ...prev, aspek_positif_negatif: e.target.value }))}
-                  disabled={!canEdit}
-                  style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: canEdit ? 'text' : 'not-allowed' }}
+                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, aspek_positif_negatif: e.target.value }))}
+                  disabled={formDisabled}
+                  style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan aspek positif dan negatif..."
                 />
               </td>
@@ -359,9 +385,9 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.pencatatan_penolakan}
-                  onChange={(e) => canEdit && setAk05Data(prev => ({ ...prev, pencatatan_penolakan: e.target.value }))}
-                  disabled={!canEdit}
-                  style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: canEdit ? 'text' : 'not-allowed' }}
+                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, pencatatan_penolakan: e.target.value }))}
+                  disabled={formDisabled}
+                  style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan pencatatan penolakan..."
                 />
               </td>
@@ -371,9 +397,9 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.saran}
-                  onChange={(e) => canEdit && setAk05Data(prev => ({ ...prev, saran: e.target.value }))}
-                  disabled={!canEdit}
-                  style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: canEdit ? 'text' : 'not-allowed' }}
+                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, saran: e.target.value }))}
+                  disabled={formDisabled}
+                  style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan saran perbaikan..."
                 />
               </td>
@@ -397,9 +423,9 @@ export default function Ak05Page() {
                         <div style={{ marginTop: '8px' }}>
                           <textarea
                             value={ak05Data.catatan}
-                            onChange={(e) => canEdit && setAk05Data(prev => ({ ...prev, catatan: e.target.value }))}
-                            disabled={!canEdit}
-                            style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '4px', fontSize: '12px', resize: 'vertical', cursor: canEdit ? 'text' : 'not-allowed' }}
+                            onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, catatan: e.target.value }))}
+                            disabled={formDisabled}
+                            style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '4px', fontSize: '12px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                             placeholder="Tuliskan catatan..."
                           />
                         </div>
@@ -470,8 +496,8 @@ export default function Ak05Page() {
             >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" onClick={handleSave}>
-              Lanjut
+            <ActionButton variant="primary" disabled={isSaving} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

@@ -11,7 +11,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { API_BASE_URL } from "@/config/api"
@@ -168,8 +168,21 @@ export default function Ia10Page() {
 
   useEffect(() => { fetchIa10Data() }, [fetchIa10Data])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa10Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa10Data
+  })
 
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
   const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
@@ -177,6 +190,10 @@ export default function Ia10Page() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   const handleYaChange = (id: number, value: boolean) => {
     setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, ya: value, tidak: value ? false : p.tidak } : p))
@@ -199,6 +216,18 @@ export default function Ia10Page() {
   }
 
   const handleSave = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) return
 
     setIsSaving(true)
@@ -269,6 +298,7 @@ export default function Ia10Page() {
             }
           }
         }
+        publishUpdate()
 
         // Generate QR for asesi if needed
         if (!barcodes?.asesi?.url) {
@@ -291,14 +321,6 @@ export default function Ia10Page() {
           } catch (qrErr) {
             console.error("Error generating QR:", qrErr)
           }
-        }
-
-        // Navigate to next step
-        const currentStepIndex = asesmenSteps.findIndex((s) => s.href.includes("ia10"))
-        const nextStep = asesmenSteps[currentStepIndex + 1]
-        if (nextStep) {
-          const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
-          setTimeout(() => navigate(nextPath), 500)
         }
       }
     } catch (err) {
@@ -483,7 +505,7 @@ export default function Ia10Page() {
                         type="text"
                         value={d.nama}
                         onChange={e => handleDataPihakChange(idx, "nama", e.target.value)}
-                        disabled={isAsesor}
+                        disabled={isAsesor || allSigned}
                         style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
                       />
                     </div>
@@ -493,7 +515,7 @@ export default function Ia10Page() {
                         type="text"
                         value={d.tempat_kerja}
                         onChange={e => handleDataPihakChange(idx, "tempat_kerja", e.target.value)}
-                        disabled={isAsesor}
+                        disabled={isAsesor || allSigned}
                         style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
                       />
                     </div>
@@ -503,7 +525,7 @@ export default function Ia10Page() {
                         type="text"
                         value={d.alamat}
                         onChange={e => handleDataPihakChange(idx, "alamat", e.target.value)}
-                        disabled={isAsesor}
+                        disabled={isAsesor || allSigned}
                         style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
                       />
                     </div>
@@ -513,7 +535,7 @@ export default function Ia10Page() {
                         type="text"
                         value={d.telepon}
                         onChange={e => handleDataPihakChange(idx, "telepon", e.target.value)}
-                        disabled={isAsesor}
+                        disabled={isAsesor || allSigned}
                         style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
                       />
                     </div>
@@ -538,10 +560,10 @@ export default function Ia10Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.ya} onChange={() => !isAsesor && handleYaChange(p.id, !p.ya)} disabled={true} />
+                  <CustomCheckbox checked={p.ya} onChange={() => !isAsesor && handleYaChange(p.id, !p.ya)} disabled={true || allSigned} />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.tidak} onChange={() => !isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={true} />
+                  <CustomCheckbox checked={p.tidak} onChange={() => !isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={true || allSigned} />
                 </td>
               </tr>
             ))}
@@ -558,7 +580,7 @@ export default function Ia10Page() {
                   <textarea
                     value={e.jawaban}
                     onChange={(ev) => handleEssayChange(e.id, ev.target.value)}
-                    disabled={isAsesor}
+                    disabled={isAsesor || allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -571,7 +593,7 @@ export default function Ia10Page() {
                   <textarea
                     value={a.jawaban || ""}
                     onChange={(ev) => handleAdditionalChange(a.id, ev.target.value)}
-                    disabled={isAsesor}
+                    disabled={isAsesor || allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -613,6 +635,7 @@ export default function Ia10Page() {
         {/* Actions */}
         <div style={{ marginTop: "20px" }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div
             style={{
               background: "#fff",
@@ -626,6 +649,7 @@ export default function Ia10Page() {
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: "2px" }}
               />
               <span style={{ fontSize: "13px", color: "#333" }}>
@@ -633,6 +657,7 @@ export default function Ia10Page() {
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -646,10 +671,10 @@ export default function Ia10Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)}
+              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

@@ -10,7 +10,7 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
@@ -84,8 +84,6 @@ export default function FrAk07Page() {
   // Get jadwal_id from kegiatan
   const jadwalId = kegiatan?.jadwal_id
 
-  // Only asesor can edit FR-AK-07, asesi cannot
-  const isFormDisabled = !isAsesor
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
@@ -254,7 +252,10 @@ export default function FrAk07Page() {
     }
   }, [idIzin, kegiatan, isAsesor, fetchData])
 
-  useAsesmenSSE({ path: `/praasesmen/${idIzin}/sse`, onUpdate: fetchData })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${idIzin}`,
+    onUpdate: fetchData
+  })
 
   const asesor1Signed = !!(barcodes?.asesor1?.url || (asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url))
   const asesor2Signed = !!(barcodes?.asesor2?.url || (asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url))
@@ -263,6 +264,16 @@ export default function FrAk07Page() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  // Signature checks: does barcodes already contain QR for this role?
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const currentAsesorHasSigned = !!(user?.id && barcodes?.asesor?.[String(user.id)]?.url)
+  const asesorHasSigned = isAsesor ? currentAsesorHasSigned : false
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && allAsesorSigned
+  const isFormDisabled = !isAsesor || allSigned
+
+  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
@@ -309,24 +320,7 @@ export default function FrAk07Page() {
   }
 
   const handleSave = async () => {
-    if (!agreedChecklist) {
-      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
-      return
-    }
-
-    // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
-      return
-    }
-
-    // Asesor (asesor1 dan asesor2) save data
-    // Asesi cannot edit, only navigate after asesor signed
-    if (!isAsesor) {
-      navigate(`/asesi/praasesmen/${idIzin}/fr-ak-04`)
-      return
-    }
-
+    // Resolve actualIdIzin for navigation
     let actualIdIzin = idIzin
     if (!actualIdIzin && kegiatan?.jadwal_id) {
       const token = localStorage.getItem("access_token")
@@ -347,6 +341,28 @@ export default function FrAk07Page() {
     if (!actualIdIzin) {
       showWarning("ID Izin tidak ditemukan")
       return
+    }
+
+    // If already signed, navigate to FR AK 04
+    if (hasSigned) {
+      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      return
+    }
+
+    if (!agreedChecklist) {
+      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      return
+    }
+
+    // Guard: asesi cannot submit until all asesor have signed
+    if (!isAsesor && !allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+      return
+    }
+
+    // Asesi cannot edit, only sign after asesor signed
+    if (!isAsesor && !asesiHasSigned && allAsesorSigned) {
+      // proceed to save + QR generation for asesi signature
     }
 
     setIsSaving(true)
@@ -482,9 +498,7 @@ export default function FrAk07Page() {
       }
 
       showSuccess('FR AK 07 berhasil disimpan!')
-      setTimeout(() => {
-        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
-      }, 500)
+      publishUpdate()
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
     } finally {
@@ -893,18 +907,21 @@ export default function FrAk07Page() {
           </table>
 
           {/* Agreement Checklist */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+                disabled={allSigned}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 07 (Penyesuaian Asesmen) ini dengan sebenar-benarnya.
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -917,8 +934,8 @@ export default function FrAk07Page() {
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 04" : hasSigned ? "Lanjut ke FR AK 04" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

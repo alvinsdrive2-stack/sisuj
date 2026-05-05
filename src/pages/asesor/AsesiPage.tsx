@@ -86,44 +86,72 @@ export default function AsesiPage() {
     updateCountdowns()
     const timer = setInterval(updateCountdowns, 1000)
     return () => clearInterval(timer)
-  }, [kegiatans])
+  }, [kegiatans.length]) // Only re-run when number of kegiatans changes, not array reference
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
   const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
 
-  // State for asesor IDs and jenjang from data-dokumen
-  const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null; jenjang: string }>({
+  // State for asesor IDs and jenjang per-asesi
+  const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({
     id_asesor_1: null,
     id_asesor_2: null,
-    jenjang: '0'
   })
+  const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
+  const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
 
-  // Fetch asesor IDs and jenjang from data-dokumen endpoint
+  // Fetch asesor IDs, jenjang, and metode from data-dokumen endpoint (per-asesi)
   useEffect(() => {
     const fetchAsesorData = async () => {
       if (asesiList.length === 0) return
 
-      const firstAsesiId = asesiList[0].id_izin
       const token = localStorage.getItem("access_token")
 
       try {
-        const response = await fetch(`${API_BASE_URL}/asesmen/${firstAsesiId}/data-dokumen`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+        // Fetch jenjang & metode for each asesi in parallel
+        const results = await Promise.all(
+          asesiList.map(async (asesi) => {
+            try {
+              const response = await fetch(`${API_BASE_URL}/praasesmen/${asesi.id_izin}/data-dokumen`, {
+                headers: {
+                  "Accept": "application/json",
+                  "Authorization": `Bearer ${token}`,
+                },
+              })
 
-        if (response.ok) {
-          const result = await response.json()
-          if (result.message === "Success" && result.data) {
-            setAsesorIds({
-              id_asesor_1: result.data.id_asesor_1,
-              id_asesor_2: result.data.id_asesor_2,
-              jenjang: result.data.jenjang || '0'
-            })
-          }
+              if (response.ok) {
+                const result = await response.json()
+                if (result.message === "Success" && result.data) {
+                  return {
+                    id_izin: asesi.id_izin,
+                    id_asesor_1: result.data.id_asesor_1,
+                    id_asesor_2: result.data.id_asesor_2,
+                    jenjang: result.data.jenjang || '0',
+                    metode: (result.data.metode || '').toLowerCase()
+                  }
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching asesor data:', err)
+            }
+            return null
+          })
+        )
+
+        const validResults = results.filter((r): r is NonNullable<typeof r> => r !== null)
+        if (validResults.length > 0) {
+          setAsesorIds({
+            id_asesor_1: validResults[0].id_asesor_1,
+            id_asesor_2: validResults[0].id_asesor_2,
+          })
+          const newJenjangMap: Record<string, string> = {}
+          const newMetodeMap: Record<string, string> = {}
+          validResults.forEach(r => {
+            newJenjangMap[r.id_izin] = r.jenjang
+            newMetodeMap[r.id_izin] = r.metode
+          })
+          setJenjangMap(newJenjangMap)
+          setMetodeMap(newMetodeMap)
         }
       } catch (err) {
         console.error('Error fetching asesor data:', err)
@@ -185,15 +213,16 @@ export default function AsesiPage() {
   }
 
   const handleViewAsesi = (idIzin: string) => {
-    // Check jenjang for low jenjang flow
-    const jenjangId = parseInt(asesorIds.jenjang || "0")
+    const jenjangId = parseInt(jenjangMap[idIzin] || "0")
+    const metode = metodeMap[idIzin] || ''
 
-    // Navigate based on current phase
     if (currentKegiatan?.tahap === 2) {
-      if (jenjangId < 4) {
-        navigate(`/asesi/asesmen/${idIzin}/ia01`)
-      } else {
+      if (jenjangId >= 4 && metode === 'observasi') {
         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+      } else if (jenjangId >= 4 && metode === 'portofolio') {
+        navigate(`/asesi/asesmen/${idIzin}/ia08`)
+      } else {
+        navigate(`/asesi/asesmen/${idIzin}/ia01`)
       }
     } else if (currentKegiatan?.tahap === 1) {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)

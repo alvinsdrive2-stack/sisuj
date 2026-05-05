@@ -8,7 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -84,8 +84,6 @@ export default function Ia04bPage() {
     asesi?: BarcodeData
     asesor?: Record<string, BarcodeData>
   } | null>(null)
-  const canEdit = isAsesor // All asesor can edit IA04B
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -204,7 +202,10 @@ export default function Ia04bPage() {
     fetchData()
   }, [fetchData])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchData })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData
+  })
 
   const asesor1Signed = !!(asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url)
   const asesor2Signed = !!(asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url)
@@ -213,6 +214,22 @@ export default function Ia04bPage() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    const asesorKey = (idx === 0 || idx === -1) ? 'asesor1' : 'asesor2'
+    return !!barcodes?.asesor?.[asesorKey]?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && allAsesorSigned
+  const canEdit = isAsesor && !allSigned // All asesor can edit IA04B
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   const handleAnswerChange = (soalId: number, value: 'ya' | 'tidak') => {
     setAnswers(prev => ({
@@ -275,6 +292,18 @@ export default function Ia04bPage() {
   }
 
   const handleSave = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu.')
       return
@@ -340,6 +369,7 @@ export default function Ia04bPage() {
 
       // 3. Navigate to next step
       showSuccess('IA 04.B berhasil disimpan!')
+      publishUpdate()
 
       // 4. Generate QR for asesi if not exists
       if (!isAsesor && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
@@ -391,82 +421,49 @@ export default function Ia04bPage() {
           allBarcodes: barcodes
         })
 
-        // Cek apakah QR asesor sudah ada, jika ada langsung navigate ke next step
-        if (existingAsesorQR) {
-          const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
-          const nextStep = asesmenSteps[currentStepIndex + 1]
-
-          if (nextStep?.href.includes('ia05')) {
-            setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 1500)
-          } else {
-            setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 1500)
-          }
-          return
-        }
-
-        // Generate QR untuk asesor
-        if (!jadwalId) {
-          console.error('Jadwal ID tidak ditemukan dari useKegiatanByRole!')
-          showError('Jadwal tidak ditemukan. Silakan refresh halaman.')
-          return
-        }
-
-        try {
-          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04b`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              id_jadwal: jadwalId
+        // Generate QR untuk asesor jika belum ada
+        if (!existingAsesorQR && jadwalId) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04b`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                id_jadwal: jadwalId
+              })
             })
-          })
 
-          if (qrResponse.ok) {
-            const qrResult = await qrResponse.json()
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
 
-            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-              const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                const newBarcode = { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
 
-              setBarcodes(prev => ({
-                asesi: prev?.asesi,
-                asesor: {
-                  ...prev?.asesor,
-                  [asesorKey]: newBarcode
-                }
-              }))
+                setBarcodes(prev => ({
+                  asesi: prev?.asesi,
+                  asesor: {
+                    ...prev?.asesor,
+                    [asesorKey]: newBarcode
+                  }
+                }))
 
-              console.log('IA04B QR generated successfully:', asesorKey, newBarcode)
+                console.log('IA04B QR generated successfully:', asesorKey, newBarcode)
+              } else {
+                console.warn('QR generation unexpected response:', qrResult)
+              }
             } else {
-              console.warn('QR generation unexpected response:', qrResult)
+              const errorResult = await qrResponse.json()
+              console.error('QR generation failed:', qrResponse.status, errorResult)
+              showError(`Gagal generate QR: ${errorResult.message || 'Terjadi kesalahan'}`)
             }
-          } else {
-            const errorResult = await qrResponse.json()
-            console.error('QR generation failed:', qrResponse.status, errorResult)
-            showError(`Gagal generate QR: ${errorResult.message || 'Terjadi kesalahan'}`)
+          } catch (qrError) {
+            console.error('Error generating QR:', qrError)
+            showError('Gagal generate QR')
           }
-        } catch (qrError) {
-          console.error('Error generating QR:', qrError)
-          showError('Gagal generate QR')
         }
-      }
-
-      // For asesi, show confirmation dialog before proceeding to ujian
-      if (!isAsesor) {
-        setTimeout(() => setShowConfirmDialog(true), 500)
-        return
-      }
-
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-
-      if (nextStep?.href.includes('ia05')) {
-        // Asesor goes to IA.05 - wait longer for QR to save
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 1500)
-      } else {
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak03`), 1500)
       }
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -830,11 +827,13 @@ export default function Ia04bPage() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }} onClick={() => setAgreedChecklist(!agreedChecklist)}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }} onClick={() => !allSigned && setAgreedChecklist(!agreedChecklist)}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => {}}
+                disabled={allSigned}
                 style={{ pointerEvents: 'none', marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -842,6 +841,7 @@ export default function Ia04bPage() {
               </span>
             </div>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -854,8 +854,8 @@ export default function Ia04bPage() {
             <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/upload-tugas`)}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? 'Menyimpan...' : 'Selesai'}
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

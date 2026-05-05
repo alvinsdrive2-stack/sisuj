@@ -8,7 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -91,7 +91,7 @@ export default function Ia03Page() {
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Asesor-only editable (asesi read-only)
-  const isFormDisabled = !isAsesor1
+  const isFormDisabledBase = !isAsesor1
 
   // Absen check
   const {
@@ -112,6 +112,7 @@ export default function Ia03Page() {
     asesor2?: BarcodeData | null
   } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [kelompokKerjaData, setKelompokKerjaData] = useState<KelompokKerja[]>([])
   const [umpanBalik, setUmpanBalik] = useState('')
   const [tanggapanAnswers, setTanggapanAnswers] = useState<Record<number, string>>({})
@@ -221,8 +222,21 @@ export default function Ia03Page() {
     fetchData()
   }, [fetchData])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchData })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData
+  })
 
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
   const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
@@ -230,6 +244,12 @@ export default function Ia03Page() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
+
+  const isFormDisabled = isFormDisabledBase || allSigned
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
@@ -246,6 +266,18 @@ export default function Ia03Page() {
   }, [isLoading, tanggapanAnswers])
 
   const handleNext = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia03'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
@@ -261,6 +293,8 @@ export default function Ia03Page() {
       showWarning('Data tidak lengkap')
       return
     }
+
+    setIsSaving(true)
 
     try {
       const token = localStorage.getItem("access_token")
@@ -292,6 +326,7 @@ export default function Ia03Page() {
 
       if (response.ok) {
         showSuccess('IA.03 berhasil disimpan!')
+        publishUpdate()
 
         // Generate QR for asesi if not exists
         const jadwalId = kegiatan?.jadwal_id
@@ -358,10 +393,6 @@ export default function Ia03Page() {
             }
           }
         }
-
-        setTimeout(() => {
-          navigate(`/asesi/asesmen/${id}/upload-tugas`)
-        }, 500)
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
         console.error('Failed to save IA03:', response.status, errorData)
@@ -370,6 +401,8 @@ export default function Ia03Page() {
     } catch (err) {
       console.error('Error saving IA03:', err)
       showError('Terjadi kesalahan. Silakan coba lagi.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -684,11 +717,13 @@ export default function Ia03Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -696,6 +731,7 @@ export default function Ia03Page() {
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -761,8 +797,8 @@ export default function Ia03Page() {
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
-              Lanjut
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

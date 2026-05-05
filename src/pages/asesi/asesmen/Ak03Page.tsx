@@ -13,7 +13,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -71,12 +71,10 @@ export default function Ak03Page() {
   const {
     showAwalModal,
     showAkhirModal,
-    setShowAkhirModal,
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
     handleAkhirModalClose,
-    shouldShowAkhirModal,
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -89,6 +87,7 @@ export default function Ak03Page() {
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
   const [catatanUmum, setCatatanUmum] = useState('')
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData | null
@@ -130,7 +129,10 @@ export default function Ak03Page() {
   useEffect(() => { fetchAk03Data() }, [fetchAk03Data])
 
   // SSE: auto-refresh when another user saves (handles barcode updates too)
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchAk03Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchAk03Data
+  })
 
   // Manual signature check (SSE-only — no polling)
   const asesor1Signed = !!barcodes?.asesor1?.url
@@ -140,6 +142,22 @@ export default function Ak03Page() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  // Sign-then-redirect + view-only
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   if (isLoading) {
     return (
@@ -172,17 +190,31 @@ export default function Ak03Page() {
     }))
   }
 
-  // Determine back button based on asesor role
+  // Determine back button from step config
   const getBackPath = () => {
-    if (asesorRole === 'asesor_1') {
-      return `/asesi/asesmen/${id}/ak02`
-    } else {
-      return `/asesi/asesmen/${id}/ia05`
+    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
+    const prevStep = asesmenSteps[currentStepIndex - 1]
+    if (prevStep) {
+      return prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
     }
+    return `/asesi/asesmen/${id}/ak02`
   }
 
   // Handle save - POST to API
   const handleSave = async () => {
+    // If user already signed → navigate to next page
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
@@ -193,6 +225,7 @@ export default function Ak03Page() {
       return
     }
 
+    setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
 
@@ -218,19 +251,7 @@ export default function Ak03Page() {
 
       if (response.ok) {
         showSuccess('AK 03 berhasil disimpan!')
-
-        if (!isAsesor) {
-          // For asesi: check if absen akhir is needed, then show modal or navigate
-          const needAbsenAkhir = await shouldShowAkhirModal()
-          if (needAbsenAkhir) {
-            setShowAkhirModal(true)
-          } else {
-            setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
-          }
-        } else {
-          // For asesor: navigate to AK05
-          setTimeout(() => navigate(`/asesi/asesmen/${id}/ak05`), 500)
-        }
+        publishUpdate()
       } else {
         console.error('Failed to save AK03:', response.status)
         showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -238,6 +259,8 @@ export default function Ak03Page() {
     } catch (err) {
       console.error('Error saving AK03:', err)
       showError('Terjadi kesalahan. Silakan coba lagi.')
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -290,24 +313,24 @@ export default function Ak03Page() {
                   <CustomCheckbox
                     checked={item.ya}
                     onChange={() => handleFeedbackChange(item.id, 'ya')}
-                    disabled={isFormDisabled}
-                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || allSigned}
+                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                   <CustomCheckbox
                     checked={item.tidak}
                     onChange={() => handleFeedbackChange(item.id, 'tidak')}
-                    disabled={isFormDisabled}
-                    style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || allSigned}
+                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
                   <textarea
                     value={item.catatan}
                     onChange={(e) => handleCatatanChange(item.id, e.target.value)}
-                    disabled={isFormDisabled}
-                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
+                    disabled={isFormDisabled || allSigned}
+                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
                     placeholder="Tuliskan catatan..."
                   />
                 </td>
@@ -319,8 +342,8 @@ export default function Ak03Page() {
                 <textarea
                   value={catatanUmum}
                   onChange={(e) => setCatatanUmum(e.target.value)}
-                  disabled={isFormDisabled}
-                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: isFormDisabled ? 'not-allowed' : 'text' }}
+                  disabled={isFormDisabled || allSigned}
+                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan catatan umum..."
                 />
               </td>
@@ -331,11 +354,13 @@ export default function Ak03Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -343,6 +368,7 @@ export default function Ak03Page() {
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -355,8 +381,8 @@ export default function Ak03Page() {
             <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              Selesai
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>
@@ -379,7 +405,6 @@ export default function Ak03Page() {
           onClose={handleAkhirModalClose}
           onSubmit={async (imageBlob: Blob) => {
             await submitAbsenAkhir(imageBlob)
-            setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
           }}
           title="Absen Keluar Asesmen"
           description="Silakan ambil foto wajah Anda untuk absen keluar"

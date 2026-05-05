@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, Users, Clock, CheckCircle2, ChevronRight, Play } from "lucide-react"
+import { Calendar, Users, Clock, CheckCircle2, ChevronRight, ChevronLeft, Play } from "lucide-react"
 import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useNavigate } from "react-router-dom"
@@ -12,6 +12,14 @@ export default function DashboardAsesor() {
   const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanAsesorList()
   const [startingKegiatanId, setStartingKegiatanId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Pagination logic
+  const totalPages = Math.ceil(kegiatans.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedKegiatans = kegiatans.slice(startIndex, endIndex)
 
   const handleStartPraAsesmen = async (jadwalId: string) => {
     setStartingKegiatanId(jadwalId)
@@ -143,8 +151,9 @@ export default function DashboardAsesor() {
               </div>
             )}
             {kegiatans.length > 0 && (
+              <>
               <div className="space-y-3">
-                {kegiatans.map((kegiatan) => (
+                {paginatedKegiatans.map((kegiatan) => (
                   <div
                     key={kegiatan.jadwal_id}
                     className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:shadow-md bg-white dark:bg-slate-800 cursor-pointer"
@@ -243,6 +252,35 @@ export default function DashboardAsesor() {
                   </div>
                 ))}
               </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                  <div className="text-sm text-slate-600">
+                    Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm text-slate-600">
+                      Halaman {currentPage} dari {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
             )}
           </CardContent>
         </Card>

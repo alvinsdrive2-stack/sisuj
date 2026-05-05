@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
@@ -9,9 +9,11 @@ import { kegiatanService } from "@/lib/kegiatan-service"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface DataPribadi {
   nama: string
@@ -113,6 +115,9 @@ export default function Apl01Page() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
+  // Get asesor data for absen check
+  const { asesorList } = useDataDokumenPraAsesmen(idIzin)
+
   // Get jadwal_id from kegiatan
   const jadwalId = kegiatan?.jadwal_id
 
@@ -131,6 +136,7 @@ export default function Apl01Page() {
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
+  const allSigned = !!barcodes?.asesi?.url
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -138,7 +144,7 @@ export default function Apl01Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: [] // asesorList not available in this page
+    asesorList: asesorList
   })
 
   // Form state for data pribadi
@@ -168,80 +174,78 @@ export default function Apl01Page() {
     email_kantor: ""
   })
 
-  useEffect(() => {
-    // Scroll to top when component mounts
-    window.scrollTo(0, 0)
+  const fetchData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
 
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
+      if (!idIzin) {
+        setIsLoading(false)
+        return
+      }
 
-        if (!idIzin) {
-          setIsLoading(false)
-          return
-        }
+      const apl01Response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
-        // Fetch APL 01 data
-        const apl01Response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (apl01Response.ok) {
-          const result: ApiResponse = await apl01Response.json()
-          if (result.message === "Success") {
-            setDataPribadi(result.data.data_pribadi)
-            setDataPekerjaan(result.data.data_pekerjaan)
-            setFormDataPribadi(result.data.data_pribadi)
-            setFormDataPekerjaan(result.data.data_pekerjaan)
-            if (result.data.data_sertifikasi) {
-              setDataSertifikasi(result.data.data_sertifikasi)
-            }
-            if (result.data.data_unit_kompetensi) {
-              setDataUnitKompetensi(result.data.data_unit_kompetensi)
-            }
-            if (result.data.bukti_persyaratan) {
-              setBuktiPersyaratan(result.data.bukti_persyaratan)
-            }
-            if (result.data.bukti_administratif) {
-              setBuktiAdministratif(result.data.bukti_administratif)
-            }
-            if (result.data.skkni) {
-              setSkkni(result.data.skkni)
-            }
-            if (result.data.catatan !== undefined) {
-              setCatatan(result.data.catatan)
-            }
-            if (result.data.is_diterima !== undefined) {
-              setIsDiterima(result.data.is_diterima)
-            }
-            if (result.data.barcodes) {
-              setBarcodes(result.data.barcodes)
-            }
+      if (apl01Response.ok) {
+        const result: ApiResponse = await apl01Response.json()
+        if (result.message === "Success") {
+          setDataPribadi(result.data.data_pribadi)
+          setDataPekerjaan(result.data.data_pekerjaan)
+          setFormDataPribadi(result.data.data_pribadi)
+          setFormDataPekerjaan(result.data.data_pekerjaan)
+          if (result.data.data_sertifikasi) {
+            setDataSertifikasi(result.data.data_sertifikasi)
+          }
+          if (result.data.data_unit_kompetensi) {
+            setDataUnitKompetensi(result.data.data_unit_kompetensi)
+          }
+          if (result.data.bukti_persyaratan) {
+            setBuktiPersyaratan(result.data.bukti_persyaratan)
+          }
+          if (result.data.bukti_administratif) {
+            setBuktiAdministratif(result.data.bukti_administratif)
+          }
+          if (result.data.skkni) {
+            setSkkni(result.data.skkni)
+          }
+          if (result.data.catatan !== undefined) {
+            setCatatan(result.data.catatan)
+          }
+          if (result.data.is_diterima !== undefined) {
+            setIsDiterima(result.data.is_diterima)
+          }
+          if (result.data.barcodes) {
+            setBarcodes(result.data.barcodes)
           }
         }
-      } catch (error) {
-        // Continue with empty form
-      } finally {
-        setIsLoading(false)
       }
+    } catch (error) {
+      // Continue with empty form
+    } finally {
+      setIsLoading(false)
     }
+  }, [idIzin])
 
+  useEffect(() => {
+    window.scrollTo(0, 0)
     if (idIzin) {
       fetchData()
     } else {
       setIsLoading(false)
     }
-  }, [idIzin])
+  }, [idIzin, fetchData])
+
+  // SSE for real-time updates
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${idIzin || user?.id_izin}`,
+    onUpdate: fetchData
+  })
 
   const handleSave = async () => {
-    if (!agreedChecklist) {
-      showWarning('Silakan centang pernyataan terlebih dahulu')
-      return
-    }
-
     const targetIdIzin = idIzin || user?.id_izin
     if (!targetIdIzin) {
       return
@@ -250,6 +254,18 @@ export default function Apl01Page() {
     // Jika asesor, langsung navigate tanpa save
     if (isAsesor) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      return
+    }
+
+    // Jika asesi sudah pernah tanda tangan, langsung navigate ke APL 02
+    const asesiHasSigned = !!barcodes?.asesi?.url
+    if (asesiHasSigned) {
+      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      return
+    }
+
+    if (!agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
 
@@ -286,9 +302,7 @@ export default function Apl01Page() {
       // Save data pekerjaan
       await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
       showSuccess('APL 01 berhasil disimpan!')
-      setTimeout(() => {
-        navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
-      }, 500)
+      publishUpdate()
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
     } finally {
@@ -891,6 +905,7 @@ anda pada saat ini.</span>
         </table>
 
         {/* Pernyataan */}
+        {!allSigned && (
         <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <CustomCheckbox
@@ -903,14 +918,15 @@ anda pada saat ini.</span>
             </span>
           </label>
         </div>
+        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : "Simpan & Lanjut ke APL 02"}
+          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
+            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke APL 02" : "Simpan & Tanda Tangan"}
           </ActionButton>
         </div>
       </AsesiLayout>

@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -94,7 +94,7 @@ export default function Ia01Page() {
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
 
   // All asesor can fill (removed restriction to asesor_1 only)
-  const isFormDisabled = !isAsesor
+  const isFormDisabledBase = !isAsesor
 
   // Absen check
   const {
@@ -118,6 +118,7 @@ export default function Ia01Page() {
     asesor2?: BarcodeData | null
   } | null>(null)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [expandedKelompok, setExpandedKelompok] = useState<Set<number>>(new Set())
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [kelompokKerjaData, setKelompokKerjaData] = useState<KelompokKerjaItem[]>([])
@@ -234,7 +235,26 @@ export default function Ia01Page() {
 
   useEffect(() => { fetchIa01Data() }, [fetchIa01Data])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa01Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa01Data
+  })
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
+  const isFormDisabled = isFormDisabledBase || allSigned
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   if (isLoading) {
     return (
@@ -632,11 +652,13 @@ export default function Ia01Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -644,6 +666,7 @@ export default function Ia01Page() {
               </span>
             </label>
           </div>
+          )}
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -664,8 +687,20 @@ export default function Ia01Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={!agreedChecklist}
+              disabled={isSaving || (!allSigned && !agreedChecklist)}
               onClick={async () => {
+                if (hasSigned) {
+                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                  const nextStep = asesmenSteps[currentStepIndex + 1]
+                  if (nextStep) {
+                    const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                    navigate(nextPath)
+                  } else {
+                    navigate(`/asesi/asesmen/${id}/selesai`)
+                  }
+                  return
+                }
+
                 if (!agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
                   return
@@ -675,6 +710,8 @@ export default function Ia01Page() {
                   showWarning('Data tidak lengkap')
                   return
                 }
+
+                setIsSaving(true)
 
                 try {
                   const token = localStorage.getItem("access_token")
@@ -714,6 +751,7 @@ export default function Ia01Page() {
 
                   if (response.ok) {
                     showSuccess('IA 01 berhasil disimpan!')
+                    publishUpdate()
 
                     // Generate QR after saving
                     const jadwalId = kegiatan?.jadwal_id
@@ -794,16 +832,6 @@ export default function Ia01Page() {
                         console.error('Error generating asesi QR:', qrError)
                       }
                     }
-
-                    // Navigate to next step
-                    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
-                    const nextStep = asesmenSteps[currentStepIndex + 1]
-                    if (nextStep) {
-                      const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                      setTimeout(() => navigate(nextPath), 500)
-                    } else {
-                      setTimeout(() => navigate(`/asesi/asesmen/${id}/ia02`), 500)
-                    }
                   } else {
                     const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
                     console.error('Failed to save IA01:', response.status, errorData)
@@ -812,10 +840,12 @@ export default function Ia01Page() {
                 } catch (err) {
                   console.error('Error saving IA01:', err)
                   showError('Terjadi kesalahan. Silakan coba lagi.')
+                } finally {
+                  setIsSaving(false)
                 }
               }}
             >
-              Simpan & Lanjut
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

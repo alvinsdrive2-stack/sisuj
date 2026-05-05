@@ -39,8 +39,22 @@ interface ReferensiFormItem {
   kelompok: KelompokForm
 }
 
+interface Unit {
+  id_unit: number
+  nama_unit: string
+  kode_unit: string
+}
+
+interface KelompokKerja {
+  id: number
+  nama: string
+  urut: string
+  units: Unit[]
+}
+
 interface Mapa01Section3Props {
   referensiForm?: ReferensiFormItem[]
+  kelompokKerja?: KelompokKerja[]
   isAsesor?: boolean
 }
 
@@ -84,7 +98,7 @@ const cellStyles = {
 } as const;
 
 // ============== COMPONENT ==============
-export function Mapa01Section3({ referensiForm, isAsesor = false }: Mapa01Section3Props) {
+export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false }: Mapa01Section3Props) {
   const headerStyle = {
     ...cellStyles.header,
     backgroundColor: COLORS.RED,
@@ -277,6 +291,21 @@ export function Mapa01Section3({ referensiForm, isAsesor = false }: Mapa01Sectio
                         opacity: isAsesor ? 1 : 0.6
                       }}
                     />
+                  </div>
+                )}
+
+                {/* Kelompok Pekerjaan — only show below item 3.4 (last item) */}
+                {index === items.length - 1 && kelompokKerja && kelompokKerja.length > 0 && (
+                  <div style={{ marginTop: '16px', borderTop: '1px solid #000', paddingTop: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '6px' }}>Kelompok Pekerjaan:</div>
+                    {kelompokKerja.map((kelompok, kIdx) => (
+                      <div key={kelompok.id} style={{ fontSize: '12px', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '500' }}>Kelompok {kIdx + 1}:</div>
+                        {kelompok.units.map(u => (
+                          <div key={u.id_unit} style={{ paddingLeft: '16px' }}>- {u.kode_unit}</div>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 )}
               </td>

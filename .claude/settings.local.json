@@ -36,7 +36,9 @@
       "Bash(Select-Object -First 30)",
       "Bash(identify \"C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\kop surat-1.png\")",
       "Bash(powershell *)",
-      "Bash(Get-ChildItem C:\\\\LSP\\\\penyatuan\\\\sisuj -Depth 2 -Name)"
+      "Bash(Get-ChildItem C:\\\\LSP\\\\penyatuan\\\\sisuj -Depth 2 -Name)",
+      "Bash(Get-ChildItem \"C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\pages\\\\asesi\\\\FrAk01Page.tsx\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object FullName, Length)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -20,24 +20,23 @@ interface DokumenItem {
   docType: string
 }
 
-// Document order based on jenjang
-const getDocumentOrder = (jenjang: string): string[] => {
+// Document order based on jenjang and metode
+const getDocumentOrder = (jenjang: string, metode?: string): string[] => {
   const jenjangNum = parseInt(jenjang) || 0
+  const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
-  if (jenjangNum < 4) {
-    // Jenjang 1-3: ia01, ia02, ia03 (no ia04a, ia04b)
-    return [
-      'apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01',
-      'ia01', 'ia02', 'ia03', 'ia05',
-      'ak02', 'ak03', 'ak05', 'ak06', 'tugas', 'foto_kegiatan'
-    ]
+  const praAsesmen = ['apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01']
+  const closing = ['ak02', 'ak03', 'ak05', 'ak06', 'foto_kegiatan']
+
+  if (jenjangNum >= 4 && isPortofolio) {
+    // Jenjang 4+ + portofolio: ia08, ia09, ia10 (no tugas)
+    return [...praAsesmen, 'ia08', 'ia09', 'ia10', ...closing]
+  } else if (jenjangNum >= 4) {
+    // Jenjang 4+ + observasi: ia04a, tugas, ia04b
+    return [...praAsesmen, 'ia04a', 'tugas', 'ia04b', 'ia05', ...closing]
   } else {
-    // Jenjang 4+: ia04a, ia04b (no ia01, ia02, ia03)
-    return [
-      'apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01',
-      'ia04a', 'ia04b', 'ia05',
-      'ak02', 'ak03', 'ak05', 'ak06', 'tugas', 'foto_kegiatan'
-    ]
+    // Jenjang 1-3: ia01, ia02, ia03, tugas
+    return [...praAsesmen, 'ia01', 'ia02', 'ia03', 'tugas', 'ia05', ...closing]
   }
 }
 
@@ -59,6 +58,7 @@ interface DokumenModalProps {
 export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
   const [jenjang, setJenjang] = useState<string>('0')
+  const [metode, setMetode] = useState<string>('')
   const [isLoading, setIsLoading] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<DokumenItem | null>(null)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
@@ -88,6 +88,9 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
           const dataResult = await dataDokumenResponse.json()
           if (dataResult.data?.jenjang) {
             setJenjang(dataResult.data.jenjang)
+          }
+          if (dataResult.data?.metode) {
+            setMetode(dataResult.data.metode)
           }
         }
 
@@ -147,6 +150,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
       setRekomendasiValue(null)
       setIsPreviewHovered(false)
       setJenjang('0')
+      setMetode('')
     }
   }, [isOpen])
 
@@ -154,7 +158,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
   const documentList: DokumenItem[] = (() => {
     if (!dokumenResponse?.data) return []
 
-    const order = getDocumentOrder(jenjang)
+    const order = getDocumentOrder(jenjang, metode)
     const data = dokumenResponse.data
 
     // Filter and sort documents based on the order for this jenjang

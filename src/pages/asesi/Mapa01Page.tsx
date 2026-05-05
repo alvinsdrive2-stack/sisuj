@@ -19,7 +19,7 @@ import {
 // import { uploadMapa01PdfToBackend } from "@/utils/mapa01PdfGenerator" // Commented: not currently used
 import "@/components/mapa01/Mapa01.css"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -101,6 +101,11 @@ export default function Mapa01Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string }
+    asesor1?: { url: string; tanggal: string; nama: string } | null
+    asesor2?: { url: string; tanggal: string; nama: string } | null
+  } | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -139,7 +144,12 @@ export default function Mapa01Page() {
 
       if (mapa01Response.ok) {
         const result: ApiResponse = await mapa01Response.json()
-        if (result.message === "Success") setMapaData(result.data)
+        if (result.message === "Success") {
+          setMapaData(result.data)
+          if ((result.data as any).barcodes) {
+            setBarcodes((result.data as any).barcodes)
+          }
+        }
       }
     } catch (error) {
       console.error("Error fetching MAPA 01:", error)
@@ -154,7 +164,21 @@ export default function Mapa01Page() {
     else if (kegiatan) fetchMapa01Data()
   }, [kegiatan, idIzin, isAsesor, fetchMapa01Data])
 
-  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchMapa01Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin}`,
+    onUpdate: fetchMapa01Data
+  })
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    asesor1Signed && (asesorList.length < 2 || asesor2Signed)
+  ))
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
@@ -218,6 +242,7 @@ export default function Mapa01Page() {
 
       if (response.ok) {
         showSuccess('MAPA 01 berhasil disimpan!')
+        publishUpdate()
         setTimeout(() => {
           navigate(`/asesi/praasesmen/${actualIdIzin}/mapa02`)
         }, 500)
@@ -279,7 +304,7 @@ export default function Mapa01Page() {
           )}
 
           {/* STATIC: Section 3 - Modifikasi */}
-          <Mapa01Section3 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} />
+          <Mapa01Section3 referensiForm={mapaData?.referensi_form} kelompokKerja={mapaData?.kelompok_kerja?.kelompok_kerja} isAsesor={isAsesor} />
 
           {/* STATIC: Tanda Tangan */}
           <Mapa01TandaTangan
@@ -297,18 +322,21 @@ export default function Mapa01Page() {
           </div>
 
           {/* Agreement Checklist */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
-                style={{ marginTop: '2px', cursor: 'pointer' }}
+                disabled={allSigned}
+                style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen MAPA 01 (Matriks Pengembangan dan Penilaian Asesmen) ini dengan sebenar-benarnya.
               </span>
             </label>
           </div>
+          )}
 
           {/* Actions */}
           <div className="mapa01-actions">
@@ -317,8 +345,8 @@ export default function Mapa01Page() {
               Kembali
             </ActionButton>
             
-            <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjut"}
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke MAPA 02" : "Simpan & Lanjut"}
             </ActionButton>
           </div>
         </div>

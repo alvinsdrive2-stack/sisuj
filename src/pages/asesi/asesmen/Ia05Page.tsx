@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -154,7 +154,10 @@ export default function Ia05Page() {
 
   useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa05Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa05Data
+  })
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') => {
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
@@ -194,6 +197,7 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('Umpan balik berhasil disimpan!')
+        publishUpdate()
 
         // Generate QR after successful save
         const jadwalId = kegiatan?.jadwal_id
@@ -266,6 +270,7 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('IA 05 berhasil disimpan!')
+        publishUpdate()
 
         // Generate QR after successful save
         const jadwalId = kegiatan?.jadwal_id

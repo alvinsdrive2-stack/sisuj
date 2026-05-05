@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -213,9 +213,41 @@ export default function Ia02Page() {
 
   useEffect(() => { fetchIa02Data() }, [fetchIa02Data])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa02Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa02Data
+  })
+
+  const [isSaving, setIsSaving] = useState(false)
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
 
   const handleNext = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia02'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
@@ -223,6 +255,8 @@ export default function Ia02Page() {
 
     const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
+
+    setIsSaving(true)
 
     console.log('IA02 QR Generation - jadwalId:', jadwalId, 'kegiatan:', kegiatan, 'barcodes:', barcodes)
 
@@ -314,9 +348,8 @@ export default function Ia02Page() {
     }
 
     showSuccess('IA.02 berhasil disimpan!')
-    setTimeout(() => {
-      navigate(`/asesi/asesmen/${id}/ia03`)
-    }, 500)
+    publishUpdate()
+    setIsSaving(false)
   }
 
   const handleBack = () => {
@@ -501,11 +534,13 @@ export default function Ia02Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -513,14 +548,15 @@ export default function Ia02Page() {
               </span>
             </label>
           </div>
+          )}
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleNext}>
-              Lanjut
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleNext}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

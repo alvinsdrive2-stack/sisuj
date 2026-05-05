@@ -12,7 +12,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { API_BASE_URL } from "@/config/api"
@@ -66,8 +66,6 @@ export default function Ia08Page() {
   const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
-
-  const isFormDisabled = !isAsesor
 
   const {
     showAwalModal,
@@ -193,10 +191,21 @@ export default function Ia08Page() {
     fetchIa08Data()
   }, [fetchIa08Data])
 
-  // SSE: auto-refresh when another user saves
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchIa08Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa08Data
+  })
 
-  // Manual signature check (SSE-only — no polling)
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
   const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
@@ -204,6 +213,12 @@ export default function Ia08Page() {
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
+
+  const isFormDisabled = !isAsesor || allSigned
 
   const handlePortfolioCheck = (id: number, field: keyof PortfolioItem) => {
     if (isFormDisabled) return
@@ -232,6 +247,18 @@ export default function Ia08Page() {
   }
 
   const handleSave = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning("Silakan centang pernyataan terlebih dahulu")
       return
@@ -273,6 +300,7 @@ export default function Ia08Page() {
 
       if (response.ok) {
         showSuccess('IA 08 berhasil disimpan!')
+        publishUpdate()
 
         // Generate QR for asesor
         if (isAsesor && kegiatan?.jadwal_id) {
@@ -325,14 +353,6 @@ export default function Ia08Page() {
           } catch (qrError) {
             console.error('Error generating asesi QR:', qrError)
           }
-        }
-
-        // Navigate to next step
-        const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
-        const nextStep = asesmenSteps[currentStepIndex + 1]
-        if (nextStep) {
-          const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-          setTimeout(() => navigate(nextPath), 500)
         }
       } else {
         showError('Gagal menyimpan IA 08')
@@ -746,11 +766,13 @@ export default function Ia08Page() {
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -758,6 +780,7 @@ export default function Ia08Page() {
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -771,10 +794,10 @@ export default function Ia08Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)}
+              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={handleSave}
             >
-              {isSaving ? 'Menyimpan...' : 'Simpan & Lanjut'}
+              {isSaving ? 'Menyimpan...' : allSigned ? 'Lanjut' : 'Simpan & Tanda Tangan'}
             </ActionButton>
           </div>
         </div>

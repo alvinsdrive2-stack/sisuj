@@ -4,12 +4,13 @@ import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -65,17 +66,19 @@ export default function PraAsesmenPage() {
   const [zoom, setZoom] = useState(1)
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
+  // Get asesor data for absen check
+  const { asesorList } = useDataDokumenPraAsesmen(idIzinFromUrl)
+
   // DEBUG: Log when PraAsesmenPage mounts
   console.log('[PraAsesmenPage] Component mounted', { userRole: user?.role?.name, idIzinFromUrl, isAsesor })
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  // For PraAsesmenPage, asesorList is not available, so asesor will default to 'asesor1'
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'praasesmen',
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzinFromUrl,
-    asesorList: [] // No asesorList available for this page
+    asesorList: asesorList
   })
 
   useEffect(() => {
@@ -112,7 +115,10 @@ export default function PraAsesmenPage() {
 
   useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
 
-  useAsesmenSSE({ path: `/praasesmen/${idIzinFromUrl}/sse`, onUpdate: fetchPraAsesmenData })
+  const { publishUpdate: _publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${idIzinFromUrl}`,
+    onUpdate: fetchPraAsesmenData
+  })
 
   const handleConfirm = async () => {
     setIsConfirming(true)

@@ -10,9 +10,10 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
 
 interface BuktiAsesmen {
@@ -63,7 +64,7 @@ interface Ak01ApiResponse {
 export default function FrAk01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { showWarning } = useToast()
+  const { showWarning, showSuccess } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
@@ -83,6 +84,21 @@ export default function FrAk01Page() {
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [waktuAk01, setWaktuAk01] = useState('')
+  const [jam, setJam] = useState(() => {
+    // Initialize to current Indonesian time (WIB = GMT+7)
+    const now = new Date()
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
+    const wib = new Date(utc + (3600000 * 7))
+    return String(wib.getHours()).padStart(2, '0')
+  })
+  const [menit, setMenit] = useState(() => {
+    const now = new Date()
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
+    const wib = new Date(utc + (3600000 * 7))
+    return String(wib.getMinutes()).padStart(2, '0')
+  })
+  const [showTimePicker, setShowTimePicker] = useState(false)
+  const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji } = useDataDokumenPraAsesmen(actualIdIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -93,7 +109,7 @@ export default function FrAk01Page() {
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
-    shouldShowAkhirModal,
+    shouldShowAkhirModal: _shouldShowAkhirModal,
   } = useAbsenCheck({
     phase: 'praasesmen',
     role: 'auto',
@@ -101,9 +117,6 @@ export default function FrAk01Page() {
     idIzin: actualIdIzin,
     asesorList: asesorList
   })
-
-  // State for pending navigation after absen akhir
-  const [pendingNavigation, setPendingNavigation] = useState(false)
 
   const jadwalId = kegiatan?.jadwal_id
 
@@ -124,7 +137,7 @@ export default function FrAk01Page() {
     return { hariTanggal, waktu }
   }
 
-  const { hariTanggal, waktu } = formatTanggalUji(tanggalUji)
+  const { hariTanggal } = formatTanggalUji(tanggalUji)
 
   const initialFetchDone = useRef(false)
 
@@ -185,6 +198,12 @@ export default function FrAk01Page() {
         // Set waktu from API response
         if (result.data?.waktu) {
           setWaktuAk01(result.data.waktu)
+          // Parse "HH:MM - Selesai" format
+          const match = result.data.waktu.match(/^(\d{1,2}):(\d{2})/)
+          if (match) {
+            setJam(match[1].padStart(2, '0'))
+            setMenit(match[2])
+          }
         }
       }
 
@@ -203,7 +222,11 @@ export default function FrAk01Page() {
     }
   }, [idIzin, kegiatan, isAsesor, fetchData])
 
-  useAsesmenSSE({ path: `/praasesmen/${idIzin}/sse`, onUpdate: fetchData })
+  // Real-time sync across users (frontend-only using Ably)
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin || idIzin}`,
+    onUpdate: fetchData
+  })
 
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
@@ -213,26 +236,88 @@ export default function FrAk01Page() {
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
 
+  // Signature checks for current user's role
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const allSigned = asesiHasSigned && allAsesorSigned
+
+  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
+
+  // Sync waktuAk01 when jam/menit changes (not when allSigned)
+  useEffect(() => {
+    if (!allSigned) {
+      setWaktuAk01(`${jam}:${menit} - Selesai`)
+    }
+  }, [jam, menit, allSigned])
+
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const currentAsesorId = String(user?.id)
+    const asesorIndex = asesorList.findIndex(a => String(a.id) === currentAsesorId)
+    const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+    return isAsesor1 ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+
   const handleBack = () => {
     navigate(-1)
   }
 
-  // Handle absen akhir modal close - navigate after submission
+  // Handle absen akhir modal close
   const handleAbsenAkhirModalClose = () => {
     setShowAkhirModal(false)
-    if (pendingNavigation) {
-      setPendingNavigation(false)
-      navigate("/asesi/praasesmen/ak01-success")
+
+    // If waiting for absen akhir before navigating
+    if (pendingToSuccessPage) {
+      setPendingToSuccessPage(false)
+      // Asesor redirects to asesor dashboard, asesi to success page
+      if (isAsesor) {
+        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+      } else {
+        navigate(`/asesi/praasesmen/ak01-success`)
+      }
     }
   }
 
   // Handle absen akhir submission
   const handleAbsenAkhirSubmit = async (blob: Blob) => {
     await submitAbsenAkhir(blob)
-    // Don't reset pendingNavigation - let handleAbsenAkhirModalClose handle navigation
+    // Modal will close via handleAbsenAkhirModalClose which handles navigation
   }
 
   const handleSave = async () => {
+    // If asesor already signed -> check absen akhir before navigate
+    if (isAsesor && asesorHasSigned) {
+      // Check if absen akhir needed
+      const needsAbsenAkhir = await _shouldShowAkhirModal()
+      if (needsAbsenAkhir) {
+        setPendingToSuccessPage(true)
+        setShowAkhirModal(true)
+        return
+      }
+      if (isAsesor) {
+        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+      } else {
+        navigate(`/asesi/praasesmen/ak01-success`)
+      }
+      return
+    }
+
+    // If asesi already signed -> check absen akhir before navigate
+    if (!isAsesor && asesiHasSigned) {
+      // Check if absen akhir needed
+      const needsAbsenAkhir = await _shouldShowAkhirModal()
+      if (needsAbsenAkhir) {
+        setPendingToSuccessPage(true)
+        setShowAkhirModal(true)
+        return
+      }
+      if (isAsesor) {
+        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+      } else {
+        navigate(`/asesi/praasesmen/ak01-success`)
+      }
+      return
+    }
+
     // Guard: asesi cannot submit until all asesor have signed
     if (!isAsesor && !allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
@@ -335,19 +420,11 @@ export default function FrAk01Page() {
           }
         }
 
-        // Navigate to success page (check absen akhir first for both asesi and asesor)
-        
-        const needsAbsenAkhir = await shouldShowAkhirModal()
-        
+        // Show success toast, stay on page
+        showSuccess('Dokumen berhasil ditandatangani!')
 
-        if (needsAbsenAkhir) {
-          
-          setPendingNavigation(true)
-          setShowAkhirModal(true)
-        } else {
-          
-          navigate("/asesi/praasesmen/ak01-success")
-        }
+        // Notify other users viewing this page
+        publishUpdate()
       } else {
         console.error('Failed to save:', await response.text())
       }
@@ -508,20 +585,45 @@ export default function FrAk01Page() {
               <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Waktu</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <input
-                  type="text"
-                  value={waktuAk01 || waktu || formData.waktu || ''}
-                  onChange={(e) => setWaktuAk01(e.target.value)}
-                  style={{
-                    width: '100%',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px',
-                    padding: '4px 8px',
-                    fontSize: '13px',
-                    fontFamily: 'Arial, Helvetica, sans-serif',
-                  }}
-                  placeholder="Contoh: 07:00 - Selesai"
-                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '14px' }}>{waktuAk01 || `${jam}:${menit} - Selesai`}</span>
+                  <button
+                    type="button"
+                    onClick={() => isAsesor && setShowTimePicker(true)}
+                    disabled={allSigned || !isAsesor}
+                    style={{
+                      padding: '6px 12px',
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: (allSigned || !isAsesor) ? '#cbd5e1' : '#fff',
+                      color: (allSigned || !isAsesor) ? '#fff' : '#64748b',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      cursor: (allSigned || !isAsesor) ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      opacity: (allSigned || !isAsesor) ? 0.5 : 1,
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (allSigned || !isAsesor) return
+                      e.currentTarget.style.backgroundColor = '#f8fafc'
+                      e.currentTarget.style.borderColor = '#cbd5e1'
+                    }}
+                    onMouseLeave={(e) => {
+                      if (allSigned || !isAsesor) return
+                      e.currentTarget.style.backgroundColor = '#fff'
+                      e.currentTarget.style.borderColor = '#e2e8f0'
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Pilih Jam
+                  </button>
+                </div>
               </td>
             </tr>
             <tr>
@@ -679,18 +781,21 @@ export default function FrAk01Page() {
         <p style={{ fontSize: '12px' }}>* Coret yang tidak perlu</p>
 
         {/* Pernyataan */}
+        {!allSigned && (
         <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', padding: '12px' }}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
             <CustomCheckbox
               checked={agreedChecklist}
               onChange={() => setAgreedChecklist(!agreedChecklist)}
-              style={{ marginTop: '2px', cursor: 'pointer' }}
+              disabled={allSigned}
+              style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan menyetujui isi FR.AK.01 (Persetujuan Asesmen) ini dengan sebenar-benarnya.
             </span>
           </label>
         </div>
+        )}
 
         <AsesorSignatureGuard
           missingAsesorLabels={missingAsesorLabels}
@@ -703,8 +808,16 @@ export default function FrAk01Page() {
           <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || !agreedChecklist || (!isAsesor && !allAsesorSigned)}>
-            {isSaving ? 'Memproses...' : (isAsesor ? 'Lanjut' : 'Selesai')}
+          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}>
+            {isSaving ? 'Menyimpan...' : (
+              allSigned
+                ? 'Lanjut ke AK01 Success'
+                : isAsesor
+                  ? asesorHasSigned ? 'Lanjut ke AK01 Success' : 'Simpan & Tanda Tangan'
+                  : asesiHasSigned
+                    ? allAsesorSigned ? 'Lanjut ke AK01 Success' : `Menunggu TTD: ${missingAsesorLabels.join(', ')}`
+                    : 'Simpan & Tanda Tangan'
+            )}
           </ActionButton>
         </div>
       </AsesiLayout>
@@ -727,6 +840,19 @@ export default function FrAk01Page() {
         title="Absen Keluar Pra-Asesmen"
         description="Silakan ambil foto wajah Anda untuk absen keluar"
         canClose={false}
+      />
+
+      {/* Time Picker Modal */}
+      <TimePickerModal
+        isOpen={showTimePicker}
+        initialHour={jam}
+        initialMinute={menit}
+        onSave={(h, m) => {
+          setJam(h)
+          setMenit(m)
+          setShowTimePicker(false)
+        }}
+        onClose={() => setShowTimePicker(false)}
       />
     </div>
   )

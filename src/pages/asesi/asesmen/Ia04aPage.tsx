@@ -8,7 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -175,6 +175,7 @@ export default function Ia04aPage() {
 
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
   const [barcodes, setBarcodes] = useState<{
@@ -280,7 +281,10 @@ export default function Ia04aPage() {
     fetchData()
   }, [fetchData])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchData })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData
+  })
 
   const asesor1Signed = !!(asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url)
   const asesor2Signed = !!(asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url)
@@ -290,7 +294,33 @@ export default function Ia04aPage() {
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
 
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    // const _asesorKey = (idx === 0 || idx === -1) ? 'asesor1' : 'asesor2'
+    return !!barcodes?.asesor?.[String(asesorList[idx >= 0 ? idx : 0]?.id)]?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && allAsesorSigned
+
+  useEffect(() => {
+    if (allSigned) setAgreedChecklist(true)
+  }, [allSigned])
+
   const handleNext = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
@@ -319,204 +349,165 @@ export default function Ia04aPage() {
     const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
 
-    // Asesor_2 hanya generate QR/tanda tangan jika belum ada
-    if (isAsesor2) {
-      if (!jadwalId) {
-        showError('Jadwal tidak ditemukan')
-        return
-      }
+    setIsSaving(true)
 
-      // Cek apakah QR asesor_2 sudah ada
-      const currentAsesorId = String(user?.id)
-      const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
-
-      if (hasExistingQR) {
-        // QR sudah ada, langsung navigate
-        setTimeout(() => {
-          navigate(`/asesi/asesmen/${id}/upload-tugas`)
-        }, 500)
-        return
-      }
-
-      try {
-        const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            id_jadwal: jadwalId
-          })
-        })
-
-        if (qrResponse.ok) {
-          const qrResult = await qrResponse.json()
-          if (qrResult.message === "Success" && qrResult.data?.url_image) {
-            const currentAsesorId = String(user?.id)
-            setBarcodes(prev => ({
-              asesi: prev?.asesi,
-              asesor: {
-                ...prev?.asesor,
-                [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-              }
-            }))
-            showSuccess('Tanda tangan berhasil disimpan!')
-            setTimeout(() => {
-              navigate(`/asesi/asesmen/${id}/upload-tugas`)
-            }, 500)
-            return
-          }
-        } else {
-          showError('Gagal generate tanda tangan')
+    try {
+      // Asesor_2 hanya generate QR/tanda tangan jika belum ada
+      if (isAsesor2) {
+        if (!jadwalId) {
+          showError('Jadwal tidak ditemukan')
+          return
         }
-      } catch (qrError) {
-        console.error('Error generating QR:', qrError)
-        showError('Gagal generate tanda tangan')
-      }
 
-      // Fallback navigate jika gagal
-      navigate(`/asesi/asesmen/${id}/upload-tugas`)
-      return
-    }
+        const currentAsesorId = String(user?.id)
+        const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
 
-    // Asesor_1: simpan umpan balik, lalu generate QR
-    if (isAsesor1WithUmpan && umpanBalikSoalId) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
-          method: 'POST',
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            soal_id: umpanBalikSoalId,
-            jawaban: umpanBalikValue,
-          }),
-        })
-
-        if (response.ok) {
-          await response.json()
-
-          // Setelah simpan umpan, lanjut generate QR untuk asesor_1 hanya jika belum ada
-          if (jadwalId) {
-            // Cek apakah QR asesor_1 sudah ada
-            const currentAsesorId = String(user?.id)
-            const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
-
-            if (hasExistingQR) {
-              // QR sudah ada, langsung navigate
-              setTimeout(() => {
-                navigate(`/asesi/asesmen/${id}/upload-tugas`)
-              }, 500)
-              return
-            }
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
+        if (!hasExistingQR) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                id_jadwal: jadwalId
               })
+            })
 
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  const currentAsesorId = String(user?.id)
-                  setBarcodes(prev => ({
-                    asesi: prev?.asesi,
-                    asesor: {
-                      ...prev?.asesor,
-                      [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                    }
-                  }))
-                  showSuccess('IA 04.A berhasil disimpan!')
-                  setTimeout(() => {
-                    navigate(`/asesi/asesmen/${id}/upload-tugas`)
-                  }, 500)
-                  return
-                }
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                const currentAsesorId = String(user?.id)
+                setBarcodes(prev => ({
+                  asesi: prev?.asesi,
+                  asesor: {
+                    ...prev?.asesor,
+                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+                  }
+                }))
               }
-            } catch (qrError) {
-              console.error('Error generating QR:', qrError)
-              // Tetap lanjut walau QR gagal
-              showSuccess('IA 04.A berhasil disimpan!')
-              setTimeout(() => {
-                navigate(`/asesi/asesmen/${id}/upload-tugas`)
-              }, 500)
+            } else {
+              showError('Gagal generate tanda tangan')
             }
+          } catch (qrError) {
+            console.error('Error generating QR:', qrError)
+            showError('Gagal generate tanda tangan')
           }
-        } else {
-          console.error('Failed to save umpan balik:', response.status)
         }
-      } catch (err) {
-        console.error('Error in asesor_1 flow:', err)
-      }
-    }
 
-    // Asesi: generate QR jika belum ada, lalu navigate
-    if (!isAsesor) {
-      // Cek apakah QR asesi sudah ada
-      if (barcodes?.asesi?.url) {
         showSuccess('IA 04.A berhasil disimpan!')
-        setTimeout(() => {
-          navigate(`/asesi/asesmen/${id}/upload-tugas`)
-        }, 500)
+        publishUpdate()
         return
       }
 
-      // Generate QR untuk asesi
-      if (jadwalId) {
+      // Asesor_1: simpan umpan balik, lalu generate QR
+      if (isAsesor1WithUmpan && umpanBalikSoalId) {
         try {
-          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
+          const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
             method: 'POST',
             headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
+              "Accept": "application/json",
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              id_jadwal: jadwalId
-            })
+              soal_id: umpanBalikSoalId,
+              jawaban: umpanBalikValue,
+            }),
           })
 
-          if (qrResponse.ok) {
-            const qrResult = await qrResponse.json()
-            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-              setBarcodes(prev => ({
-                ...prev,
-                asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-              }))
-              setTimeout(() => {
-                navigate(`/asesi/asesmen/${id}/upload-tugas`)
-              }, 500)
-              return
+          if (response.ok) {
+            await response.json()
+
+            if (jadwalId) {
+              const currentAsesorId = String(user?.id)
+              const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
+
+              if (!hasExistingQR) {
+                try {
+                  const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
+                    method: 'POST',
+                    headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      id_jadwal: jadwalId
+                    })
+                  })
+
+                  if (qrResponse.ok) {
+                    const qrResult = await qrResponse.json()
+                    if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                      const currentAsesorId = String(user?.id)
+                      setBarcodes(prev => ({
+                        asesi: prev?.asesi,
+                        asesor: {
+                          ...prev?.asesor,
+                          [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+                        }
+                      }))
+                    }
+                  }
+                } catch (qrError) {
+                  console.error('Error generating QR:', qrError)
+                }
+              }
             }
+          } else {
+            console.error('Failed to save umpan balik:', response.status)
           }
-        } catch (qrError) {
-          console.error('Error generating asesi QR:', qrError)
+        } catch (err) {
+          console.error('Error in asesor_1 flow:', err)
         }
+
+        showSuccess('IA 04.A berhasil disimpan!')
+        publishUpdate()
+        return
       }
 
-      // Fallback jika gagal generate QR
-      showSuccess('IA 04.A berhasil disimpan!')
-      setTimeout(() => {
-        navigate(`/asesi/asesmen/${id}/upload-tugas`)
-      }, 500)
-      return
-    }
+      // Asesi: generate QR jika belum ada
+      if (!isAsesor) {
+        if (!barcodes?.asesi?.url && jadwalId) {
+          try {
+            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                id_jadwal: jadwalId
+              })
+            })
 
-    showSuccess('IA 04.A berhasil disimpan!')
-    setTimeout(() => {
-      navigate(`/asesi/asesmen/${id}/upload-tugas`)
-    }, 500)
+            if (qrResponse.ok) {
+              const qrResult = await qrResponse.json()
+              if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                setBarcodes(prev => ({
+                  ...prev,
+                  asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
+                }))
+              }
+            }
+          } catch (qrError) {
+            console.error('Error generating asesi QR:', qrError)
+          }
+        }
+
+        showSuccess('IA 04.A berhasil disimpan!')
+        publishUpdate()
+        return
+      }
+
+      showSuccess('IA 04.A berhasil disimpan!')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
@@ -853,11 +844,13 @@ export default function Ia04aPage() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
+                disabled={allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -865,6 +858,7 @@ export default function Ia04aPage() {
               </span>
             </label>
           </div>
+          )}
 
           <AsesorSignatureGuard
             missingAsesorLabels={missingAsesorLabels}
@@ -877,8 +871,8 @@ export default function Ia04aPage() {
             <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={!agreedChecklist || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
-              Lanjut
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>
         </div>

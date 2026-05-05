@@ -10,7 +10,7 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -61,8 +61,11 @@ export default function FrAk04Page() {
   const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
 
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const allSigned = asesiHasSigned
+
   // Only asesi can edit this form
-  const isFormDisabled = isAsesor
+  const isFormDisabled = isAsesor || allSigned
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -148,7 +151,12 @@ export default function FrAk04Page() {
   }, [idIzin, kegiatan, isAsesor, fetchAk04Data])
 
   // SSE: auto-refresh when another user saves
-  useAsesmenSSE({ path: `/praasesmen/${actualIdIzin}/sse`, onUpdate: fetchAk04Data })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin}`,
+    onUpdate: fetchAk04Data
+  })
+
+  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
@@ -186,27 +194,13 @@ export default function FrAk04Page() {
   const handleSave = async () => {
     // Asesor just navigate without validation/saving
     if (isFormDisabled) {
-      let actualIdIzin = idIzin
-      const token = localStorage.getItem("access_token")
+      navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+      return
+    }
 
-      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            actualIdIzin = listResult.list_asesi[0].id_izin
-          }
-        }
-      }
-
-      if (actualIdIzin) {
-        navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
-      }
+    // Asesi already signed → navigate to next page
+    if (asesiHasSigned) {
+      navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
       return
     }
 
@@ -218,24 +212,7 @@ export default function FrAk04Page() {
 
     setIsSaving(true)
     try {
-      // Get actual idIzin
-      let actualIdIzin = idIzin
       const token = localStorage.getItem("access_token")
-
-      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            actualIdIzin = listResult.list_asesi[0].id_izin
-          }
-        }
-      }
 
       if (!actualIdIzin) {
         showWarning("ID Izin tidak ditemukan")
@@ -269,8 +246,6 @@ export default function FrAk04Page() {
       if (response.ok) {
         const result = await response.json()
         if (result.message === "AK04 successfully submitted") {
-          showSuccess('FR AK 04 berhasil disimpan!')
-
           // Generate QR hanya jika form diisi (ada jawaban checkbox atau alasan)
           const hasAnswers = Object.keys(answers).length > 0
           const hasAlasan = alasanBanding.trim().length > 0
@@ -304,9 +279,8 @@ export default function FrAk04Page() {
             }
           }
 
-          setTimeout(() => {
-            navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
-          }, 500)
+          showSuccess('FR AK 04 berhasil disimpan!')
+          publishUpdate()
         } else {
           showError("Gagal menyimpan data: " + (result.message || "Unknown error"))
         }
@@ -492,19 +466,22 @@ export default function FrAk04Page() {
           </table>
 
           {/* Agreement Checklist */}
+          {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
               <input
                 type="checkbox"
                 checked={agreedChecklist}
                 onChange={(e) => setAgreedChecklist(e.target.checked)}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+                disabled={allSigned}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.
               </span>
             </label>
           </div>
+          )}
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -513,10 +490,10 @@ export default function FrAk04Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!isFormDisabled && !agreedChecklist)}
+              disabled={isSaving || (!allSigned && !agreedChecklist)}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : (isFormDisabled ? "Lanjut" : "Simpan & Lanjut")}
+              {isSaving ? "Menyimpan..." : (allSigned ? "Lanjut" : asesiHasSigned ? "Lanjut ke K3 Asesmen" : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

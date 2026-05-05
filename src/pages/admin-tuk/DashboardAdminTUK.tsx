@@ -1,13 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight } from "lucide-react"
+import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useState } from "react"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanAdminTUK()
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Pagination logic
+  const totalPages = Math.ceil(kegiatans.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedKegiatans = kegiatans.slice(startIndex, endIndex)
 
   const _adminTukStats = [
     {
@@ -141,8 +150,9 @@ export default function DashboardAdminTUK() {
               Tidak ada jadwal mendatang
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {kegiatans.map((kegiatan) => (
+              {paginatedKegiatans.map((kegiatan) => (
                 <div
                   key={kegiatan.jadwal_id}
                   onClick={() => navigate(`/admin-tuk/list-asesi/${kegiatan.jadwal_id}`)}
@@ -178,6 +188,35 @@ export default function DashboardAdminTUK() {
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                <div className="text-sm text-slate-600">
+                  Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    Halaman {currentPage} dari {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
           )}
         </CardContent>
       </Card>

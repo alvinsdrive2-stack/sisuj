@@ -11,8 +11,10 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCheck, faArrowLeft, faLightbulb } from '@fortawesome/free-solid-svg-icons'
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { useAsesmenSSE } from "@/hooks/useAsesmenSSE"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { kegiatanService } from "@/lib/kegiatan-service"
+import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
@@ -117,11 +119,14 @@ export default function UjianPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, asesorList } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, asesorList, jenjang, metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
+  const { isAsesor1: _isAsesor1 } = useAsesorRole(id)
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
   const canEdit = !isAsesor
   // Note: Ujian page doesn't have kegiatan data, so we use "0" as default jenjang_id
   // This page is part of the asesmen flow but the jenjang_id is not critical for ujian steps
@@ -155,6 +160,11 @@ export default function UjianPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [selectedOption, setSelectedOption] = useState<'A' | 'B' | 'C' | 'D' | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string } | null
+    asesor1?: { url: string; tanggal: string; nama: string } | null
+    asesor2?: { url: string; tanggal: string; nama: string } | null
+  } | null>(null)
   const prevIndexRef = useRef(currentIndex)
   const violationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -177,6 +187,14 @@ export default function UjianPage() {
           if (sortedSoal.length > 0 && sortedSoal[0].jawaban_asesi) {
             setSelectedOption(sortedSoal[0].jawaban_asesi as 'A' | 'B' | 'C' | 'D')
           }
+          // Set barcodes if exists
+          if ((result as any).data?.barcodes) {
+            setBarcodes({
+              asesi: (result as any).data.barcodes.asesi,
+              asesor1: (result as any).data.barcodes.asesor1,
+              asesor2: (result as any).data.barcodes.asesor2,
+            })
+          }
         }
       }
     } catch (error) {
@@ -188,7 +206,21 @@ export default function UjianPage() {
 
   useEffect(() => { fetchUjianData() }, [fetchUjianData])
 
-  useAsesmenSSE({ path: `/asesmen/${id}/sse`, onUpdate: fetchUjianData })
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchUjianData
+  })
+
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = (() => {
+    if (!isAsesor) return false
+    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  })()
+  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
+  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
+    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
+  ))
 
   useEffect(() => {
     if (soalList[currentIndex]) {
@@ -315,7 +347,7 @@ export default function UjianPage() {
   const progressPercentage = Math.round((progress / totalQuestions) * 100)
 
   const handleAnswerChange = (answer: 'A' | 'B' | 'C' | 'D') => {
-    if (!currentSoal || !canEdit) return
+    if (!currentSoal || !canEdit || allSigned) return
     setSelectedOption(answer)
     setAnswers(prev => ({ ...prev, [currentSoal.id]: answer }))
   }
@@ -393,6 +425,18 @@ export default function UjianPage() {
   }
 
   const handleSubmit = async () => {
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05') || s.href.includes('ujian'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (!id || !dokumen) {
       showWarning('Data tidak lengkap')
       return
@@ -403,29 +447,18 @@ export default function UjianPage() {
 
     try {
       await saveAnswer()
+      publishUpdate()
       showSuccess('Ujian berhasil diselesaikan!')
 
       // Generate QR after successful save
       const jadwalId = kegiatan?.jadwal_id
-      console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
       try {
         if (jadwalId) {
-          console.log('Generating QR for Ujian...', { id, jadwalId })
           await kegiatanService.generateQRUjian(id, jadwalId)
-          console.log('✅ QR Ujian successfully generated!')
-        } else {
-          console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
         }
       } catch (qrError) {
-        console.error('❌ Failed to generate QR Ujian:', qrError)
-        // Don't block navigation on QR failure
+        console.error('Failed to generate QR Ujian:', qrError)
       }
-
-      // For asesi, redirect to AK02; for asesor, redirect to selesai
-      const redirectTarget = isAsesor ? 'selesai' : 'ak02'
-      setTimeout(() => {
-        navigate(`/asesi/asesmen/${id}/${redirectTarget}`)
-      }, 1500)
     } catch (error) {
       showError('Gagal menyimpan jawaban. Silakan coba lagi.')
       setShowCelebration(false)
@@ -712,7 +745,7 @@ export default function UjianPage() {
                   <button
                     key={soal.id}
                     onClick={() => handleDotClick(index)}
-                    disabled={!canEdit}
+                    disabled={!canEdit && !allSigned}
                     className="progress-dot"
                     style={{
                       width: isCurrent ? '28px' : '22px',
@@ -879,7 +912,7 @@ export default function UjianPage() {
                       value={option.key}
                       checked={isSelected}
                       onChange={() => handleAnswerChange(option.key)}
-                      disabled={!canEdit}
+                      disabled={!canEdit || allSigned}
                       style={{ marginTop: '3px' }}
                     />
                     <div style={{ flex: 1 }}>
@@ -963,15 +996,15 @@ export default function UjianPage() {
 
           <button
             onClick={handleNext}
-            disabled={isSaving || !canEdit}
+            disabled={isSaving || (!canEdit && !allSigned)}
             style={{
               padding: '10px 20px',
               border: 'none',
-              background: isSaving || !canEdit ? '#cbd5e1' : 'linear-gradient(135deg, ' + colors.primary + ' 0%, ' + colors.secondary + ' 100%)',
+              background: isSaving || (!canEdit && !allSigned) ? '#cbd5e1' : 'linear-gradient(135deg, ' + colors.primary + ' 0%, ' + colors.secondary + ' 100%)',
               color: '#fff',
               fontSize: '13px',
               fontWeight: '700',
-              cursor: isSaving || !canEdit ? 'not-allowed' : 'pointer',
+              cursor: isSaving || (!canEdit && !allSigned) ? 'not-allowed' : 'pointer',
               borderRadius: '10px',
               opacity: isSaving || !canEdit ? 0.5 : 1,
               minWidth: '100px',
@@ -979,13 +1012,13 @@ export default function UjianPage() {
               boxShadow: isSaving || !canEdit ? 'none' : '0 3px 12px rgba(0, 72, 143, 0.2)',
             }}
             onMouseEnter={(e) => {
-              if (!isSaving && canEdit) {
+              if (!isSaving && (canEdit || allSigned)) {
                 e.currentTarget.style.transform = 'translateY(-2px)'
                 e.currentTarget.style.boxShadow = '0 5px 16px rgba(0, 72, 143, 0.3)'
               }
             }}
             onMouseLeave={(e) => {
-              if (!isSaving && canEdit) {
+              if (!isSaving && (canEdit || allSigned)) {
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = '0 3px 12px rgba(0, 72, 143, 0.2)'
               }
@@ -993,9 +1026,11 @@ export default function UjianPage() {
           >
             {isSaving
               ? 'Menyimpan...'
-              : currentIndex === totalQuestions - 1
-                ? 'Selesai'
-                : 'Selanjutnya'
+              : allSigned
+                ? 'Lanjut'
+                : currentIndex === totalQuestions - 1
+                  ? 'Selesai'
+                  : 'Selanjutnya'
             }
           </button>
         </div>

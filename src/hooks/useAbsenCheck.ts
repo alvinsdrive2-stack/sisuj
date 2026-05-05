@@ -51,9 +51,12 @@ export function useAbsenCheck({
   idIzin: idIzinProp,
   asesorList = []
 }: UseAbsenCheckOptions) {
+  // Always use URL param as source of truth for idIzin.
+  // idIzinProp is only a fallback; URL param ensures we check the right izin
+  // even when user?.id_izin is stale (e.g. direct URL navigation).
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const { user } = useAuth()
-  const finalIdIzin = idIzinProp || idIzinFromUrl
+  const finalIdIzin = idIzinFromUrl || idIzinProp
 
   const [showAwalModal, setShowAwalModal] = useState(false)
   const [showAkhirModal, setShowAkhirModal] = useState(false)
@@ -73,15 +76,11 @@ export function useAbsenCheck({
     const userId = String(user?.id || '')
     const userNoreg = (user as any)?.noreg || ''
 
-    
-
     // Try to match by ID first, then by noreg
     let matchedIndex = asesorList.findIndex(a => String(a.id) === userId)
     if (matchedIndex === -1 && userNoreg) {
       matchedIndex = asesorList.findIndex(a => a.noreg === userNoreg)
     }
-
-    
 
     // Default to asesor1 if found at index 0, asesor2 if index 1
     if (matchedIndex === 0) return 'asesor1'
@@ -150,21 +149,43 @@ export function useAbsenCheck({
         return
       }
 
+      // For asesor with 'auto' role, wait for asesorList to be populated
+      const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+      if (isAsesor && role === 'auto' && asesorList.length === 0) {
+        console.log('[useAbsenCheck] Asesor with empty asesorList — skipping modal until asesorList is loaded')
+        setIsChecking(false)
+        return
+      }
+
       setIsChecking(true)
       const absen = await fetchAbsenData()
       setIsChecking(false)
 
-      // Check if absen awal is null
+      // Show modal only if absen data is loaded AND the field is empty/missing
       if (absen) {
         const awalField = getAwalField()
-        if (!absen[awalField]) {
-          setShowAwalModal(true)
+        // Only show modal if field exists in response AND is empty/missing
+        // This prevents showing modal when API returns partial data
+        if (!Object.prototype.hasOwnProperty.call(absen, awalField)) {
+          // Field doesn't exist in API response — treat as no record, don't show modal
+          console.log(`[useAbsenCheck] Field ${awalField} not in API response — skipping modal`)
+        } else {
+          const fieldValue = absen[awalField]
+          if (!fieldValue || String(fieldValue).trim() === '') {
+            console.log(`[useAbsenCheck] Absen awal for ${awalField} is empty — showing modal`)
+            setShowAwalModal(true)
+          } else {
+            console.log(`[useAbsenCheck] Absen awal for ${awalField} already exists — skipping modal`, fieldValue)
+          }
         }
+      } else {
+        // No absen record at all for this izin — don't show modal
+        console.log(`[useAbsenCheck] No absen record found for izin ${finalIdIzin} — skipping modal`)
       }
     }
 
     checkAbsenData()
-  }, [finalIdIzin, checkOnMount, fetchAbsenData, getAwalField])
+  }, [finalIdIzin, checkOnMount, fetchAbsenData, getAwalField, role, user, asesorList])
 
   // Submit absen awal photo
   const submitAbsenAwal = useCallback(async (imageBlob: Blob) => {
@@ -185,7 +206,7 @@ export function useAbsenCheck({
     })
 
     const result: PostResponse = await response.json()
-    
+
 
     if (!response.ok) {
       throw new Error(result.message || "Gagal menyimpan foto absen")
@@ -194,6 +215,9 @@ export function useAbsenCheck({
     // Update local state with the URL from response
     const awalField = getAwalField()
     setAbsenData(prev => prev ? { ...prev, [awalField]: result.url } : null)
+
+    // Close modal after successful submit
+    setShowAwalModal(false)
 
     toast("Foto absen berhasil disimpan!", "success")
   }, [finalIdIzin, getEndpoint, getAwalField])

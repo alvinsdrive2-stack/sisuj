@@ -5,8 +5,6 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { WebcamModal } from "@/components/ui/WebcamModal"
 
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
@@ -16,15 +14,6 @@ export default function Ak01SuccessPage() {
 
   // Step 10 (Selesai) for AK01 Success
   const currentStep = 10
-
-  // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
-    phase: 'praasesmen',
-    role: 'auto',
-    checkOnMount: true, // Enable for both asesi and asesor
-    idIzin: idIzinFromUrl,
-    asesorList: [] // asesorList not available in this page
-  })
 
   const handleBackToDashboard = () => {
     if (user?.role?.name?.toLowerCase() === "asesor") {
@@ -112,16 +101,6 @@ export default function Ak01SuccessPage() {
         </div>
         </div>
       </ModularAsesiLayout>
-
-      {/* Absen Awal Modal */}
-      <WebcamModal
-        isOpen={showAwalModal}
-        onClose={handleAwalModalClose}
-        onSubmit={submitAbsenAwal}
-        title="Absen Masuk Pra-Asesmen"
-        description="Silakan ambil foto wajah Anda untuk absen masuk"
-        canClose={false}
-      />
     </div>
   )
 }
