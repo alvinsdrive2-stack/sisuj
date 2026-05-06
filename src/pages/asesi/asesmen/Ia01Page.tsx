@@ -86,7 +86,7 @@ export default function Ia01Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
@@ -754,7 +754,6 @@ export default function Ia01Page() {
                     publishUpdate()
 
                     // Generate QR after saving
-                    const jadwalId = kegiatan?.jadwal_id
 
                     console.log('QR Generation - isAsesor:', isAsesor, 'isAsesor1:', isAsesor1, 'jadwalId:', jadwalId, 'kegiatan:', kegiatan, 'barcodes:', barcodes)
 

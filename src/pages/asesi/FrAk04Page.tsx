@@ -50,7 +50,7 @@ export default function FrAk04Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -81,8 +81,8 @@ export default function FrAk04Page() {
       const token = localStorage.getItem("access_token")
       let resolvedIdIzin = idIzin
 
-      if (!resolvedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+      if (!resolvedIdIzin && !isAsesor && jadwalId) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -139,16 +139,16 @@ export default function FrAk04Page() {
     } finally {
       setIsLoading(false)
     }
-  }, [idIzin, isAsesor, kegiatan])
+  }, [idIzin, isAsesor, kegiatan, jadwalId])
 
   useEffect(() => {
     window.scrollTo(0, 0)
     if (isAsesor && idIzin) {
       fetchAk04Data()
-    } else if (kegiatan) {
+    } else if (kegiatan || jadwalId) {
       fetchAk04Data()
     }
-  }, [idIzin, kegiatan, isAsesor, fetchAk04Data])
+  }, [idIzin, kegiatan, isAsesor, jadwalId, fetchAk04Data])
 
   // SSE: auto-refresh when another user saves
   const { publishUpdate } = useRealtimeSync({
@@ -192,14 +192,14 @@ export default function FrAk04Page() {
   }
 
   const handleSave = async () => {
-    // Asesor just navigate without validation/saving
-    if (isFormDisabled) {
+    // Asesor just navigate without validation/saving (skip untuk tahap 0)
+    if (tahap !== 0 && isFormDisabled) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
       return
     }
 
-    // Asesi already signed → navigate to next page
-    if (asesiHasSigned) {
+    // Asesi already signed → navigate to next page (skip untuk tahap 0)
+    if (tahap !== 0 && asesiHasSigned) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
       return
     }
@@ -250,7 +250,7 @@ export default function FrAk04Page() {
           const hasAnswers = Object.keys(answers).length > 0
           const hasAlasan = alasanBanding.trim().length > 0
 
-          if ((hasAnswers || hasAlasan) && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
+          if (tahap !== 0 && (hasAnswers || hasAlasan) && !barcodes?.asesi?.url && jadwalId) {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak04`, {
                 method: 'POST',
@@ -259,7 +259,7 @@ export default function FrAk04Page() {
                   'Accept': 'application/json',
                   'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })
+                body: JSON.stringify({ id_jadwal: jadwalId })
               })
 
               if (qrResponse.ok) {
@@ -281,6 +281,10 @@ export default function FrAk04Page() {
 
           showSuccess('FR AK 04 berhasil disimpan!')
           publishUpdate()
+          // Untuk tahap 0, langsung navigasi ke AK 01
+          if (tahap === 0) {
+            setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`), 500)
+          }
         } else {
           showError("Gagal menyimpan data: " + (result.message || "Unknown error"))
         }
@@ -317,7 +321,7 @@ export default function FrAk04Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={7} idIzin={idIzin}>
+      <AsesiLayout currentStep={7} idIzin={idIzin} tahap={tahap}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px' }}>

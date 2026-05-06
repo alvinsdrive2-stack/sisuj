@@ -11,6 +11,7 @@ interface DataDokumenPraAsesmenData {
   jabatan_kerja: string
   nomor_skema: string
   jenjang: string
+  tahap?: number
   metode?: string
   tuk: string
   id_asesor_1: number
@@ -31,6 +32,7 @@ interface DataDokumenPraAsesmenData {
   barcode_validator: string | null
   noreg_penyusun: string | null
   noreg_validator: string | null
+  jadwal_id?: string | null
 }
 
 interface DataDokumenPraAsesmenResponse {
@@ -42,6 +44,7 @@ interface UseDataDokumenPraAsesmenResult {
   jabatanKerja: string
   nomorSkema: string
   jenjang: string
+  tahap: number
   metode: string
   tuk: string
   asesorList: Asesor[]
@@ -58,6 +61,7 @@ interface UseDataDokumenPraAsesmenResult {
   barcodeValidator: string | null
   noregPenyusun: string | null
   noregValidator: string | null
+  jadwalId: string | null
   isLoading: boolean
   error: string | null
 }
@@ -67,6 +71,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
     jabatanKerja: string
     nomorSkema: string
     jenjang: string
+    tahap: number
     metode: string
     tuk: string
     asesorList: Asesor[]
@@ -83,10 +88,12 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
     barcodeValidator: string | null
     noregPenyusun: string | null
     noregValidator: string | null
+    jadwalId: string | null
   }>({
     jabatanKerja: '',
     nomorSkema: '',
     jenjang: '0',
+    tahap: 0,
     metode: '',
     tuk: '',
     asesorList: [],
@@ -103,6 +110,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
     barcodeValidator: null,
     noregPenyusun: null,
     noregValidator: null,
+    jadwalId: null,
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -152,6 +160,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
               jabatanKerja: result.data.jabatan_kerja || '',
               nomorSkema: result.data.nomor_skema || '',
               jenjang: result.data.jenjang || '0',
+              tahap: result.data.tahap ?? 0,
               metode: result.data.metode || '',
               tuk: result.data.tuk || '',
               asesorList,
@@ -168,6 +177,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
               barcodeValidator: result.data.barcode_validator || null,
               noregPenyusun: result.data.noreg_penyusun || null,
               noregValidator: result.data.noreg_validator || null,
+              jadwalId: result.data.jadwal_id || null,
             })
           }
         } else {

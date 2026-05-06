@@ -83,6 +83,7 @@ export default function Ia10Page() {
     asesorList,
     namaAsesi,
     tanggalUji,
+    jadwalId,
   } = useDataDokumenAsesmen(id)
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { isAsesor1 } = useAsesorRole(id)
@@ -281,7 +282,7 @@ export default function Ia10Page() {
                   "Content-Type": "application/json",
                   "Authorization": `Bearer ${token}`,
                 },
-                body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+                body: JSON.stringify({ id_jadwal: jadwalId }),
               })
               if (qrResponse.ok) {
                 const qrResult = await qrResponse.json()
@@ -310,7 +311,7 @@ export default function Ia10Page() {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`,
               },
-              body: JSON.stringify({ id_jadwal: kegiatan?.jadwal_id }),
+              body: JSON.stringify({ id_jadwal: jadwalId }),
             })
             if (qrResponse.ok) {
               const qrResult = await qrResponse.json()

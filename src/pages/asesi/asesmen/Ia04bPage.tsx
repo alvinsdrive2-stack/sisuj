@@ -66,7 +66,7 @@ export default function Ia04bPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -372,7 +372,7 @@ export default function Ia04bPage() {
       publishUpdate()
 
       // 4. Generate QR for asesi if not exists
-      if (!isAsesor && !barcodes?.asesi?.url && kegiatan?.jadwal_id) {
+      if (!isAsesor && !barcodes?.asesi?.url && jadwalId) {
         try {
           const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04b`, {
             method: 'POST',
@@ -382,7 +382,7 @@ export default function Ia04bPage() {
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              id_jadwal: kegiatan.jadwal_id
+              id_jadwal: jadwalId
             })
           })
 
@@ -411,7 +411,6 @@ export default function Ia04bPage() {
         // Tentukan key berdasarkan role asesor (asesor1 atau asesor2)
         const asesorKey = isAsesor1 ? 'asesor1' : 'asesor2'
         const existingAsesorQR = barcodes?.asesor?.[asesorKey]?.url
-        const jadwalId = kegiatan?.jadwal_id
 
         console.log('IA04B Asesor QR Debug:', {
           isAsesor1,

@@ -5,14 +5,15 @@ interface AsesiLayoutProps {
   children: ReactNode
   currentStep: number
   idIzin?: string
+  tahap?: number
 }
 
-export default function AsesiLayout({ children, currentStep, idIzin }: AsesiLayoutProps) {
+export default function AsesiLayout({ children, currentStep, idIzin, tahap }: AsesiLayoutProps) {
   return (
     <div style={{ display: 'flex', gap: '30px', padding: '20px', maxWidth: '1100px', margin: '0 auto', alignItems: 'flex-start' }}>
       {/* Sidebar - Vertical Steps (Sticky) */}
       <div style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-        <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} />
+        <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} tahap={tahap} />
       </div>
 
       {/* Main Content */}

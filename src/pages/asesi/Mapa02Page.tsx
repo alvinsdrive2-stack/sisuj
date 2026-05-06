@@ -61,7 +61,7 @@ export default function Mapa02Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -89,8 +89,8 @@ export default function Mapa02Page() {
       const token = localStorage.getItem("access_token")
       let resolvedIdIzin = idIzin
 
-      if (!resolvedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+      if (!resolvedIdIzin && !isAsesor && jadwalId) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
           headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
         })
         if (listAsesiResponse.ok) {
@@ -133,36 +133,35 @@ export default function Mapa02Page() {
     } finally {
       setIsLoading(false)
     }
-  }, [idIzin, isAsesor, kegiatan])
+  }, [idIzin, isAsesor, kegiatan, jadwalId])
 
   useEffect(() => {
     window.scrollTo(0, 0)
     if (isAsesor && idIzin) fetchMapa02Data()
-    else if (kegiatan) fetchMapa02Data()
-  }, [idIzin, kegiatan, isAsesor, fetchMapa02Data])
+    else if (kegiatan || jadwalId) fetchMapa02Data()
+  }, [idIzin, kegiatan, isAsesor, jadwalId, fetchMapa02Data])
 
   const { publishUpdate } = useRealtimeSync({
     channelName: `praasesmen:${actualIdIzin}`,
     onUpdate: fetchMapa02Data
   })
 
-  // Get jadwalId from kegiatan
-  const jadwalId = kegiatan?.jadwal_id
-
-  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
 
   // Check if current asesor has signed
   const asesorHasSigned = (() => {
+    if (tahap === 0) return true
     if (!isAsesor) return true
     const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
     const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
     return isAsesor1 ? asesor1Signed : asesor2Signed
   })()
 
-  // Check if all asesor signatures exist
+  // Check if all asesor signatures exist (skip untuk tahap 0)
   const allAsesorSigned = (() => {
+    if (tahap === 0) return true
     if (asesorList.length === 0) return false
     if (!asesor1Signed) return false
     if (asesorList.length >= 2 && !asesor2Signed) return false
@@ -174,7 +173,7 @@ export default function Mapa02Page() {
     : asesiHasSigned && allAsesorSigned
 
   const missingAsesorLabels = (() => {
-    if (isAsesor || asesorList.length === 0 || allAsesorSigned) return []
+    if (tahap === 0 || isAsesor || asesorList.length === 0 || allAsesorSigned) return []
     const missing: string[] = []
     if (!asesor1Signed) missing.push("Asesor 1")
     if (asesorList.length >= 2 && !asesor2Signed) missing.push("Asesor 2")
@@ -205,14 +204,14 @@ export default function Mapa02Page() {
       return
     }
 
-    // Jika semua sudah ttd → redirect ke halaman berikutnya
-    if (!isAsesor && asesiHasSigned && allAsesorSigned) {
+    // Jika semua sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
       return
     }
 
-    // Jika asesor sudah ttd → redirect
-    if (isAsesor && asesorHasSigned) {
+    // Jika asesor sudah ttd → redirect (skip untuk tahap 0)
+    if (tahap !== 0 && isAsesor && asesorHasSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
       return
     }
@@ -235,8 +234,8 @@ export default function Mapa02Page() {
         return
       }
 
-      // Generate QR
-      if (jadwalId) {
+      // Generate QR (skip untuk tahap 0)
+      if (tahap !== 0 && jadwalId) {
         const needsQr = isAsesor
           ? !asesorHasSigned
           : !asesiHasSigned
@@ -291,6 +290,10 @@ export default function Mapa02Page() {
 
       showSuccess('MAPA 02 berhasil disimpan!')
       publishUpdate()
+      // Untuk tahap 0, langsung navigasi ke halaman berikutnya
+      if (tahap === 0) {
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`), 500)
+      }
     } catch (error) {
       console.error('Error saving MAPA 02:', error)
       showWarning('Terjadi kesalahan saat menyimpan')
@@ -324,7 +327,7 @@ export default function Mapa02Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={5} idIzin={idIzin}>
+      <AsesiLayout currentStep={5} idIzin={idIzin} tahap={tahap}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>

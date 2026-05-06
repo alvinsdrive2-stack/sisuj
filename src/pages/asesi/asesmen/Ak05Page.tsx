@@ -31,12 +31,22 @@ interface Ak05Data {
   catatan: string
 }
 
+interface Ak05PerAsesi {
+  kompeten: boolean
+  keterangan: string
+}
+
+interface AsesiItem {
+  id_izin: string
+  nama: string
+}
+
 export default function Ak05Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
@@ -90,21 +100,27 @@ export default function Ak05Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
+  // Multi-asesi state
+  const [asesiList, setAsesiList] = useState<AsesiItem[]>([])
+  const [ak05DataMap, setAk05DataMap] = useState<Record<string, Ak05PerAsesi>>({})
+
   // Fetch AK05 data - GET only
   const fetchAk05Data = useCallback(async () => {
     if (authLoading || !id) return
 
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
+
+      // Fetch AK05 for current id first (for barcodes + report-level fields)
+      const currentResponse = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
         },
       })
 
-      if (response.ok) {
-        const result = await response.json()
+      if (currentResponse.ok) {
+        const result = await currentResponse.json()
         if (result.message === "Success" && result.data) {
           // kompeten: true = K, false = BK
           setAk05Data({
@@ -125,11 +141,53 @@ export default function Ak05Page() {
           }
         }
       }
+
+      // Fetch all asesi from kegiatan
+      if (jadwalId) {
+        const listRes = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        })
+
+        if (listRes.ok) {
+          const listData = await listRes.json()
+          const asesiItems: AsesiItem[] = (listData?.list_asesi || [])
+            .map((a: any) => ({ id_izin: a.id_izin, nama: a.nama }))
+            .filter((a: AsesiItem) => a.id_izin)
+
+          setAsesiList(asesiItems)
+
+          // Fetch AK05 data per asesi
+          const dataMap: Record<string, Ak05PerAsesi> = {}
+          const fetches = asesiItems.map(async (asesi) => {
+            try {
+              const res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak05`, {
+                headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+              })
+              if (res.ok) {
+                const json = await res.json()
+                if (json.message === "Success" && json.data) {
+                  dataMap[asesi.id_izin] = {
+                    kompeten: json.data.kompeten || false,
+                    keterangan: json.data.answers?.keterangan || '',
+                  }
+                  return
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching AK05 for ${asesi.id_izin}:`, err)
+            }
+            dataMap[asesi.id_izin] = { kompeten: false, keterangan: '' }
+          })
+
+          await Promise.all(fetches)
+          setAk05DataMap(dataMap)
+        }
+      }
     } catch (err) {
       console.error("Error fetching AK05:", err)
     }
     setIsLoading(false)
-  }, [id, authLoading])
+  }, [id, authLoading, jadwalId])
 
   useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
 
@@ -172,52 +230,59 @@ export default function Ak05Page() {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
+      let allSuccess = true
 
-      // POST AK05 data
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
-        method: 'POST',
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          kompeten: ak05Data.kompeten,
-          keterangan: ak05Data.keterangan,
-          aspek: ak05Data.aspek_positif_negatif,
-          pencatatan_penolakan: ak05Data.pencatatan_penolakan,
-          saran: ak05Data.saran,
-          catatan: ak05Data.catatan,
-        }),
-      })
+      // POST AK05 data for each asesi
+      for (const asesi of asesiList) {
+        const perAsesi = ak05DataMap[asesi.id_izin] || { kompeten: false, keterangan: '' }
 
-      if (response.ok) {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak05`, {
+          method: 'POST',
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            kompeten: perAsesi.kompeten,
+            keterangan: perAsesi.keterangan,
+            aspek: ak05Data.aspek_positif_negatif,
+            pencatatan_penolakan: ak05Data.pencatatan_penolakan,
+            saran: ak05Data.saran,
+            catatan: ak05Data.catatan,
+          }),
+        })
+
+        if (!response.ok) {
+          allSuccess = false
+          console.error(`Failed to save AK05 for ${asesi.id_izin}`)
+        }
+      }
+
+      if (allSuccess) {
         showSuccess('AK 05 berhasil disimpan!')
 
-        // POST QR for asesor if not exists
-        const existingQR = role === 'asesor_1' ? barcodes.asesor1?.url : barcodes.asesor2?.url
-
-        if (!existingQR) {
-          const jadwalId = kegiatan?.jadwal_id
-
-          if (jadwalId) {
+        // POST QR for each asesi (if not already signed)
+        if (jadwalId) {
+          for (const asesi of asesiList) {
+            // Check existing barcode for this asesi's current role
+            // Use the barcodes from the current fetch — for other asesi we don't have their barcodes,
+            // so just try to generate QR unconditionally (API will handle duplicates)
             try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak05`, {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${asesi.id_izin}/ak05`, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
+                body: JSON.stringify({ id_jadwal: jadwalId })
               })
 
               if (qrResponse.ok) {
                 const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  // Update barcodes based on asesor role
+                // Only update local barcodes for the current id
+                if (asesi.id_izin === id && qrResult.data?.url_image) {
                   if (role === 'asesor_1') {
                     setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
                   } else {
@@ -226,13 +291,13 @@ export default function Ak05Page() {
                 }
               }
             } catch (qrError) {
-              console.error('Error generating QR:', qrError)
+              console.error(`Error generating QR for ${asesi.id_izin}:`, qrError)
             }
-            publishUpdate()
           }
+          publishUpdate()
         }
       } else {
-        showError('Gagal menyimpan data. Silakan coba lagi.')
+        showError('Gagal menyimpan data beberapa asesi. Silakan coba lagi.')
         return
       }
     } catch (err) {
@@ -317,7 +382,7 @@ export default function Ak05Page() {
           </tbody>
         </table>
 
-        {/* TABEL ASESI - Single row for current asesi */}
+        {/* TABEL ASESI - Multiple rows from kegiatan */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             <tr style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
@@ -331,33 +396,55 @@ export default function Ak05Page() {
               <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>BK</th>
             </tr>
 
-            <tr>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1.</td>
-              <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{namaAsesi || '-'}</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
-                <CustomCheckbox
-                  checked={ak05Data.kompeten}
-                  onChange={() => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
-                  style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
-                />
-              </td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
-                <CustomCheckbox
-                  checked={!ak05Data.kompeten}
-                  onChange={() => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, kompeten: !prev.kompeten }))}
-                  style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
-                />
-              </td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                <textarea
-                  value={ak05Data.keterangan}
-                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, keterangan: e.target.value }))}
-                  disabled={formDisabled}
-                  style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
-                  placeholder="Keterangan..."
-                />
-              </td>
-            </tr>
+            {asesiList.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', border: '1px solid #000', padding: '12px', color: '#999' }}>
+                  Tidak ada data asesi
+                </td>
+              </tr>
+            ) : (
+              asesiList.map((asesi, idx) => {
+                const perAsesi = ak05DataMap[asesi.id_izin] || { kompeten: false, keterangan: '' }
+                return (
+                  <tr key={asesi.id_izin}>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{idx + 1}.</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{asesi.nama || '-'}</td>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
+                      <CustomCheckbox
+                        checked={perAsesi.kompeten}
+                        onChange={() => canEdit && !allSigned && setAk05DataMap(prev => ({
+                          ...prev,
+                          [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
+                        }))}
+                        style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
+                      <CustomCheckbox
+                        checked={!perAsesi.kompeten}
+                        onChange={() => canEdit && !allSigned && setAk05DataMap(prev => ({
+                          ...prev,
+                          [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
+                        }))}
+                        style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
+                      />
+                    </td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>
+                      <textarea
+                        value={perAsesi.keterangan}
+                        onChange={(e) => canEdit && !allSigned && setAk05DataMap(prev => ({
+                          ...prev,
+                          [asesi.id_izin]: { ...perAsesi, keterangan: e.target.value }
+                        }))}
+                        disabled={formDisabled}
+                        style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
+                        placeholder="Keterangan..."
+                      />
+                    </td>
+                  </tr>
+                )
+              })
+            )}
           </tbody>
         </table>
 

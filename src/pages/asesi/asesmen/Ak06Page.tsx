@@ -74,7 +74,7 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2 } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
@@ -225,7 +225,6 @@ export default function Ak06Page() {
 
   // Check if AK05 should appear after AK06
   useEffect(() => {
-    const jadwalId = kegiatan?.jadwal_id
     if (!jadwalId) return
 
     let cancelled = false
@@ -262,7 +261,7 @@ export default function Ak06Page() {
     }
     check()
     return () => { cancelled = true }
-  }, [kegiatan?.jadwal_id])
+  }, [jadwalId])
 
   if (isLoading) {
     return (
@@ -341,7 +340,6 @@ export default function Ak06Page() {
 
         // Generate QR for asesor only if not exists
         if (isAsesor) {
-          const jadwalId = kegiatan?.jadwal_id
           const existingAsesorQR = isAsesor1 ? barcodes.asesor1?.url : barcodes.asesor2?.url
 
           if (jadwalId && !existingAsesorQR) {

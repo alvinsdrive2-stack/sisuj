@@ -27,7 +27,7 @@ export default function K3AsesmenPage() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { showSuccess, showWarning } = useToast()
-  const { asesorList } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -144,7 +144,7 @@ export default function K3AsesmenPage() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={8} idIzin={idIzin}>
+      <AsesiLayout currentStep={8} idIzin={idIzin} tahap={tahap}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>

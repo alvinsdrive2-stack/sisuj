@@ -8,6 +8,7 @@ interface Step {
 interface AsesiStepIndicatorProps {
   currentStep: number
   idIzin?: string
+  tahap?: number
 }
 
 const steps: Step[] = [
@@ -43,8 +44,14 @@ const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
   return paths[stepNumber] || null
 }
 
-export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepIndicatorProps) {
+export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: AsesiStepIndicatorProps) {
   const navigate = useNavigate()
+
+  // For tahap 0: hide Konfirmasi(1), K3(8), AK01(9), Selesai(10)
+  const isTahap0 = tahap === 0
+  const visibleSteps = isTahap0
+    ? steps.filter(s => (s.number >= 2 && s.number <= 7) || s.number === 9)
+    : steps
 
   // Get the class name for the step circle based on status
   const getStepCircleClassName = (status: string) => {
@@ -113,7 +120,8 @@ export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepInd
         }}></div>
 
         {/* Steps */}
-        {steps.map((step, index) => {
+        {visibleSteps.map((step, index) => {
+          const displayNumber = isTahap0 ? index + 1 : step.number
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
           const stepPath = getStepPath(step.number, idIzin)
@@ -125,11 +133,11 @@ export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepInd
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                marginBottom: index < steps.length - 1 ? '24px' : '0',
+                marginBottom: index < visibleSteps.length - 1 ? '24px' : '0',
                 position: 'relative',
-                cursor: isClickable ? 'pointer' : 'default'
+                cursor: isClickable ? 'help' : 'default'
               }}
-              onClick={() => isClickable && handleStepClick(step.number)}
+              onClick={() => isClickable}
               title={isClickable ? `Klik untuk ke ${step.label}` : undefined}
             >
               {/* Step Circle */}
@@ -165,7 +173,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepInd
                   }
                 }}
               >
-                {status === 'completed' ? '\u2713' : step.number}
+                {status === 'completed' ? '\u2713' : displayNumber}
               </div>
               {/* Label */}
               <span style={{
@@ -178,7 +186,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin }: AsesiStepInd
                 {step.label}
               </span>
               {/* Completed Line Segment */}
-              {status !== 'pending' && index < steps.length - 1 && (
+              {status !== 'pending' && index < visibleSteps.length - 1 && (
                 <div style={{
                   position: 'absolute',
                   left: '18px',

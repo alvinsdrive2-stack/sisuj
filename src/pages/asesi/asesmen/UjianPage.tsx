@@ -119,7 +119,7 @@ export default function UjianPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, asesorList, jenjang, metode } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, asesorList, jenjang, metode, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
   const { isAsesor1: _isAsesor1 } = useAsesorRole(id)
@@ -451,7 +451,6 @@ export default function UjianPage() {
       showSuccess('Ujian berhasil diselesaikan!')
 
       // Generate QR after successful save
-      const jadwalId = kegiatan?.jadwal_id
       try {
         if (jadwalId) {
           await kegiatanService.generateQRUjian(id, jadwalId)

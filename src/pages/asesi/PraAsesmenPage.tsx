@@ -67,7 +67,7 @@ export default function PraAsesmenPage() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   // Get asesor data for absen check
-  const { asesorList } = useDataDokumenPraAsesmen(idIzinFromUrl)
+  const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzinFromUrl)
 
   // DEBUG: Log when PraAsesmenPage mounts
   console.log('[PraAsesmenPage] Component mounted', { userRole: user?.role?.name, idIzinFromUrl, isAsesor })
@@ -230,7 +230,7 @@ export default function PraAsesmenPage() {
       {/* Step Indicator */}
       
 
-      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl}>
+      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl} tahap={tahap}>
 {/* Info Card - Panduan Asesi */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px 16px' }}>
         <div className='shadow-md' style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px' }}>

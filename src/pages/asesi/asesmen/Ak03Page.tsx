@@ -58,7 +58,7 @@ export default function Ak03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jenjang, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -277,7 +277,6 @@ export default function Ak03Page() {
 
         // Generate QR for asesor if not exists
         if (isAsesor) {
-          const jadwalId = kegiatan?.jadwal_id
           const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
 
           if (jadwalId && !existingAsesorQR) {
@@ -310,7 +309,6 @@ export default function Ak03Page() {
           }
         } else {
           // For asesi: generate QR if not exists
-          const jadwalId = kegiatan?.jadwal_id
           const existingAsesiQR = barcodes?.asesi?.url
 
           if (jadwalId && !existingAsesiQR) {

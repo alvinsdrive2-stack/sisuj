@@ -82,7 +82,7 @@ export default function Ia03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -329,7 +329,6 @@ export default function Ia03Page() {
         publishUpdate()
 
         // Generate QR for asesi if not exists
-        const jadwalId = kegiatan?.jadwal_id
         const existingAsesiQR = barcodes?.asesi?.url
         const hasAsesiQR = !!existingAsesiQR && existingAsesiQR.length > 0
 

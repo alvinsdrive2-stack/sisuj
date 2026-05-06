@@ -1015,11 +1015,8 @@ export default function Apl02Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { asesorList, namaAsesi, jenjang } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, namaAsesi, jenjang, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
-
-  // Get jadwal_id from kegiatan
-  const jadwalId = kegiatan?.jadwal_id
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -1313,8 +1310,8 @@ export default function Apl02Page() {
         // Fetch id_izin dari list-asesi endpoint (skip for asesor)
         let fetchedIdIzin: string | null = idIzin || null
 
-        if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-          const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        if (!fetchedIdIzin && !isAsesor && jadwalId) {
+          const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
             headers: {
               "Accept": "application/json",
               "Authorization": `Bearer ${token}`,
@@ -1450,27 +1447,29 @@ export default function Apl02Page() {
       } finally {
         setIsLoading(false)
       }
-  }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi])
+  }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi, jadwalId])
 
   useEffect(() => {
     if (initialFetchDone.current) return
-    if ((isAsesor && idIzin) || kegiatan) {
+    if ((isAsesor && idIzin) || kegiatan || jadwalId) {
       initialFetchDone.current = true
       window.scrollTo(0, 0)
       fetchData()
     }
-  }, [kegiatan, isAsesor, idIzin, fetchData])
+  }, [kegiatan, isAsesor, idIzin, jadwalId, fetchData])
 
-  // Check if asesi has signed
+  // Check if asesi has signed (skip untuk tahap 0)
   const asesiHasSigned = (() => {
+    if (tahap === 0) return true
     if (isAsesor) return true
     const subunits = Object.values(subunitBarcodes)
     if (subunits.length === 0) return false
     return subunits.some(sb => sb.asesi?.url)
   })()
 
-  // Check if asesor has signed (for current asesor)
+  // Check if asesor has signed (for current asesor, skip untuk tahap 0)
   const asesorHasSigned = (() => {
+    if (tahap === 0) return true
     if (!isAsesor) return true
     const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
     const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
@@ -1480,8 +1479,9 @@ export default function Apl02Page() {
     return isAsesor1 ? !!barcode?.asesor1?.url : !!barcode?.asesor2?.url
   })()
 
-  // Check if all asesor signatures exist across all subunits
+  // Check if all asesor signatures exist across all subunits (skip untuk tahap 0)
   const allAsesorSigned = (() => {
+    if (tahap === 0) return true
     if (isAsesor) return true
     if (asesorList.length === 0) return false // Asesi: need asesor data first
     const subunits = Object.values(subunitBarcodes)
@@ -1498,7 +1498,7 @@ export default function Apl02Page() {
     : asesiHasSigned && allAsesorSigned  // Asesi: check asesi + all asesor
 
   const missingAsesorLabels = (() => {
-    if (isAsesor || asesorList.length === 0 || allAsesorSigned) return []
+    if (tahap === 0 || isAsesor || asesorList.length === 0 || allAsesorSigned) return []
     const missing: string[] = []
     const subunits = Object.values(subunitBarcodes)
     const anyMissingAsesor1 = subunits.some(sb => !sb.asesor1?.url)
@@ -1520,8 +1520,8 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesi sudah ttd & semua asesor sudah ttd → redirect ke halaman berikutnya
-    if (!isAsesor && asesiHasSigned && allAsesorSigned) {
+    // Jika asesi sudah ttd & semua asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
         navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
@@ -1529,8 +1529,8 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesor sudah ttd → redirect ke halaman berikutnya
-    if (isAsesor && asesorHasSigned) {
+    // Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
         navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
@@ -1584,8 +1584,8 @@ export default function Apl02Page() {
           showError('Gagal menyimpan metode asesmen')
         }
 
-        // Generate QR untuk asesor hanya jika belum ada
-        if (jadwalId && !hasExistingAsesorQR) {
+        // Generate QR untuk asesor hanya jika belum ada (skip untuk tahap 0)
+        if (tahap !== 0 && jadwalId && !hasExistingAsesorQR) {
           try {
             const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
               method: 'POST',
@@ -1641,6 +1641,10 @@ export default function Apl02Page() {
         }
 
         showSuccess('Metode asesmen berhasil disimpan!')
+        // Untuk tahap 0, langsung navigasi
+        if (tahap === 0) {
+          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`), 500)
+        }
       } catch (error) {
         console.error('Error saving metode:', error)
         showError('Gagal menyimpan metode asesmen')
@@ -1743,7 +1747,7 @@ export default function Apl02Page() {
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
           )
 
-          if (hasMissingBarcode) {
+          if (tahap !== 0 && hasMissingBarcode) {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
@@ -1788,6 +1792,10 @@ export default function Apl02Page() {
 
         showSuccess('APL 02 berhasil ditandatangani!')
         publishUpdate()
+        // Untuk tahap 0, langsung navigasi ke halaman berikutnya
+        if (tahap === 0) {
+          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`), 500)
+        }
       } else {
         showError('Gagal menyimpan data APL 02')
       }
@@ -1821,7 +1829,7 @@ export default function Apl02Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin}>
+      <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin} tahap={tahap}>
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
                 APL-02 ASESMEN MANDIRI<br />{apl02Data?.jabatan_kerja || '-'}

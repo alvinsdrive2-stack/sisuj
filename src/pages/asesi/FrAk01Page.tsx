@@ -99,7 +99,7 @@ export default function FrAk01Page() {
   })
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji } = useDataDokumenPraAsesmen(actualIdIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId } = useDataDokumenPraAsesmen(actualIdIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {
@@ -117,8 +117,6 @@ export default function FrAk01Page() {
     idIzin: actualIdIzin,
     asesorList: asesorList
   })
-
-  const jadwalId = kegiatan?.jadwal_id
 
   // Format tanggal_uji untuk Hari/Tanggal dan Waktu
   const formatTanggalUji = (tanggalUjiStr: string) => {
@@ -148,8 +146,8 @@ export default function FrAk01Page() {
       // Use idIzin from URL params or fetch from list-asesi
       let fetchedIdIzin = idIzin
 
-      if (!fetchedIdIzin && !isAsesor && kegiatan?.jadwal_id) {
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+      if (!fetchedIdIzin && !isAsesor && jadwalId) {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -211,16 +209,16 @@ export default function FrAk01Page() {
     } catch (error) {
       setLoading(false)
     }
-  }, [idIzin, kegiatan, isAsesor])
+  }, [idIzin, kegiatan, isAsesor, jadwalId])
 
   useEffect(() => {
     if (initialFetchDone.current) return
-    if ((isAsesor && idIzin) || kegiatan) {
+    if ((isAsesor && idIzin) || kegiatan || jadwalId) {
       initialFetchDone.current = true
       window.scrollTo(0, 0)
       fetchData()
     }
-  }, [idIzin, kegiatan, isAsesor, fetchData])
+  }, [idIzin, kegiatan, isAsesor, jadwalId, fetchData])
 
   // Real-time sync across users (frontend-only using Ably)
   const { publishUpdate } = useRealtimeSync({
@@ -230,14 +228,14 @@ export default function FrAk01Page() {
 
   const asesor1Signed = !!barcodes?.asesor1?.url
   const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+  const allAsesorSigned = tahap === 0 || isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = tahap === 0 ? [] : asesorList.length === 0 ? [] : [
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
 
-  // Signature checks for current user's role
-  const asesiHasSigned = !!barcodes?.asesi?.url
+  // Signature checks for current user's role (skip untuk tahap 0)
+  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
   const allSigned = asesiHasSigned && allAsesorSigned
 
   useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
@@ -250,6 +248,7 @@ export default function FrAk01Page() {
   }, [jam, menit, allSigned])
 
   const asesorHasSigned = (() => {
+    if (tahap === 0) return true
     if (!isAsesor) return false
     const currentAsesorId = String(user?.id)
     const asesorIndex = asesorList.findIndex(a => String(a.id) === currentAsesorId)
@@ -270,7 +269,7 @@ export default function FrAk01Page() {
       setPendingToSuccessPage(false)
       // Asesor redirects to asesor dashboard, asesi to success page
       if (isAsesor) {
-        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+        navigate(`/asesor/asesi/${jadwalId}`)
       } else {
         navigate(`/asesi/praasesmen/ak01-success`)
       }
@@ -284,8 +283,8 @@ export default function FrAk01Page() {
   }
 
   const handleSave = async () => {
-    // If asesor already signed -> check absen akhir before navigate
-    if (isAsesor && asesorHasSigned) {
+    // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
+    if (tahap !== 0 && isAsesor && asesorHasSigned) {
       // Check if absen akhir needed
       const needsAbsenAkhir = await _shouldShowAkhirModal()
       if (needsAbsenAkhir) {
@@ -294,15 +293,15 @@ export default function FrAk01Page() {
         return
       }
       if (isAsesor) {
-        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+        navigate(`/asesor/asesi/${jadwalId}`)
       } else {
         navigate(`/asesi/praasesmen/ak01-success`)
       }
       return
     }
 
-    // If asesi already signed -> check absen akhir before navigate
-    if (!isAsesor && asesiHasSigned) {
+    // If asesi already signed -> check absen akhir before navigate (skip untuk tahap 0)
+    if (tahap !== 0 && !isAsesor && asesiHasSigned) {
       // Check if absen akhir needed
       const needsAbsenAkhir = await _shouldShowAkhirModal()
       if (needsAbsenAkhir) {
@@ -311,15 +310,15 @@ export default function FrAk01Page() {
         return
       }
       if (isAsesor) {
-        navigate(`/asesor/asesi/${kegiatan?.jadwal_id}`)
+        navigate(`/asesor/asesi/${jadwalId}`)
       } else {
         navigate(`/asesi/praasesmen/ak01-success`)
       }
       return
     }
 
-    // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
+    // Guard: asesi cannot submit until all asesor have signed (skip untuk tahap 0)
+    if (tahap !== 0 && !isAsesor && !allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
@@ -345,8 +344,8 @@ export default function FrAk01Page() {
       })
 
       if (response.ok) {
-        // Generate QR for asesor after save (only if not already exists)
-        if (isAsesor && jadwalId) {
+        // Generate QR for asesor after save (only if not already exists, skip untuk tahap 0)
+        if (tahap !== 0 && isAsesor && jadwalId) {
           const currentAsesorId = String(user?.id)
           const isAsesor1 = asesorList.length === 0 || asesorList.findIndex(a => String(a.id) === currentAsesorId) === 0
           const barcodeKey = isAsesor1 ? 'asesor1' : 'asesor2'
@@ -387,8 +386,8 @@ export default function FrAk01Page() {
           }
         }
 
-        // Generate QR for asesi (only if not already exists)
-        if (!isAsesor && jadwalId && !barcodes?.asesi?.url) {
+        // Generate QR for asesi (only if not already exists, skip untuk tahap 0)
+        if (tahap !== 0 && !isAsesor && jadwalId && !barcodes?.asesi?.url) {
           try {
             const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak01`, {
               method: 'POST',
@@ -425,6 +424,13 @@ export default function FrAk01Page() {
 
         // Notify other users viewing this page
         publishUpdate()
+
+        // Untuk tahap 0, langsung navigasi ke halaman berikutnya
+        if (tahap === 0) {
+          setTimeout(() => {
+            navigate(`/asesor/asesi/${jadwalId}`)
+          }, 500)
+        }
       } else {
         console.error('Failed to save:', await response.text())
       }
@@ -457,7 +463,7 @@ export default function FrAk01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={9} idIzin={actualIdIzin}>
+      <AsesiLayout currentStep={9} idIzin={actualIdIzin} tahap={tahap}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR.AK.01 - PERSETUJUAN ASESMEN</h2>

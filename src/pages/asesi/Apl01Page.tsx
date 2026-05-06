@@ -110,16 +110,13 @@ interface ApiResponse {
 export default function Apl01Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
   // Get asesor data for absen check
-  const { asesorList } = useDataDokumenPraAsesmen(idIzin)
-
-  // Get jadwal_id from kegiatan
-  const jadwalId = kegiatan?.jadwal_id
+  const { asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
 
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -274,8 +271,8 @@ export default function Apl01Page() {
       setIsSaving(true)
       const token = localStorage.getItem("access_token")
 
-      // Generate QR jika belum ada
-      if (!barcodes?.asesi?.url && jadwalId) {
+      // Generate QR jika belum ada (skip untuk tahap 0)
+      if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
         const qrResponse = await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
           method: 'POST',
           headers: {
@@ -332,7 +329,7 @@ export default function Apl01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={2} idIzin={idIzin}>
+      <AsesiLayout currentStep={2} idIzin={idIzin} tahap={tahap}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>

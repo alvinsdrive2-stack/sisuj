@@ -78,11 +78,8 @@ export default function FrAk07Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
-
-  // Get jadwal_id from kegiatan
-  const jadwalId = kegiatan?.jadwal_id
 
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
   const [barcodes, setBarcodes] = useState<{
@@ -152,9 +149,9 @@ export default function FrAk07Page() {
       // Use idIzin from URL params
       let actualIdIzin = idIzin
 
-      if (!actualIdIzin && !isAsesor && kegiatan?.jadwal_id) {
+      if (!actualIdIzin && !isAsesor && jadwalId) {
         // Fetch id_izin from list-asesi endpoint if not in URL
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
+        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
           headers: {
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
@@ -241,16 +238,16 @@ export default function FrAk07Page() {
     } finally {
       setIsLoading(false)
     }
-  }, [idIzin, kegiatan, isAsesor])
+  }, [idIzin, kegiatan, isAsesor, jadwalId])
 
   useEffect(() => {
     if (initialFetchDone.current) return
-    if ((isAsesor && idIzin) || kegiatan) {
+    if ((isAsesor && idIzin) || kegiatan || jadwalId) {
       initialFetchDone.current = true
       window.scrollTo(0, 0)
       fetchData()
     }
-  }, [idIzin, kegiatan, isAsesor, fetchData])
+  }, [idIzin, kegiatan, isAsesor, jadwalId, fetchData])
 
   const { publishUpdate } = useRealtimeSync({
     channelName: `praasesmen:${idIzin}`,
@@ -259,19 +256,19 @@ export default function FrAk07Page() {
 
   const asesor1Signed = !!(barcodes?.asesor1?.url || (asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url))
   const asesor2Signed = !!(barcodes?.asesor2?.url || (asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url))
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+  const allAsesorSigned = tahap === 0 || isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = tahap === 0 ? [] : asesorList.length === 0 ? [] : [
     !asesor1Signed && "Asesor 1",
     asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
   ].filter(Boolean) as string[]
 
   // Signature checks: does barcodes already contain QR for this role?
-  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
   const currentAsesorHasSigned = !!(user?.id && barcodes?.asesor?.[String(user.id)]?.url)
   const asesorHasSigned = isAsesor ? currentAsesorHasSigned : false
   const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
   const allSigned = asesiHasSigned && allAsesorSigned
-  const isFormDisabled = !isAsesor || allSigned
+  const isFormDisabled = tahap !== 0 && (!isAsesor || allSigned)
 
   useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
 
@@ -322,9 +319,9 @@ export default function FrAk07Page() {
   const handleSave = async () => {
     // Resolve actualIdIzin for navigation
     let actualIdIzin = idIzin
-    if (!actualIdIzin && kegiatan?.jadwal_id) {
+    if (!actualIdIzin && jadwalId) {
       const token = localStorage.getItem("access_token")
-      const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan?.jadwal_id}/list-asesi`, {
+      const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -343,8 +340,8 @@ export default function FrAk07Page() {
       return
     }
 
-    // If already signed, navigate to FR AK 04
-    if (hasSigned) {
+    // If already signed, navigate to FR AK 04 (skip untuk tahap 0)
+    if (tahap !== 0 && hasSigned) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
       return
     }
@@ -454,9 +451,9 @@ export default function FrAk07Page() {
         throw new Error(error.message || "Gagal menyimpan data AK07")
       }
 
-      // Generate QR jika jadwalId tersedia
+      // Generate QR jika jadwalId tersedia (skip untuk tahap 0)
       console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
-      if (jadwalId) {
+      if (tahap !== 0 && jadwalId) {
         try {
           const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak07`, {
             method: 'POST',
@@ -499,6 +496,10 @@ export default function FrAk07Page() {
 
       showSuccess('FR AK 07 berhasil disimpan!')
       publishUpdate()
+      // Untuk tahap 0, langsung navigasi ke halaman berikutnya
+      if (tahap === 0) {
+        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`), 500)
+      }
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
     } finally {
@@ -534,7 +535,7 @@ export default function FrAk07Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={6} idIzin={idIzin}>
+      <AsesiLayout currentStep={6} idIzin={idIzin} tahap={tahap}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>

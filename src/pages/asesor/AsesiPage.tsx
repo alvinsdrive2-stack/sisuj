@@ -99,6 +99,7 @@ export default function AsesiPage() {
   })
   const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
   const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
+  const [tahapMap, setTahapMap] = useState<Record<string, number>>({})
 
   // Fetch asesor IDs, jenjang, and metode from data-dokumen endpoint (per-asesi)
   useEffect(() => {
@@ -127,7 +128,8 @@ export default function AsesiPage() {
                     id_asesor_1: result.data.id_asesor_1,
                     id_asesor_2: result.data.id_asesor_2,
                     jenjang: result.data.jenjang || '0',
-                    metode: (result.data.metode || '').toLowerCase()
+                    metode: (result.data.metode || '').toLowerCase(),
+                    tahap: result.data.tahap ?? 0,
                   }
                 }
               }
@@ -146,12 +148,15 @@ export default function AsesiPage() {
           })
           const newJenjangMap: Record<string, string> = {}
           const newMetodeMap: Record<string, string> = {}
+          const newTahapMap: Record<string, number> = {}
           validResults.forEach(r => {
             newJenjangMap[r.id_izin] = r.jenjang
             newMetodeMap[r.id_izin] = r.metode
+            newTahapMap[r.id_izin] = r.tahap
           })
           setJenjangMap(newJenjangMap)
           setMetodeMap(newMetodeMap)
+          setTahapMap(newTahapMap)
         }
       } catch (err) {
         console.error('Error fetching asesor data:', err)
@@ -215,8 +220,9 @@ export default function AsesiPage() {
   const handleViewAsesi = (idIzin: string) => {
     const jenjangId = parseInt(jenjangMap[idIzin] || "0")
     const metode = metodeMap[idIzin] || ''
+    const tahap = tahapMap[idIzin] ?? currentKegiatan?.tahap ?? 0
 
-    if (currentKegiatan?.tahap === 2) {
+    if (tahap === 2) {
       if (jenjangId >= 4 && metode === 'observasi') {
         navigate(`/asesi/asesmen/${idIzin}/ia04a`)
       } else if (jenjangId >= 4 && metode === 'portofolio') {
@@ -224,8 +230,6 @@ export default function AsesiPage() {
       } else {
         navigate(`/asesi/asesmen/${idIzin}/ia01`)
       }
-    } else if (currentKegiatan?.tahap === 1) {
-      navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     } else {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`)
     }

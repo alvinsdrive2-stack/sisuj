@@ -140,7 +140,7 @@ export default function Ia02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
 
@@ -253,7 +253,6 @@ export default function Ia02Page() {
       return
     }
 
-    const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
 
     setIsSaving(true)

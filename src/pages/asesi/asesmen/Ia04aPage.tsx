@@ -168,7 +168,7 @@ export default function Ia04aPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, namaPenyusun, namaValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, jadwalId } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
@@ -346,7 +346,6 @@ export default function Ia04aPage() {
     const umpanBalikSoalId = umpanBalikSoal?.id
     const umpanBalikValue = umpanBalikSoalId ? (umpanBalikMap[umpanBalikSoalId] || '') : ''
     const isAsesor1WithUmpan = isAsesor && isAsesor1 && umpanBalikValue.trim()
-    const jadwalId = kegiatan?.jadwal_id
     const token = localStorage.getItem("access_token")
 
     setIsSaving(true)

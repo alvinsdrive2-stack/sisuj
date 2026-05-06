@@ -60,7 +60,7 @@ export default function Ia08Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { isAsesor1 } = useAsesorRole(id)
@@ -303,7 +303,7 @@ export default function Ia08Page() {
         publishUpdate()
 
         // Generate QR for asesor
-        if (isAsesor && kegiatan?.jadwal_id) {
+        if (isAsesor && jadwalId) {
           const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
           if (!existingAsesorQR) {
             try {
@@ -314,7 +314,7 @@ export default function Ia08Page() {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })
+                body: JSON.stringify({ id_jadwal: jadwalId })
               })
               if (qrResponse.ok) {
                 const qrResult = await qrResponse.json()
@@ -333,7 +333,7 @@ export default function Ia08Page() {
         }
 
         // Generate QR for asesi
-        if (kegiatan?.jadwal_id && !barcodes?.asesi?.url) {
+        if (jadwalId && !barcodes?.asesi?.url) {
           try {
             const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia08`, {
               method: 'POST',
@@ -342,7 +342,7 @@ export default function Ia08Page() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
               },
-              body: JSON.stringify({ id_jadwal: kegiatan.jadwal_id })
+              body: JSON.stringify({ id_jadwal: jadwalId })
             })
             if (qrResponse.ok) {
               const qrResult = await qrResponse.json()
