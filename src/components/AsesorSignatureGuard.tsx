@@ -32,8 +32,7 @@ export function AsesorSignatureGuard({
           Menunggu Tanda Tangan Asesor
         </div>
         <div style={{ color: "#a16207", fontSize: "12px", marginTop: "2px" }}>
-          {missingAsesorLabels.join(", ")} belum menandatangani dokumen ini. Halaman akan otomatis memuat ulang data setiap {ASESOR_SIGNATURE_POLLING_INTERVAL_MS / 1000} detik.
-        </div>
+          {missingAsesorLabels.join(", ")} belum menandatangani dokumen ini.</div>
       </div>
     </div>
   )

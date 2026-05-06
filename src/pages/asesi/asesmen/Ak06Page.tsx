@@ -78,9 +78,12 @@ export default function Ak06Page() {
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan } = useKegiatanByRole()
 
+  // Dynamic AK05 visibility: check if all (or all-1) asesi in jadwal have AK06 barcodes
+  const [showAk05, setShowAk05] = useState(false)
+
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, showAk05)
 
   // All asesor can fill (removed restriction to specific asesor)
   const isFormDisabled = !isAsesor
@@ -219,6 +222,47 @@ export default function Ak06Page() {
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)
   }, [allSigned])
+
+  // Check if AK05 should appear after AK06
+  useEffect(() => {
+    const jadwalId = kegiatan?.jadwal_id
+    if (!jadwalId) return
+
+    let cancelled = false
+    const check = async () => {
+      try {
+        const token = localStorage.getItem("access_token")
+        const listRes = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+        })
+        if (!listRes.ok || cancelled) return
+
+        const listData = await listRes.json()
+        const idIzinList: string[] = (listData?.list_asesi || []).map((a: any) => a.id_izin).filter(Boolean)
+        if (idIzinList.length === 0 || cancelled) return
+
+        let withBarcode = 0
+        for (const idIzin of idIzinList) {
+          if (cancelled) return
+          const ak06Res = await fetch(`${API_BASE_URL}/asesmen/${idIzin}/ak06`, {
+            headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+          })
+          if (ak06Res.ok) {
+            const ak06Data = await ak06Res.json()
+            if (ak06Data?.data?.barcodes?.asesi?.url) withBarcode++
+          }
+        }
+
+        if (!cancelled && withBarcode >= idIzinList.length - 1) {
+          setShowAk05(true)
+        }
+      } catch (err) {
+        console.error('Error checking AK05 visibility:', err)
+      }
+    }
+    check()
+    return () => { cancelled = true }
+  }, [kegiatan?.jadwal_id])
 
   if (isLoading) {
     return (

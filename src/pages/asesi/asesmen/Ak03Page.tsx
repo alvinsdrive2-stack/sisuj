@@ -57,15 +57,12 @@ export default function Ak03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList } = useDataDokumenAsesmen(id)
+  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { jenjang, asesorList, namaAsesi } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { isAsesor } = useKegiatanByRole()
+  const { kegiatan, isAsesor } = useKegiatanByRole()
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
-
-  // Disable form for asesor (only asesi can fill)
-  const isFormDisabled = isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {
@@ -94,6 +91,9 @@ export default function Ak03Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+
+  // Asesi fills form first, then signs. Asesor only signs after asesi signed.
+  const isFormDisabled = isAsesor ? true : !!barcodes?.asesi?.url
 
   const fetchAk03Data = useCallback(async () => {
     if (authLoading) return
@@ -251,7 +251,93 @@ export default function Ak03Page() {
 
       if (response.ok) {
         showSuccess('AK 03 berhasil disimpan!')
+
+        // Update state directly from response
+        const result: Ak03Response = await response.json()
+        if (result.data) {
+          if (result.data.soal) {
+            const items: FeedbackItem[] = result.data.soal.map((soal) => ({
+              id: soal.id, pertanyaan: soal.soal,
+              ya: soal.is_kompeten || false, tidak: !soal.is_kompeten,
+              catatan: soal.catatan || '',
+            }))
+            setFeedbackItems(items)
+          }
+          if (result.data.catatan !== undefined) setCatatanUmum(result.data.catatan || '')
+          if (result.data.barcodes) {
+            setBarcodes({
+              asesi: result.data.barcodes.asesi,
+              asesor1: result.data.barcodes.asesor1,
+              asesor2: result.data.barcodes.asesor2,
+            })
+          }
+        }
+
         publishUpdate()
+
+        // Generate QR for asesor if not exists
+        if (isAsesor) {
+          const jadwalId = kegiatan?.jadwal_id
+          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
+
+          if (jadwalId && !existingAsesorQR) {
+            try {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak03`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  id_jadwal: jadwalId
+                })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  if (isAsesor1) {
+                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  } else {
+                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                  }
+                }
+              }
+            } catch (qrError) {
+              console.error('Error generating QR:', qrError)
+            }
+          }
+        } else {
+          // For asesi: generate QR if not exists
+          const jadwalId = kegiatan?.jadwal_id
+          const existingAsesiQR = barcodes?.asesi?.url
+
+          if (jadwalId && !existingAsesiQR) {
+            try {
+              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak03`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  id_jadwal: jadwalId
+                })
+              })
+
+              if (qrResponse.ok) {
+                const qrResult = await qrResponse.json()
+                if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
+                }
+              }
+            } catch (qrError) {
+              console.error('Error generating asesi QR:', qrError)
+            }
+          }
+        }
       } else {
         console.error('Failed to save AK03:', response.status)
         showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -381,7 +467,7 @@ export default function Ak03Page() {
             <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
             </ActionButton>
           </div>

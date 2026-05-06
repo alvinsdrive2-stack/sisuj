@@ -557,7 +557,7 @@ export default function Ak02Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
+              disabled={isSaving || (!allSigned && !agreedChecklist)}
               onClick={async () => {
                 // If user already signed → navigate to next page
                 if (hasSigned) {
@@ -619,6 +619,21 @@ export default function Ak02Page() {
 
                   if (response.ok) {
                     showSuccess('AK 02 berhasil disimpan!')
+
+                    // Update state directly from response
+                    const result: Ak02Response = await response.json()
+                    if (result.data) {
+                      if (result.data.barcodes) {
+                        setBarcodes({
+                          asesi: result.data.barcodes.asesi,
+                          asesor1: result.data.barcodes.asesor1,
+                          asesor2: result.data.barcodes.asesor2,
+                        })
+                      }
+                      if (result.data.is_kompeten !== undefined) setIsKompeten(result.data.is_kompeten)
+                      if (result.data.tindak_lanjut !== undefined) setTindakLanjut(result.data.tindak_lanjut)
+                      if (result.data.komentar !== undefined) setKomentar(result.data.komentar)
+                    }
 
                     // Generate QR for asesor if not exists
                     if (isAsesor) {

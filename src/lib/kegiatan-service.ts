@@ -457,6 +457,28 @@ class KegiatanService {
     return response.json()
   }
 
+  // Update jadwal tanggal_uji
+  async updateJadwal(idJadwal: string, tanggalUji: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/jadwal/${idJadwal}`, {
+      method: "PUT",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ tanggal_uji: tanggalUji }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to update jadwal" }))
+      throw new Error(error.message || "Failed to update jadwal")
+    }
+
+    return response.json()
+  }
+
   // Generate QR for Ujian
   async generateQRUjian(idIzin: string, jadwalId: string): Promise<{ message: string }> {
     const token = this.getToken()

@@ -40,6 +40,7 @@ import SudahDitandatanganiKomtek from './pages/komtek/SudahDitandatangani'
 import BelumDitandatanganiKomtek from './pages/komtek/BelumDitandatangani'
 import DaftarAsesiPage from './pages/komtek/DaftarAsesiPage'
 import DaftarAsesiSudahPage from './pages/komtek/DaftarAsesiSudahPage'
+import EditJadwalPage from './pages/komtek/EditJadwalPage'
 
 // Manajer Pages
 import DashboardManajer from './pages/manajer/DashboardManajer'
@@ -157,6 +158,7 @@ function App() {
                     <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
                     <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                    <Route path="edit-jadwal/:jadwalId" element={<EditJadwalPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
@@ -286,6 +288,7 @@ function App() {
                     <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
                     <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
                     <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                    <Route path="edit-jadwal/:jadwalId" element={<EditJadwalPage />} />
                     <Route path="" element={<Navigate to="tandatangan" replace />} />
                   </Routes>
                 </DashboardLayout>
