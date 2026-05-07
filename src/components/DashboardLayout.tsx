@@ -26,8 +26,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     setIsPageLoading(true)
     setShowContent(false)
 
-    // Use 2 second delay for initial load, 200ms for subsequent navigation
-    const delay = isInitialLoad ? 2000 : 200
+    // Instant page transitions — no artificial delay
+    const delay = isInitialLoad ? 0 : 0
     const timer = setTimeout(() => {
       setIsPageLoading(false)
       setShowContent(true)

@@ -44,6 +44,7 @@ interface Ia09Response {
       "1"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
       "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
     }
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
     dokumen?: { id: number; nama_dokumen: string }
     barcodes?: {
       asesi?: BarcodeData | null
@@ -69,7 +70,7 @@ export default function Ia09Page() {
     tanggalUji,
     jadwalId,
   } = useDataDokumenAsesmen(id)
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(
@@ -121,9 +122,16 @@ export default function Ia09Page() {
             setBuktiList(buktiItems)
           }
           if (result.data.soal?.["2"]) {
-            const pertanyaanData = result.data.soal["2"].map((item: any) => ({
-              id: item.id, no: item.no || "1", pertanyaan: item.soal || "-", kesimpulan: "", k: false, bk: false,
-            }))
+            const savedAnswers = result.data.answers || {}
+            const pertanyaanData = result.data.soal["2"].map((item: any) => {
+              const saved = savedAnswers[String(item.id)] || {}
+              return {
+                id: item.id, no: item.no || "1", pertanyaan: item.soal || "-",
+                kesimpulan: saved.kesimpulan || "",
+                k: saved.is_kompeten === true,
+                bk: saved.is_kompeten === false,
+              }
+            })
             setPertanyaanList(pertanyaanData)
           }
           if (result.data.barcodes) {
@@ -469,7 +477,7 @@ export default function Ia09Page() {
           <thead>
             <tr style={{ background: "#c40000", color: "#fff", fontWeight: "bold", textAlign: "center" }}>
               <th style={{ width: "5%", border: "1px solid #000", padding: "6px" }}>No.</th>
-              <th style={{ border: "1px solid #000", padding: "6px" }}>Bukti – Bukti Kompetensi</th>
+              <th style={{ border: "1px solid #000", padding: "6px" }}>Bukti - Bukti Kompetensi</th>
             </tr>
           </thead>
           <tbody>
@@ -515,7 +523,7 @@ export default function Ia09Page() {
                         item.id === p.id ? { ...item, kesimpulan: e.target.value } : item
                       ))
                     }}
-                    disabled={isAsesor || allSigned}
+                    disabled={!isAsesor || allSigned}
                     style={{
                       width: "100%",
                       minHeight: "60px",
@@ -529,15 +537,15 @@ export default function Ia09Page() {
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.k}
-                    onChange={() => !isAsesor && handleKChange(p.id, !p.k)}
-                    disabled={true || allSigned}
+                    onChange={() => isAsesor && handleKChange(p.id, !p.k)}
+                    disabled={!isAsesor || allSigned}
                   />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
                   <CustomCheckbox
                     checked={p.bk}
-                    onChange={() => !isAsesor && handleBKChange(p.id, !p.bk)}
-                    disabled={true || allSigned}
+                    onChange={() => isAsesor && handleBKChange(p.id, !p.bk)}
+                    disabled={!isAsesor || allSigned}
                   />
                 </td>
               </tr>
@@ -709,7 +717,7 @@ export default function Ia09Page() {
               disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

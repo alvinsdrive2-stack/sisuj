@@ -9,7 +9,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const { idIzin: _idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [countdown, setCountdown] = useState(3)
 
   // Step 10 (Selesai) for AK01 Success

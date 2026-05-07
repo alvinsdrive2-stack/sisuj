@@ -63,6 +63,8 @@ export default function FrAk04Page() {
 
   const asesiHasSigned = !!barcodes?.asesi?.url
   const allSigned = asesiHasSigned
+  const asesorHasSigned = true
+  const missingAsesorLabels: string[] = []
 
   // Only asesi can edit this form
   const isFormDisabled = isAsesor || allSigned
@@ -207,6 +209,19 @@ export default function FrAk04Page() {
     // Asesi - validate and save
     if (!agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
+      return
+    }
+
+    const hasAnswers = Object.values(answers).some(a => a !== undefined && a !== null)
+    const hasAlasan = alasanBanding.trim().length > 0
+
+    // Skip POST if form is empty
+    if (!hasAnswers && !hasAlasan) {
+      if (tahap !== 0) {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+      } else {
+        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`)
+      }
       return
     }
 
@@ -494,10 +509,10 @@ export default function FrAk04Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist)}
+              disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : (allSigned ? "Lanjut" : asesiHasSigned ? "Lanjut ke K3 Asesmen" : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

@@ -62,7 +62,7 @@ export default function Ia08Page() {
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
@@ -283,9 +283,9 @@ export default function Ia08Page() {
         })),
         bukti_tambahan: buktiTambahan,
         is_kompeten: rekomendasiKompeten,
-        rekomendasi_unit: rekomendasiKompeten === false ? rekomendasiUnit : null,
-        rekomendasi_elemen: rekomendasiKompeten === false ? rekomendasiElemen : null,
-        rekomendasi_kuk: rekomendasiKompeten === false ? rekomendasiKuk : null,
+        rekomendasi_unit: rekomendasiUnit,
+        rekomendasi_elemen: rekomendasiElemen,
+        rekomendasi_kuk: rekomendasiKuk,
       }
 
       const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia08`, {
@@ -797,7 +797,7 @@ export default function Ia08Page() {
               disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={handleSave}
             >
-              {isSaving ? 'Menyimpan...' : allSigned ? 'Lanjut' : 'Simpan & Tanda Tangan'}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

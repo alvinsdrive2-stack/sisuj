@@ -85,7 +85,7 @@ export default function Ia03Page() {
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
@@ -797,7 +797,7 @@ export default function Ia03Page() {
               Kembali
             </ActionButton>
             <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

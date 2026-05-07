@@ -75,7 +75,7 @@ export default function Ia05Page() {
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan } = useKegiatanByRole()
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'

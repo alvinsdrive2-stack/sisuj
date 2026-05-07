@@ -193,35 +193,27 @@ export function AsesiOrAsesorRoute({ children, fallback }: { children: React.Rea
   const { user, isLoading, isAuthenticated } = useAuth()
   const location = useLocation()
 
-  console.log('[AsesiOrAsesorRoute] Render:', { isLoading, isAuthenticated, userRole: user?.role?.name, hasUser: !!user })
-
   if (isLoading) {
-    console.log('[AsesiOrAsesorRoute] Showing loader')
     return <FullPageLoader text="Memuat..." />
   }
 
   if (!isAuthenticated || !user) {
-    console.log('[AsesiOrAsesorRoute] Not authenticated, redirecting to /login')
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   const userRoleName = user.role?.name as UserRole | undefined
-  console.log('[AsesiOrAsesorRoute] User role:', userRoleName)
 
   // Allow access if user is Asesi
   if (userRoleName === "Asesi") {
-    console.log('[AsesiOrAsesorRoute] Access granted for Asesi')
     return <>{children}</>
   }
 
   // Allow access if user is Asesor with noreg
   if (userRoleName === "Asesor" && user.noreg) {
-    console.log('[AsesiOrAsesorRoute] Access granted for Asesor with noreg')
     return <>{children}</>
   }
 
   // Show forbidden page with countdown
-  console.log('[AsesiOrAsesorRoute] Access denied, showing ForbiddenPage')
   const fallbackPath = fallback || getDefaultRouteForRole(userRoleName)
   return <ForbiddenPage redirectPath={fallbackPath} />
 }

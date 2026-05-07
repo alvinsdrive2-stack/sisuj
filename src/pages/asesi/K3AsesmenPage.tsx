@@ -92,6 +92,15 @@ export default function K3AsesmenPage() {
   const allSigned = asesiHasSigned && (asesorList.length === 0 || (
     asesor1Signed && (asesorList.length < 2 || asesor2Signed)
   ))
+  const currentAsesorHasSigned = isAsesor ? (
+    (asesorList[0]?.id === user?.id && asesor1Signed) ||
+    (asesorList[1]?.id === user?.id && asesor2Signed)
+  ) : false
+  const asesorHasSigned = isAsesor ? currentAsesorHasSigned : false
+  const missingAsesorLabels = tahap === 0 || asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)
@@ -193,8 +202,8 @@ export default function K3AsesmenPage() {
           <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 01" : "Simpan & Lanjut"}
+          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
+            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 01" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
           </ActionButton>
         </div>
       </AsesiLayout>

@@ -1,4 +1,4 @@
-import { ASESOR_SIGNATURE_POLLING_INTERVAL_MS } from "@/lib/polling-config"
+import { ASESOR_SIGNATURE_POLLING_INTERVAL_MS as _ASESOR_SIGNATURE_POLLING_INTERVAL_MS } from "@/lib/polling-config"
 
 interface AsesorSignatureGuardProps {
   missingAsesorLabels: string[]

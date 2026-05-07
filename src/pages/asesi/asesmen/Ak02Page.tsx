@@ -72,7 +72,7 @@ export default function Ak02Page() {
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
@@ -557,7 +557,7 @@ export default function Ak02Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist)}
+              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={async () => {
                 // If user already signed → navigate to next page
                 if (hasSigned) {
@@ -710,7 +710,7 @@ export default function Ak02Page() {
                 }
               }}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

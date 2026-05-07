@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+
 
 interface Step {
   number: number
@@ -45,7 +45,7 @@ const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
 }
 
 export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: AsesiStepIndicatorProps) {
-  const navigate = useNavigate()
+
 
   // For tahap 0: hide Konfirmasi(1), K3(8), AK01(9), Selesai(10)
   const isTahap0 = tahap === 0
@@ -87,13 +87,6 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
           iconColor: '#aaa',
           borderColor: '#ddd'
         }
-    }
-  }
-
-  const handleStepClick = (stepNumber: number) => {
-    const path = getStepPath(stepNumber, idIzin)
-    if (path) {
-      navigate(path)
     }
   }
 

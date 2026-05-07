@@ -2,6 +2,7 @@ import { ReactNode } from "react"
 import ModularStepIndicator from "./ModularStepIndicator"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import loopVideo from "@/assets/Sequence 01.mp4"
+import { useAuth } from "@/contexts/auth-context"
 
 interface ModularAsesiLayoutProps {
   children: ReactNode
@@ -11,13 +12,16 @@ interface ModularAsesiLayoutProps {
 }
 
 export default function ModularAsesiLayout({ children, currentStep, steps, id }: ModularAsesiLayoutProps) {
+  const { user } = useAuth()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
   return (
     <>
       <LoopingVideoBackground videoSrc={loopVideo} />
       <div style={{ display: 'flex', gap: '30px', padding: '20px', maxWidth: '1100px', margin: '0 auto', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
         {/* Sidebar - Vertical Steps (Sticky) */}
         <div style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-          <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} />
+          <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} disableClick={!isAsesor} />
         </div>
 
         {/* Main Content */}

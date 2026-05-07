@@ -16,12 +16,6 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { API_BASE_URL } from "@/config/api"
 
-interface BarcodeData {
-  url: string
-  tanggal: string
-  nama: string
-}
-
 interface ReferensiItem {
   id: number
   nama: string
@@ -30,13 +24,10 @@ interface ReferensiItem {
   jawaban?: string
 }
 
-interface DataPihak {
-  id: number
+interface BarcodeData {
+  url: string
+  tanggal: string
   nama: string
-  tempat_kerja: string
-  alamat: string
-  telepon: string
-  no: number
 }
 
 interface PertanyaanYaTidak {
@@ -62,6 +53,14 @@ interface Ia10Response {
       "3"?: ReferensiItem[]
       "4"?: ReferensiItem[]
     }
+    answers?: Record<string, boolean>
+    essay_answers?: Record<string, string>
+    form_data?: {
+      nama_pengawas?: string
+      tempat_kerja?: string
+      alamat?: string
+      telepon?: string
+    }
     barcodes?: {
       asesi?: BarcodeData | null
       asesor1?: BarcodeData | null
@@ -85,7 +84,7 @@ export default function Ia10Page() {
     tanggalUji,
     jadwalId,
   } = useDataDokumenAsesmen(id)
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(
@@ -112,7 +111,12 @@ export default function Ia10Page() {
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [dataPihak, setDataPihak] = useState<DataPihak[]>([])
+  const [formData, setFormData] = useState({
+    nama_pengawas: "",
+    tempat_kerja: "",
+    alamat: "",
+    telepon: "",
+  })
   const [pertanyaanYaTidakList, setPertanyaanYaTidakList] = useState<PertanyaanYaTidak[]>([])
   const [essayList, setEssayList] = useState<EssayQuestion[]>([])
   const [additionalList, setAdditionalList] = useState<ReferensiItem[]>([])
@@ -132,25 +136,35 @@ export default function Ia10Page() {
       if (response.ok) {
         const result: Ia10Response = await response.json()
         if (result.message === "Success" && result.data) {
-          if (result.data.referensi_form?.["1"]) {
-            const pihak = result.data.referensi_form["1"]
-            setDataPihak(pihak.map((item: any) => ({
-              id: item.id,
-              nama: item.nama || "",
-              tempat_kerja: item.tempat_kerja || "",
-              alamat: item.alamat || "",
-              telepon: item.telepon || "",
-              no: item.no || 1,
-            })))
+          if (result.data.form_data) {
+            setFormData({
+              nama_pengawas: result.data.form_data.nama_pengawas || "",
+              tempat_kerja: result.data.form_data.tempat_kerja || "",
+              alamat: result.data.form_data.alamat || "",
+              telepon: result.data.form_data.telepon || "",
+            })
           }
           if (result.data.referensi_form?.["2"]) {
-            setPertanyaanYaTidakList(result.data.referensi_form["2"].map((item: any) => ({ id: item.id, pertanyaan: item.nama, ya: false, tidak: false })))
+            const savedAnswers = result.data.answers || {}
+            setPertanyaanYaTidakList(result.data.referensi_form["2"].map((item: any) => ({
+              id: item.id, pertanyaan: item.nama,
+              ya: savedAnswers[String(item.id)] === true,
+              tidak: savedAnswers[String(item.id)] === false,
+            })))
           }
           if (result.data.referensi_form?.["3"]) {
-            setEssayList(result.data.referensi_form["3"].map((item: any) => ({ id: item.id, pertanyaan: item.nama, jawaban: "" })))
+            const savedEssay = result.data.essay_answers || {}
+            setEssayList(result.data.referensi_form["3"].map((item: any) => ({
+              id: item.id, pertanyaan: item.nama,
+              jawaban: savedEssay[String(item.id)] || "",
+            })))
           }
           if (result.data.referensi_form?.["4"]) {
-            setAdditionalList(result.data.referensi_form["4"].map((item: any) => ({ id: item.id, nama: item.nama, id_kelompok: item.id_kelompok, no: item.no })))
+            const savedEssay = result.data.essay_answers || {}
+            setAdditionalList(result.data.referensi_form["4"].map((item: any) => ({
+              id: item.id, nama: item.nama, id_kelompok: item.id_kelompok, no: item.no,
+              jawaban: savedEssay[String(item.id)] || "",
+            })))
           }
           if (result.data.barcodes) {
             setBarcodes({ asesi: result.data.barcodes.asesi, asesor1: result.data.barcodes.asesor1, asesor2: result.data.barcodes.asesor2 })
@@ -196,6 +210,10 @@ export default function Ia10Page() {
     if (allSigned) setAgreedChecklist(true)
   }, [allSigned])
 
+  const handleFormDataChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
   const handleYaChange = (id: number, value: boolean) => {
     setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, ya: value, tidak: value ? false : p.tidak } : p))
   }
@@ -212,11 +230,21 @@ export default function Ia10Page() {
     setAdditionalList(prev => prev.map(a => a.id === id ? { ...a, jawaban: value } : a))
   }
 
-  const handleDataPihakChange = (idx: number, field: keyof DataPihak, value: string) => {
-    setDataPihak(prev => prev.map((d, i) => i === idx ? { ...d, [field]: value } : d))
-  }
 
   const handleSave = async () => {
+    // Only asesor can save IA10
+    if (!isAsesor) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
     if (hasSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -237,12 +265,10 @@ export default function Ia10Page() {
 
       const payload = {
         dokumen_id: dokumenId,
-        ...(dataPihak[0] ? {
-          nama_pengawas: dataPihak[0].nama,
-          tempat_kerja: dataPihak[0].tempat_kerja,
-          alamat: dataPihak[0].alamat,
-          telepon: dataPihak[0].telepon,
-        } : {}),
+        nama_pengawas: formData.nama_pengawas,
+        tempat_kerja: formData.tempat_kerja,
+        alamat: formData.alamat,
+        telepon: formData.telepon,
         answers: pertanyaanYaTidakList.map(p => ({
           referensi_id: p.id,
           answer: p.ya,
@@ -495,55 +521,42 @@ export default function Ia10Page() {
         {/* Data Pihak */}
         <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px", fontSize: "13px", background: "#fff", border: "2px solid #000" }}>
           <tbody>
-            {dataPihak.map((d, idx) => (
-              <tr key={d.id}>
-                <td style={{ border: "1px solid #000", padding: "6px" }}>
-                  <b>{(d.no || idx + 1)}. {d.nama}</b>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginTop: "6px" }}>
-                    <div>
-                      <label style={{ fontSize: "12px" }}>Nama:</label>
-                      <input
-                        type="text"
-                        value={d.nama}
-                        onChange={e => handleDataPihakChange(idx, "nama", e.target.value)}
-                        disabled={isAsesor || allSigned}
-                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: "12px" }}>Tempat Kerja:</label>
-                      <input
-                        type="text"
-                        value={d.tempat_kerja}
-                        onChange={e => handleDataPihakChange(idx, "tempat_kerja", e.target.value)}
-                        disabled={isAsesor || allSigned}
-                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: "12px" }}>Alamat:</label>
-                      <input
-                        type="text"
-                        value={d.alamat}
-                        onChange={e => handleDataPihakChange(idx, "alamat", e.target.value)}
-                        disabled={isAsesor || allSigned}
-                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: "12px" }}>Telepon:</label>
-                      <input
-                        type="text"
-                        value={d.telepon}
-                        onChange={e => handleDataPihakChange(idx, "telepon", e.target.value)}
-                        disabled={isAsesor || allSigned}
-                        style={{ width: "100%", padding: "4px", border: "1px solid #ccc", fontSize: "12px" }}
-                      />
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>1. Nama Pengawas/Penyelia/Atasan/Orang Lain di Perusahaan :</b>
+                  <input type="text" value={formData.nama_pengawas} onChange={e => handleFormDataChange("nama_pengawas", e.target.value)} disabled={!isAsesor || allSigned}
+                    style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>2. Tempat Kerja :</b>
+                  <input type="text" value={formData.tempat_kerja} onChange={e => handleFormDataChange("tempat_kerja", e.target.value)} disabled={!isAsesor || allSigned}
+                    style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>3. Alamat :</b>
+                  <input type="text" value={formData.alamat} onChange={e => handleFormDataChange("alamat", e.target.value)} disabled={!isAsesor || allSigned}
+                    style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "6px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>4. Telepon :</b>
+                  <input type="text" value={formData.telepon} onChange={e => handleFormDataChange("telepon", e.target.value)} disabled={!isAsesor || allSigned}
+                    style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -561,10 +574,10 @@ export default function Ia10Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.ya} onChange={() => !isAsesor && handleYaChange(p.id, !p.ya)} disabled={true || allSigned} />
+                  <CustomCheckbox checked={p.ya} onChange={() => isAsesor && handleYaChange(p.id, !p.ya)} disabled={!isAsesor || allSigned} />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.tidak} onChange={() => !isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={true || allSigned} />
+                  <CustomCheckbox checked={p.tidak} onChange={() => isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={!isAsesor || allSigned} />
                 </td>
               </tr>
             ))}
@@ -581,7 +594,7 @@ export default function Ia10Page() {
                   <textarea
                     value={e.jawaban}
                     onChange={(ev) => handleEssayChange(e.id, ev.target.value)}
-                    disabled={isAsesor || allSigned}
+                    disabled={!isAsesor || allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -594,7 +607,7 @@ export default function Ia10Page() {
                   <textarea
                     value={a.jawaban || ""}
                     onChange={(ev) => handleAdditionalChange(a.id, ev.target.value)}
-                    disabled={isAsesor || allSigned}
+                    disabled={!isAsesor || allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -650,7 +663,7 @@ export default function Ia10Page() {
               <CustomCheckbox
                 checked={agreedChecklist}
                 onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                disabled={!isAsesor || allSigned}
                 style={{ marginTop: "2px" }}
               />
               <span style={{ fontSize: "13px", color: "#333" }}>
@@ -675,7 +688,7 @@ export default function Ia10Page() {
               disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

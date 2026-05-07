@@ -61,7 +61,7 @@ export default function Ak03Page() {
   const { jenjang, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -466,7 +466,7 @@ export default function Ak03Page() {
               Kembali
             </ActionButton>
             <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

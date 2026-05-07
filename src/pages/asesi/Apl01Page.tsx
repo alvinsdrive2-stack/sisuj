@@ -134,6 +134,9 @@ export default function Apl01Page() {
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
   const allSigned = !!barcodes?.asesi?.url
+  const asesiHasSigned = !!barcodes?.asesi?.url
+  const asesorHasSigned = !!barcodes?.admin?.url
+  const missingAsesorLabels = !asesorHasSigned ? ["Admin"] : []
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -922,8 +925,8 @@ anda pada saat ini.</span>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke APL 02" : "Simpan & Tanda Tangan"}
+          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
+            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke APL 02" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
           </ActionButton>
         </div>
       </AsesiLayout>

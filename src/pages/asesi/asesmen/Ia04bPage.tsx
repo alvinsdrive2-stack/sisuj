@@ -69,7 +69,7 @@ export default function Ia04bPage() {
   const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan, isAsesor } = useKegiatanByRole()
+  const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   const [ia04bData, setIa04bData] = useState<ApiResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -854,7 +854,7 @@ export default function Ia04bPage() {
               Kembali
             </ActionButton>
             <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

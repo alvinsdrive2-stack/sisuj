@@ -76,7 +76,7 @@ export default function Ak06Page() {
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan } = useKegiatanByRole()
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Dynamic AK05 visibility: check if all (or all-1) asesi in jadwal have AK06 barcodes
   const [showAk05, setShowAk05] = useState(false)
@@ -218,6 +218,13 @@ export default function Ak06Page() {
   const allSigned = asesiHasSigned && (asesorList.length === 0 || (
     !!barcodes.asesor1?.url && (asesorList.length < 2 || !!barcodes.asesor2?.url)
   ))
+  const asesor1Signed = !!barcodes.asesor1?.url
+  const asesor2Signed = !!barcodes.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)
@@ -733,8 +740,8 @@ export default function Ak06Page() {
             >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

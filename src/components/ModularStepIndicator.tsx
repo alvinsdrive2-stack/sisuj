@@ -10,9 +10,10 @@ interface ModularStepIndicatorProps {
   currentStep: number
   steps: Step[]
   id?: string
+  disableClick?: boolean
 }
 
-export default function ModularStepIndicator({ currentStep, steps, id }: ModularStepIndicatorProps) {
+export default function ModularStepIndicator({ currentStep, steps, id, disableClick }: ModularStepIndicatorProps) {
   const navigate = useNavigate()
 
   // Get the class name for the step circle based on status
@@ -99,7 +100,7 @@ export default function ModularStepIndicator({ currentStep, steps, id }: Modular
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
           const stepHref = getHref(step.href)
-          const isClickable = stepHref !== undefined
+          const isClickable = !disableClick && stepHref !== undefined
 
           return (
             <div

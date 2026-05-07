@@ -46,9 +46,9 @@ export default function Ak05Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan } = useKegiatanByRole()
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps - AK.05 is only for asesor
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -207,6 +207,13 @@ export default function Ak05Page() {
   const allSigned = asesiHasSigned && (asesorList.length === 0 || (
     !!barcodes.asesor1?.url && (asesorList.length < 2 || !!barcodes.asesor2?.url)
   ))
+  const asesor1Signed = !!barcodes.asesor1?.url
+  const asesor2Signed = !!barcodes.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
 
   const handleSave = async () => {
     // If user already signed → navigate to next page
@@ -583,8 +590,8 @@ export default function Ak05Page() {
             >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+            <ActionButton variant="primary" disabled={isSaving || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

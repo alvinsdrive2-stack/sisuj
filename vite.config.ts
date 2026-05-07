@@ -25,7 +25,7 @@ export default defineConfig({
               id.includes('node_modules/scheduler/')) {
             return 'react-vendor'
           }
-          // FontAwesome icons
+          // FontAwesome icons (used across many components)
           if (id.includes('node_modules/@fortawesome/')) {
             return 'fontawesome'
           }

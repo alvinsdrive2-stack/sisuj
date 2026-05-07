@@ -250,6 +250,13 @@ export default function Ia01Page() {
   const allSigned = asesiHasSigned && (asesorList.length === 0 || (
     !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
   ))
+  const asesor1Signed = !!barcodes?.asesor1?.url
+  const asesor2Signed = !!barcodes?.asesor2?.url
+  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
+  const missingAsesorLabels = asesorList.length === 0 ? [] : [
+    !asesor1Signed && "Asesor 1",
+    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
+  ].filter(Boolean) as string[]
   const isFormDisabled = isFormDisabledBase || allSigned
 
   useEffect(() => {
@@ -687,7 +694,7 @@ export default function Ia01Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist)}
+              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
               onClick={async () => {
                 if (hasSigned) {
                   const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
@@ -844,7 +851,7 @@ export default function Ia01Page() {
                 }
               }}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : "Simpan & Tanda Tangan"}
+              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

@@ -8,8 +8,7 @@ import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faArrowLeft, faLightbulb } from '@fortawesome/free-solid-svg-icons'
+import { Check, ArrowLeft, Lightbulb } from 'lucide-react'
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { kegiatanService } from "@/lib/kegiatan-service"
@@ -121,7 +120,7 @@ export default function UjianPage() {
   const { id } = useParams<{ id?: string }>()
   const { jabatanKerja, asesorList, jenjang, metode, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan } = useKegiatanByRole()
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
   const { isAsesor1: _isAsesor1 } = useAsesorRole(id)
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -773,7 +772,7 @@ export default function UjianPage() {
                     }}
                     title={`Soal ${soal.no}`}
                   >
-                    {isThisAnswered && !isCurrent && <FontAwesomeIcon icon={faCheck} style={{ fontSize: '9px' }} />}
+                    {isThisAnswered && !isCurrent && <Check className="h-2 w-2" />}
                     {isCurrent && index + 1}
                   </button>
                 )
@@ -811,7 +810,7 @@ export default function UjianPage() {
               fontWeight: '800',
               boxShadow: isAnswered ? '0 3px 12px rgba(0, 168, 107, 0.25)' : '0 3px 12px rgba(0, 72, 143, 0.2)',
             }}>
-              {isAnswered ? <FontAwesomeIcon icon={faCheck} /> : currentIndex + 1}
+              {isAnswered ? <Check className="h-4 w-4" /> : currentIndex + 1}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: '15px', color: colors.textLight, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -935,7 +934,7 @@ export default function UjianPage() {
                       fontSize: '18px',
                       color: option.color,
                     }}>
-                      <FontAwesomeIcon icon={faCheck} />
+                      <Check className="h-4 w-4" />
                     </div>
                   )}
                 </label>
@@ -977,7 +976,7 @@ export default function UjianPage() {
               }
             }}
           >
-            <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: '6px' }} />
+            <ArrowLeft className="mr-1.5 h-4 w-4" />
             Sebelumnya
           </button>
 
@@ -1052,7 +1051,7 @@ export default function UjianPage() {
             gap: '8px',
             boxShadow: '0 2px 6px rgba(252, 211, 77, 0.15)',
           }}>
-            <FontAwesomeIcon icon={faLightbulb} style={{ fontSize: '14px', animation: 'bounce 2s infinite' }} />
+            <Lightbulb className="h-3.5 w-3.5 animate-bounce" />
             Pilih jawaban sebelum melanjutkan ke soal berikutnya
           </div>
         )}
