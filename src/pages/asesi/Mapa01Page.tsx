@@ -113,7 +113,8 @@ export default function Mapa01Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   const fetchMapa01Data = useCallback(async () => {

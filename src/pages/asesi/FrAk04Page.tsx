@@ -75,7 +75,8 @@ export default function FrAk04Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   const fetchAk04Data = useCallback(async () => {

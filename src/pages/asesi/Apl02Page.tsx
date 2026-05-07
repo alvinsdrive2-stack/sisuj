@@ -1062,7 +1062,8 @@ export default function Apl02Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK', unitId?: string, subunitId?: string) => {

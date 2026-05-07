@@ -100,7 +100,8 @@ export default function FrAk07Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   // Transform barcodes from old API format (asesor1, asesor2) to new dynamic format

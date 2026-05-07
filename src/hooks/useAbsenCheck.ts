@@ -42,6 +42,7 @@ interface UseAbsenCheckOptions {
   checkOnMount?: boolean
   idIzin?: string // Optional override from props
   asesorList?: AsesorInfo[] // Required when role='auto' to determine asesor1/2
+  tahap?: number // If 0, skip absen check (initial/setup state)
 }
 
 export function useAbsenCheck({
@@ -49,7 +50,8 @@ export function useAbsenCheck({
   role = 'asesi',
   checkOnMount = true,
   idIzin: idIzinProp,
-  asesorList = []
+  asesorList = [],
+  tahap
 }: UseAbsenCheckOptions) {
   // Always use URL param as source of truth for idIzin.
   // idIzinProp is only a fallback; URL param ensures we check the right izin
@@ -149,6 +151,12 @@ export function useAbsenCheck({
         return
       }
 
+      // Skip absen if tahap is 0 (initial/setup state, no attendance needed)
+      if (tahap === 0) {
+        setIsChecking(false)
+        return
+      }
+
       // For asesor with 'auto' role, wait for asesorList to be populated
       const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
       if (isAsesor && role === 'auto' && asesorList.length === 0) {
@@ -185,7 +193,7 @@ export function useAbsenCheck({
     }
 
     checkAbsenData()
-  }, [finalIdIzin, checkOnMount, fetchAbsenData, getAwalField, role, user, asesorList])
+  }, [finalIdIzin, checkOnMount, fetchAbsenData, getAwalField, role, user, asesorList, tahap])
 
   // Submit absen awal photo
   const submitAbsenAwal = useCallback(async (imageBlob: Blob) => {
