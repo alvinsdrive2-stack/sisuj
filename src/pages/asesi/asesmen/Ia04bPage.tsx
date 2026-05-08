@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -67,7 +67,7 @@ export default function Ia04bPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
-  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { role: asesorRole } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
@@ -94,8 +94,6 @@ export default function Ia04bPage() {
     asesorList
   })
 
-  const initialFetchDone = useRef(false)
-
   const fetchData = useCallback(async () => {
       if (authLoading) return
       if (!id) {
@@ -121,7 +119,7 @@ export default function Ia04bPage() {
 
             
 
-            // Set barcodes - directly use asesor1/asesor2 from API without complex mapping
+            // Set barcodes - map API's asesor1/asesor2 to user ID keys
             if (result.data.barcodes) {
               const apiBarcodes = result.data.barcodes as {
                 asesi?: BarcodeData
@@ -129,59 +127,42 @@ export default function Ia04bPage() {
                 asesor2?: BarcodeData | null
               }
 
-              
+              const transformedAsesor: Record<string, BarcodeData> = {}
+              if (apiBarcodes.asesor1 && asesorList[0]) {
+                transformedAsesor[String(asesorList[0].id)] = apiBarcodes.asesor1
+              }
+              if (apiBarcodes.asesor2 && asesorList[1]) {
+                transformedAsesor[String(asesorList[1].id)] = apiBarcodes.asesor2
+              }
 
-              // Direct mapping - keep original asesor1/asesor2 structure
               setBarcodes({
                 asesi: apiBarcodes.asesi,
-                asesor: {
-                  ...(apiBarcodes.asesor1 ? { asesor1: apiBarcodes.asesor1 } : {}),
-                  ...(apiBarcodes.asesor2 ? { asesor2: apiBarcodes.asesor2 } : {}),
-                }
+                asesor: transformedAsesor
               })
             }
 
-            // Fallback: load asesor barcodes from localStorage if API returns null
-            if (!result.data.barcodes || !result.data.barcodes.asesor1 || !result.data.barcodes.asesor2) {
-              const localAsesorBarcodes = localStorage.getItem(`ia04b_asesor_barcodes_${id}`)
-              if (localAsesorBarcodes) {
-                try {
-                  const parsed = JSON.parse(localAsesorBarcodes)
-                  setBarcodes(prev => ({
-                    asesi: prev?.asesi,
-                    asesor: { ...prev?.asesor, ...parsed }
-                  }))
-                } catch (e) {
-                  console.error('Error parsing local barcodes:', e)
+            // Initialize checkbox states from API response (only on first load)
+            if (!initializedFromApi) {
+              const newAnswers: Record<number, 'ya' | 'tidak'> = {}
+              const newJawabanAnswers: Record<number, string> = {}
+              result.data.soal.forEach((soal) => {
+                if (soal.pencapaian === true) {
+                  newAnswers[soal.id] = 'ya'
+                } else if (soal.pencapaian === false) {
+                  newAnswers[soal.id] = 'tidak'
                 }
-              }
-            }
+                if (soal.jawaban) {
+                  newJawabanAnswers[soal.id] = soal.jawaban
+                }
+              })
+              setAnswers(newAnswers)
+              setJawabanAnswers(newJawabanAnswers)
 
-            // Initialize checkbox states from API response
-            const newAnswers: Record<number, 'ya' | 'tidak'> = {}
-            const newJawabanAnswers: Record<number, string> = {}
-            result.data.soal.forEach((soal) => {
-              // Only set answer if pencapaian is explicitly true or false
-              // If null/undefined, don't set anything (unchecked state)
-              if (soal.pencapaian === true) {
-                newAnswers[soal.id] = 'ya'
-              } else if (soal.pencapaian === false) {
-                newAnswers[soal.id] = 'tidak'
+              if (result.data.rekomendasi?.rekomendasi === true) {
+                setRekomendasi('kompeten')
+              } else if (result.data.rekomendasi?.rekomendasi === false) {
+                setRekomendasi('belum_kompeten')
               }
-              // If pencapaian is null/undefined, leave it unset (unchecked)
-              // Initialize jawaban if exists
-              if (soal.jawaban) {
-                newJawabanAnswers[soal.id] = soal.jawaban
-              }
-            })
-            setAnswers(newAnswers)
-            setJawabanAnswers(newJawabanAnswers)
-
-            // Initialize rekomendasi from API response
-            if (result.data.rekomendasi?.rekomendasi === true) {
-              setRekomendasi('kompeten')
-            } else if (result.data.rekomendasi?.rekomendasi === false) {
-              setRekomendasi('belum_kompeten')
             }
 
             setInitializedFromApi(true)
@@ -194,11 +175,9 @@ export default function Ia04bPage() {
       } finally {
         setIsLoading(false)
       }
-  }, [id, authLoading])
+  }, [id, authLoading, user, asesorList])
 
   useEffect(() => {
-    if (initialFetchDone.current) return
-    initialFetchDone.current = true
     fetchData()
   }, [fetchData])
 
@@ -219,8 +198,7 @@ export default function Ia04bPage() {
   const asesorHasSigned = (() => {
     if (!isAsesor) return false
     const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    const asesorKey = (idx === 0 || idx === -1) ? 'asesor1' : 'asesor2'
-    return !!barcodes?.asesor?.[asesorKey]?.url
+    return !!barcodes?.asesor?.[String(asesorList[idx >= 0 ? idx : 0]?.id)]?.url
   })()
   const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
   const allSigned = asesiHasSigned && allAsesorSigned
@@ -369,7 +347,6 @@ export default function Ia04bPage() {
 
       // 3. Navigate to next step
       showSuccess('IA 04.B berhasil disimpan!')
-      publishUpdate()
 
       // 4. Generate QR for asesi if not exists
       if (!isAsesor && !barcodes?.asesi?.url && jadwalId) {
@@ -408,19 +385,9 @@ export default function Ia04bPage() {
 
       // 5. Generate QR for asesor only if not exists
       if (isAsesor) {
-        // Tentukan key berdasarkan role asesor (asesor1 atau asesor2)
-        const asesorKey = isAsesor1 ? 'asesor1' : 'asesor2'
-        const existingAsesorQR = barcodes?.asesor?.[asesorKey]?.url
+        const currentAsesorId = String(user?.id)
+        const existingAsesorQR = barcodes?.asesor?.[currentAsesorId]?.url
 
-        console.log('IA04B Asesor QR Debug:', {
-          isAsesor1,
-          asesorKey,
-          existingAsesorQR,
-          jadwalId,
-          allBarcodes: barcodes
-        })
-
-        // Generate QR untuk asesor jika belum ada
         if (!existingAsesorQR && jadwalId) {
           try {
             const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04b`, {
@@ -445,11 +412,9 @@ export default function Ia04bPage() {
                   asesi: prev?.asesi,
                   asesor: {
                     ...prev?.asesor,
-                    [asesorKey]: newBarcode
+                    [currentAsesorId]: newBarcode
                   }
                 }))
-
-                console.log('IA04B QR generated successfully:', asesorKey, newBarcode)
               } else {
                 console.warn('QR generation unexpected response:', qrResult)
               }
@@ -464,6 +429,7 @@ export default function Ia04bPage() {
           }
         }
       }
+    publishUpdate()
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
     } finally {
@@ -562,7 +528,7 @@ export default function Ia04bPage() {
             <tr style={{ background: '#ffffff' }}>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID')}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
             </tr>
           </tbody>
         </table>
@@ -754,91 +720,60 @@ export default function Ia04bPage() {
         </table>
 
         {/* Asesor Signature Table */}
-        {barcodes?.asesor?.asesor1 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
-            <tbody>
-              <tr style={{ fontWeight: 'bold' }}>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 1 :</td>
-              </tr>
-              <tr>
-                <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
-                <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {barcodes.asesor.asesor1.nama?.toUpperCase() || ''}
-                </td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    <img
-                      src={barcodes.asesor.asesor1.url}
-                      alt="Tanda Tangan Asesor 1"
-                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
-                    />
-                    {barcodes.asesor.asesor1.tanggal && (
-                      <div style={{ fontSize: '11px', color: '#333' }}>
-                        {new Date(barcodes.asesor.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </div>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
-        {barcodes?.asesor?.asesor2 && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
-            <tbody>
-              <tr style={{ fontWeight: 'bold' }}>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor 2 :</td>
-              </tr>
-              <tr>
-                <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
-                <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {barcodes.asesor.asesor2.nama?.toUpperCase() || ''}
-                </td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    <img
-                      src={barcodes.asesor.asesor2?.url}
-                      alt="Tanda Tangan Asesor 2"
-                      style={{ height: '50px', width: '50px', objectFit: 'contain' }}
-                    />
-                    {barcodes.asesor.asesor2?.tanggal && (
-                      <div style={{ fontSize: '11px', color: '#333' }}>
-                        {new Date(barcodes.asesor.asesor2?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </div>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        {asesorList.map((asesor, idx) => {
+          const asesorBarcode = barcodes?.asesor?.[String(asesor.id)]
+          return asesorBarcode?.url ? (
+            <table key={asesor.id} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+              <tbody>
+                <tr style={{ fontWeight: 'bold' }}>
+                  <td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor {idx + 1} :</td>
+                </tr>
+                <tr>
+                  <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+                  <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>
+                    {asesorBarcode.nama?.toUpperCase() || ''}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
+                  <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img
+                        src={asesorBarcode.url}
+                        alt={`Tanda Tangan Asesor ${idx + 1}`}
+                        style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                      />
+                      {asesorBarcode.tanggal && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          ) : null
+        })}
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
           {!allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }} onClick={() => !allSigned && setAgreedChecklist(!agreedChecklist)}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={agreedChecklist}
-                onChange={() => {}}
+                onChange={() => setAgreedChecklist(!agreedChecklist)}
                 disabled={allSigned}
-                style={{ pointerEvents: 'none', marginTop: '2px' }}
+                style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
                 Saya menyatakan dengan sebenar-benarnya bahwa saya telah memberikan jawaban yang jujur dan dapat dipertanggungjawabkan sesuai dengan pengetahuan dan pengalaman yang saya miliki.
               </span>
-            </div>
+            </label>
           </div>
           )}
 

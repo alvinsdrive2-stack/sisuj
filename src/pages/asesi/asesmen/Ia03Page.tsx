@@ -488,7 +488,7 @@ export default function Ia03Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
           </tbody>
         </table>
@@ -757,7 +757,7 @@ export default function Ia03Page() {
                   {barcodePenyusun ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                       <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                     </div>
                   ) : ''}
                 </td>
@@ -777,7 +777,7 @@ export default function Ia03Page() {
                   {barcodeValidator ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                       <img src={barcodeValidator} alt="QR Validator" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                     </div>
                   ) : ''}
                 </td>

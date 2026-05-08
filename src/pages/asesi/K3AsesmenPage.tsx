@@ -26,17 +26,11 @@ export default function K3AsesmenPage() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { showSuccess, showWarning } = useToast()
+  const { showWarning } = useToast()
   const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
-  const [barcodes, setBarcodes] = useState<{
-    asesi?: { url: string; tanggal: string; nama: string }
-    asesor1?: { url: string; tanggal: string; nama: string } | null
-    asesor2?: { url: string; tanggal: string; nama: string } | null
-  } | null>(null)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -44,7 +38,8 @@ export default function K3AsesmenPage() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: idIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   const fetchK3Data = useCallback(async () => {
@@ -62,9 +57,6 @@ export default function K3AsesmenPage() {
         if (result.message === "Success" && result.data?.file) {
           setPdfUrl(result.data.file)
         }
-        if ((result as any).data?.barcodes) {
-          setBarcodes((result as any).data.barcodes)
-        }
       } else {
         console.warn(`K3 API returned ${response.status}`)
       }
@@ -81,54 +73,21 @@ export default function K3AsesmenPage() {
   }, [idIzin, fetchK3Data])
 
   // SSE: auto-refresh when another user saves
-  const { publishUpdate } = useRealtimeSync({
+  useRealtimeSync({
     channelName: `praasesmen:${idIzin}`,
     onUpdate: fetchK3Data
   })
-
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    asesor1Signed && (asesorList.length < 2 || asesor2Signed)
-  ))
-  const currentAsesorHasSigned = isAsesor ? (
-    (asesorList[0]?.id === user?.id && asesor1Signed) ||
-    (asesorList[1]?.id === user?.id && asesor2Signed)
-  ) : false
-  const asesorHasSigned = isAsesor ? currentAsesorHasSigned : false
-  const missingAsesorLabels = tahap === 0 || asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
   }
 
-  const handleSave = async () => {
+  const handleLanjut = () => {
     if (!agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
       return
     }
-
-    setIsSaving(true)
-    try {
-      // TODO: POST data to backend if needed
-      await new Promise(resolve => setTimeout(resolve, 500))
-      showSuccess('K3 Asesmen berhasil disimpan!')
-      publishUpdate()
-      setTimeout(() => {
-        navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
-      }, 500)
-    } catch (error) {
-    } finally {
-      setIsSaving(false)
-    }
+    navigate(`/asesi/praasesmen/${idIzin}/fr-ak-01`)
   }
 
   if (isLoading) {
@@ -180,30 +139,27 @@ export default function K3AsesmenPage() {
         )}
 
         {/* Agreement Checklist */}
-        {!allSigned && (
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <input
               type="checkbox"
               checked={agreedChecklist}
               onChange={(e) => setAgreedChecklist(e.target.checked)}
-              disabled={allSigned}
-              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
+              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah membaca, memahami, dan menyetujui dokumen K3 Asesmen ini dengan sebenar-benarnya.
             </span>
           </label>
         </div>
-        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
+          <ActionButton variant="secondary" onClick={handleBack}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 01" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+          <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleLanjut}>
+            Lanjut ke FR AK 01
           </ActionButton>
         </div>
       </AsesiLayout>

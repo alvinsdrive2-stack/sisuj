@@ -385,7 +385,7 @@ export default function Ia05Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID')}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Waktu</td>
@@ -648,7 +648,7 @@ export default function Ia05Page() {
                 {barcodePenyusun ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-                    {tanggalPenyusun && <span style={{ fontSize: '11px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                    {tanggalPenyusun && <span style={{ fontSize: '11px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                   </div>
                 ) : '-'}
               </td>
@@ -670,7 +670,7 @@ export default function Ia05Page() {
                 {barcodeValidator ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                     <img src={barcodeValidator} alt="QR Validator" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-                    {tanggalValidator && <span style={{ fontSize: '11px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                    {tanggalValidator && <span style={{ fontSize: '11px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                   </div>
                 ) : '-'}
               </td>

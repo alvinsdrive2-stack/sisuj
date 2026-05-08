@@ -68,6 +68,7 @@ export default function FrAk04Page() {
 
   // Only asesi can edit this form
   const isFormDisabled = isAsesor || allSigned
+  const hasTrueAnswer = Object.values(answers).some(a => a === true)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -195,6 +196,12 @@ export default function FrAk04Page() {
   }
 
   const handleSave = async () => {
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`)
+      return
+    }
+
     // Asesor just navigate without validation/saving (skip untuk tahap 0)
     if (tahap !== 0 && isFormDisabled) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
@@ -373,7 +380,7 @@ export default function FrAk04Page() {
               {/* Tanggal Asesmen */}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Tanggal Asesmen</td>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {new Date().toLocaleDateString('id-ID')}</td>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
               </tr>
 
               {/* Header Row */}
@@ -463,7 +470,7 @@ export default function FrAk04Page() {
               <tr>
                 <td colSpan={4} style={{ border: '1px solid #000', padding: '8px', minHeight: '80px' }}>
                   <div>Tanda tangan Asesi : {namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</div>
-                  {barcodes?.asesi?.url ? (
+                  {barcodes?.asesi?.url && hasTrueAnswer ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', marginTop: '8px' }}>
                       <img
                         src={barcodes.asesi.url}
@@ -477,7 +484,7 @@ export default function FrAk04Page() {
                   ) : (
                     <div style={{ marginTop: '8px' }}>
                       <br />
-                      Tanggal : {new Date().toLocaleDateString('id-ID')}
+                      Tanggal : {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
                   )}
                 </td>
@@ -510,10 +517,10 @@ export default function FrAk04Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)}
+              disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)))}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

@@ -109,7 +109,7 @@ export default function Ak03Page() {
         if (result.message === "Success" && result.data?.soal) {
           const items: FeedbackItem[] = result.data.soal.map((soal) => ({
             id: soal.id, pertanyaan: soal.soal,
-            ya: soal.is_kompeten || false, tidak: !soal.is_kompeten,
+            ya: soal.is_kompeten === true, tidak: soal.is_kompeten === false,
             catatan: soal.catatan || '',
           }))
           setFeedbackItems(items)
@@ -232,7 +232,7 @@ export default function Ak03Page() {
       // Prepare answers array
       const answers = feedbackItems.map((item) => ({
         soal_id: item.id,
-        is_kompeten: item.ya,
+        is_kompeten: item.ya ? true : (item.tidak ? false : null),
         catatan: item.catatan,
       }))
 
@@ -258,7 +258,7 @@ export default function Ak03Page() {
           if (result.data.soal) {
             const items: FeedbackItem[] = result.data.soal.map((soal) => ({
               id: soal.id, pertanyaan: soal.soal,
-              ya: soal.is_kompeten || false, tidak: !soal.is_kompeten,
+              ya: soal.is_kompeten === true, tidak: soal.is_kompeten === false,
               catatan: soal.catatan || '',
             }))
             setFeedbackItems(items)

@@ -1,1 +1,0 @@
-import{g as t,h as r}from"./useKegiatan-y1a63136.js";import{u as g}from"./index-Dbdj1YTp.js";function L(){const{user:a}=g(),s=a?.role?.name?.toLowerCase()==="asesor",{kegiatan:e,isLoading:i}=t(!s),{kegiatan:o,isLoading:n}=r(s);return{kegiatan:s?o:e,isLoading:s?n:i,isAsesor:s}}export{L as u};

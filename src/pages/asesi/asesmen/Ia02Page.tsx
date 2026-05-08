@@ -441,7 +441,7 @@ export default function Ia02Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '8px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'end' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '8px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '8px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
           </tbody>
         </table>

@@ -583,7 +583,7 @@ export default function UploadTugasPage() {
               if (jenjangNum < 4) {
                 navigate(`/asesi/asesmen/${id}/ia03`)
               } else {
-                navigate(`/asesi/asesmen/${id}/ia04a`)
+                navigate(`/asesi/asesmen/${id}/ia04b`)
               }
             }}
           >
@@ -610,7 +610,7 @@ export default function UploadTugasPage() {
               if (jenjangNum < 4) {
                 navigate(isAsesor ? `/asesi/asesmen/${id}/ia05` : `/asesi/asesmen/${id}/uji`)
               } else {
-                navigate(`/asesi/asesmen/${id}/ia04a`)
+                navigate(`/asesi/asesmen/${id}/ia04b`)
               }
             }}
           >

@@ -485,7 +485,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>Tanggal</td>
               <td style={{ border: "1px solid #000", padding: "6px", textAlign: "end" }}>:</td>
               <td colSpan={2} style={{ border: "1px solid #000", padding: "6px" }}>
-                {tanggalUji ? new Date(tanggalUji).toLocaleDateString("id-ID") : new Date().toLocaleDateString("id-ID")}
+                {tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               </td>
             </tr>
           </tbody>
@@ -619,7 +619,7 @@ export default function Ia10Page() {
                 <b>Tanda Tangan Asesor 1:</b> {barcodes?.asesor1?.url ? (
                   <span style={{ float: "right" }}>
                     <img src={barcodes.asesor1.url} alt="TTD" style={{ height: "40px" }} />
-                    {barcodes.asesor1.tanggal && <span> {new Date(barcodes.asesor1.tanggal).toLocaleDateString("id-ID")}</span>}
+                    {barcodes.asesor1.tanggal && <span> {new Date(barcodes.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                   </span>
                 ) : <span style={{ float: "right" }}>Tanggal: </span>}
               </td>
@@ -630,7 +630,7 @@ export default function Ia10Page() {
                   <b>Tanda Tangan Asesor 2:</b> {barcodes?.asesor2?.url ? (
                     <span style={{ float: "right" }}>
                       <img src={barcodes.asesor2.url} alt="TTD" style={{ height: "40px" }} />
-                      {barcodes.asesor2.tanggal && <span> {new Date(barcodes.asesor2.tanggal).toLocaleDateString("id-ID")}</span>}
+                      {barcodes.asesor2.tanggal && <span> {new Date(barcodes.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                     </span>
                   ) : <span style={{ float: "right" }}>Tanggal: </span>}
                 </td>

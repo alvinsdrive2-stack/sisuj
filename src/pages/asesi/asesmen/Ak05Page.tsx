@@ -64,7 +64,7 @@ export default function Ak05Page() {
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, undefined, true)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length)
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check
@@ -412,6 +412,8 @@ export default function Ak05Page() {
             ) : (
               asesiList.map((asesi, idx) => {
                 const perAsesi = ak05DataMap[asesi.id_izin] || { kompeten: false, keterangan: '' }
+                const isCurrentAsesi = asesi.id_izin === id
+                const rowDisabled = formDisabled || !isCurrentAsesi
                 return (
                   <tr key={asesi.id_izin}>
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{idx + 1}.</td>
@@ -419,32 +421,32 @@ export default function Ak05Page() {
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={perAsesi.kompeten}
-                        onChange={() => canEdit && !allSigned && setAk05DataMap(prev => ({
+                        onChange={() => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
                         }))}
-                        style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
+                        style={{ cursor: rowDisabled ? 'not-allowed' : 'pointer', opacity: rowDisabled ? 0.6 : 1 }}
                       />
                     </td>
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={!perAsesi.kompeten}
-                        onChange={() => canEdit && !allSigned && setAk05DataMap(prev => ({
+                        onChange={() => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
                         }))}
-                        style={{ cursor: formDisabled ? 'not-allowed' : 'pointer', opacity: formDisabled ? 0.6 : 1 }}
+                        style={{ cursor: rowDisabled ? 'not-allowed' : 'pointer', opacity: rowDisabled ? 0.6 : 1 }}
                       />
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>
                       <textarea
                         value={perAsesi.keterangan}
-                        onChange={(e) => canEdit && !allSigned && setAk05DataMap(prev => ({
+                        onChange={(e) => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, keterangan: e.target.value }
                         }))}
-                        disabled={formDisabled}
-                        style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
+                        disabled={rowDisabled}
+                        style={{ width: '100%', height: 'auto', minHeight: '40px', border: '1px solid #ccc', padding: '4px', fontSize: '13px', resize: 'vertical', cursor: rowDisabled ? 'not-allowed' : 'text' }}
                         placeholder="Keterangan..."
                       />
                     </td>

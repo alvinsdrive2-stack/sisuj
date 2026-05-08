@@ -25,7 +25,7 @@ export const ASESMEN_STEPS_ASESI: StepConfig[] = [
   { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
   { number: 2, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
   { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'Ujian', href: '/asesi/asesmen/ia05' },
+  { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
   { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
@@ -37,7 +37,7 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
   { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
   { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
   { number: 4, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 5, label: 'Ujian', href: '/asesi/asesmen/ia05' },
+  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
   { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
@@ -52,8 +52,9 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_1: StepConfig[] = [
   { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 8, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 9, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesor 2 (jenjang < 4)
@@ -65,8 +66,9 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_2: StepConfig[] = [
   { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 8, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 9, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesor 1 (full flow)
@@ -77,8 +79,9 @@ export const ASESMEN_STEPS_ASESOR_1: StepConfig[] = [
   { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesor 2 (full flow)
@@ -89,8 +92,9 @@ export const ASESMEN_STEPS_ASESOR_2: StepConfig[] = [
   { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Portofolio Method Steps (jenjang >= 4, metode = portofolio)
@@ -109,8 +113,9 @@ export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_1: StepConfig[] = [
   { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
   { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 6, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_2: StepConfig[] = [
@@ -119,8 +124,9 @@ export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_2: StepConfig[] = [
   { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
   { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 6, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Default asesmen steps (backward compatibility)
@@ -132,41 +138,20 @@ export function getAsesmenSteps(
   isAsesor: boolean,
   asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none' | undefined,
   _asesorCount: number,
-  metode?: string,
-  showAk05?: boolean
+  metode?: string
 ): StepConfig[] {
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
   const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
-  let steps: StepConfig[]
-
-  // Portofolio method (jenjang >= 4)
   if (isPortofolio && !isLowJenjang) {
-    if (!isAsesor) steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESI]
-    else if (asesorRole === 'asesor_1') steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
-    else steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
-  } else if (!isAsesor) {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)]
-  } else if (asesorRole === 'asesor_1') {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)]
-  } else if (asesorRole === 'asesor_2') {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
-  } else {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
+    if (!isAsesor) return [...ASESMEN_STEPS_PORTOFOLIO_ASESI]
+    if (asesorRole === 'asesor_1') return [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
+    return [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
   }
 
-  // Insert AK.05 after AK.06 if requested
-  if (showAk05) {
-    const ak06Idx = steps.findIndex(s => s.href.includes('ak06'))
-    if (ak06Idx !== -1) {
-      steps.splice(ak06Idx + 1, 0, { number: steps[ak06Idx].number + 1, label: 'AK.05', href: '/asesi/asesmen/ak05' })
-      for (let i = ak06Idx + 2; i < steps.length; i++) {
-        steps[i].number = steps[i - 1].number + 1
-      }
-    }
-  }
-
-  return steps
+  if (!isAsesor) return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)]
+  if (asesorRole === 'asesor_1') return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)]
+  return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
 }
 
 // Helper function to get current step number from href

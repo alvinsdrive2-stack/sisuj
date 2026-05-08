@@ -73,7 +73,7 @@ export default function Mapa02Page() {
     asesor1?: { url: string; tanggal: string; nama: string } | null
     asesor2?: { url: string; tanggal: string; nama: string } | null
   } | null>(null)
-  const [selectedPotensi, setSelectedPotensi] = useState<Record<number, number>>({})
+  const [selectedPotensi, setSelectedPotensi] = useState<Record<string, number>>({})
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -117,12 +117,15 @@ export default function Mapa02Page() {
           if ((result.data as any).barcodes) {
             setBarcodes((result.data as any).barcodes)
           }
-          const initialSelected: Record<number, number> = {}
+          const initialSelected: Record<string, number> = {}
+          const kelompoks = result.data.kelompok_kerja?.kelompok_kerja || []
           result.data.referensi_form.forEach(refForm => {
             if (refForm.kategori === "MAPA02_1") {
               refForm.referensis.forEach(ref => {
-                if (ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
-                  initialSelected[ref.id] = ref.potensi_asesi_index
+                if (ref.isdefault && ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
+                  kelompoks.forEach(k => {
+                    initialSelected[`${k.id}_${ref.id}`] = ref.potensi_asesi_index
+                  })
                 }
               })
             }
@@ -189,19 +192,20 @@ export default function Mapa02Page() {
     navigate(-1)
   }
 
-  const isChecked = (_kategori: string, refId: number, _kelompokIndex: number, potensi: number) => {
-    return selectedPotensi[refId] === potensi
+  const isChecked = (kelompokId: number, refId: number, potensi: number) => {
+    return selectedPotensi[`${kelompokId}_${refId}`] === potensi
   }
 
   const handleSubmit = async () => {
-    if (!agreedChecklist) {
-      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
-      return
-    }
-
     const finalIdIzin = actualIdIzin || idIzin
     if (!finalIdIzin) {
       showWarning("ID Izin tidak ditemukan")
+      return
+    }
+
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
       return
     }
 
@@ -362,7 +366,7 @@ export default function Mapa02Page() {
           
 
           {/* Kelompok Pekerjaan Tables with Instrumen Asesmen */}
-          {mapaData?.kelompok_kerja.kelompok_kerja.map((kelompok, kelompokIndex) => (
+          {mapaData?.kelompok_kerja?.kelompok_kerja?.map((kelompok) => (
             <div key={kelompok.id}>
               {/* Kelompok Pekerjaan Table */}
               <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
@@ -424,7 +428,7 @@ export default function Mapa02Page() {
                             style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'not-allowed', userSelect: 'none', background: '#f5f5f5' }}
                           >
                             <CustomCheckbox
-                              checked={isChecked("MAPA02_1", ref.id, kelompokIndex, potensi)}
+                              checked={isChecked(kelompok.id, ref.id, potensi)}
                               onChange={() => {}}
                               disabled
                               style={{ pointerEvents: 'none' }}
@@ -466,7 +470,7 @@ export default function Mapa02Page() {
                   {barcodePenyusun ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                       <img src={barcodePenyusun} alt="QR Penyusun" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID')}</span>}
+                      {tanggalPenyusun && <span style={{ fontSize: '10px' }}>{new Date(tanggalPenyusun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                     </div>
                   ) : ''}
                 </td>
@@ -486,7 +490,7 @@ export default function Mapa02Page() {
                   {barcodeValidator ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                       <img src={barcodeValidator} alt="QR Validator" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
-                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID')}</span>}
+                      {tanggalValidator && <span style={{ fontSize: '10px' }}>{new Date(tanggalValidator).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                     </div>
                   ) : ''}
                 </td>
@@ -523,8 +527,8 @@ export default function Mapa02Page() {
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!isAsesor && asesiHasSigned && !allAsesorSigned) || (!allSigned && !agreedChecklist)} onClick={handleSubmit}>
-              {isSaving ? "Menyimpan..." : (
+            <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!isAsesor && asesiHasSigned && !allAsesorSigned) || (!allSigned && !agreedChecklist)))} onClick={handleSubmit}>
+              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : (
                 allSigned
                   ? 'Lanjut ke FR AK 07'
                   : isAsesor

@@ -292,11 +292,11 @@ export default function Ak02Page() {
             <tr>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Tanggal Asesmen</td>
               <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Mulai :</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px',textAlign: 'right' }}>Selesai :</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : '-'}</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
             </tr>
           </tbody>
         </table>

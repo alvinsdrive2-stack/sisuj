@@ -115,7 +115,8 @@ export default function FrAk01Page() {
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
     idIzin: actualIdIzin,
-    asesorList: asesorList
+    asesorList: asesorList,
+    tahap: tahap
   })
 
   // Format tanggal_uji untuk Hari/Tanggal dan Waktu
@@ -283,6 +284,16 @@ export default function FrAk01Page() {
   }
 
   const handleSave = async () => {
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      if (isAsesor) {
+        navigate(`/asesor/asesi/${jadwalId}`)
+      } else {
+        navigate(`/asesi/praasesmen/ak01-success`)
+      }
+      return
+    }
+
     // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       // Check if absen akhir needed
@@ -814,8 +825,8 @@ export default function FrAk01Page() {
           <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}>
-            {isSaving ? 'Menyimpan...' : (
+          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)))}>
+            {isSaving ? 'Menyimpan...' : tahap === 0 ? 'Lanjut' : (
               allSigned
                 ? 'Lanjut ke AK01 Success'
                 : isAsesor

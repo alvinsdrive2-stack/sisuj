@@ -420,8 +420,8 @@ export async function exportAsesmenPdf(
   if (options.tuk) {
     pdf.addParagraph(`TUK: ${options.tuk}`)
   }
-  if (options.tanggal || new Date().toLocaleDateString('id-ID')) {
-    pdf.addParagraph(`Tanggal: ${options.tanggal || new Date().toLocaleDateString('id-ID')}`)
+  if (options.tanggal || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })) {
+    pdf.addParagraph(`Tanggal: ${options.tanggal || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`)
   }
   if (options.asesor && options.asesor.length > 0) {
     pdf.addParagraph(`Asesor: ${options.asesor.join(', ')}`)

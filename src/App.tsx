@@ -24,6 +24,7 @@ import { KegiatanModal } from './components/admin-tuk/KegiatanModal'
 import DashboardLayout from './components/DashboardLayout'
 import { Toaster } from './components/ui/toast'
 import { FullPageLoader } from './components/ui/loading-spinner'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 // Route-level code splitting — each page loads only when navigated to
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -91,6 +92,14 @@ const FrAk04Page = lazy(() => import('./pages/asesi/FrAk04Page'))
 const K3AsesmenPage = lazy(() => import('./pages/asesi/K3AsesmenPage'))
 const FrAk01Page = lazy(() => import('./pages/asesi/FrAk01Page'))
 
+// Catch chunk load failures (lazy import network errors) and reload
+window.addEventListener('unhandledrejection', (event) => {
+  const msg = event.reason?.message || ''
+  if (msg.includes('Failed to fetch dynamically imported module') || msg.includes('Importing a module script failed')) {
+    window.location.reload()
+  }
+})
+
 function App() {
   return (
     <AuthProvider>
@@ -100,6 +109,7 @@ function App() {
         <DaftarHadirModalProvider>
         <Toaster />
         <Router>
+        <ErrorBoundary>
         <Suspense fallback={<FullPageLoader text="Memuat..." />}>
         <Routes>
           {/* Public Routes */}
@@ -491,6 +501,7 @@ function App() {
           <Route path="/" element={<DefaultRoute />} />
         </Routes>
         </Suspense>
+        </ErrorBoundary>
       </Router>
       <GlobalDokumenFullscreenModal />
       <GlobalDaftarHadirModal />

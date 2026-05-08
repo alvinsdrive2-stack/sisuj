@@ -250,14 +250,15 @@ export default function Mapa01Page() {
   */
 
   const handleSubmit = async () => {
-    if (!agreedChecklist) {
-      showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
-      return
-    }
-
     const finalIdIzin = actualIdIzin || idIzin
     if (!finalIdIzin) {
       showWarning("ID Izin tidak ditemukan")
+      return
+    }
+
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      navigate(`/asesi/praasesmen/${finalIdIzin}/mapa02`)
       return
     }
 
@@ -400,7 +401,7 @@ export default function Mapa01Page() {
           <Mapa01Section1 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} skkni={mapaData?.skkni} />
 
           {/* DYNAMIC/LOOPING: Section 2 - Kelompok Pekerjaan dari API */}
-          {mapaData && (
+          {mapaData?.kelompok_kerja?.kelompok_kerja && (
             <Mapa01Section2
               kelompokKerja={mapaData.kelompok_kerja.kelompok_kerja}
               jenjang={jenjang}
@@ -409,7 +410,7 @@ export default function Mapa01Page() {
           )}
 
           {/* STATIC: Section 3 - Modifikasi */}
-          <Mapa01Section3 referensiForm={mapaData?.referensi_form} kelompokKerja={mapaData?.kelompok_kerja?.kelompok_kerja} isAsesor={isAsesor} />
+          <Mapa01Section3 referensiForm={mapaData?.referensi_form} kelompokKerja={mapaData?.kelompok_kerja?.kelompok_kerja} isAsesor={isAsesor} disabled={tahap !== 0 && allSigned} />
 
           {/* STATIC: Tanda Tangan */}
           <Mapa01TandaTangan
@@ -450,8 +451,8 @@ export default function Mapa01Page() {
               Kembali
             </ActionButton>
             
-            <ActionButton variant="primary" disabled={isSaving || (!isAsesor && asesiHasSigned && !allAsesorSigned) || (!allSigned && !agreedChecklist)} onClick={handleSubmit}>
-              {isSaving ? "Menyimpan..." : (
+            <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!isAsesor && asesiHasSigned && !allAsesorSigned) || (!allSigned && !agreedChecklist)))} onClick={handleSubmit}>
+              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : (
                 allSigned
                   ? 'Lanjut ke MAPA 02'
                   : isAsesor

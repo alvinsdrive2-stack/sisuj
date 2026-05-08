@@ -56,6 +56,7 @@ interface Mapa01Section3Props {
   referensiForm?: ReferensiFormItem[]
   kelompokKerja?: KelompokKerja[]
   isAsesor?: boolean
+  disabled?: boolean
 }
 
 interface Section3Item {
@@ -98,7 +99,7 @@ const cellStyles = {
 } as const;
 
 // ============== COMPONENT ==============
-export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false }: Mapa01Section3Props) {
+export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false, disabled = false }: Mapa01Section3Props) {
   const headerStyle = {
     ...cellStyles.header,
     backgroundColor: COLORS.RED,
@@ -171,6 +172,8 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false 
 
   const [items, setItems] = useState<Section3Item[]>(initialItems)
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
+  const kelompokTextareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
+  const [kelompokAlasan, setKelompokAlasan] = useState<Record<number, string>>({})
 
   // Sync items when initialItems changes
   useEffect(() => {
@@ -190,7 +193,14 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false 
         }
       }
     })
-  }, [items])
+    // Auto-resize kelompok textareas
+    Object.values(kelompokTextareaRefs.current).forEach(textarea => {
+      if (textarea) {
+        textarea.style.height = 'auto'
+        textarea.style.height = textarea.scrollHeight + 'px'
+      }
+    })
+  }, [items, kelompokAlasan])
 
   const handleRadioChange = (id: number, value: boolean) => {
     setItems(prev => prev.map(item =>
@@ -204,14 +214,8 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false 
     ))
   }
 
-  // Auto-resize textarea based on content
-  const handleTextareaResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    if (!isAsesor) return // Prevent editing if not asesor
-
-    const textarea = e.target
-    textarea.style.height = 'auto'
-    textarea.style.height = textarea.scrollHeight + 'px'
-    handleAlasanChange(parseInt(textarea.name.replace('section3-alasan-', '')), textarea.value)
+  const handleKelompokAlasanChange = (id: number, value: string) => {
+    setKelompokAlasan(prev => ({ ...prev, [id]: value }))
   }
 
   return (
@@ -237,61 +241,66 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false 
               </td>
               <td style={{ ...cellStyles.content, background: '#fff', verticalAlign: 'top', padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '12px' }}>
-                  {/* Ya radio */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  {/* Ada radio */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: disabled ? 'not-allowed' : 'pointer' }}>
                     <CustomRadio
                       name={`section3-${item.id}`}
                       value="ya"
                       checked={item.value === true}
-                      onChange={() => isAsesor && handleRadioChange(item.id, true)}
-                      disabled={!isAsesor}
+                      onChange={() => !disabled && isAsesor && handleRadioChange(item.id, true)}
+                      disabled={disabled || !isAsesor}
                     />
                     <span style={{ fontSize: '12px' }}>Ada</span>
                   </label>
 
-                  {/* Tidak radio */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  {/* Tidak ada radio */}
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: disabled ? 'not-allowed' : 'pointer' }}>
                     <CustomRadio
                       name={`section3-${item.id}`}
                       value="tidak"
                       checked={item.value === false}
-                      onChange={() => isAsesor && handleRadioChange(item.id, false)}
-                      disabled={!isAsesor}
+                      onChange={() => !disabled && isAsesor && handleRadioChange(item.id, false)}
+                      disabled={disabled || !isAsesor}
                     />
                     <span style={{ fontSize: '12px' }}>Tidak ada</span>
                   </label>
                 </div>
 
-                {/* Text field when "Ada" is selected */}
+                {/* Text field — only show if "Ada" selected */}
                 {item.value && (
-                  <div style={{ marginTop: '12px' }}>
-                    <p style={{ fontSize: '11px', margin: '0 0 6px 0', fontWeight: '500' }}>Jika ada, tuliskan:</p>
-                    <textarea
-                      ref={(el) => { if (el) textareaRefs.current[item.id] = el }}
-                      name={`section3-alasan-${item.id}`}
-                      value={item.alasan}
-                      onChange={handleTextareaResize}
-                      placeholder="Alasan/keterangan..."
-                      disabled={!isAsesor}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        fontSize: '12px',
-                        lineHeight: '1.5',
-                        border: '1px solid #000',
-                        borderRadius: '4px',
-                        outline: 'none',
-                        background: isAsesor ? '#fff' : '#f5f5f5',
-                        resize: 'none',
-                        minHeight: '40px',
-                        height: item.alasan ? 'auto' : '40px',
-                        overflow: 'hidden',
-                        fontFamily: 'inherit',
-                        cursor: isAsesor ? 'text' : 'not-allowed',
-                        opacity: isAsesor ? 1 : 0.6
-                      }}
-                    />
-                  </div>
+                <div style={{ marginTop: '12px' }}>
+                  <p style={{ fontSize: '11px', margin: '0 0 6px 0', fontWeight: '500' }}>Jika ada, tuliskan:</p>
+                  <textarea
+                    ref={(el) => { if (el) textareaRefs.current[item.id] = el }}
+                    name={`section3-alasan-${item.id}`}
+                    value={item.alasan}
+                    onChange={(e) => {
+                      const textarea = e.target
+                      textarea.style.height = 'auto'
+                      textarea.style.height = textarea.scrollHeight + 'px'
+                      handleAlasanChange(item.id, textarea.value)
+                    }}
+                    placeholder="Alasan/keterangan..."
+                    disabled={disabled || !isAsesor}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      fontSize: '12px',
+                      lineHeight: '1.5',
+                      border: '1px solid #000',
+                      borderRadius: '4px',
+                      outline: 'none',
+                      background: (disabled || !isAsesor) ? '#f5f5f5' : '#fff',
+                      resize: 'none',
+                      minHeight: '40px',
+                      height: item.alasan ? 'auto' : '40px',
+                      overflow: 'hidden',
+                      fontFamily: 'inherit',
+                      cursor: (disabled || !isAsesor) ? 'not-allowed' : 'text',
+                      opacity: (disabled || !isAsesor) ? 0.6 : 1
+                    }}
+                  />
+                </div>
                 )}
 
                 {/* Kelompok Pekerjaan — only show below item 3.4 (last item) */}
@@ -304,6 +313,35 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false 
                         {kelompok.units.map(u => (
                           <div key={u.id_unit} style={{ paddingLeft: '16px' }}>- {u.kode_unit}</div>
                         ))}
+                        <textarea
+                          ref={(el) => { if (el) kelompokTextareaRefs.current[kelompok.id] = el }}
+                          value={kelompokAlasan[kelompok.id] || ''}
+                          onChange={(e) => {
+                            const ta = e.target
+                            ta.style.height = 'auto'
+                            ta.style.height = ta.scrollHeight + 'px'
+                            handleKelompokAlasanChange(kelompok.id, ta.value)
+                          }}
+                          placeholder="Alasan/keterangan..."
+                          disabled={disabled}
+                          style={{
+                            width: '100%',
+                            padding: '10px 12px',
+                            fontSize: '12px',
+                            lineHeight: '1.5',
+                            border: '1px solid #000',
+                            borderRadius: '4px',
+                            outline: 'none',
+                            background: disabled ? '#f5f5f5' : '#fff',
+                            resize: 'none',
+                            minHeight: '40px',
+                            overflow: 'hidden',
+                            fontFamily: 'inherit',
+                            cursor: disabled ? 'not-allowed' : 'text',
+                            opacity: disabled ? 0.6 : 1,
+                            marginTop: '4px'
+                          }}
+                        />
                       </div>
                     ))}
                   </div>

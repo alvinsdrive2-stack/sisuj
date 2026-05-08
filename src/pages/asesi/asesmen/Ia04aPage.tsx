@@ -592,7 +592,7 @@ export default function Ia04aPage() {
             <tr style={{ background: '#e9e9e9e' }}>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID')}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
             </tr>
           </tbody>
         </table>

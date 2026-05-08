@@ -414,7 +414,7 @@ export default function Ia09Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>Tanggal</td>
               <td style={{ border: "1px solid #000", padding: "6px", textAlign: "end" }}>:</td>
               <td colSpan={2} style={{ border: "1px solid #000", padding: "6px" }}>
-                {tanggalUji ? new Date(tanggalUji).toLocaleDateString("id-ID") : new Date().toLocaleDateString("id-ID")}
+                {tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
               </td>
             </tr>
           </tbody>
@@ -587,7 +587,7 @@ export default function Ia09Page() {
                     <img src={barcodes.asesi.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
                     {barcodes.asesi.tanggal && (
                       <div style={{ fontSize: "11px" }}>
-                        {new Date(barcodes.asesi.tanggal).toLocaleDateString("id-ID")}
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
                     )}
                   </div>
@@ -624,7 +624,7 @@ export default function Ia09Page() {
                     <img src={barcodes.asesor1.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
                     {barcodes.asesor1.tanggal && (
                       <div style={{ fontSize: "11px" }}>
-                        {new Date(barcodes.asesor1.tanggal).toLocaleDateString("id-ID")}
+                        {new Date(barcodes.asesor1.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
                     )}
                   </div>
@@ -663,7 +663,7 @@ export default function Ia09Page() {
                         <img src={barcodes.asesor2.url} alt="Tanda Tangan" style={{ height: "50px", width: "50px", objectFit: "contain" }} />
                         {barcodes.asesor2.tanggal && (
                           <div style={{ fontSize: "11px" }}>
-                            {new Date(barcodes.asesor2.tanggal).toLocaleDateString("id-ID")}
+                            {new Date(barcodes.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </div>
                         )}
                       </div>

@@ -67,7 +67,7 @@ function deriveMetodeFlags(jenjang?: string, metode?: string) {
 }
 
 // ============== COMPONENTS ==============
-export function Mapa01Section2({ kelompokKerja, jenjang, metode }: Mapa01Section2Props) {
+export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Section2Props) {
   const metodeFlags = deriveMetodeFlags(jenjang, metode)
   const headerStyle = {
     ...createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin),

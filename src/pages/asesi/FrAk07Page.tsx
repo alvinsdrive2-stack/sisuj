@@ -69,7 +69,7 @@ interface ApiResponse {
   }
 }
 
-type SelectedReferences = Record<string, Set<number> | null>
+type SelectedReferences = Record<string, boolean | null>
 
 export default function FrAk07Page() {
   const navigate = useNavigate()
@@ -209,25 +209,19 @@ export default function FrAk07Page() {
           })
           setTextAnswers(newTextAnswers)
 
-          // Set selectedReferences from API (for boolean jawaban: true or object with bool: true)
+          // Set selectedReferences from API (per-ref key: refId_kategoriId_kelompokId)
           const newSelectedReferences: SelectedReferences = {}
           kelompoks.forEach((item: Ak07DataItem) => {
             item.kategoris.forEach(kategori => {
-              if (kategori.id) {
-                const key = `${kategori.id}_${item.id}`
-                const refIds = kategori.referensis
-                  .filter(ref => {
-                    // Handle object jawaban format
-                    if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
-                      return ref.jawaban.bool === true
-                    }
-                    return ref.jawaban === true
-                  })
-                  .map(ref => ref.id)
-                if (refIds.length > 0) {
-                  newSelectedReferences[key] = new Set(refIds)
+              kategori.referensis.forEach(ref => {
+                const key = `${ref.id}_${kategori.id}_${item.id}`
+                if (typeof ref.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
+                  newSelectedReferences[key] = ref.jawaban.bool
+                } else if (ref.jawaban === true || ref.jawaban === false) {
+                  newSelectedReferences[key] = ref.jawaban
                 }
-              }
+                // null/undefined → leave unset (default null = unanswered)
+              })
             })
           })
           setSelectedReferences(newSelectedReferences)
@@ -277,29 +271,19 @@ export default function FrAk07Page() {
     navigate(-1)
   }
 
-  const handleReferenceChange = (kategoriId: number | null, kelompokId: number, refId: number) => {
-    const key = `${kategoriId}_${kelompokId}`
-    setSelectedReferences(prev => {
-      const currentSet = prev[key] || new Set()
-      const newSet = new Set(currentSet)
-
-      if (newSet.has(refId)) {
-        newSet.delete(refId)
-      } else {
-        newSet.add(refId)
-      }
-
-      // Simpan null jika set kosong (user sudah interact tapi tidak ada yang dipilih)
-      return { ...prev, [key]: newSet.size === 0 ? null : newSet }
-    })
+  const handleReferenceChange = (kategoriId: number | null, kelompokId: number, refId: number, value: boolean) => {
+    const key = `${refId}_${kategoriId}_${kelompokId}`
+    setSelectedReferences(prev => ({
+      ...prev,
+      [key]: prev[key] === value ? null : value
+    }))
   }
 
-  const isReferenceChecked = (kategoriId: number | null, kelompokId: number, refId: number) => {
-    // Cek dari selectedReferences dulu (user input)
-    const key = `${kategoriId}_${kelompokId}`
-    // Jika key ada di selectedReferences (user sudah interact), pakai nilai itu
+  const getReferenceState = (kategoriId: number | null, kelompokId: number, refId: number): boolean | null => {
+    // Cek dari selectedReferences dulu (user input) — per-ref key
+    const key = `${refId}_${kategoriId}_${kelompokId}`
     if (key in selectedReferences) {
-      return selectedReferences[key]?.has(refId) || false
+      return selectedReferences[key] // null, true, or false
     }
 
     // Kalau nggak ada di user selection, cek dari API data
@@ -309,12 +293,18 @@ export default function FrAk07Page() {
       .find(k => k.id === kategoriId)
       ?.referensis.find(r => r.id === refId)
 
-    // Return true/false based on API data
+    // Handle null/undefined jawaban → belum dijawab
+    if (ref?.jawaban === null || ref?.jawaban === undefined) return null
+
     // Handle object jawaban format: { bool: boolean, text: string }
     if (typeof ref?.jawaban === 'object' && ref.jawaban !== null && 'bool' in ref.jawaban) {
-      return ref.jawaban.bool === true
+      return ref.jawaban.bool
     }
     return ref?.jawaban === true
+  }
+
+  const isReferenceChecked = (kategoriId: number | null, kelompokId: number, refId: number): boolean => {
+    return getReferenceState(kategoriId, kelompokId, refId) === true
   }
 
   const handleSave = async () => {
@@ -338,6 +328,12 @@ export default function FrAk07Page() {
 
     if (!actualIdIzin) {
       showWarning("ID Izin tidak ditemukan")
+      return
+    }
+
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
       return
     }
 
@@ -595,7 +591,7 @@ export default function FrAk07Page() {
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Tanggal</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{new Date().toLocaleDateString('id-ID')}</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
               </tr>
             </tbody>
           </table>
@@ -689,14 +685,14 @@ export default function FrAk07Page() {
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={isChecked}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, true)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
-                            checked={!isReferenceChecked(kategori.id, modifikasiData.id, ref.id)}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id)}
+                            checked={getReferenceState(kategori.id, modifikasiData.id, ref.id) === false}
+                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, false)}
                             disabled={isFormDisabled || isSaving}
                           />
                         </td>
@@ -737,14 +733,14 @@ export default function FrAk07Page() {
                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
                         <CustomCheckbox
                           checked={isChecked}
-                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id)}
+                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, true)}
                           disabled={isFormDisabled || isSaving}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
                         <CustomCheckbox
-                          checked={!isChecked}
-                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id)}
+                          checked={getReferenceState(kategoriId, rencanaAsesmenData.id, ref.id) === false}
+                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, false)}
                           disabled={isFormDisabled || isSaving}
                         />
                       </td>
@@ -936,8 +932,8 @@ export default function FrAk07Page() {
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke FR AK 04" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)))} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut ke FR AK 04" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
             </ActionButton>
           </div>
         </div>

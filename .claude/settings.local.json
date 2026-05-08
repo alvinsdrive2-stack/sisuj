@@ -38,7 +38,13 @@
       "Bash(powershell *)",
       "Bash(Get-ChildItem C:\\\\LSP\\\\penyatuan\\\\sisuj -Depth 2 -Name)",
       "Bash(Get-ChildItem \"C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\pages\\\\asesi\\\\FrAk01Page.tsx\" -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object FullName, Length)"
+      "Bash(Select-Object FullName, Length)",
+      "PowerShell(Get-Content \"C:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\pages\\\\asesi\\\\Apl02Page.tsx\" | Select-Object -Index 1312,1313,1314 | ForEach-Object { \"Line: '$\\($_.Substring\\(0, [Math]::Min\\($_.Length, 30\\)\\)\\)'\" })",
+      "Bash(npx vite *)",
+      "Bash(npx vercel *)",
+      "Bash(Get-Content \"c:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\components\\\\mapa01\\\\Mapa01Section3.tsx\")",
+      "Bash(Select-Object -First 180)",
+      "Bash(Get-ChildItem *)"
     ]
   },
   "enableAllProjectMcpServers": true,

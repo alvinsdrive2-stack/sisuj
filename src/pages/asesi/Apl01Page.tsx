@@ -252,6 +252,12 @@ export default function Apl01Page() {
       return
     }
 
+    // Tahap 0: langsung navigasi tanpa save/ttd
+    if (tahap === 0) {
+      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      return
+    }
+
     // Jika asesor, langsung navigate tanpa save
     if (isAsesor) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
@@ -926,8 +932,8 @@ anda pada saat ini.</span>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : allSigned ? "Lanjut ke APL 02" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+          <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)))} onClick={handleSave}>
+            {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut ke APL 02" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
           </ActionButton>
         </div>
       </AsesiLayout>

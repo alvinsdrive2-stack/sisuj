@@ -2362,8 +2362,8 @@ export default function Apl02Page() {
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || !agreedChecklist} onClick={handleSubmit}>
-            {isSaving ? "Menyimpan..." : (
+          <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && !agreedChecklist)} onClick={handleSubmit}>
+            {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : (
               allSigned
                 ? 'Lanjut ke MAPA-01'
                 : isAsesor
