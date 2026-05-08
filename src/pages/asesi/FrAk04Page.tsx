@@ -10,9 +10,9 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 
 interface Referensi {
   id: number
@@ -55,19 +55,11 @@ export default function FrAk04Page() {
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
   const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
 
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const allSigned = asesiHasSigned
-  const asesorHasSigned = true
-  const missingAsesorLabels: string[] = []
-
-  // Only asesi can edit this form
-  const isFormDisabled = isAsesor || allSigned
   const hasTrueAnswer = Object.values(answers).some(a => a === true)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -134,7 +126,14 @@ export default function FrAk04Page() {
           setAnswers(initialAnswers)
 
           if (apiData.alasan) setAlasanBanding(apiData.alasan)
-          if (apiData.barcodes) setBarcodes(apiData.barcodes)
+          if (apiData.barcodes) {
+            const bc = apiData.barcodes as any
+            setBarcodes({
+              asesi: bc.asesi?.url_image
+                ? { url: bc.asesi.url_image, tanggal: bc.asesi.tanggal, nama: bc.asesi.nama }
+                : bc.asesi,
+            })
+          }
         }
       } else {
         console.warn(`AK04 API returned ${ak04Response.status}`)
@@ -154,13 +153,23 @@ export default function FrAk04Page() {
     }
   }, [idIzin, kegiatan, isAsesor, jadwalId, fetchAk04Data])
 
-  // SSE: auto-refresh when another user saves
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin}`,
-    onUpdate: fetchAk04Data
+  const signing = useSigningState({
+    pageKey: 'ak04',
+    isAsesor,
+    tahap,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: actualIdIzin,
+    jadwalId,
+    onRefresh: fetchAk04Data,
   })
 
-  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
+  // Only asesi can edit this form
+  const isFormDisabled = isAsesor || signing.allSigned
 
   const handleBack = () => {
     navigate(-1)
@@ -209,29 +218,19 @@ export default function FrAk04Page() {
     }
 
     // Asesi already signed → navigate to next page (skip untuk tahap 0)
-    if (tahap !== 0 && asesiHasSigned) {
+    if (tahap !== 0 && signing.asesiHasSigned) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
       return
     }
 
     // Asesi - validate and save
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
     const hasAnswers = Object.values(answers).some(a => a !== undefined && a !== null)
     const hasAlasan = alasanBanding.trim().length > 0
-
-    // Skip POST if form is empty
-    if (!hasAnswers && !hasAlasan) {
-      if (tahap !== 0) {
-        navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
-      } else {
-        navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`)
-      }
-      return
-    }
 
     setIsSaving(true)
     try {
@@ -242,77 +241,50 @@ export default function FrAk04Page() {
         return
       }
 
-      // Prepare answers array
-      const kelompokId = ak04Data?.kelompoks?.[0]?.id || 1
-      const answersArray = Object.entries(answers).map(([referensiId, jawaban]) => ({
-        referensi_id: Number(referensiId),
-        kelompok_id: kelompokId,
-        jawaban: jawaban === true ? true : null
-      }))
+      // POST answers hanya jika ada jawaban
+      if (hasAnswers || hasAlasan) {
+        const kelompokId = ak04Data?.kelompoks?.[0]?.id || 1
+        const answersArray = Object.entries(answers).map(([referensiId, jawaban]) => ({
+          referensi_id: Number(referensiId),
+          kelompok_id: kelompokId,
+          jawaban: jawaban === true ? true : null
+        }))
 
-      const payload = {
-        answers: answersArray,
-        alasan: alasanBanding
+        const payload = {
+          answers: answersArray,
+          alasan: alasanBanding
+        }
+
+        const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak04`, {
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload)
+        })
+
+        if (!response.ok) {
+          showError("Gagal menyimpan data. Status: " + response.status)
+          return
+        }
+        const result = await response.json()
+        if (result.message !== "AK04 successfully submitted") {
+          showError("Gagal menyimpan data: " + (result.message || "Unknown error"))
+          return
+        }
       }
 
-      // POST to backend
-      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak04`, {
-        method: 'POST',
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload)
-      })
+      // QR tetap digenerate meski jawaban kosong
+      if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
+        await signing.generateQR()
+      }
 
-      if (response.ok) {
-        const result = await response.json()
-        if (result.message === "AK04 successfully submitted") {
-          // Generate QR hanya jika form diisi (ada jawaban checkbox atau alasan)
-          const hasAnswers = Object.keys(answers).length > 0
-          const hasAlasan = alasanBanding.trim().length > 0
-
-          if (tahap !== 0 && (hasAnswers || hasAlasan) && !barcodes?.asesi?.url && jadwalId) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak04`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ id_jadwal: jadwalId })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  setBarcodes({
-                    asesi: {
-                      url: qrResult.data.url_image,
-                      tanggal: new Date().toISOString(),
-                      nama: namaAsesi || user?.name || ''
-                    }
-                  })
-                }
-              }
-            } catch (qrError) {
-              console.error("Error generating QR:", qrError)
-            }
-          }
-
-          showSuccess('FR AK 04 berhasil disimpan!')
-          publishUpdate()
-          // Untuk tahap 0, langsung navigasi ke AK 01
-          if (tahap === 0) {
-            setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`), 500)
-          }
-        } else {
-          showError("Gagal menyimpan data: " + (result.message || "Unknown error"))
-        }
-      } else {
-        showError("Gagal menyimpan data. Status: " + response.status)
+      showSuccess('FR AK 04 berhasil disimpan!')
+      signing.publishUpdate()
+      if (tahap === 0) {
+        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`), 500)
       }
     } catch (error) {
       console.error("Error saving AK04:", error)
@@ -493,15 +465,15 @@ export default function FrAk04Page() {
           </table>
 
           {/* Agreement Checklist */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}>
               <input
                 type="checkbox"
-                checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                disabled={allSigned}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
+                checked={signing.agreedChecklist}
+                onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
+                disabled={signing.allSigned}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.
@@ -517,10 +489,10 @@ export default function FrAk04Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)))}
+              disabled={signing.buttonDisabled}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

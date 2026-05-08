@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -191,29 +191,24 @@ export default function Ak05Page() {
 
   useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk05Data
+  // Signing state hook — used for signing checks, button state, and realtime sync
+  const signing = useSigningState({
+    pageKey: 'ak05',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchAk05Data,
   })
 
-  // Sign-then-redirect + view-only
-  const asesiHasSigned = !!barcodes.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes.asesor1?.url : !!barcodes.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes.asesor1?.url && (asesorList.length < 2 || !!barcodes.asesor2?.url)
-  ))
-  const asesor1Signed = !!barcodes.asesor1?.url
-  const asesor2Signed = !!barcodes.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
+  // Keep derived values for display & multi-asesi logic
+  const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
   const handleSave = async () => {
     // If user already signed → navigate to next page
@@ -301,7 +296,7 @@ export default function Ak05Page() {
               console.error(`Error generating QR for ${asesi.id_izin}:`, qrError)
             }
           }
-          publishUpdate()
+          signing.publishUpdate()
         }
       } else {
         showError('Gagal menyimpan data beberapa asesi. Silakan coba lagi.')
@@ -330,7 +325,7 @@ export default function Ak05Page() {
     )
   }
 
-  const formDisabled = !canEdit || allSigned
+  const formDisabled = !canEdit || signing.allSigned
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -421,7 +416,7 @@ export default function Ak05Page() {
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={perAsesi.kompeten}
-                        onChange={() => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
+                        onChange={() => canEdit && !signing.allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
                         }))}
@@ -431,7 +426,7 @@ export default function Ak05Page() {
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={!perAsesi.kompeten}
-                        onChange={() => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
+                        onChange={() => canEdit && !signing.allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
                         }))}
@@ -441,7 +436,7 @@ export default function Ak05Page() {
                     <td style={{ border: '1px solid #000', padding: '6px' }}>
                       <textarea
                         value={perAsesi.keterangan}
-                        onChange={(e) => canEdit && !allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
+                        onChange={(e) => canEdit && !signing.allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
                           ...prev,
                           [asesi.id_izin]: { ...perAsesi, keterangan: e.target.value }
                         }))}
@@ -469,7 +464,7 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.aspek_positif_negatif}
-                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, aspek_positif_negatif: e.target.value }))}
+                  onChange={(e) => canEdit && !signing.allSigned && setAk05Data(prev => ({ ...prev, aspek_positif_negatif: e.target.value }))}
                   disabled={formDisabled}
                   style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan aspek positif dan negatif..."
@@ -481,7 +476,7 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.pencatatan_penolakan}
-                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, pencatatan_penolakan: e.target.value }))}
+                  onChange={(e) => canEdit && !signing.allSigned && setAk05Data(prev => ({ ...prev, pencatatan_penolakan: e.target.value }))}
                   disabled={formDisabled}
                   style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan pencatatan penolakan..."
@@ -493,7 +488,7 @@ export default function Ak05Page() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={ak05Data.saran}
-                  onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, saran: e.target.value }))}
+                  onChange={(e) => canEdit && !signing.allSigned && setAk05Data(prev => ({ ...prev, saran: e.target.value }))}
                   disabled={formDisabled}
                   style={{ width: '100%', height: 'auto', minHeight: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan saran perbaikan..."
@@ -519,7 +514,7 @@ export default function Ak05Page() {
                         <div style={{ marginTop: '8px' }}>
                           <textarea
                             value={ak05Data.catatan}
-                            onChange={(e) => canEdit && !allSigned && setAk05Data(prev => ({ ...prev, catatan: e.target.value }))}
+                            onChange={(e) => canEdit && !signing.allSigned && setAk05Data(prev => ({ ...prev, catatan: e.target.value }))}
                             disabled={formDisabled}
                             style={{ width: '100%', height: 'auto', minHeight: '80px', border: '1px solid #ccc', padding: '4px', fontSize: '12px', resize: 'vertical', cursor: formDisabled ? 'not-allowed' : 'text' }}
                             placeholder="Tuliskan catatan..."
@@ -592,8 +587,8 @@ export default function Ak05Page() {
             >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

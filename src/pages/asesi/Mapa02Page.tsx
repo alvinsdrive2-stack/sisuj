@@ -10,9 +10,9 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { useSigningState } from "@/hooks/useSigningState"
 
 interface Unit {
   id_unit: number
@@ -67,7 +67,6 @@ export default function Mapa02Page() {
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
     asesor1?: { url: string; tanggal: string; nama: string } | null
@@ -145,48 +144,20 @@ export default function Mapa02Page() {
     else if (kegiatan || jadwalId) fetchMapa02Data()
   }, [idIzin, kegiatan, isAsesor, jadwalId, fetchMapa02Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin}`,
-    onUpdate: fetchMapa02Data
+  const signing = useSigningState({
+    pageKey: 'mapa02',
+    isAsesor,
+    tahap,
+    barcodes,
+    setBarcodes,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: actualIdIzin || idIzin,
+    jadwalId,
+    onRefresh: fetchMapa02Data,
   })
-
-  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-
-  // Check if current asesor has signed
-  const asesorHasSigned = (() => {
-    if (tahap === 0) return true
-    if (!isAsesor) return true
-    const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-    return isAsesor1 ? asesor1Signed : asesor2Signed
-  })()
-
-  // Check if all asesor signatures exist (skip untuk tahap 0)
-  const allAsesorSigned = (() => {
-    if (tahap === 0) return true
-    if (asesorList.length === 0) return false
-    if (!asesor1Signed) return false
-    if (asesorList.length >= 2 && !asesor2Signed) return false
-    return true
-  })()
-
-  const allSigned = isAsesor
-    ? asesorHasSigned
-    : asesiHasSigned && allAsesorSigned
-
-  const missingAsesorLabels = (() => {
-    if (tahap === 0 || isAsesor || asesorList.length === 0 || allAsesorSigned) return []
-    const missing: string[] = []
-    if (!asesor1Signed) missing.push("Asesor 1")
-    if (asesorList.length >= 2 && !asesor2Signed) missing.push("Asesor 2")
-    return missing
-  })()
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
 
   const handleBack = () => {
     navigate(-1)
@@ -210,13 +181,13 @@ export default function Mapa02Page() {
     }
 
     // Jika semua sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
+    if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
       return
     }
 
     // Jika asesor sudah ttd → redirect (skip untuk tahap 0)
-    if (tahap !== 0 && isAsesor && asesorHasSigned) {
+    if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
       return
     }
@@ -242,59 +213,20 @@ export default function Mapa02Page() {
       // Generate QR (skip untuk tahap 0)
       if (tahap !== 0 && jadwalId) {
         const needsQr = isAsesor
-          ? !asesorHasSigned
-          : !asesiHasSigned
+          ? !signing.asesorHasSigned
+          : !signing.asesiHasSigned
 
         if (needsQr) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/mapa02`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({ id_jadwal: jadwalId })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                if (isAsesor) {
-                  const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-                  const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-                  const isAsesor2 = asesorIndex === 1
-
-                  setBarcodes(prev => ({
-                    ...prev,
-                    asesor1: isAsesor1
-                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                      : prev?.asesor1 || null,
-                    asesor2: isAsesor2
-                      ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                      : prev?.asesor2 || null
-                  }))
-                } else {
-                  setBarcodes(prev => ({
-                    ...prev,
-                    asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                  }))
-                }
-
-                showSuccess('Dokumen berhasil ditandatangani!')
-                publishUpdate()
-                return
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating QR:', qrError)
+          const ok = await signing.generateQR()
+          if (ok) {
+            showSuccess('Dokumen berhasil ditandatangani!')
+            return
           }
         }
       }
 
       showSuccess('MAPA 02 berhasil disimpan!')
-      publishUpdate()
+      signing.publishUpdate()
       // Untuk tahap 0, langsung navigasi ke halaman berikutnya
       if (tahap === 0) {
         setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`), 500)
@@ -504,14 +436,14 @@ export default function Mapa02Page() {
             </tbody>
           </table>
           {/* Agreement Checklist */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
-                style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
+                style={{ marginTop: '2px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen MAPA 02 (Matriks Pengembangan dan Penilaian Asesmen) ini dengan sebenar-benarnya.
@@ -527,16 +459,8 @@ export default function Mapa02Page() {
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!isAsesor && asesiHasSigned && !allAsesorSigned) || (!allSigned && !agreedChecklist)))} onClick={handleSubmit}>
-              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : (
-                allSigned
-                  ? 'Lanjut ke FR AK 07'
-                  : isAsesor
-                    ? asesorHasSigned ? 'Lanjut ke FR AK 07' : 'Simpan & Tanda Tangan'
-                    : asesiHasSigned
-                      ? allAsesorSigned ? 'Lanjut ke FR AK 07' : `Menunggu TTD: ${missingAsesorLabels.join(', ')}`
-                      : 'Simpan & Tanda Tangan'
-              )}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
+              {signing.buttonText}
             </ActionButton>
           </div>
         </div>

@@ -8,12 +8,11 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -111,7 +110,6 @@ export default function Ia03Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [kelompokKerjaData, setKelompokKerjaData] = useState<KelompokKerja[]>([])
   const [umpanBalik, setUmpanBalik] = useState('')
@@ -222,34 +220,22 @@ export default function Ia03Page() {
     fetchData()
   }, [fetchData])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchData
+  const signing = useSigningState({
+    pageKey: 'ia03',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchData,
   })
 
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
-
-  const isFormDisabled = isFormDisabledBase || allSigned
+  const isFormDisabled = isFormDisabledBase || signing.allSigned
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
@@ -266,7 +252,7 @@ export default function Ia03Page() {
   }, [isLoading, tanggapanAnswers])
 
   const handleNext = async () => {
-    if (hasSigned) {
+    if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia03'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -278,14 +264,14 @@ export default function Ia03Page() {
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
 
@@ -326,72 +312,8 @@ export default function Ia03Page() {
 
       if (response.ok) {
         showSuccess('IA.03 berhasil disimpan!')
-        publishUpdate()
 
-        // Generate QR for asesi if not exists
-        const existingAsesiQR = barcodes?.asesi?.url
-        const hasAsesiQR = !!existingAsesiQR && existingAsesiQR.length > 0
-
-        if (jadwalId && !hasAsesiQR) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia03`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating asesi QR:', qrError)
-          }
-        }
-
-        // Generate QR for asesor if not exists
-        if (isAsesor && jadwalId) {
-          const asesorKey = isAsesor1 ? 'asesor1' : 'asesor2'
-          const existingAsesorQR = asesorKey === 'asesor1' ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
-          const hasAsesorQR = !!existingAsesorQR && existingAsesorQR.length > 0
-
-          if (!hasAsesorQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia03`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  if (asesorKey === 'asesor1') {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  }
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating asesor QR:', qrError)
-            }
-          }
-        }
+        await signing.generateQR()
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
         console.error('Failed to save IA03:', response.status, errorData)
@@ -716,13 +638,13 @@ export default function Ia03Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -731,12 +653,6 @@ export default function Ia03Page() {
             </label>
           </div>
           )}
-
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
 
           {/* PENYUSUN DAN VALIDATOR */}
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }} cellSpacing="0">
@@ -796,8 +712,8 @@ export default function Ia03Page() {
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleNext}>
+              {signing.buttonText}
             </ActionButton>
           </div>
         </div>

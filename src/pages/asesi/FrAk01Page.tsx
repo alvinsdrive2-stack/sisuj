@@ -10,11 +10,10 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 
 interface BuktiAsesmen {
   id: number
@@ -82,7 +81,6 @@ export default function FrAk01Page() {
   const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [waktuAk01, setWaktuAk01] = useState('')
   const [jam, setJam] = useState(() => {
     // Initialize to current Indonesian time (WIB = GMT+7)
@@ -221,25 +219,27 @@ export default function FrAk01Page() {
     }
   }, [idIzin, kegiatan, isAsesor, jadwalId, fetchData])
 
-  // Real-time sync across users (frontend-only using Ably)
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin || idIzin}`,
-    onUpdate: fetchData
+  const signing = useSigningState({
+    pageKey: 'ak01',
+    isAsesor,
+    tahap,
+    barcodes: barcodes as BarcodeState | null,
+    setBarcodes: setBarcodes as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: actualIdIzin,
+    jadwalId,
+    onRefresh: fetchData,
   })
 
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = tahap === 0 || isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = tahap === 0 ? [] : asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  // Signature checks for current user's role (skip untuk tahap 0)
-  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
-  const allSigned = asesiHasSigned && allAsesorSigned
-
-  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
+  // Legacy aliases for hook-managed state
+  const allSigned = signing.allSigned
+  const allAsesorSigned = signing.allAsesorSigned
+  const asesiHasSigned = signing.asesiHasSigned
+  const missingAsesorLabels = signing.missingLabels
+  const asesorHasSigned = signing.asesorHasSigned
 
   // Sync waktuAk01 when jam/menit changes (not when allSigned)
   useEffect(() => {
@@ -247,15 +247,6 @@ export default function FrAk01Page() {
       setWaktuAk01(`${jam}:${menit} - Selesai`)
     }
   }, [jam, menit, allSigned])
-
-  const asesorHasSigned = (() => {
-    if (tahap === 0) return true
-    if (!isAsesor) return false
-    const currentAsesorId = String(user?.id)
-    const asesorIndex = asesorList.findIndex(a => String(a.id) === currentAsesorId)
-    const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-    return isAsesor1 ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
 
   const handleBack = () => {
     navigate(-1)
@@ -355,86 +346,16 @@ export default function FrAk01Page() {
       })
 
       if (response.ok) {
-        // Generate QR for asesor after save (only if not already exists, skip untuk tahap 0)
-        if (tahap !== 0 && isAsesor && jadwalId) {
-          const currentAsesorId = String(user?.id)
-          const isAsesor1 = asesorList.length === 0 || asesorList.findIndex(a => String(a.id) === currentAsesorId) === 0
-          const barcodeKey = isAsesor1 ? 'asesor1' : 'asesor2'
-
-          console.log('[FR-AK-01] Asesor QR:', { currentAsesorId, isAsesor1, barcodeKey, asesorList, barcodes })
-
-          // Only generate QR if not exists
-          if (!barcodes?.[barcodeKey]?.url) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak01`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  setBarcodes(prev => ({
-                    ...prev,
-                    [barcodeKey]: {
-                      url: qrResult.data.url_image,
-                      tanggal: new Date().toISOString(),
-                      nama: user?.name || ''
-                    }
-                  }))
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating QR:', qrError)
-            }
-          }
-        }
-
-        // Generate QR for asesi (only if not already exists, skip untuk tahap 0)
-        if (tahap !== 0 && !isAsesor && jadwalId && !barcodes?.asesi?.url) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak01`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                setBarcodes(prev => ({
-                  ...prev,
-                  asesi: {
-                    url: qrResult.data.url_image,
-                    tanggal: new Date().toISOString(),
-                    nama: user?.name || ''
-                  }
-                }))
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating QR:', qrError)
-          }
+        // Generate QR using hook (handles both asesor and asesi roles)
+        if (tahap !== 0 && jadwalId) {
+          await signing.generateQR()
         }
 
         // Show success toast, stay on page
         showSuccess('Dokumen berhasil ditandatangani!')
 
         // Notify other users viewing this page
-        publishUpdate()
+        signing.publishUpdate()
 
         // Untuk tahap 0, langsung navigasi ke halaman berikutnya
         if (tahap === 0) {
@@ -802,8 +723,8 @@ export default function FrAk01Page() {
         <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', padding: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
             <CustomCheckbox
-              checked={agreedChecklist}
-              onChange={() => setAgreedChecklist(!agreedChecklist)}
+              checked={signing.agreedChecklist}
+              onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
               disabled={allSigned}
               style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
             />
@@ -814,27 +735,13 @@ export default function FrAk01Page() {
         </div>
         )}
 
-        <AsesorSignatureGuard
-          missingAsesorLabels={missingAsesorLabels}
-          allAsesorSigned={allAsesorSigned}
-          isAsesor={isAsesor}
-        />
-
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
           <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" onClick={handleSave} disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)))}>
-            {isSaving ? 'Menyimpan...' : tahap === 0 ? 'Lanjut' : (
-              allSigned
-                ? 'Lanjut ke AK01 Success'
-                : isAsesor
-                  ? asesorHasSigned ? 'Lanjut ke AK01 Success' : 'Simpan & Tanda Tangan'
-                  : asesiHasSigned
-                    ? allAsesorSigned ? 'Lanjut ke AK01 Success' : `Menunggu TTD: ${missingAsesorLabels.join(', ')}`
-                    : 'Simpan & Tanda Tangan'
-            )}
+          <ActionButton variant="primary" onClick={handleSave} disabled={signing.buttonDisabled}>
+            {isSaving ? 'Menyimpan...' : signing.buttonText}
           </ActionButton>
         </div>
       </AsesiLayout>

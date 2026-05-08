@@ -10,10 +10,9 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { useSigningState } from "@/hooks/useSigningState"
 
 interface Referensi {
   id: number
@@ -90,7 +89,6 @@ export default function FrAk07Page() {
   } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
 
@@ -136,7 +134,9 @@ export default function FrAk07Page() {
     if (Object.keys(transformedAsesor).length > 0) {
       setBarcodes({
         asesi: apiBarcodes.asesi,
-        asesor: transformedAsesor
+        asesor: transformedAsesor,
+        asesor1: apiBarcodes.asesor1,
+        asesor2: apiBarcodes.asesor2,
       })
     }
   }, [barcodes, asesorList])
@@ -244,28 +244,22 @@ export default function FrAk07Page() {
     }
   }, [idIzin, kegiatan, isAsesor, jadwalId, fetchData])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${idIzin}`,
-    onUpdate: fetchData
+  const signing = useSigningState({
+    pageKey: 'ak07',
+    isAsesor,
+    tahap,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin,
+    jadwalId,
+    onRefresh: fetchData,
   })
 
-  const asesor1Signed = !!(barcodes?.asesor1?.url || (asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url))
-  const asesor2Signed = !!(barcodes?.asesor2?.url || (asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url))
-  const allAsesorSigned = tahap === 0 || isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = tahap === 0 ? [] : asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  // Signature checks: does barcodes already contain QR for this role?
-  const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
-  const currentAsesorHasSigned = !!(user?.id && barcodes?.asesor?.[String(user.id)]?.url)
-  const asesorHasSigned = isAsesor ? currentAsesorHasSigned : false
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && allAsesorSigned
-  const isFormDisabled = tahap !== 0 && (!isAsesor || allSigned)
-
-  useEffect(() => { if (allSigned) setAgreedChecklist(true) }, [allSigned])
+  const isFormDisabled = tahap !== 0 && (!isAsesor || signing.allSigned)
 
   const handleBack = () => {
     navigate(-1)
@@ -338,31 +332,31 @@ export default function FrAk07Page() {
     }
 
     // If already signed, navigate to FR AK 04 (skip untuk tahap 0)
-    if (tahap !== 0 && hasSigned) {
+    if (tahap !== 0 && (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
 
     // Asesi cannot edit, only sign after asesor signed
-    if (!isAsesor && !asesiHasSigned && allAsesorSigned) {
+    if (!isAsesor && !signing.asesiHasSigned && signing.allAsesorSigned) {
       // proceed to save + QR generation for asesi signature
     }
 
     setIsSaving(true)
     try {
       // Build answers array
-      const answers: Array<{ referensi_id: number; kelompok_id: number; value: boolean | string }> = []
+      const answers: Array<{ referensi_id: number; kelompok_id: number; value: boolean | string | { bool: boolean; text: string } }> = []
 
       if (!ak07Data) {
         throw new Error("Data AK07 tidak tersedia")
@@ -405,11 +399,10 @@ export default function FrAk07Page() {
         rencanaAsesmenData.kategoris[0].referensis.forEach(ref => {
           const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
           const keterangan = textAnswers[ref.id] || ''
-          // Simpan keterangan jika ada, kalau tidak simpan boolean
           answers.push({
             referensi_id: ref.id,
             kelompok_id: rencanaAsesmenData.id,
-            value: keterangan || isChecked
+            value: { bool: isChecked, text: keterangan }
           })
         })
       }
@@ -451,48 +444,11 @@ export default function FrAk07Page() {
       // Generate QR jika jadwalId tersedia (skip untuk tahap 0)
       console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
       if (tahap !== 0 && jadwalId) {
-        try {
-          const qrResponse = await fetch(`${API_BASE_URL}/qr/${actualIdIzin}/ak07`, {
-            method: 'POST',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              id_jadwal: jadwalId
-            })
-          })
-
-          if (qrResponse.ok) {
-            const qrResult = await qrResponse.json()
-            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-              // Update barcodes state
-              if (isAsesor) {
-                const currentAsesorId = String(user?.id)
-                setBarcodes(prev => ({
-                  ...prev,
-                  asesi: prev?.asesi,
-                  asesor: {
-                    ...prev?.asesor,
-                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                  }
-                }))
-              } else {
-                setBarcodes(prev => ({
-                  ...prev,
-                  asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                }))
-              }
-            }
-          }
-        } catch (qrError) {
-          console.error('Error generating QR:', qrError)
-        }
+        await signing.generateQR()
       }
 
       showSuccess('FR AK 07 berhasil disimpan!')
-      publishUpdate()
+      signing.publishUpdate()
       // Untuk tahap 0, langsung navigasi ke halaman berikutnya
       if (tahap === 0) {
         setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`), 500)
@@ -905,14 +861,14 @@ export default function FrAk07Page() {
           </table>
 
           {/* Agreement Checklist */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 07 (Penyesuaian Asesmen) ini dengan sebenar-benarnya.
@@ -921,19 +877,13 @@ export default function FrAk07Page() {
           </div>
           )}
 
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
-
           {/* Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)))} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut ke FR AK 04" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {signing.buttonText}
             </ActionButton>
           </div>
         </div>

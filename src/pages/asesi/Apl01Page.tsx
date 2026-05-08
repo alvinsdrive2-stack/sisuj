@@ -13,7 +13,7 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 
 interface DataPribadi {
   nama: string
@@ -128,15 +128,10 @@ export default function Apl01Page() {
   const [buktiAdministratif, setBuktiAdministratif] = useState<BuktiAdministratif[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [skkni, setSkkni] = useState<string>("")
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
-  const allSigned = !!barcodes?.asesi?.url
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = !!barcodes?.admin?.url
-  const missingAsesorLabels = !asesorHasSigned ? ["Admin"] : []
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -231,6 +226,21 @@ export default function Apl01Page() {
     }
   }, [idIzin])
 
+  const signing = useSigningState({
+    pageKey: 'apl01',
+    isAsesor,
+    tahap,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin,
+    jadwalId,
+    onRefresh: fetchData,
+  })
+
   useEffect(() => {
     window.scrollTo(0, 0)
     if (idIzin) {
@@ -239,12 +249,6 @@ export default function Apl01Page() {
       setIsLoading(false)
     }
   }, [idIzin, fetchData])
-
-  // SSE for real-time updates
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${idIzin || user?.id_izin}`,
-    onUpdate: fetchData
-  })
 
   const handleSave = async () => {
     const targetIdIzin = idIzin || user?.id_izin
@@ -265,13 +269,12 @@ export default function Apl01Page() {
     }
 
     // Jika asesi sudah pernah tanda tangan, langsung navigate ke APL 02
-    const asesiHasSigned = !!barcodes?.asesi?.url
-    if (asesiHasSigned) {
+    if (signing.asesiHasSigned) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
@@ -279,37 +282,16 @@ export default function Apl01Page() {
     // Asesi - generate QR dulu kalau belum ada, lalu save data pekerjaan
     try {
       setIsSaving(true)
-      const token = localStorage.getItem("access_token")
 
       // Generate QR jika belum ada (skip untuk tahap 0)
       if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
-        const qrResponse = await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        })
-
-        if (qrResponse.ok) {
-          const qrResult = await qrResponse.json()
-          if (qrResult.message === "Success" && qrResult.data?.url_image) {
-            setBarcodes(prev => ({
-              asesi: {
-                url: qrResult.data.url_image,
-                tanggal: new Date().toISOString(),
-                nama: formDataPribadi.nama
-              },
-              admin: prev?.admin || { url: null, tanggal: null, nama: null }
-            }))
-          }
-        }
+        await signing.generateQR()
       }
 
       // Save data pekerjaan
       await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
       showSuccess('APL 01 berhasil disimpan!')
-      publishUpdate()
+      signing.publishUpdate()
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
     } finally {
@@ -912,12 +894,12 @@ anda pada saat ini.</span>
         </table>
 
         {/* Pernyataan */}
-        {!allSigned && (
+        {!signing.allSigned && (
         <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <CustomCheckbox
-              checked={agreedChecklist}
-              onChange={() => setAgreedChecklist(!agreedChecklist)}
+              checked={signing.agreedChecklist}
+              onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
               style={{ marginTop: '2px' }}
             />
             <span style={{ fontSize: '13px', color: '#333' }}>
@@ -932,8 +914,8 @@ anda pada saat ini.</span>
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && ((!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)))} onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : allSigned ? "Lanjut ke APL 02" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+            {isSaving ? "Menyimpan..." : signing.buttonText}
           </ActionButton>
         </div>
       </AsesiLayout>

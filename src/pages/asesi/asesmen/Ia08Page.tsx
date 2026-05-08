@@ -11,10 +11,8 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -63,7 +61,6 @@ export default function Ia08Page() {
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
-  const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
 
@@ -105,7 +102,6 @@ export default function Ia08Page() {
   } | null>(null)
   const [_ia08Referensi, setIa08Referensi] = useState<Ia08Referensi[]>([])
   const [dokumenId, setDokumenId] = useState<number | null>(null)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -191,34 +187,24 @@ export default function Ia08Page() {
     fetchIa08Data()
   }, [fetchIa08Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchIa08Data
+  const signing = useSigningState({
+    pageKey: 'ia08',
+    isAsesor,
+    tahap: _kegiatan?.tahap ?? 2,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchIa08Data,
   })
 
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
+  const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
-
-  const isFormDisabled = !isAsesor || allSigned
+  const isFormDisabled = !isAsesor || signing.allSigned
 
   const handlePortfolioCheck = (id: number, field: keyof PortfolioItem) => {
     if (isFormDisabled) return
@@ -259,7 +245,7 @@ export default function Ia08Page() {
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan terlebih dahulu")
       return
     }
@@ -300,60 +286,8 @@ export default function Ia08Page() {
 
       if (response.ok) {
         showSuccess('IA 08 berhasil disimpan!')
-        publishUpdate()
-
-        // Generate QR for asesor
-        if (isAsesor && jadwalId) {
-          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
-          if (!existingAsesorQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia08`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ id_jadwal: jadwalId })
-              })
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  if (isAsesor1) {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  }
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating QR:', qrError)
-            }
-          }
-        }
-
-        // Generate QR for asesi
-        if (jadwalId && !barcodes?.asesi?.url) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia08`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({ id_jadwal: jadwalId })
-            })
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: namaAsesi || '' } }))
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating asesi QR:', qrError)
-          }
-        }
+        await signing.generateQR()
+        signing.publishUpdate()
       } else {
         showError('Gagal menyimpan IA 08')
       }
@@ -766,13 +700,13 @@ export default function Ia08Page() {
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -782,22 +716,16 @@ export default function Ia08Page() {
           </div>
           )}
 
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
-
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate(-1)}>
               Kembali
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
+              disabled={signing.buttonDisabled}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

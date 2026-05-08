@@ -12,16 +12,16 @@ interface CheckboxItemProps {
 export function CheckboxItem({ text, inline = false }: CheckboxItemProps) {
   if (inline) {
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
-        <CustomCheckbox checked={false} onChange={() => {}} style={{ pointerEvents: 'none' }} />
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'not-allowed', userSelect: 'none' }}>
+        <CustomCheckbox checked={false} onChange={() => {}} disabled style={{ pointerEvents: 'none', opacity: 0.5 }} />
         <span style={{ fontSize: '12px', color: '#000' }}>{text}</span>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px', cursor: 'pointer', userSelect: 'none' }}>
-      <CustomCheckbox checked={false} onChange={() => {}} style={{ pointerEvents: 'none' }} />
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '4px', cursor: 'not-allowed', userSelect: 'none' }}>
+      <CustomCheckbox checked={false} onChange={() => {}} disabled style={{ pointerEvents: 'none', opacity: 0.5 }} />
       <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.4' }}>{text}</span>
     </div>
   )

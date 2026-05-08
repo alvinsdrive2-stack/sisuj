@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -113,7 +113,6 @@ export default function Ak06Page() {
     catatan_asesor1: string
     catatan_asesor2: string
   } | null>(null)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<Barcodes>({
@@ -185,9 +184,20 @@ export default function Ak06Page() {
 
   useEffect(() => { fetchAk06Data() }, [fetchAk06Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk06Data
+  // Signing state hook
+  const signing = useSigningState({
+    pageKey: 'ak06',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchAk06Data,
   })
 
   // Map komentar asesor when feedback data and asesorList are available
@@ -204,28 +214,8 @@ export default function Ak06Page() {
     }
   }, [feedbackData, asesorList])
 
-  // Sign-then-redirect + view-only
-  const asesiHasSigned = !!barcodes.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes.asesor1?.url : !!barcodes.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes.asesor1?.url && (asesorList.length < 2 || !!barcodes.asesor2?.url)
-  ))
-  const asesor1Signed = !!barcodes.asesor1?.url
-  const asesor2Signed = !!barcodes.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
+  // Keep hasSigned derived from hook
+  const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
 
   if (isLoading) {
@@ -238,7 +228,7 @@ export default function Ak06Page() {
   }
 
   const handleAspekChange = (id: string, field: keyof Pick<AspekItem, 'validitas' | 'reliabel' | 'fleksibel' | 'adil'>) => {
-    if (isFormDisabled || allSigned) return
+    if (isFormDisabled || signing.allSigned) return
     setAspekItems(prev => prev.map(item => {
       if (item.id === id) {
         return { ...item, [field]: !item[field] }
@@ -261,7 +251,7 @@ export default function Ak06Page() {
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
@@ -303,40 +293,10 @@ export default function Ak06Page() {
       if (response.ok) {
         showSuccess('AK 06 berhasil disimpan!')
 
-        // Generate QR for asesor only if not exists
+        // Generate QR via hook
         if (isAsesor) {
-          const existingAsesorQR = isAsesor1 ? barcodes.asesor1?.url : barcodes.asesor2?.url
-
-          if (jadwalId && !existingAsesorQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak06`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  // Update barcodes based on asesor role
-                  if (isAsesor1) {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  }
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating QR:', qrError)
-            }
-            publishUpdate()
-          }
+          await signing.generateQR()
+          signing.publishUpdate()
         }
       } else {
         console.error('Failed to save AK06:', response.status)
@@ -453,76 +413,76 @@ export default function Ak06Page() {
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Prosedur asesmen:<br />• Rencana asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || signing.allSigned} />
               </td>
             </tr>
 
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Persiapan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || signing.allSigned} />
               </td>
             </tr>
 
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Implementasi asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.fleksibel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'fleksibel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || signing.allSigned} />
               </td>
             </tr>
 
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Keputusan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ background: '#000', border: '1px solid #000', padding: '6px' }}></td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || signing.allSigned} />
               </td>
             </tr>
 
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Umpan balik asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.reliabel || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'reliabel')} disabled={isFormDisabled || signing.allSigned} />
               </td>
               <td style={{ background: '#000', border: '1px solid #000', padding: '6px' }}></td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || allSigned} />
+                <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.adil || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'adil')} disabled={isFormDisabled || signing.allSigned} />
               </td>
             </tr>
 
@@ -532,7 +492,7 @@ export default function Ak06Page() {
                 <textarea
                   value={rekomendasiPrinsip}
                   onChange={(e) => setRekomendasiPrinsip(e.target.value)}
-                  disabled={isFormDisabled || allSigned}
+                  disabled={isFormDisabled || signing.allSigned}
                   style={{
                     width: '100%',
                     height: '120px',
@@ -540,7 +500,7 @@ export default function Ak06Page() {
                     padding: '6px',
                     fontSize: '13px',
                     resize: 'none',
-                    cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text'
+                    cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text'
                   }}
                   placeholder="Tuliskan rekomendasi..."
                 />
@@ -582,7 +542,7 @@ export default function Ak06Page() {
                 <textarea
                   value={rekomendasiDimensi}
                   onChange={(e) => setRekomendasiDimensi(e.target.value)}
-                  disabled={isFormDisabled || allSigned}
+                  disabled={isFormDisabled || signing.allSigned}
                   style={{
                     width: '100%',
                     height: '120px',
@@ -590,7 +550,7 @@ export default function Ak06Page() {
                     border: '1px solid #ccc',
                     fontSize: '13px',
                     resize: 'none',
-                    cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text'
+                    cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text'
                   }}
                   placeholder="Tuliskan rekomendasi..."
                 />
@@ -613,7 +573,7 @@ export default function Ak06Page() {
                 (isAsesor1 && index === 0) ||  // asesor_1 can edit asesor_1's comment
                 (isAsesor2 && index === 1)      // asesor_2 can edit asesor_2's comment
               )
-              const isCommentDisabled = (isAsesor && !isOwnComment) || allSigned
+              const isCommentDisabled = (isAsesor && !isOwnComment) || signing.allSigned
 
               // Get barcode data for this asesor
               const asesorBarcode = index === 0 ? barcodes.asesor1 : barcodes.asesor2
@@ -667,13 +627,13 @@ export default function Ak06Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -698,8 +658,8 @@ export default function Ak06Page() {
             >
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Simpan & Tanda Tangan" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

@@ -12,8 +12,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -69,7 +68,7 @@ export default function Ak02Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
@@ -100,7 +99,6 @@ export default function Ak02Page() {
   const [isKompeten, setIsKompeten] = useState<boolean | null>(null)
   const [tindakLanjut, setTindakLanjut] = useState('')
   const [komentar, setKomentar] = useState('')
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData
@@ -171,36 +169,21 @@ export default function Ak02Page() {
 
   useEffect(() => { fetchAk02Data() }, [fetchAk02Data])
 
-  // SSE: auto-refresh when another user saves
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk02Data
+  // Signing state hook
+  const signing = useSigningState({
+    pageKey: 'ak02',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchAk02Data,
   })
-
-  // Manual signature check (SSE-only — no polling)
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  // Sign-then-redirect + view-only
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
 
   if (isLoading) {
     return (
@@ -328,8 +311,8 @@ export default function Ak02Page() {
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.observasi || false}
                     onChange={() => handleEvidenceChange(unit.id, 'observasi')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 {showPortofolio && (
@@ -337,8 +320,8 @@ export default function Ak02Page() {
                     <CustomCheckbox
                       checked={evidenceChecks[unit.id]?.portofolio || false}
                       onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
-                      disabled={isFormDisabled || allSigned}
-                      style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                      disabled={isFormDisabled || signing.allSigned}
+                      style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                     />
                   </td>
                 )}
@@ -346,32 +329,32 @@ export default function Ak02Page() {
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.pertanyaan_wawancara || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_wawancara')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.pertanyaan_lisan || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_lisan')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.pertanyaan_tertulis || false}
                     onChange={() => handleEvidenceChange(unit.id, 'pertanyaan_tertulis')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.proyek_kerja || false}
                     onChange={() => handleEvidenceChange(unit.id, 'proyek_kerja')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
               </tr>
@@ -380,19 +363,19 @@ export default function Ak02Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}><b>Rekomendasi hasil asesmen</b></td>
               <td colSpan={6} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={isKompeten === true}
                     onChange={() => setIsKompeten(isKompeten === true ? null : true)}
-                    disabled={isFormDisabled || allSigned}
+                    disabled={isFormDisabled || signing.allSigned}
                   />
                   Kompeten
                 </label>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={isKompeten === false}
                     onChange={() => setIsKompeten(isKompeten === false ? null : false)}
-                    disabled={isFormDisabled || allSigned}
+                    disabled={isFormDisabled || signing.allSigned}
                   />
                   Belum kompeten
                 </label>
@@ -408,8 +391,8 @@ export default function Ak02Page() {
                 <textarea
                   value={tindakLanjut}
                   onChange={(e) => setTindakLanjut(e.target.value)}
-                  disabled={isFormDisabled || allSigned}
-                  style={{ width: '100%', height: '70px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
+                  disabled={isFormDisabled || signing.allSigned}
+                  style={{ width: '100%', height: '70px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan tindak lanjut..."
                 />
               </td>
@@ -421,8 +404,8 @@ export default function Ak02Page() {
                 <textarea
                   value={komentar}
                   onChange={(e) => setKomentar(e.target.value)}
-                  disabled={isFormDisabled || allSigned}
-                  style={{ width: '100%', height: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
+                  disabled={isFormDisabled || signing.allSigned}
+                  style={{ width: '100%', height: '60px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan komentar..."
                 />
               </td>
@@ -516,13 +499,13 @@ export default function Ak02Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px'  }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -531,12 +514,6 @@ export default function Ak02Page() {
             </label>
           </div>
           )}
-
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -557,10 +534,10 @@ export default function Ak02Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
+              disabled={signing.buttonDisabled}
               onClick={async () => {
                 // If user already signed → navigate to next page
-                if (hasSigned) {
+                if (signing.allSigned || (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
                   const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
                   const nextStep = asesmenSteps[currentStepIndex + 1]
                   if (nextStep) {
@@ -572,7 +549,7 @@ export default function Ak02Page() {
                   return
                 }
 
-                if (!agreedChecklist) {
+                if (!signing.agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
                   return
                 }
@@ -635,69 +612,9 @@ export default function Ak02Page() {
                       if (result.data.komentar !== undefined) setKomentar(result.data.komentar)
                     }
 
-                    // Generate QR for asesor if not exists
-                    if (isAsesor) {
-                      const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
-
-                      if (jadwalId && !existingAsesorQR) {
-                        try {
-                          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak02`, {
-                            method: 'POST',
-                            headers: {
-                              'Accept': 'application/json',
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${token}`,
-                            },
-                            body: JSON.stringify({
-                              id_jadwal: jadwalId
-                            })
-                          })
-
-                          if (qrResponse.ok) {
-                            const qrResult = await qrResponse.json()
-                            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                              // Update barcodes based on asesor role
-                              if (isAsesor1) {
-                                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                              } else {
-                                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                              }
-                            }
-                          }
-                        } catch (qrError) {
-                          console.error('Error generating QR:', qrError)
-                        }
-                      }
-                    } else {
-                      // For asesi: generate QR if not exists
-                      const existingAsesiQR = barcodes?.asesi?.url
-
-                      if (jadwalId && !existingAsesiQR) {
-                        try {
-                          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak02`, {
-                            method: 'POST',
-                            headers: {
-                              'Accept': 'application/json',
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${token}`,
-                            },
-                            body: JSON.stringify({
-                              id_jadwal: jadwalId
-                            })
-                          })
-
-                          if (qrResponse.ok) {
-                            const qrResult = await qrResponse.json()
-                            if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                              setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
-                            }
-                          }
-                        } catch (qrError) {
-                          console.error('Error generating asesi QR:', qrError)
-                        }
-                      }
-                    }
-                    publishUpdate()
+                    // Generate QR via hook
+                    await signing.generateQR()
+                    signing.publishUpdate()
                   } else {
                     console.error('Failed to save AK02:', response.status)
                     showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -710,7 +627,7 @@ export default function Ak02Page() {
                 }
               }}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

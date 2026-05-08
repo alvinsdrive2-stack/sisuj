@@ -12,8 +12,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -22,8 +21,8 @@ interface SoalAPI {
   no: string
   jenis: string
   soal: string
-  is_kompeten: boolean
-  catatan: string
+  is_kompeten: boolean | null
+  catatan: string | null
 }
 
 interface FeedbackItem {
@@ -57,8 +56,8 @@ export default function Ak03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
-  const { jenjang, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
+  const { role: asesorRole } = useAsesorRole(id)
+  const { jenjang, asesorList, jadwalId } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
@@ -83,7 +82,6 @@ export default function Ak03Page() {
   // Form state
   const [feedbackItems, setFeedbackItems] = useState<FeedbackItem[]>([])
   const [catatanUmum, setCatatanUmum] = useState('')
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<{
@@ -128,36 +126,21 @@ export default function Ak03Page() {
 
   useEffect(() => { fetchAk03Data() }, [fetchAk03Data])
 
-  // SSE: auto-refresh when another user saves (handles barcode updates too)
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk03Data
+  // Signing state hook
+  const signing = useSigningState({
+    pageKey: 'ak03',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchAk03Data,
   })
-
-  // Manual signature check (SSE-only — no polling)
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  // Sign-then-redirect + view-only
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
 
   if (isLoading) {
     return (
@@ -203,7 +186,7 @@ export default function Ak03Page() {
   // Handle save - POST to API
   const handleSave = async () => {
     // If user already signed → navigate to next page
-    if (hasSigned) {
+    if (signing.allSigned || (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -215,7 +198,7 @@ export default function Ak03Page() {
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
@@ -273,69 +256,9 @@ export default function Ak03Page() {
           }
         }
 
-        publishUpdate()
-
-        // Generate QR for asesor if not exists
-        if (isAsesor) {
-          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
-
-          if (jadwalId && !existingAsesorQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak03`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  if (isAsesor1) {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  }
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating QR:', qrError)
-            }
-          }
-        } else {
-          // For asesi: generate QR if not exists
-          const existingAsesiQR = barcodes?.asesi?.url
-
-          if (jadwalId && !existingAsesiQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak03`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
-              })
-
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || namaAsesi || '' } }))
-                }
-              }
-            } catch (qrError) {
-              console.error('Error generating asesi QR:', qrError)
-            }
-          }
-        }
+        // Generate QR via hook
+        await signing.generateQR()
+        signing.publishUpdate()
       } else {
         console.error('Failed to save AK03:', response.status)
         showError('Gagal menyimpan data. Silakan coba lagi.')
@@ -397,24 +320,24 @@ export default function Ak03Page() {
                   <CustomCheckbox
                     checked={item.ya}
                     onChange={() => handleFeedbackChange(item.id, 'ya')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                   <CustomCheckbox
                     checked={item.tidak}
                     onChange={() => handleFeedbackChange(item.id, 'tidak')}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'pointer' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
                   <textarea
                     value={item.catatan}
                     onChange={(e) => handleCatatanChange(item.id, e.target.value)}
-                    disabled={isFormDisabled || allSigned}
-                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text' }}
                     placeholder="Tuliskan catatan..."
                   />
                 </td>
@@ -426,8 +349,8 @@ export default function Ak03Page() {
                 <textarea
                   value={catatanUmum}
                   onChange={(e) => setCatatanUmum(e.target.value)}
-                  disabled={isFormDisabled || allSigned}
-                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || allSigned) ? 'not-allowed' : 'text' }}
+                  disabled={isFormDisabled || signing.allSigned}
+                  style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '6px', fontSize: '13px', resize: 'none', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'text' }}
                   placeholder="Tuliskan catatan umum..."
                 />
               </td>
@@ -438,13 +361,13 @@ export default function Ak03Page() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -454,19 +377,13 @@ export default function Ak03Page() {
           </div>
           )}
 
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
-
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (isAsesor && !asesiHasSigned)} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

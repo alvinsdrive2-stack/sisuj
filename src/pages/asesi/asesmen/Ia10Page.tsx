@@ -10,10 +10,8 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { useAsesorRole } from "@/hooks/useAsesorRole"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { API_BASE_URL } from "@/config/api"
 
 interface ReferensiItem {
@@ -85,7 +83,6 @@ export default function Ia10Page() {
     jadwalId,
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
-  const { isAsesor1 } = useAsesorRole(id)
 
   const asesmenSteps = getAsesmenSteps(
     jenjang,
@@ -107,7 +104,6 @@ export default function Ia10Page() {
     asesorList,
   })
 
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -183,32 +179,22 @@ export default function Ia10Page() {
 
   useEffect(() => { fetchIa10Data() }, [fetchIa10Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchIa10Data
+  const signing = useSigningState({
+    pageKey: 'ia10',
+    isAsesor,
+    tahap: _kegiatan?.tahap ?? 2,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchIa10Data,
   })
 
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-  const asesor1Signed = !!barcodes?.asesor1?.url
-  const asesor2Signed = !!barcodes?.asesor2?.url
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
+  const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
   const handleFormDataChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
@@ -257,7 +243,7 @@ export default function Ia10Page() {
       return
     }
 
-    if (!agreedChecklist) return
+    if (!signing.agreedChecklist) return
 
     setIsSaving(true)
     try {
@@ -296,59 +282,8 @@ export default function Ia10Page() {
       })
 
       if (response.ok) {
-        // Generate QR for asesor if needed
-        if (isAsesor) {
-          const existingAsesorQR = isAsesor1 ? barcodes?.asesor1?.url : barcodes?.asesor2?.url
-          if (!existingAsesorQR) {
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia10`, {
-                method: "POST",
-                headers: {
-                  "Accept": "application/json",
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${token}`,
-                },
-                body: JSON.stringify({ id_jadwal: jadwalId }),
-              })
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                  if (isAsesor1) {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || "" } }))
-                  }
-                }
-              }
-            } catch (qrErr) {
-              console.error("Error generating QR:", qrErr)
-            }
-          }
-        }
-        publishUpdate()
-
-        // Generate QR for asesi if needed
-        if (!barcodes?.asesi?.url) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia10`, {
-              method: "POST",
-              headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-              },
-              body: JSON.stringify({ id_jadwal: jadwalId }),
-            })
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                setBarcodes(prev => ({ ...prev, asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: namaAsesi || "" } }))
-              }
-            }
-          } catch (qrErr) {
-            console.error("Error generating QR:", qrErr)
-          }
-        }
+        await signing.generateQR()
+        signing.publishUpdate()
       }
     } catch (err) {
       console.error("Error saving IA10:", err)
@@ -525,7 +460,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>1. Nama Pengawas/Penyelia/Atasan/Orang Lain di Perusahaan :</b>
-                  <input type="text" value={formData.nama_pengawas} onChange={e => handleFormDataChange("nama_pengawas", e.target.value)} disabled={!isAsesor || allSigned}
+                  <input type="text" value={formData.nama_pengawas} onChange={e => handleFormDataChange("nama_pengawas", e.target.value)} disabled={!isAsesor || signing.allSigned}
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -534,7 +469,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>2. Tempat Kerja :</b>
-                  <input type="text" value={formData.tempat_kerja} onChange={e => handleFormDataChange("tempat_kerja", e.target.value)} disabled={!isAsesor || allSigned}
+                  <input type="text" value={formData.tempat_kerja} onChange={e => handleFormDataChange("tempat_kerja", e.target.value)} disabled={!isAsesor || signing.allSigned}
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -543,7 +478,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>3. Alamat :</b>
-                  <input type="text" value={formData.alamat} onChange={e => handleFormDataChange("alamat", e.target.value)} disabled={!isAsesor || allSigned}
+                  <input type="text" value={formData.alamat} onChange={e => handleFormDataChange("alamat", e.target.value)} disabled={!isAsesor || signing.allSigned}
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -552,7 +487,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>4. Telepon :</b>
-                  <input type="text" value={formData.telepon} onChange={e => handleFormDataChange("telepon", e.target.value)} disabled={!isAsesor || allSigned}
+                  <input type="text" value={formData.telepon} onChange={e => handleFormDataChange("telepon", e.target.value)} disabled={!isAsesor || signing.allSigned}
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -574,10 +509,10 @@ export default function Ia10Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.ya} onChange={() => isAsesor && handleYaChange(p.id, !p.ya)} disabled={!isAsesor || allSigned} />
+                  <CustomCheckbox checked={p.ya} onChange={() => isAsesor && handleYaChange(p.id, !p.ya)} disabled={!isAsesor || signing.allSigned} />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.tidak} onChange={() => isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={!isAsesor || allSigned} />
+                  <CustomCheckbox checked={p.tidak} onChange={() => isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={!isAsesor || signing.allSigned} />
                 </td>
               </tr>
             ))}
@@ -594,7 +529,7 @@ export default function Ia10Page() {
                   <textarea
                     value={e.jawaban}
                     onChange={(ev) => handleEssayChange(e.id, ev.target.value)}
-                    disabled={!isAsesor || allSigned}
+                    disabled={!isAsesor || signing.allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -607,7 +542,7 @@ export default function Ia10Page() {
                   <textarea
                     value={a.jawaban || ""}
                     onChange={(ev) => handleAdditionalChange(a.id, ev.target.value)}
-                    disabled={!isAsesor || allSigned}
+                    disabled={!isAsesor || signing.allSigned}
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -649,7 +584,7 @@ export default function Ia10Page() {
         {/* Actions */}
         <div style={{ marginTop: "20px" }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div
             style={{
               background: "#fff",
@@ -661,9 +596,9 @@ export default function Ia10Page() {
           >
             <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={!isAsesor || allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={!isAsesor || signing.allSigned}
                 style={{ marginTop: "2px" }}
               />
               <span style={{ fontSize: "13px", color: "#333" }}>
@@ -673,22 +608,16 @@ export default function Ia10Page() {
           </div>
           )}
 
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
-
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
             <ActionButton variant="secondary" onClick={() => navigate(-1)}>
               Kembali
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)}
+              disabled={signing.buttonDisabled}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
           </div>
         </div>

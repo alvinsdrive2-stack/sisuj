@@ -8,12 +8,11 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { AsesorSignatureGuard } from "@/components/AsesorSignatureGuard"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -76,94 +75,6 @@ type BarcodeData = {
   nama: string
 }
 
-interface ListItem {
-  content: string
-  level: number
-}
-
-// Helper function to decode HTML entities
-function decodeHtmlEntities(text: string): string {
-  const textarea = document.createElement('textarea')
-  textarea.innerHTML = text
-  return textarea.value
-}
-
-// Helper function to parse content into list items
-function parseListContent(content: string): { type: 'ol' | 'ul' | 'p', items: ListItem[] } {
-  // First decode HTML entities, then replace <br /> with newlines
-  const cleanContent = decodeHtmlEntities(content)
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/&nbsp;/gi, ' ')
-    // Add newline before bullet points (●) if there's text before them
-    .replace(/(\S)\s*([•\-\*])/g, '$1\n$2')
-    .trim()
-
-  // Check for numbered list (1., 2., 3., etc)
-  const numberedPattern = /^\d+\.\s+/m
-  if (numberedPattern.test(cleanContent)) {
-    // Split by numbered items (e.g., "1.", "2.", etc)
-    const parts = cleanContent.split(/\n(?=\d+\.\s+)/)
-    const items: ListItem[] = []
-
-    // Check if the content starts with text (not a number)
-    const firstLine = parts[0]?.split('\n')[0]?.trim() || ''
-    const hasTextBeforeNumbers = !/^\d+\.\s+/.test(firstLine)
-
-    for (const part of parts) {
-      if (!part.trim()) continue
-
-      const lines = part.split('\n').filter(l => l.trim())
-      const mainItemLines: string[] = []
-      const bulletLines: string[] = []
-
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed) continue
-
-        // Check if this line is a bullet (•, -, *)
-        if (/^[•\-\*]\s+/.test(trimmed)) {
-          bulletLines.push(trimmed)
-        } else {
-          mainItemLines.push(trimmed)
-        }
-      }
-
-      // Add main item (joined with spaces for proper wrapping)
-      if (mainItemLines.length > 0) {
-        const itemContent = mainItemLines.join(' ')
-        // If there's text before numbers, indent the numbered items
-        const isNumberedItem = /^\d+\.\s+/.test(itemContent)
-        const level = (hasTextBeforeNumbers && isNumberedItem) ? 1 : 0
-        items.push({ content: itemContent, level })
-      }
-
-      // Add bullet items (nested, indented more)
-      for (const bullet of bulletLines) {
-        items.push({ content: bullet, level: 2 })
-      }
-    }
-
-    return { type: 'ol', items }
-  }
-
-  // Check for bullet points (•, -, *, etc)
-  const bulletPattern = /[•\-\*]\s+/m
-  if (bulletPattern.test(cleanContent)) {
-    const lines = cleanContent.split('\n')
-    const items: ListItem[] = []
-    for (const line of lines) {
-      const trimmed = line.trimEnd()
-      const leadingSpaces = line.match(/^\s*/)?.[0].length || 0
-      const level = Math.floor(leadingSpaces / 2) // Each 2 spaces = 1 level
-      items.push({ content: trimmed, level })
-    }
-    return { type: 'ul', items: items.filter(item => item.content.trim()) }
-  }
-
-  // Return as paragraph if no list pattern found
-  return { type: 'p', items: [{ content: cleanContent, level: 0 }] }
-}
-
 export default function Ia04aPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
@@ -176,11 +87,11 @@ export default function Ia04aPage() {
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData
-    asesor?: Record<string, BarcodeData>
+    asesor1?: BarcodeData | null
+    asesor2?: BarcodeData | null
   } | null>(null)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -237,29 +148,18 @@ export default function Ia04aPage() {
             })
             setUmpanBalikMap(umpanBalikInit)
 
-            // Set barcodes - transform from old format if needed
+            // Set barcodes - use asesor1/asesor2 format directly
             if (result.data.barcodes) {
               const apiBarcodes = result.data.barcodes as {
                 asesi?: BarcodeData
                 asesor1?: BarcodeData | null
                 asesor2?: BarcodeData | null
-                asesor?: Record<string, BarcodeData>
-              }
-
-              // Transform old format (asesor1, asesor2) to new dynamic format
-              const transformedAsesor: Record<string, BarcodeData> = {}
-
-              // Only map non-null barcodes
-              if (apiBarcodes.asesor1 && asesorList[0]) {
-                transformedAsesor[String(asesorList[0].id)] = apiBarcodes.asesor1
-              }
-              if (apiBarcodes.asesor2 && asesorList[1]) {
-                transformedAsesor[String(asesorList[1].id)] = apiBarcodes.asesor2
               }
 
               setBarcodes({
                 asesi: apiBarcodes.asesi,
-                asesor: transformedAsesor
+                asesor1: apiBarcodes.asesor1,
+                asesor2: apiBarcodes.asesor2,
               })
             }
 
@@ -281,35 +181,23 @@ export default function Ia04aPage() {
     fetchData()
   }, [fetchData])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchData
+  const signing = useSigningState({
+    pageKey: 'ia04a',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchData,
   })
 
-  const asesor1Signed = !!(asesorList[0] && barcodes?.asesor?.[String(asesorList[0].id)]?.url)
-  const asesor2Signed = !!(asesorList[1] && barcodes?.asesor?.[String(asesorList[1].id)]?.url)
-  const allAsesorSigned = isAsesor || asesorList.length === 0 || (asesor1Signed && (asesorList.length < 2 || asesor2Signed))
-  const missingAsesorLabels = asesorList.length === 0 ? [] : [
-    !asesor1Signed && "Asesor 1",
-    asesorList.length >= 2 && !asesor2Signed && "Asesor 2",
-  ].filter(Boolean) as string[]
-
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    // const _asesorKey = (idx === 0 || idx === -1) ? 'asesor1' : 'asesor2'
-    return !!barcodes?.asesor?.[String(asesorList[idx >= 0 ? idx : 0]?.id)]?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && allAsesorSigned
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
-
   const handleNext = async () => {
-    if (hasSigned) {
+    if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -321,14 +209,14 @@ export default function Ia04aPage() {
       return
     }
 
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
 
@@ -358,46 +246,9 @@ export default function Ia04aPage() {
           return
         }
 
-        const currentAsesorId = String(user?.id)
-        const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
-
-        if (!hasExistingQR) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                const currentAsesorId = String(user?.id)
-                setBarcodes(prev => ({
-                  asesi: prev?.asesi,
-                  asesor: {
-                    ...prev?.asesor,
-                    [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                  }
-                }))
-              }
-            } else {
-              showError('Gagal generate tanda tangan')
-            }
-          } catch (qrError) {
-            console.error('Error generating QR:', qrError)
-            showError('Gagal generate tanda tangan')
-          }
-        }
+        await signing.generateQR()
 
         showSuccess('IA 04.A berhasil disimpan!')
-        publishUpdate()
         return
       }
 
@@ -419,43 +270,7 @@ export default function Ia04aPage() {
 
           if (response.ok) {
             await response.json()
-
-            if (jadwalId) {
-              const currentAsesorId = String(user?.id)
-              const hasExistingQR = barcodes?.asesor?.[currentAsesorId]?.url
-
-              if (!hasExistingQR) {
-                try {
-                  const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
-                    method: 'POST',
-                    headers: {
-                      'Accept': 'application/json',
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                      id_jadwal: jadwalId
-                    })
-                  })
-
-                  if (qrResponse.ok) {
-                    const qrResult = await qrResponse.json()
-                    if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                      const currentAsesorId = String(user?.id)
-                      setBarcodes(prev => ({
-                        asesi: prev?.asesi,
-                        asesor: {
-                          ...prev?.asesor,
-                          [currentAsesorId]: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                        }
-                      }))
-                    }
-                  }
-                } catch (qrError) {
-                  console.error('Error generating QR:', qrError)
-                }
-              }
-            }
+            await signing.generateQR()
           } else {
             console.error('Failed to save umpan balik:', response.status)
           }
@@ -464,42 +279,14 @@ export default function Ia04aPage() {
         }
 
         showSuccess('IA 04.A berhasil disimpan!')
-        publishUpdate()
         return
       }
 
       // Asesi: generate QR jika belum ada
       if (!isAsesor) {
-        if (!barcodes?.asesi?.url && jadwalId) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ia04a`, {
-              method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                setBarcodes(prev => ({
-                  ...prev,
-                  asesi: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' }
-                }))
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating asesi QR:', qrError)
-          }
-        }
+        await signing.generateQR()
 
         showSuccess('IA 04.A berhasil disimpan!')
-        publishUpdate()
         return
       }
 
@@ -661,32 +448,12 @@ export default function Ia04aPage() {
                     ) : (
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
                     )
-                  ) : soalItem.jenis === '1' ? (() => {
-                    const parsed = parseListContent(soalItem.jawaban)
-                    if (parsed.type === 'ol') {
-                      return (
-                        <ol style={{ margin: '5px 0 5px 18px', paddingLeft: '18px' }}>
-                          {parsed.items.map((item, idx) => (
-                            <li key={idx} style={{ marginLeft: `${item.level * 20}px`, marginBottom: '4px' }}>
-                              {item.content}
-                            </li>
-                          ))}
-                        </ol>
-                      )
-                    } else if (parsed.type === 'ul') {
-                      return (
-                        <ul style={{ margin: '5px 0 5px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
-                          {parsed.items.map((item, idx) => (
-                            <li key={idx} style={{ marginLeft: `${item.level * 20}px`, marginBottom: '4px' }}>
-                              {item.content}
-                            </li>
-                          ))}
-                        </ul>
-                      )
-                    } else {
-                      return <p style={{ margin: '5px 0' }}>{parsed.items[0].content}</p>
-                    }
-                  })() : (
+                  ) : soalItem.jenis === '1' ? (
+                    <div
+                      style={{ margin: '5px 0', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
+                    />
+                  ) : (
                     <div style={{ height: '60px' }}></div>
                   )}
                 </td>
@@ -724,8 +491,8 @@ export default function Ia04aPage() {
                   </div>
                 ) : null}
               </td>
-              {asesorList.map((asesor) => {
-                const asesorBarcode = barcodes?.asesor?.[String(asesor.id)]
+              {asesorList.map((asesor, idx) => {
+                const asesorBarcode = idx === 0 ? barcodes?.asesor1 : barcodes?.asesor2
                 return (
                   <td key={asesor.id} style={{ height: '120px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
                     {asesorBarcode?.url ? (
@@ -843,13 +610,13 @@ export default function Ia04aPage() {
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
           {/* Pernyataan Checkbox */}
-          {!allSigned && (
+          {!signing.allSigned && (
           <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
-                checked={agreedChecklist}
-                onChange={() => setAgreedChecklist(!agreedChecklist)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -859,19 +626,13 @@ export default function Ia04aPage() {
           </div>
           )}
 
-          <AsesorSignatureGuard
-            missingAsesorLabels={missingAsesorLabels}
-            allAsesorSigned={allAsesorSigned}
-            isAsesor={isAsesor}
-          />
-
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
               Kembali
             </ActionButton>
-            <ActionButton variant="primary" disabled={isSaving || (!allSigned && !agreedChecklist) || (!isAsesor && !allAsesorSigned)} onClick={handleNext}>
-              {isSaving ? "Menyimpan..." : allSigned ? "Lanjut" : isAsesor ? (asesorHasSigned ? "Menunggu TTD Asesi" : "Simpan & Tanda Tangan") : (asesiHasSigned ? `Menunggu TTD ${missingAsesorLabels.join(', ')}` : "Simpan & Tanda Tangan")}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleNext}>
+              {signing.buttonText}
             </ActionButton>
           </div>
         </div>

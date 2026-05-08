@@ -8,7 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -98,7 +98,6 @@ export default function Ia05Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [isSaving, setIsSaving] = useState(false)
-  const [isPernyataanAgreed, setIsPernyataanAgreed] = useState(false)
   const [umpanBalik, setUmpanBalik] = useState<string>('')
 
   // Barcodes state untuk cek tanda tangan asesor
@@ -154,9 +153,19 @@ export default function Ia05Page() {
 
   useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchIa05Data
+  const signing = useSigningState({
+    pageKey: 'ia05',
+    isAsesor,
+    tahap: _kegiatan?.tahap ?? 2,
+    barcodes: barcodes as unknown as BarcodeState | null,
+    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchIa05Data,
   })
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') => {
@@ -197,7 +206,7 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('Umpan balik berhasil disimpan!')
-        publishUpdate()
+        signing.publishUpdate()
 
         // Generate QR after successful save
         console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
@@ -269,7 +278,7 @@ export default function Ia05Page() {
 
       if (response.ok) {
         showSuccess('IA 05 berhasil disimpan!')
-        publishUpdate()
+        signing.publishUpdate()
 
         // Generate QR after successful save
         console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
@@ -496,19 +505,7 @@ export default function Ia05Page() {
           </tbody>
         </table>
 {/* Summary Row - Asesor selalu lihat, Asesi hanya lihat jika semua asesor ttd */}
-          {(() => {
-            // Asesor selalu bisa lihat
-            if (isAsesor) return true
-
-            // Asesi hanya lihat jika semua asesor sudah ttd
-            const expectedAsesors = asesorList.length
-            const asesor1Signed = !!barcodes?.asesor1?.url
-            const asesor2Signed = !!barcodes?.asesor2?.url
-
-            if (expectedAsesors === 0) return false
-            if (expectedAsesors === 1) return asesor1Signed
-            return asesor1Signed && asesor2Signed
-          })() && (
+          {(isAsesor || signing.allAsesorSigned) && (
           <div style={{ marginTop: '20px' }}>
             <h2 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>FR. IA.05.C. LEMBAR JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#f8f8f8' }}>
@@ -691,8 +688,8 @@ export default function Ia05Page() {
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
-                checked={isPernyataanAgreed}
-                onChange={(e) => setIsPernyataanAgreed(e.target.checked)}
+                checked={signing.agreedChecklist}
+                onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
                 style={{ marginTop: '2px', cursor: 'pointer' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -709,7 +706,7 @@ export default function Ia05Page() {
                 <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}>
                   Kembali
                 </ActionButton>
-                <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSubmit}>
+                <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist} onClick={handleSubmit}>
                   {isSaving ? "Menyimpan..." : "Lanjut"}
                 </ActionButton>
               </>
@@ -720,7 +717,7 @@ export default function Ia05Page() {
                 <ActionButton variant="secondary" onClick={() => navigate(-1)}>
                   Kembali
                 </ActionButton>
-                  <ActionButton variant="primary" disabled={isSaving || !isPernyataanAgreed} onClick={handleSaveUmpanBalik}>
+                  <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist} onClick={handleSaveUmpanBalik}>
                     {isSaving ? "Menyimpan..." : "Simpan Umpan Balik"}
                   </ActionButton>
               </>

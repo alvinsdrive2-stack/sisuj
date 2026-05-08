@@ -13,7 +13,7 @@ import { CustomRadio } from "@/components/ui/Radio"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -1025,7 +1025,6 @@ export default function Apl02Page() {
   const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string }>>([])
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK'>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
@@ -1494,29 +1493,28 @@ export default function Apl02Page() {
     })
   })()
 
-  const allSigned = isAsesor
-    ? asesorHasSigned  // Asesor: only check if this asesor has signed
-    : asesiHasSigned && allAsesorSigned  // Asesi: check asesi + all asesor
+  // allSigned & missingLabels now handled by useSigningState hook
 
-  const missingAsesorLabels = (() => {
-    if (tahap === 0 || isAsesor || asesorList.length === 0 || allAsesorSigned) return []
-    const missing: string[] = []
-    const subunits = Object.values(subunitBarcodes)
-    const anyMissingAsesor1 = subunits.some(sb => !sb.asesor1?.url)
-    const anyMissingAsesor2 = asesorList.length >= 2 && subunits.some(sb => !sb.asesor2?.url)
-    if (anyMissingAsesor1) missing.push("Asesor 1")
-    if (anyMissingAsesor2) missing.push("Asesor 2")
-    return missing
-  })()
-
-  // SSE for real-time signature updates (replaces polling)
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${_idIzin || idIzin}`,
-    onUpdate: fetchData
+  // Signing state hook — provides realtime sync (publishUpdate) and agreedChecklist state
+  // NOTE: per-subunit barcodes mean the hook's signing checks won't be accurate.
+  // We keep inline signing checks below and use the hook only for publishUpdate + agreedChecklist.
+  const signing = useSigningState({
+    pageKey: 'apl02',
+    isAsesor,
+    tahap,
+    barcodes: null,
+    setBarcodes: () => {},
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    isSaving,
+    idIzin: _idIzin || idIzin || undefined,
+    jadwalId,
+    onRefresh: fetchData,
   })
 
   const handleSubmit = async () => {
-    if (!agreedChecklist) {
+    if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -1792,7 +1790,7 @@ export default function Apl02Page() {
         }
 
         showSuccess('APL 02 berhasil ditandatangani!')
-        publishUpdate()
+        signing.publishUpdate()
         // Untuk tahap 0, langsung navigasi ke halaman berikutnya
         if (tahap === 0) {
           setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`), 500)
@@ -2348,8 +2346,8 @@ export default function Apl02Page() {
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <CustomCheckbox
-              checked={agreedChecklist}
-              onChange={() => setAgreedChecklist(!agreedChecklist)}
+              checked={signing.agreedChecklist}
+              onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen APL 02 (Asesmen Mandiri) ini dengan sebenar-benarnya.
@@ -2362,16 +2360,8 @@ export default function Apl02Page() {
           <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
             Kembali
           </ActionButton>
-          <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && !agreedChecklist)} onClick={handleSubmit}>
-            {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : (
-              allSigned
-                ? 'Lanjut ke MAPA-01'
-                : isAsesor
-                  ? asesorHasSigned ? 'Lanjut ke MAPA-01' : 'Simpan & Tanda Tangan'
-                  : asesiHasSigned
-                    ? allAsesorSigned ? 'Lanjut ke MAPA-01' : `Menunggu TTD: ${missingAsesorLabels.join(', ')}`
-                    : 'Simpan & Tanda Tangan'
-            )}
+          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
+            {signing.buttonText}
           </ActionButton>
         </div>
       </AsesiLayout>
