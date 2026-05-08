@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,26 +8,27 @@ import { ActionButton } from "@/components/ui/ActionButton"
 
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user } = useAuth()
-  const { idIzin: _idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const jadwalId = (location.state as any)?.jadwalId
   const [countdown, setCountdown] = useState(3)
 
   // Step 10 (Selesai) for AK01 Success
   const currentStep = 10
 
+  const isAsesor = user?.role?.name?.toLowerCase() === "asesor"
+
   const handleBackToDashboard = () => {
-    if (user?.role?.name?.toLowerCase() === "asesor") {
-      navigate("/asesor/asesi")
+    if (isAsesor && jadwalId) {
+      navigate(`/asesor/asesi/${jadwalId}`)
     } else {
-      navigate("/asesi/dashboard")
+      navigate(isAsesor ? "/asesor/asesi" : "/asesi/dashboard")
     }
   }
 
   useEffect(() => {
-    // Scroll to top when component mounts
     window.scrollTo(0, 0)
 
-    // Auto redirect after 3 seconds
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {

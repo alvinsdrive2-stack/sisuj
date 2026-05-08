@@ -123,35 +123,42 @@ export default function Ia08Page() {
         if (result.message === "Success" && result.data) {
           // Map soal.1 (referensi) to portfolio items
           if (result.data.soal?.["1"]) {
-            const referensiItems = result.data.soal["1"].map((item: any, index: number) => ({
-              id: item.id || index + 1,
-              dokumen: item.soal || "-",
-              valid_ya: false,
-              valid_tidak: false,
-              asli_ya: false,
-              asli_tidak: false,
-              terkini_ya: false,
-              terkini_tidak: false,
-              memadai_ya: false,
-              memadai_tidak: false,
-            }))
+            const savedApl2 = result.data.apl2_answers || {}
+            const referensiItems = result.data.soal["1"].map((item: any, index: number) => {
+              const saved = savedApl2[String(item.id)]
+              return {
+                id: item.id || index + 1,
+                dokumen: item.soal || "-",
+                valid_ya: saved?.valid === true,
+                valid_tidak: saved?.valid === false,
+                asli_ya: saved?.asli === true,
+                asli_tidak: saved?.asli === false,
+                terkini_ya: saved?.terkini === true,
+                terkini_tidak: saved?.terkini === false,
+                memadai_ya: saved?.memadai === true,
+                memadai_tidak: saved?.memadai === false,
+              }
+            })
             setPortfolioItems(referensiItems)
           }
 
           // Map soal.2 (unit/kuk) to wawancara items
           if (result.data.soal?.["2"]) {
+            const savedUnit = result.data.unit_answers || {}
             const wawancaraData = result.data.soal["2"].map((item: any, index: number) => ({
               id: item.id || index + 1,
               unit_kompetensi: item.unit?.kode || "-",
               no_elemen: parseInt(item.no) || index + 1,
               materi: item.subunit?.nama || "-",
-              checked: false,
+              checked: savedUnit[String(item.id)] === true,
             }))
             setWawancaraItems(wawancaraData)
           }
 
-          // Set bukti tambahan from soal.3 if exists
-          if (result.data.soal?.["3"] && result.data.soal["3"][0]) {
+          // Set bukti tambahan from recommendation or soal.3
+          if (result.data.recommendation?.bukti_tambahan) {
+            setBuktiTambahan(result.data.recommendation.bukti_tambahan)
+          } else if (result.data.soal?.["3"]?.[0]) {
             setBuktiTambahan(result.data.soal["3"][0].soal || "")
           }
 
@@ -169,9 +176,22 @@ export default function Ia08Page() {
             setIa08Referensi(result.data.referensi)
           }
 
+          // Restore recommendation state
+          if (result.data.recommendation) {
+            const rec = result.data.recommendation
+            if (rec.is_kompeten === true || rec.is_kompeten === false) {
+              setRekomendasiKompeten(rec.is_kompeten)
+            }
+            if (rec.rekomendasi_unit) setRekomendasiUnit(rec.rekomendasi_unit)
+            if (rec.rekomendasi_elemen) setRekomendasiElemen(rec.rekomendasi_elemen)
+            if (rec.rekomendasi_kuk) setRekomendasiKuk(rec.rekomendasi_kuk)
+          }
+
           // Store dokumen_id for POST
           if (result.data.dokumen_id) {
             setDokumenId(result.data.dokumen_id)
+          } else if (result.data.soal?.["2"]?.[0]?.id_dokumen) {
+            setDokumenId(Number(result.data.soal["2"][0].id_dokumen))
           }
         }
       }
@@ -187,8 +207,11 @@ export default function Ia08Page() {
     fetchIa08Data()
   }, [fetchIa08Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia08')) + 1]?.label
+
   const signing = useSigningState({
     pageKey: 'ia08',
+    nextPageName: nextStepLabel,
     isAsesor,
     tahap: _kegiatan?.tahap ?? 2,
     barcodes: barcodes as unknown as BarcodeState | null,
@@ -234,20 +257,24 @@ export default function Ia08Page() {
 
   const handleSave = async () => {
     if (hasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
+      // Asesi → navigate
+      if (!isAsesor) {
+        const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+        const nextStep = asesmenSteps[currentStepIndex + 1]
+        if (nextStep) {
+          const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+          navigate(nextPath)
+        } else {
+          navigate(`/asesi/asesmen/${id}/selesai`)
+        }
+        return
       }
-      return
-    }
-
-    if (!signing.agreedChecklist) {
-      showWarning("Silakan centang pernyataan terlebih dahulu")
-      return
+      // Asesor → fall through to re-save
+    } else {
+      if (!signing.agreedChecklist) {
+        showWarning("Silakan centang pernyataan terlebih dahulu")
+        return
+      }
     }
 
     setIsSaving(true)
@@ -487,9 +514,8 @@ export default function Ia08Page() {
             </tr>
             <tr>
               <td style={{ height: '80px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
-                <b>Sebagai berikut : Contoh</b>
+                <b>Sebagai berikut :</b>
                 <textarea
-                  value={buktiTambahan}
                   onChange={(e) => setBuktiTambahan(e.target.value)}
                   disabled={isFormDisabled}
                   style={{
@@ -722,11 +748,27 @@ export default function Ia08Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={signing.buttonDisabled}
+              disabled={isAsesor ? isSaving : signing.buttonDisabled}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : signing.buttonText}
+              {isSaving ? "Menyimpan..." : (isAsesor ? "Simpan & Tanda Tangan" : signing.buttonText)}
             </ActionButton>
+            {isAsesor && hasSigned && (
+              <ActionButton
+                variant="primary"
+                onClick={() => {
+                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+                  const nextStep = asesmenSteps[currentStepIndex + 1]
+                  if (nextStep) {
+                    navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+                  } else {
+                    navigate(`/asesi/asesmen/${id}/selesai`)
+                  }
+                }}
+              >
+                Lanjut ke {nextStepLabel || 'IA09'}
+              </ActionButton>
+            )}
           </div>
         </div>
       </ModularAsesiLayout>

@@ -247,25 +247,8 @@ export default function Mapa01Page() {
 
     setIsSaving(true)
     try {
-      const token = localStorage.getItem("access_token")
-
-      // POST data mapa01
-      const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/mapa01`, {
-        method: "POST",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
-
-      if (!response.ok) {
-        showWarning('Gagal menyimpan MAPA 01')
-        return
-      }
-
       // Generate QR (skip untuk tahap 0)
       if (tahap !== 0 && jadwalId) {
-        // Cek apakah QR sudah ada
         const needsQr = isAsesor
           ? !signing.asesorHasSigned
           : !signing.asesiHasSigned

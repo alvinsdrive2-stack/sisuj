@@ -44,7 +44,9 @@
       "Bash(npx vercel *)",
       "Bash(Get-Content \"c:\\\\LSP\\\\penyatuan\\\\sisuj\\\\src\\\\components\\\\mapa01\\\\Mapa01Section3.tsx\")",
       "Bash(Select-Object -First 180)",
-      "Bash(Get-ChildItem *)"
+      "Bash(Get-ChildItem *)",
+      "Bash(Select-String -Pattern '\"build\"|\"vercel\"')",
+      "Bash(vercel *)"
     ]
   },
   "enableAllProjectMcpServers": true,

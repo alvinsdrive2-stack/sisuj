@@ -147,8 +147,11 @@ export default function Ia09Page() {
 
   useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
+
   const signing = useSigningState({
     pageKey: 'ia09',
+    nextPageName: nextStepLabel,
     isAsesor,
     tahap: _kegiatan?.tahap ?? 2,
     barcodes: barcodes as unknown as BarcodeState | null,

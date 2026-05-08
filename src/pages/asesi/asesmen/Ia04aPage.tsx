@@ -181,6 +181,7 @@ export default function Ia04aPage() {
     fetchData()
   }, [fetchData])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04a')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04a',
     isAsesor,
@@ -193,6 +194,7 @@ export default function Ia04aPage() {
     isSaving,
     idIzin: id,
     jadwalId,
+    nextPageName: nextStepLabel,
     onRefresh: fetchData,
   })
 

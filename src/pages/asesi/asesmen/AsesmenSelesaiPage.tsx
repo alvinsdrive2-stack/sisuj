@@ -15,7 +15,7 @@ export default function AsesmenSelesaiPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, jadwalId } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
   const [countdown, setCountdown] = useState(3)
 
@@ -36,7 +36,11 @@ export default function AsesmenSelesaiPage() {
   const currentStep = asesmenSteps[asesmenSteps.length - 1]?.number || 5
 
   const handleBackToDashboard = () => {
-    navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
+    if (isAsesor && jadwalId) {
+      navigate(`/asesor/asesi/${jadwalId}`)
+    } else {
+      navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
+    }
   }
 
   useEffect(() => {

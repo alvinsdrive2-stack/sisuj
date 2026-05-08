@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -1495,15 +1495,43 @@ export default function Apl02Page() {
 
   // allSigned & missingLabels now handled by useSigningState hook
 
+  // Derive single barcode state from per-subunit barcodes for signing hook
+  const syntheticBarcodes = useMemo((): SubunitBarcodes | null => {
+    const items = Object.values(subunitBarcodes)
+    if (items.length === 0) return null
+    return {
+      asesi: items.find(b => b.asesi?.url)?.asesi || { url: null, tanggal: null, nama: null },
+      asesor1: items.find(b => b.asesor1?.url)?.asesor1 || null,
+      asesor2: items.find(b => b.asesor2?.url)?.asesor2 || null,
+    }
+  }, [subunitBarcodes])
+
+  const handleSetSyntheticBarcodes = useCallback((value: React.SetStateAction<SubunitBarcodes | null>) => {
+    setSubunitBarcodes(prev => {
+      const resolved = typeof value === 'function' ? value(null) : value
+      if (!resolved) return prev
+      const subunitIds = Object.keys(prev)
+      if (subunitIds.length === 0) return prev
+      const updated = { ...prev }
+      subunitIds.forEach(sid => {
+        const existing = updated[sid]
+        updated[sid] = {
+          asesi: (resolved.asesi?.url ? resolved.asesi : existing?.asesi) || { url: null, tanggal: null, nama: null },
+          asesor1: resolved.asesor1 !== undefined ? resolved.asesor1 : existing?.asesor1 ?? null,
+          asesor2: resolved.asesor2 !== undefined ? resolved.asesor2 : existing?.asesor2 ?? null,
+        }
+      })
+      return updated
+    })
+  }, [])
+
   // Signing state hook — provides realtime sync (publishUpdate) and agreedChecklist state
-  // NOTE: per-subunit barcodes mean the hook's signing checks won't be accurate.
-  // We keep inline signing checks below and use the hook only for publishUpdate + agreedChecklist.
   const signing = useSigningState({
     pageKey: 'apl02',
     isAsesor,
     tahap,
-    barcodes: null,
-    setBarcodes: () => {},
+    barcodes: syntheticBarcodes as any,
+    setBarcodes: handleSetSyntheticBarcodes as any,
     asesorList,
     userId: user?.id,
     userName: user?.name,
@@ -2192,7 +2220,7 @@ export default function Apl02Page() {
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                   <CustomCheckbox
                     checked={metodeAsesmen === 'observasi'}
-                    onChange={() => isAsesor && setMetodeAsesmen('observasi')}
+                    onChange={() => setMetodeAsesmen('observasi')}
                     disabled={!isAsesor}
                   />
                   <span>Observasi</span>
@@ -2203,7 +2231,7 @@ export default function Apl02Page() {
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                       <CustomCheckbox
                         checked={metodeAsesmen === 'portofolio'}
-                        onChange={() => isAsesor && setMetodeAsesmen('portofolio')}
+                        onChange={() => setMetodeAsesmen('portofolio')}
                         disabled={!isAsesor}
                       />
                       <span>Portofolio</span>

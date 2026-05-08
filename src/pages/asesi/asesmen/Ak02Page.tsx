@@ -169,6 +169,8 @@ export default function Ak02Page() {
 
   useEffect(() => { fetchAk02Data() }, [fetchAk02Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak02')) + 1]?.label
+
   // Signing state hook
   const signing = useSigningState({
     pageKey: 'ak02',
@@ -183,6 +185,7 @@ export default function Ak02Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchAk02Data,
+    nextPageName: nextStepLabel,
   })
 
   if (isLoading) {

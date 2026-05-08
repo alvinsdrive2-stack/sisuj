@@ -192,26 +192,39 @@ export default function AsesiPage() {
     if (phase === 'asesmen') {
       const awal = asesorNum === 1 ? absen.url_absen_asesor1_awal : absen.url_absen_asesor2_awal
       const akhir = asesorNum === 1 ? absen.url_absen_asesor1_akhir : absen.url_absen_asesor2_akhir
-      if (akhir) return 'Sudah ditinjau'
-      if (awal) return 'Butuh ditinjau'
-      return 'Butuh ditinjau'
+      if (akhir) return 'Sudah asesmen'
+      if (awal) return 'Belum asesmen'
+      return 'Butuh Ditinjau'
+    } else if (phase === 'praasesmen') {
+      const awal = asesorNum === 1 ? absen.url_absen_asesor1_pra_awal : absen.url_absen_asesor2_pra_awal
+      const akhir = asesorNum === 1 ? absen.url_absen_asesor1_pra_akhir : absen.url_absen_asesor2_pra_akhir
+
+      if (akhir) return 'Sudah Praasesmen'
+      if (awal) return 'Belum Praasesmen'
+      return 'Butuh Praasesmen'
     } else {
       const awal = asesorNum === 1 ? absen.url_absen_asesor1_pra_awal : absen.url_absen_asesor2_pra_awal
       const akhir = asesorNum === 1 ? absen.url_absen_asesor1_pra_akhir : absen.url_absen_asesor2_pra_akhir
 
-      if (akhir) return 'Sudah ditinjau'
-      if (awal) return 'Butuh ditinjau'
-      return 'Butuh ditinjau'
+      if (akhir) return 'Tinjau'
+      if (awal) return 'Tinjau'
+      return 'Tinjau'
     }
   }
 
   // Helper function to get status badge style
   const getStatusBadgeStyle = (status: string) => {
     switch (status) {
-      case 'Sudah ditinjau':
+      case 'Sudah asesmen':
+      case 'Sudah Praasesmen':
         return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-      case 'Sedang ditinjau':
-        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+      case 'Belum asesmen':
+      case 'Belum Praasesmen':
+        return 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+      case 'Butuh Ditinjau':
+      case 'Butuh Praasesmen':
+      case 'Tinjau':
+        return 'bg-slate-100 text-slate-700 hover:bg-slate-200'
       default:
         return 'bg-slate-100 text-slate-700 hover:bg-slate-200'
     }
@@ -455,24 +468,34 @@ export default function AsesiPage() {
               <p className="text-slate-500">Asesi belum/sedang mengerjakan</p>
             </div>
           </div>
-          {/* Badge Sudah ditinjau */}
+          {/* Badge Sudah asesmen / Sudah Praasesmen */}
           <div className="flex items-start gap-2">
             <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Check className="w-3 h-3 text-emerald-500" />
             </div>
             <div>
-              <span className="font-medium text-slate-700">Sudah ditinjau</span>
-              <p className="text-slate-500">Review asesor sudah selesai</p>
+              <span className="font-medium text-slate-700">Sudah asesmen / Sudah Praasesmen</span>
+              <p className="text-slate-500">Asesor sudah menyelesaikan review</p>
             </div>
           </div>
-          {/* Badge Perlu ditinjau */}
+          {/* Badge Belum asesmen / Belum Praasesmen */}
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <AlertCircle className="w-3 h-3 text-blue-500" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Belum asesmen / Belum Praasesmen</span>
+              <p className="text-slate-500">Asesor sudah absen awal tapi belum menyelesaikan review</p>
+            </div>
+          </div>
+          {/* Badge Butuh ditinjau */}
           <div className="flex items-start gap-2">
             <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
               <AlertCircle className="w-3 h-3 text-slate-400" />
             </div>
             <div>
-              <span className="font-medium text-slate-700">Perlu ditinjau</span>
-              <p className="text-slate-500">Review awal sudah mulai, perlu selesaikan</p>
+              <span className="font-medium text-slate-700">Butuh ditinjau</span>
+              <p className="text-slate-500">Asesor belum melakukan review</p>
             </div>
           </div>
         </div>
@@ -513,7 +536,9 @@ export default function AsesiPage() {
               const reviewStatus = asesorRole
                 ? (currentKegiatan?.tahap === 2
                     ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
-                    : getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2))
+                    : currentKegiatan?.tahap === 1
+                      ? getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2)
+                      : 'Butuh ditinjau')
                 : 'Butuh ditinjau'
 
               // Asesi selalu bisa diklik untuk masuk ke praasesi/asesmen

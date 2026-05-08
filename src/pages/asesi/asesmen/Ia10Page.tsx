@@ -179,8 +179,11 @@ export default function Ia10Page() {
 
   useEffect(() => { fetchIa10Data() }, [fetchIa10Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia10')) + 1]?.label
+
   const signing = useSigningState({
     pageKey: 'ia10',
+    nextPageName: nextStepLabel,
     isAsesor,
     tahap: _kegiatan?.tahap ?? 2,
     barcodes: barcodes as unknown as BarcodeState | null,
@@ -609,6 +612,11 @@ export default function Ia10Page() {
           )}
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+            {isAsesor && (
+              <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia08`)}>
+                Kembali ke IA.08
+              </ActionButton>
+            )}
             <ActionButton variant="secondary" onClick={() => navigate(-1)}>
               Kembali
             </ActionButton>

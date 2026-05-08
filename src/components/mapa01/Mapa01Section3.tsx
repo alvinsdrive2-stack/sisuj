@@ -117,8 +117,6 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false,
 
   const [items, setItems] = useState<Section3Item[]>(initialItems)
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
-  const kelompokTextareaRef = useRef<HTMLTextAreaElement>(null)
-  const [kelompokAlasan, setKelompokAlasan] = useState<Record<number, string>>({})
 
   const kelompokDefaultText = useMemo(() => {
     if (!kelompokKerja || kelompokKerja.length === 0) return ''
@@ -137,12 +135,11 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false,
   // Auto-resize all textareas
   const resizeAll = useCallback(() => {
     Object.values(textareaRefs.current).forEach(el => { if (el) autoResize(el) })
-    if (kelompokTextareaRef.current) autoResize(kelompokTextareaRef.current)
   }, [])
 
   useEffect(() => {
     resizeAll()
-  }, [items, kelompokAlasan, kelompokDefaultText, resizeAll])
+  }, [items, kelompokDefaultText, resizeAll])
 
   const handleRadioChange = (id: number, value: boolean) => {
     setItems(prev => prev.map(item => item.id === id ? { ...item, value } : item))
@@ -186,32 +183,31 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false,
                 {item.value && (
                   <div style={{ marginTop: '12px' }}>
                     <p style={{ fontSize: '11px', margin: '0 0 6px 0', fontWeight: '500' }}>Jika ada, tuliskan:</p>
-                    <textarea
-                      ref={(el) => { if (el) { textareaRefs.current[item.id] = el; autoResize(el) } }}
-                      value={item.alasan}
-                      onChange={(e) => { autoResize(e.target); handleAlasanChange(item.id, e.target.value) }}
-                      placeholder="Alasan/keterangan..."
-                      disabled={isFormDisabled}
-                      style={{ ...textareaBaseStyle(isFormDisabled), minHeight: '40px' }}
-                    />
-                  </div>
-                )}
-
-                {index === items.length - 1 && kelompokDefaultText && (
-                  <div style={{ marginTop: '16px', borderTop: BORDER_THIN, paddingTop: '8px' }}>
-                    <textarea
-                      ref={(el) => { if (el) { kelompokTextareaRef.current = el; autoResize(el) } }}
-                      value={kelompokDefaultText + (kelompokAlasan[0] ? '\n\n' + kelompokAlasan[0] : '')}
-                      onChange={(e) => {
-                        autoResize(e.target)
-                        const val = e.target.value
-                        if (val.startsWith(kelompokDefaultText)) {
-                          setKelompokAlasan(prev => ({ ...prev, [0]: val.slice(kelompokDefaultText.length).replace(/^\n\n/, '') }))
-                        }
-                      }}
-                      disabled={disabled}
-                      style={{ ...textareaBaseStyle(disabled), minHeight: '60px' }}
-                    />
+                    {index === items.length - 1 && kelompokDefaultText ? (
+                      <textarea
+                        ref={(el) => { if (el) { textareaRefs.current[item.id] = el; autoResize(el) } }}
+                        value={kelompokDefaultText + '\n\n' + item.alasan}
+                        onChange={(e) => {
+                          autoResize(e.target)
+                          const val = e.target.value
+                          if (val.startsWith(kelompokDefaultText)) {
+                            handleAlasanChange(item.id, val.slice(kelompokDefaultText.length).replace(/^\n\n/, ''))
+                          }
+                        }}
+                        placeholder="Alasan/keterangan..."
+                        disabled={isFormDisabled}
+                        style={{ ...textareaBaseStyle(isFormDisabled), minHeight: '60px' }}
+                      />
+                    ) : (
+                      <textarea
+                        ref={(el) => { if (el) { textareaRefs.current[item.id] = el; autoResize(el) } }}
+                        value={item.alasan}
+                        onChange={(e) => { autoResize(e.target); handleAlasanChange(item.id, e.target.value) }}
+                        placeholder="Alasan/keterangan..."
+                        disabled={isFormDisabled}
+                        style={{ ...textareaBaseStyle(isFormDisabled), minHeight: '40px' }}
+                      />
+                    )}
                   </div>
                 )}
               </td>

@@ -173,6 +173,8 @@ export default function Ia04bPage() {
     fetchData()
   }, [fetchData])
 
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04b',
     isAsesor,
@@ -185,11 +187,11 @@ export default function Ia04bPage() {
     isSaving,
     idIzin: id,
     jadwalId,
+    nextPageName: nextStepLabel,
     onRefresh: fetchData,
   })
 
   const canEdit = isAsesor && !signing.asesorHasSigned
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   const handleAnswerChange = (soalId: number, value: 'ya' | 'tidak') => {
     setAnswers(prev => ({

@@ -163,7 +163,7 @@ export default function FrAk04Page() {
     userId: user?.id,
     userName: user?.name,
     isSaving,
-    idIzin: actualIdIzin,
+    idIzin: actualIdIzin || idIzin,
     jadwalId,
     onRefresh: fetchAk04Data,
   })
@@ -205,21 +205,27 @@ export default function FrAk04Page() {
   }
 
   const handleSave = async () => {
+    const finalIdIzin = actualIdIzin || idIzin
+    if (!finalIdIzin) {
+      showWarning("ID Izin tidak ditemukan")
+      return
+    }
+
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-01`)
       return
     }
 
-    // Asesor just navigate without validation/saving (skip untuk tahap 0)
-    if (tahap !== 0 && isFormDisabled) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+    // Asesi already signed & all asesor signed → navigate
+    if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
+      navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
       return
     }
 
-    // Asesi already signed → navigate to next page (skip untuk tahap 0)
-    if (tahap !== 0 && signing.asesiHasSigned) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/k3-asesmen`)
+    // Asesor already signed → navigate
+    if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
+      navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
       return
     }
 
@@ -236,11 +242,6 @@ export default function FrAk04Page() {
     try {
       const token = localStorage.getItem("access_token")
 
-      if (!actualIdIzin) {
-        showWarning("ID Izin tidak ditemukan")
-        return
-      }
-
       // POST answers hanya jika ada jawaban
       if (hasAnswers || hasAlasan) {
         const kelompokId = ak04Data?.kelompoks?.[0]?.id || 1
@@ -255,7 +256,7 @@ export default function FrAk04Page() {
           alasan: alasanBanding
         }
 
-        const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak04`, {
+        const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/ak04`, {
           method: 'POST',
           headers: {
             "Content-Type": "application/json",
@@ -277,14 +278,25 @@ export default function FrAk04Page() {
       }
 
       // QR tetap digenerate meski jawaban kosong
-      if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
-        await signing.generateQR()
+      if (tahap !== 0 && jadwalId) {
+        const needsQr = isAsesor
+          ? !signing.asesorHasSigned
+          : !signing.asesiHasSigned
+        if (needsQr) {
+          const ok = await signing.generateQR()
+          if (ok) {
+            showSuccess('Dokumen berhasil ditandatangani!')
+            return
+          }
+          showError('Gagal membuat tanda tangan, coba lagi')
+          return
+        }
       }
 
       showSuccess('FR AK 04 berhasil disimpan!')
       signing.publishUpdate()
       if (tahap === 0) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-01`), 500)
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-01`), 500)
       }
     } catch (error) {
       console.error("Error saving AK04:", error)

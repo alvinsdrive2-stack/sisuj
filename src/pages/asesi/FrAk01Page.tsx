@@ -259,12 +259,8 @@ export default function FrAk01Page() {
     // If waiting for absen akhir before navigating
     if (pendingToSuccessPage) {
       setPendingToSuccessPage(false)
-      // Asesor redirects to asesor dashboard, asesi to success page
-      if (isAsesor) {
-        navigate(`/asesor/asesi/${jadwalId}`)
-      } else {
-        navigate(`/asesi/praasesmen/ak01-success`)
-      }
+      // Asesor & asesi both go to success page
+      navigate(`/asesi/praasesmen/ak01-success`, { state: { jadwalId } })
     }
   }
 
@@ -294,11 +290,7 @@ export default function FrAk01Page() {
         setShowAkhirModal(true)
         return
       }
-      if (isAsesor) {
-        navigate(`/asesor/asesi/${jadwalId}`)
-      } else {
-        navigate(`/asesi/praasesmen/ak01-success`)
-      }
+      navigate(`/asesi/praasesmen/ak01-success`, { state: { jadwalId } })
       return
     }
 

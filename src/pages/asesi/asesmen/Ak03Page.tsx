@@ -67,10 +67,12 @@ export default function Ak03Page() {
   const {
     showAwalModal,
     showAkhirModal,
+    setShowAkhirModal,
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
-    handleAkhirModalClose,
+    handleAkhirModalClose: _handleAkhirModalClose,
+    shouldShowAkhirModal,
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -89,6 +91,7 @@ export default function Ak03Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+  const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
 
   // Asesi fills form first, then signs. Asesor only signs after asesi signed.
   const isFormDisabled = isAsesor ? true : !!barcodes?.asesi?.url
@@ -126,6 +129,8 @@ export default function Ak03Page() {
 
   useEffect(() => { fetchAk03Data() }, [fetchAk03Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak03')) + 1]?.label
+
   // Signing state hook
   const signing = useSigningState({
     pageKey: 'ak03',
@@ -140,6 +145,7 @@ export default function Ak03Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchAk03Data,
+    nextPageName: nextStepLabel,
   })
 
   if (isLoading) {
@@ -185,8 +191,27 @@ export default function Ak03Page() {
 
   // Handle save - POST to API
   const handleSave = async () => {
-    // If user already signed → navigate to next page
-    if (signing.allSigned || (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
+    // If asesi already signed → check absen akhir before navigate
+    if (!isAsesor && signing.asesiHasSigned) {
+      const needsAbsenAkhir = await shouldShowAkhirModal()
+      if (needsAbsenAkhir) {
+        setPendingAfterAbsen(true)
+        setShowAkhirModal(true)
+        return
+      }
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
+    // If asesor already signed → navigate directly
+    if (isAsesor && signing.asesorHasSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -268,6 +293,19 @@ export default function Ak03Page() {
       showError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleAkhirModalClose = () => {
+    _handleAkhirModalClose()
+    if (pendingAfterAbsen) {
+      setPendingAfterAbsen(false)
+      const nextStep = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak03')) + 1]
+      if (nextStep) {
+        navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
     }
   }
 

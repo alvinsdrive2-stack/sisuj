@@ -214,8 +214,11 @@ export default function Ia02Page() {
 
   const [isSaving, setIsSaving] = useState(false)
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia02')) + 1]?.label
+
   const signing = useSigningState({
     pageKey: 'ia02',
+    nextPageName: nextStepLabel,
     isAsesor,
     tahap: 1,
     barcodes: barcodes as unknown as BarcodeState | null,

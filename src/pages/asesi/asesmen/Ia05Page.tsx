@@ -153,6 +153,7 @@ export default function Ia05Page() {
 
   useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia05',
     isAsesor,
@@ -165,6 +166,7 @@ export default function Ia05Page() {
     isSaving,
     idIzin: id,
     jadwalId,
+    nextPageName: nextStepLabel,
     onRefresh: fetchIa05Data,
   })
 

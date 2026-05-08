@@ -14,6 +14,8 @@ const PADDING = 2
 export function TimePickerModal({ isOpen, initialHour, initialMinute, onSave, onClose }: TimePickerModalProps) {
   const [hour, setHour] = useState(initialHour)
   const [minute, setMinute] = useState(initialMinute)
+  const [inputValue, setInputValue] = useState(`${initialHour}:${initialMinute}`)
+  const [isInputFocused, setIsInputFocused] = useState(false)
   const hourListRef = useRef<HTMLDivElement>(null)
   const minuteListRef = useRef<HTMLDivElement>(null)
   const hourContainerRef = useRef<HTMLDivElement>(null)
@@ -33,6 +35,7 @@ export function TimePickerModal({ isOpen, initialHour, initialMinute, onSave, on
     if (isOpen) {
       setHour(initialHour)
       setMinute(initialMinute)
+      setInputValue(`${initialHour}:${initialMinute}`)
       const hIdx = hours.indexOf(initialHour)
       const mIdx = minutes.indexOf(initialMinute)
       setHourTranslate(-hIdx * ITEM_HEIGHT)
@@ -190,9 +193,59 @@ export function TimePickerModal({ isOpen, initialHour, initialMinute, onSave, on
       >
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          <div style={{ fontSize: '42px', fontWeight: '300', color: '#000' }}>
-            {hour}:{minute}
-          </div>
+          {isInputFocused ? (
+            <input
+              autoFocus
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onBlur={() => {
+                setIsInputFocused(false)
+                const match = inputValue.match(/^(\d{1,2}):(\d{2})$/)
+                if (match) {
+                  const h = match[1].padStart(2, '0')
+                  const m = match[2].padStart(2, '0')
+                  if (Number(h) < 24 && Number(m) < 60) {
+                    setHour(h)
+                    setMinute(m)
+                    const hIdx = hours.indexOf(h)
+                    const mIdx = minutes.indexOf(m)
+                    setHourTranslate(-(hIdx >= 0 ? hIdx : 0) * ITEM_HEIGHT)
+                    setMinuteTranslate(-(mIdx >= 0 ? mIdx : 0) * ITEM_HEIGHT)
+                    return
+                  }
+                }
+                setInputValue(`${hour}:${minute}`)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.currentTarget.blur()
+                }
+                if (e.key === 'Escape') {
+                  setInputValue(`${hour}:${minute}`)
+                  setIsInputFocused(false)
+                }
+              }}
+              style={{
+                width: '160px',
+                fontSize: '42px',
+                fontWeight: '300',
+                color: '#000',
+                border: 'none',
+                borderBottom: '2px solid #007AFF',
+                outline: 'none',
+                textAlign: 'center',
+                background: 'transparent',
+                fontFamily: 'inherit',
+              }}
+            />
+          ) : (
+            <div
+              onClick={() => setIsInputFocused(true)}
+              style={{ fontSize: '42px', fontWeight: '300', color: '#000', cursor: 'text' }}
+            >
+              {hour}:{minute}
+            </div>
+          )}
           <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>Pilih Waktu</div>
         </div>
 

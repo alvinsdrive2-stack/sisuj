@@ -191,6 +191,8 @@ export default function Ak05Page() {
 
   useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak05')) + 1]?.label
+
   // Signing state hook — used for signing checks, button state, and realtime sync
   const signing = useSigningState({
     pageKey: 'ak05',
@@ -205,6 +207,7 @@ export default function Ak05Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchAk05Data,
+    nextPageName: nextStepLabel,
   })
 
   // Keep derived values for display & multi-asesi logic

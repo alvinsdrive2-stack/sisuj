@@ -89,10 +89,12 @@ export default function Ak06Page() {
   const {
     showAwalModal,
     showAkhirModal,
+    setShowAkhirModal,
     submitAbsenAwal,
     submitAbsenAkhir,
     handleAwalModalClose,
-    handleAkhirModalClose,
+    handleAkhirModalClose: _handleAkhirModalClose,
+    shouldShowAkhirModal,
   } = useAbsenCheck({
     phase: 'asesmen',
     role: 'auto',
@@ -120,6 +122,9 @@ export default function Ak06Page() {
     asesor1: null,
     asesor2: null
   })
+  const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
+
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak06')) + 1]?.label
 
   // Fetch data
   const fetchAk06Data = useCallback(async () => {
@@ -197,6 +202,7 @@ export default function Ak06Page() {
     isSaving,
     idIzin: id,
     jadwalId,
+    nextPageName: nextStepLabel,
     onRefresh: fetchAk06Data,
   })
 
@@ -238,8 +244,14 @@ export default function Ak06Page() {
   }
 
   const handleSave = async () => {
-    // If user already signed → navigate to next page
+    // If user already signed → check absen akhir before navigate
     if (hasSigned) {
+      const needsAbsenAkhir = await shouldShowAkhirModal()
+      if (needsAbsenAkhir) {
+        setPendingAfterAbsen(true)
+        setShowAkhirModal(true)
+        return
+      }
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -313,6 +325,21 @@ export default function Ak06Page() {
   // Handle absen akhir submit - navigate after success
   const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
     await submitAbsenAkhir(imageBlob)
+  }
+
+  const handleAkhirModalClose = () => {
+    _handleAkhirModalClose()
+    if (pendingAfterAbsen) {
+      setPendingAfterAbsen(false)
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+    }
   }
 
   return (

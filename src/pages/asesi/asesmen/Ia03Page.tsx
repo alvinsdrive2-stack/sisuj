@@ -220,8 +220,11 @@ export default function Ia03Page() {
     fetchData()
   }, [fetchData])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia03')) + 1]?.label
+
   const signing = useSigningState({
     pageKey: 'ia03',
+    nextPageName: nextStepLabel,
     isAsesor,
     tahap: 1,
     barcodes: barcodes as unknown as BarcodeState | null,
