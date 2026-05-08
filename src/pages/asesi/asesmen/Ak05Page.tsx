@@ -46,7 +46,7 @@ export default function Ak05Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
@@ -64,7 +64,7 @@ export default function Ak05Page() {
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode)
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check
@@ -575,6 +575,31 @@ export default function Ak05Page() {
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
+          {/* Pernyataan Checkbox */}
+          {!signing.allSigned && (
+          <div
+            style={{
+              background: "#fff",
+              border: "1px solid #999",
+              borderRadius: "4px",
+              padding: "16px",
+              marginBottom: "16px",
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "flex-start", gap: "10px", cursor: "pointer" }}>
+              <CustomCheckbox
+                checked={signing.agreedChecklist}
+                onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                disabled={!isAsesor || signing.allSigned}
+                style={{ marginTop: "2px" }}
+              />
+              <span style={{ fontSize: "13px", color: "#333" }}>
+                Saya menyatakan data ini telah diisi dengan benar.
+              </span>
+            </label>
+          </div>
+          )}
+
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton
