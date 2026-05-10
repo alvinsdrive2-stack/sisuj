@@ -334,7 +334,7 @@ export default function FrAk01Page() {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ answers, waktu: waktuAk01 }),
+        body: JSON.stringify({ answers, waktu: waktuAk01 || `${jam}:${menit} - Selesai` }),
       })
 
       if (response.ok) {

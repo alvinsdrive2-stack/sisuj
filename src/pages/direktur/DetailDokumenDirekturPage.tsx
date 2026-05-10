@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
-import { createPortal } from "react-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, AlertCircle, ExternalLink, Check } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, Check } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -16,15 +15,18 @@ import { API_BASE_URL } from "@/config/api"
 interface DokumenDirekturResponse {
   message: string
   data: {
-    sk_pelaksanaan_uji: {
-      link: string
-      is_approved: boolean
-    } | null
+    sk_pelaksanaan_uji: string | null
     spt_asesor: string | null
     spt_komtek: string | null
     sk_komtek: string | null
     ba_komtek: string | null
-    is_approved: boolean
+    approval_status: {
+      sk_pelaksanaan_uji: boolean
+      spt_asesor: boolean
+      spt_komtek: boolean
+      sk_komtek: boolean
+      ba_komtek: { komtek1: boolean; komtek2: boolean; komtek3: boolean }
+    }
   }
 }
 
@@ -34,20 +36,21 @@ interface DokumenDirekturItem {
   url: string | null
 }
 
-const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: keyof DokumenDirekturResponse['data']; label: string }> = [
-  { key: 'sk_pelaksanaan_uji', label: 'SK Pelaksanaan Uji' },
-  { key: 'spt_asesor', label: 'SPT Asesor' },
-  { key: 'spt_komtek', label: 'SPT Komtek' },
+interface SelectedDokumen {
+  key: string
+  url: string
+  title: string
+}
+
+type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'spt_komtek' | 'sk_komtek' | 'ba_komtek'
+
+const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEndpoint?: string }> = [
+  { key: 'sk_pelaksanaan_uji', label: 'SK Pelaksanaan Uji', approveEndpoint: '/direktur/approve-sk-pelaksanaan-uji' },
+  { key: 'spt_asesor', label: 'SPT Asesor', approveEndpoint: '/direktur/approve-spt-asesor' },
+  { key: 'spt_komtek', label: 'SPT Komtek', approveEndpoint: '/direktur/approve-spt-komtek' },
   { key: 'sk_komtek', label: 'SK Komtek' },
   { key: 'ba_komtek', label: 'BA Komtek' },
 ]
-
-const EMBED_BLOCKED_DOMAINS = ['lspgatensi.id']
-
-function isEmbedBlocked(url: string | null): boolean {
-  if (!url) return true
-  return EMBED_BLOCKED_DOMAINS.some(domain => url.includes(domain))
-}
 
 export default function DetailDokumenDirekturPage() {
   const { id } = useParams<{ id: string }>()
@@ -59,10 +62,9 @@ export default function DetailDokumenDirekturPage() {
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
-  const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string } | null>(null)
-  const [showTtdConfirmation, setShowTtdConfirmation] = useState(false)
-  const [isGeneratingSk, setIsGeneratingSk] = useState(false)
-  const [isApproved, setIsApproved] = useState<boolean | null>(null)
+  const [selectedDokumen, setSelectedDokumen] = useState<SelectedDokumen | null>(null)
+  const [isSigning, setIsSigning] = useState(false)
+  const [approvedDocs, setApprovedDocs] = useState<Set<string>>(new Set())
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
@@ -108,7 +110,6 @@ export default function DetailDokumenDirekturPage() {
         if (response.ok) {
           const result: DokumenDirekturResponse = await response.json()
           setDokumenDirektur(result.data)
-          setIsApproved(result.data.is_approved ?? null)
         } else {
           showError('Gagal memuat dokumen direktur')
         }
@@ -135,22 +136,76 @@ export default function DetailDokumenDirekturPage() {
     openDokumenModal(asesi.id_izin, asesi.nama, true)
   }
 
-  const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => {
-    // Special handling for sk_pelaksanaan_uji which is now an object
-    if (config.key === 'sk_pelaksanaan_uji') {
-      const obj = dokumenDirektur?.[config.key] as { link?: string; is_approved?: boolean } | null
-      return {
-        key: config.key,
-        label: config.label,
-        url: obj?.link || null
+  const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
+    key: config.key,
+    label: config.label,
+    url: (dokumenDirektur?.[config.key as keyof typeof dokumenDirektur] as string | null) || null,
+  }))
+
+  const handleSignDokumen = async (docKey: string) => {
+    if (!id) return
+
+    const config = DOKUMEN_DIREKTUR_CONFIG.find(c => c.key === docKey)
+    if (!config?.approveEndpoint) {
+      showError('Dokumen ini tidak perlu ditandatangani')
+      return
+    }
+
+    setIsSigning(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}${config.approveEndpoint}/${id}`, {
+        method: 'POST',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        setApprovedDocs(prev => new Set(prev).add(docKey))
+        setSelectedDokumen(null)
+
+        // Update approval_status locally
+        setDokumenDirektur(prev => {
+          if (!prev) return prev
+          const status = prev.approval_status
+          if (docKey in status) {
+            return { ...prev, approval_status: { ...status, [docKey]: true } }
+          }
+          return prev
+        })
+
+        showSuccess(`${config.label} berhasil ditandatangani!`)
+      } else {
+        const errBody = await response.text()
+        console.error(`Failed to approve ${docKey}:`, errBody)
+        showError(`Gagal menandatangani ${config.label}`)
       }
+    } catch (error) {
+      console.error(`Error approving ${docKey}:`, error)
+      showError('Terjadi kesalahan')
+    } finally {
+      setIsSigning(false)
     }
-    return {
-      key: config.key,
-      label: config.label,
-      url: dokumenDirektur?.[config.key] as string | null || null
+  }
+
+  const isDocApproved = (docKey: string): boolean => {
+    const status = dokumenDirektur?.approval_status as Record<string, boolean | object> | undefined
+    if (status && docKey in status) {
+      const val = status[docKey]
+      if (typeof val === 'boolean') return val
     }
-  })
+    return approvedDocs.has(docKey)
+  }
+
+  const getBaKomtekPending = (): string[] => {
+    const baStatus = dokumenDirektur?.approval_status?.ba_komtek
+    if (!baStatus || typeof baStatus === 'boolean') return []
+    return Object.entries(baStatus)
+      .filter(([, v]) => !v)
+      .map(([k]) => k)
+  }
 
   return (
     <>
@@ -191,7 +246,7 @@ export default function DetailDokumenDirekturPage() {
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                   {kegiatan.tuk?.nama?.toUpperCase() || ''}
-                </p> 
+                </p>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">Asesor | {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''}</p>
 
                 <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
@@ -223,17 +278,6 @@ export default function DetailDokumenDirekturPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Tanda Tangan Button - Single button for all direktur docs */}
-                {isApproved !== true && (
-                  <button
-                    onClick={() => setShowTtdConfirmation(true)}
-                    className="w-full px-4 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>TANDA TANGAN</span>
-                  </button>
-                )}
               </div>
             </div>
           </div>
@@ -245,7 +289,7 @@ export default function DetailDokumenDirekturPage() {
             <FileText className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-slate-700">Panduan Direktur</span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
             <div className="flex items-start gap-2">
               <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Users className="w-3 h-3 text-primary" />
@@ -260,17 +304,26 @@ export default function DetailDokumenDirekturPage() {
                 <Check className="w-3 h-3 text-emerald-500" />
               </div>
               <div>
-                <span className="font-medium text-slate-700">Badge Kompeten</span>
-                <p className="text-slate-500">Status kelulusan asesi</p>
+                <span className="font-medium text-slate-700">Hijau = sudah TTD</span>
+                <p className="text-slate-500">Dokumen sudah ditandatangani</p>
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <FileText className="w-3 h-3 text-blue-500" />
+              <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileText className="w-3 h-3 text-red-600" />
               </div>
               <div>
-                <span className="font-medium text-slate-700">Dokumen Direktur</span>
-                <p className="text-slate-500">Klik untuk melihat dokumen</p>
+                <span className="font-medium text-slate-700">Merah = perlu TTD</span>
+                <p className="text-slate-500">Dokumen tersedia, perlu ditandatangani</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileText className="w-3 h-3 text-slate-400" />
+              </div>
+              <div>
+                <span className="font-medium text-slate-700">Abu = belum tersedia</span>
+                <p className="text-slate-500">Dokumen belum digenerate</p>
               </div>
             </div>
           </div>
@@ -350,31 +403,52 @@ export default function DetailDokumenDirekturPage() {
             <CardContent className="space-y-3">
               {direkturDocuments.map((doc) => {
                 const hasDocument = !!doc.url
+                const alreadyApproved = isDocApproved(doc.key)
+                const hasApproveEndpoint = DOKUMEN_DIREKTUR_CONFIG.find(c => c.key === doc.key)?.approveEndpoint
+                const isBaKomtek = doc.key === 'ba_komtek'
+                const baPending = isBaKomtek ? getBaKomtekPending() : []
+                const baAllApproved = isBaKomtek && baPending.length === 0
                 return (
                   <Button
                     key={doc.key}
                     variant="outline"
-                    className="w-full h-16 border-primary/20 hover:bg-primary/5 hover:border-primary flex items-center justify-between px-4"
+                    className={`w-full h-auto min-h-16 flex items-center justify-between px-4 ${
+                      alreadyApproved || baAllApproved
+                        ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
+                        : 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400'
+                    }`}
                     disabled={!hasDocument}
                     onClick={() => {
                       if (!hasDocument) return
-                      if (isEmbedBlocked(doc.url)) {
-                        window.open(doc.url!, '_blank', 'noopener,noreferrer')
-                      } else {
-                        setSelectedDokumen({ url: doc.url!, title: doc.label })
-                      }
+                      setSelectedDokumen({ key: doc.key, url: doc.url!, title: doc.label })
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`w-5 h-5 ${hasDocument ? 'text-primary' : 'text-slate-400'}`} />
+                      <FileText className={`w-5 h-5 ${alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
                       <div className="text-left">
-                        <span className="text-sm font-semibold block">{doc.label}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold block">{doc.label}</span>
+                          {(alreadyApproved || baAllApproved) && (
+                            <Check className="w-4 h-4 text-emerald-500" />
+                          )}
+                        </div>
                         <span className="text-xs text-muted-foreground">
-                          {hasDocument ? 'Klik untuk buka' : 'Belum tersedia'}
+                          {alreadyApproved || baAllApproved
+                            ? 'Sudah ditandatangani'
+                            : isBaKomtek && baPending.length > 0
+                              ? `Belum diapprove: ${baPending.join(', ')}`
+                            : hasDocument
+                              ? 'Klik untuk tanda tangan'
+                              : 'Belum tersedia'
+                          }
                         </span>
                       </div>
                     </div>
-                    {hasDocument && <ExternalLink className="w-5 h-5 text-primary" />}
+                    {hasDocument && !alreadyApproved && !baAllApproved && hasApproveEndpoint && (
+                      <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                        Perlu TTD
+                      </span>
+                    )}
                   </Button>
                 )
               })}
@@ -386,145 +460,17 @@ export default function DetailDokumenDirekturPage() {
       {/* Dokumen Viewer Modal */}
       <DokumenViewerModal
         isOpen={selectedDokumen !== null}
-        onClose={() => setSelectedDokumen(null)}
+        onClose={() => {
+          if (!isSigning) setSelectedDokumen(null)
+        }}
         url={selectedDokumen?.url || null}
         title={selectedDokumen?.title || ''}
+        onSign={selectedDokumen?.key && DOKUMEN_DIREKTUR_CONFIG.find(c => c.key === selectedDokumen.key)?.approveEndpoint && !isDocApproved(selectedDokumen.key)
+          ? () => handleSignDokumen(selectedDokumen.key!)
+          : undefined
+        }
+        isSigning={isSigning}
       />
-
-      {/* TTD Confirmation Modal - Portal */}
-      {showTtdConfirmation && createPortal(
-        <div
-          onClick={() => setShowTtdConfirmation(false)}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] p-4"
-          style={{
-            animation: 'fadeIn 0.3s ease-out'
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6"
-            style={{
-              animation: 'slideUp 0.3s ease-out'
-            }}
-          >
-            <style>{`
-              @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-              }
-              @keyframes slideUp {
-                from {
-                  opacity: 0;
-                  transform: translateY(20px) scale(0.95);
-                }
-                to {
-                  opacity: 1;
-                  transform: translateY(0) scale(1);
-                }
-              }
-            `}</style>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <AlertCircle className="w-6 h-6 text-blue-900" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">Konfirmasi Tanda Tangan</h3>
-                <p className="text-sm text-slate-600">Pastikan Anda telah membaca semua dokumen</p>
-              </div>
-            </div>
-
-            <div className="mb-6 p-4 bg-slate-50 rounded-lg">
-              <p className="text-sm text-slate-700 mb-3">Dengan menandatangani, Anda menyatakan bahwa:</p>
-              <ul className="text-sm text-slate-600 space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 mt-0.5">•</span>
-                  <span>Semua dokumen telah dibaca dan dipahami</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 mt-0.5">•</span>
-                  <span>Data yang tertera sudah benar dan lengkap</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-amber-600 mt-0.5">•</span>
-                  <span>Bertanggung jawab atas keputusan yang dibuat</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowTtdConfirmation(false)}
-                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors font-medium"
-              >
-                Batal
-              </button>
-              <button
-                onClick={async () => {
-                  if (!id) return
-
-                  setIsGeneratingSk(true)
-                  try {
-                    const token = localStorage.getItem("access_token")
-                    const response = await fetch(`${API_BASE_URL}/dokumen/sk/${id}`, {
-                      method: 'POST',
-                      headers: {
-                        "Accept": "application/json",
-                        "Authorization": `Bearer ${token}`,
-                      },
-                    })
-
-                    if (response.ok) {
-                      const result = await response.json()
-                      // Update dokumenDirektur with new URLs from response
-                      if (result.data) {
-                        setDokumenDirektur(prev => ({
-                          sk_pelaksanaan_uji: result.data.sk_pelaksanaan_uji ? {
-                            link: result.data.sk_pelaksanaan_uji.url,
-                            is_approved: true
-                          } : (prev?.sk_pelaksanaan_uji ?? null),
-                          spt_asesor: prev?.spt_asesor ?? null,
-                          spt_komtek: prev?.spt_komtek ?? null,
-                          sk_komtek: result.data.sk_komtek?.url ?? prev?.sk_komtek ?? null,
-                          ba_komtek: prev?.ba_komtek ?? null,
-                          is_approved: true,
-                        }))
-                        setIsApproved(true)
-                      }
-                      setShowTtdConfirmation(false)
-                      showSuccess('SK dokumen berhasil dibuat!')
-
-                      // Open the first available direktur document for signing
-                      const firstAvailableDoc = direkturDocuments.find(doc => doc.url !== null)
-                      if (firstAvailableDoc) {
-                        setSelectedDokumen({ url: firstAvailableDoc.url!, title: firstAvailableDoc.label })
-                      }
-                    } else {
-                      showError('Gagal membuat SK dokumen')
-                    }
-                  } catch (error) {
-                    console.error('Error generating SK:', error)
-                    showError('Terjadi kesalahan saat membuat SK')
-                  } finally {
-                    setIsGeneratingSk(false)
-                  }
-                }}
-                disabled={isGeneratingSk}
-                className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg hover:bg-blue-900 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isGeneratingSk ? (
-                  <>
-                    <SimpleSpinner size="sm" />
-                    Memproses...
-                  </>
-                ) : (
-                  'Ya, Lanjutkan'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </>
   )
 }

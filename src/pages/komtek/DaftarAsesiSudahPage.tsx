@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, AlertCircle } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, AlertCircle, Check } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -27,9 +27,46 @@ export default function DaftarAsesiSudahPage() {
   const [komtekFiles, setKomtekFiles] = useState<KomtekFiles>({})
   const [komtekFilesLoading, setKomtekFilesLoading] = useState(false)
   const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string } | null>(null)
+  const [signedAsesiIds, setSignedAsesiIds] = useState<Set<string>>(new Set())
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
+
+  // Fetch rekomendasi status for all asesi to mark signed ones
+  useEffect(() => {
+    if (asesiList.length === 0) return
+
+    const fetchSignedStatus = async () => {
+      const token = localStorage.getItem("access_token")
+      const userData = localStorage.getItem("user_data")
+      const currentUserId = userData ? JSON.parse(userData)?.id?.toString() : null
+      if (!currentUserId || !token) return
+
+      const results = await Promise.all(
+        asesiList.map(async (asesi) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesi.id_izin}`, {
+              headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+            })
+            if (!res.ok) return null
+            const data = await res.json()
+            for (const key of ['komtek1', 'komtek2', 'komtek3']) {
+              if (data[key]?.id === currentUserId && data[key]?.rekomendasi !== null) {
+                return asesi.id_izin
+              }
+            }
+          } catch (e) {
+            console.error(e)
+          }
+          return null
+        })
+      )
+
+      setSignedAsesiIds(new Set(results.filter(Boolean) as string[]))
+    }
+
+    fetchSignedStatus()
+  }, [asesiList])
 
   // Fetch komtek files
   useEffect(() => {
@@ -208,6 +245,15 @@ export default function DaftarAsesiSudahPage() {
               <p className="text-slate-500">Button akan disabled jika belum ada</p>
             </div>
           </div>
+          <div className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Check className="w-3 h-3 text-emerald-500" />
+            </div>
+            <div>
+              <span className="font-medium text-slate-700">Signed = sudah ditandatangani</span>
+              <p className="text-slate-500">Asesi sudah diberi rekomendasi</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -242,13 +288,32 @@ export default function DaftarAsesiSudahPage() {
                   onClick={() => openDokumenModal(asesi.id_izin, asesi.nama)}
                   className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{index + 1}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">{index + 1}</span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                    <div className="flex items-center gap-2">
+                      {signedAsesiIds.has(asesi.id_izin) && (
+                        <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          <Check className="w-3 h-3" />
+                          Signed
+                        </div>
+                      )}
+                      {asesi.kompeten && (
+                        <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                          asesi.kompeten === 'K'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {asesi.kompeten}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

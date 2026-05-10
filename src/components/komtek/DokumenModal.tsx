@@ -623,47 +623,38 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                 onClick={() => {
                   if (readOnly && isLastDoc) {
                     onClose()
+                  } else if (isLastDoc && isCompleted) {
+                    onClose()
                   } else if (isLastDoc && !isCompleted) {
                     setShowConfirmModal(true)
                   } else if (!isLastDoc) {
                     goToNextDoc()
                   }
                 }}
-                disabled={isLastDoc && isCompleted && !readOnly}
+                disabled={false}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   padding: '8px 16px',
-                  background: readOnly
+                  background: readOnly || isCompleted
                     ? '#10b981'
                     : isLastDoc
-                      ? isCompleted
-                        ? '#9ca3af'
-                        : '#f59e0b'
+                      ? '#f59e0b'
                       : '#10b981',
                   color: '#fff',
                   fontSize: '13px',
                   fontWeight: '600',
                   borderRadius: '20px',
                   border: 'none',
-                  cursor: (isLastDoc && isCompleted && !readOnly) ? 'not-allowed' : 'pointer',
-                  opacity: (isLastDoc && isCompleted && !readOnly) ? 0.7 : 1,
+                  cursor: 'pointer',
                   transition: 'all 0.2s'
                 }}
                 onMouseEnter={(e) => {
-                  if (!readOnly && !(isLastDoc && isCompleted)) {
-                    e.currentTarget.style.background = isLastDoc ? '#d97706' : '#059669'
-                  } else if (readOnly) {
-                    e.currentTarget.style.background = '#059669'
-                  }
+                  e.currentTarget.style.background = '#059669'
                 }}
                 onMouseLeave={(e) => {
-                  if (!readOnly && !(isLastDoc && isCompleted)) {
-                    e.currentTarget.style.background = isLastDoc ? '#f59e0b' : '#10b981'
-                  } else if (readOnly) {
-                    e.currentTarget.style.background = '#10b981'
-                  }
+                  e.currentTarget.style.background = readOnly || isCompleted ? '#10b981' : isLastDoc ? '#f59e0b' : '#10b981'
                 }}
               >
                 {readOnly && isLastDoc ? (
@@ -673,7 +664,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                   </>
                 ) : isLastDoc ? (
                   isCompleted ? (
-                    'Sudah Dinilai'
+                    'Tutup'
                   ) : (
                     <>
                       Lanjut ke Penilaian
