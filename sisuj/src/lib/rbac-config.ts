@@ -4,8 +4,6 @@ import {
   FileText,
   Users,
   Calendar,
-  ClipboardCheck,
-  Shield,
   Settings,
   UserCheck,
   Upload,
@@ -16,6 +14,7 @@ import {
 
 // Role Types
 export type UserRole =
+  | "superadmin"
   | "Admin LSP"
   | "Direktur LSP"
   | "Manajer Sertifikasi"
@@ -59,7 +58,7 @@ export interface RoleConfig {
 }
 
 // Role-based Configuration
-export const roleConfig: Record<UserRole, RoleConfig> = {
+export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
   "Admin LSP": {
     name: "Admin LSP",
     layout: "dashboard-admin",
@@ -141,11 +140,6 @@ export const roleConfig: Record<UserRole, RoleConfig> = {
         icon: LayoutDashboard
       },
       {
-        title: "Verifikasi Asesi",
-        path: "/admin-tuk/verification",
-        icon: Shield
-      },
-      {
         title: "Jadwal Asesmen",
         path: "/admin-tuk/schedule",
         icon: Calendar
@@ -162,16 +156,6 @@ export const roleConfig: Record<UserRole, RoleConfig> = {
         title: "Dashboard",
         path: "/asesor/dashboard",
         icon: LayoutDashboard
-      },
-      {
-        title: "Jadwal Asesmen",
-        path: "/asesor/schedule",
-        icon: Calendar
-      },
-      {
-        title: "Penilaian",
-        path: "/asesor/assessment",
-        icon: ClipboardCheck
       },
       {
         title: "Daftar Asesi",

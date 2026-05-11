@@ -3,16 +3,24 @@ import { Badge } from "@/components/ui/badge"
 import { User, FileCheck, Calendar, Clock, Upload, AlertCircle, CheckCircle2, Play } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useEffect, useState } from "react"
 
 export default function DashboardAsesi() {
   const navigate = useNavigate()
   const { kegiatan, isLoading, error } = useKegiatanAsesi()
+  const [asesiId, setAsesiId] = useState<string | undefined>(undefined)
 
-  console.log('=== Dashboard Asesi ===')
-  console.log('isLoading:', isLoading)
-  console.log('error:', error)
-  console.log('kegiatan:', kegiatan)
+  // Fetch jenjang from data-dokumen API once we have the asesi ID
+  const { jenjang } = useDataDokumenAsesmen(asesiId)
+
+  // Get asesi ID from kegiatan
+  useEffect(() => {
+    if (kegiatan?.id_izin) {
+      setAsesiId(kegiatan.id_izin)
+    }
+  }, [kegiatan])
 
   const asesiStats = [
     {
@@ -29,7 +37,16 @@ export default function DashboardAsesi() {
       icon: FileCheck,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
-      action: () => navigate("/asesi/assessment")
+      action: () => {
+        if (asesiId) {
+          const jenjangNum = parseInt(jenjang || "0")
+          if (jenjangNum < 4) {
+            navigate(`/asesi/asesmen/${asesiId}/ia01`)
+          } else {
+            navigate(`/asesi/asesmen/${asesiId}/ia04a`)
+          }
+        }
+      }
     },
     {
       title: "Jadwal Asesmen",
@@ -39,7 +56,16 @@ export default function DashboardAsesi() {
       icon: Calendar,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
-      action: () => navigate("/asesi/assessment")
+      action: () => {
+        if (asesiId) {
+          const jenjangNum = parseInt(jenjang || "0")
+          if (jenjangNum < 4) {
+            navigate(`/asesi/asesmen/${asesiId}/ia01`)
+          } else {
+            navigate(`/asesi/asesmen/${asesiId}/ia04a`)
+          }
+        }
+      }
     },
     {
       title: "Dokumen",
@@ -99,6 +125,16 @@ export default function DashboardAsesi() {
         return "bg-amber-100 text-amber-700"
       default:
         return "bg-slate-100 text-slate-700"
+    }
+  }
+
+  const handleNavigateToAsesmen = () => {
+    if (!asesiId) return
+    const jenjangNum = parseInt(jenjang || "0")
+    if (jenjangNum < 4) {
+      navigate(`/asesi/asesmen/${asesiId}/ia01`)
+    } else {
+      navigate(`/asesi/asesmen/${asesiId}/ia04a`)
     }
   }
 
@@ -176,8 +212,9 @@ export default function DashboardAsesi() {
               </div>
 
               <button
-                onClick={() => navigate("/asesi/assessment")}
-                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 font-medium"
+                onClick={handleNavigateToAsesmen}
+                disabled={!asesiId}
+                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Play className="w-5 h-5" />
                 Lihat Detail Sertifikasi
@@ -272,8 +309,9 @@ export default function DashboardAsesi() {
               <p className="text-sm text-slate-600">Lengkapi dokumen persyaratan</p>
             </button>
             <button
-              onClick={() => navigate("/asesi/assessment")}
-              className="p-4 border border-slate-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left"
+              onClick={handleNavigateToAsesmen}
+              disabled={!asesiId}
+              className="p-4 border border-slate-200 rounded-lg hover:border-primary hover:bg-primary/5 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <FileCheck className="w-6 h-6 text-primary mb-2" />
               <p className="font-semibold text-slate-800">Cek Status Sertifikasi</p>

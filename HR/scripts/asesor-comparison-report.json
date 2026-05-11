@@ -1,0 +1,4792 @@
+{
+  "summary": {
+    "totalExcelRows": 1958,
+    "uniqueExcelNumbers": 238,
+    "foundInDatabase": 700,
+    "notFoundInDatabase": 0
+  },
+  "asesorsMissingInDb": [],
+  "asesorsFoundButMissingAskomNumber": [
+    {
+      "nama": "Ir. Edison Lumban Toruan",
+      "noRegistrasiAskom": "74312 2424 4 0192574 2024",
+      "databaseId": 4,
+      "databaseSkk": "F 2100 00167 2022 0024000 SI 10",
+      "databaseMet": "MET.000.006500 2021"
+    },
+    {
+      "nama": "Muhammad Fakhriansyah",
+      "noRegistrasiAskom": "74312 2424 4 0192574 2024",
+      "databaseId": 1871,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Fifin Novarina",
+      "noRegistrasiAskom": "74312 2424 4 0192574 2024",
+      "databaseId": 6,
+      "databaseSkk": "F 2146 00746 2022 0026624 SI 03",
+      "databaseMet": "MET.000.006502 2021"
+    },
+    {
+      "nama": "Ir. Anak Agung Gde Sawitera",
+      "noRegistrasiAskom": "74312 2424 4 0192574 2024",
+      "databaseId": 12,
+      "databaseSkk": "F 2146 01600 2022 0031778 SI 10",
+      "databaseMet": "MET.000.006503 2021"
+    },
+    {
+      "nama": "Ir. Sahat Oloan Sihombing",
+      "noRegistrasiAskom": "74312 2424 4 0192574 2024",
+      "databaseId": 15,
+      "databaseSkk": "F 2100 00486 2022 0030275 SI 10",
+      "databaseMet": "MET.000.006504 2021"
+    },
+    {
+      "nama": "Joseph Rudolf Sinaga",
+      "noRegistrasiAskom": "93000 2419 0127569 2021",
+      "databaseId": 16,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006514 2021"
+    },
+    {
+      "nama": "Effendi",
+      "noRegistrasiAskom": "74312 2424 4 0190210 2024",
+      "databaseId": 17,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006516 2021"
+    },
+    {
+      "nama": "Ir. Sudirman Hafid",
+      "noRegistrasiAskom": "74312 2424 4 0190210 2024",
+      "databaseId": 21,
+      "databaseSkk": "F 2146 00443 2022 0028216 SI 10",
+      "databaseMet": "MET.000.006416 2021"
+    },
+    {
+      "nama": "Akhmadi Hafid",
+      "noRegistrasiAskom": "74312 2424 4 0190207 2024",
+      "databaseId": 28,
+      "databaseSkk": "F 2581 5 2025 0027342 MP 01",
+      "databaseMet": "MET.000.006417 2021"
+    },
+    {
+      "nama": "Ir. Ukkas Tjoteng",
+      "noRegistrasiAskom": "74312 2424 4 0190207 2024",
+      "databaseId": 33,
+      "databaseSkk": "F 1993 42875 2023 0103030 SI 04",
+      "databaseMet": "MET.000.006418 2021"
+    },
+    {
+      "nama": "Tedi Yulianto Prabowo Mulyo",
+      "noRegistrasiAskom": "74312 2424 4 0190207 2024",
+      "databaseId": 34,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006419 2021"
+    },
+    {
+      "nama": "Dede Koswara, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190207 2024",
+      "databaseId": 37,
+      "databaseSkk": "1.2.211.2.148.04.1882095",
+      "databaseMet": "MET.000.006420 2021"
+    },
+    {
+      "nama": "Tengku Siti Khuzaimah, ST",
+      "noRegistrasiAskom": "74312 2424 4 0192575 2024",
+      "databaseId": 38,
+      "databaseSkk": "1.2.203.2.148.04.1065778",
+      "databaseMet": "MET.000.006421 2021"
+    },
+    {
+      "nama": "Ir. Tri Widodo",
+      "noRegistrasiAskom": "74312 2424 4 0192575 2024",
+      "databaseId": 42,
+      "databaseSkk": "F 1993 11250 2023 0063711 SI 04",
+      "databaseMet": "MET.000.006422 2021"
+    },
+    {
+      "nama": "Ziyan Fariz Karomah, ST",
+      "noRegistrasiAskom": "74312 2424 4 0192575 2024",
+      "databaseId": 43,
+      "databaseSkk": "1.2.201.2.142.31.1179534",
+      "databaseMet": "MET.000.006423 2021"
+    },
+    {
+      "nama": "Diar Fajar Hariawan",
+      "noRegistrasiAskom": "93000 2419 0127584 2021",
+      "databaseId": 44,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006424 2021"
+    },
+    {
+      "nama": "Arif Setiyafudin",
+      "noRegistrasiAskom": "93000 2419 0127586 2021",
+      "databaseId": 45,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006425 2021"
+    },
+    {
+      "nama": "Darwis Akhmad",
+      "noRegistrasiAskom": "74312 2424 4 0192576 2024",
+      "databaseId": 49,
+      "databaseSkk": "F 2100 01783 2023 0088968 SI 10",
+      "databaseMet": "MET.000.006426 2021"
+    },
+    {
+      "nama": "Riza Trisno Rinaldo",
+      "noRegistrasiAskom": "74312 2424 4 0192576 2024",
+      "databaseId": 50,
+      "databaseSkk": "1.2.210.2.036.09.1131816",
+      "databaseMet": "MET.000.006427 2021"
+    },
+    {
+      "nama": "Suyanto",
+      "noRegistrasiAskom": "74312 2424 4 0192576 2024",
+      "databaseId": 51,
+      "databaseSkk": "1.2.211.2.142.31.1943060",
+      "databaseMet": "MET.000.006428 2021"
+    },
+    {
+      "nama": "Fuji Hafidz Pramudia",
+      "noRegistrasiAskom": "74312 2424 4 0192576 2024",
+      "databaseId": 54,
+      "databaseSkk": "1.2.210.2.036.09.1074644",
+      "databaseMet": "MET.000.006429 2021"
+    },
+    {
+      "nama": "Noor Fardiansyah Maula",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 56,
+      "databaseSkk": "F 1994 01812 2023 0067412 MP 02",
+      "databaseMet": "MET.000.006429 2021"
+    },
+    {
+      "nama": "Beny Adrianto",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 60,
+      "databaseSkk": "F 2100 01784 2023 0096021 SI 10",
+      "databaseMet": "MET.000.006431 2021"
+    },
+    {
+      "nama": "Sinaring Randri Aditia",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 61,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006432 2021"
+    },
+    {
+      "nama": "Rudi Wicaksono",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 62,
+      "databaseSkk": "1.2.207.2.142.31.1920417",
+      "databaseMet": "MET.000.006433 2021"
+    },
+    {
+      "nama": "Busmart Zuriantomy",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 66,
+      "databaseSkk": "F 2146 44304 2024 0368395 SI 10",
+      "databaseMet": "MET.000.006639 2021"
+    },
+    {
+      "nama": "Raden Hari Anantoseno",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 67,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006640 2021"
+    },
+    {
+      "nama": "Alas Sitanggang",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 68,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006641 2021"
+    },
+    {
+      "nama": "Yoga Bayu Aji Pradana",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 70,
+      "databaseSkk": "F 1993 65783 2023 0133933 SI 16",
+      "databaseMet": "MET.000.006642 2021"
+    },
+    {
+      "nama": "Ariel Somadiningrat",
+      "noRegistrasiAskom": "74312 2424 4 0192577 2024",
+      "databaseId": 71,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006643 2021"
+    },
+    {
+      "nama": "Catur Widi Endro Mukti",
+      "noRegistrasiAskom": "74312 2424 4 0192578 2024",
+      "databaseId": 73,
+      "databaseSkk": "1.2.203.2.026.09.1063797",
+      "databaseMet": "MET.000.006644 2021"
+    },
+    {
+      "nama": "Barzez Zesma Ramadona",
+      "noRegistrasiAskom": "74312 2424 4 0192578 2024",
+      "databaseId": 74,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006645 2021"
+    },
+    {
+      "nama": "Setyo Edhi Nurcahyono",
+      "noRegistrasiAskom": "74312 2424 4 0192578 2024",
+      "databaseId": 78,
+      "databaseSkk": "1.2.211.1.187.09.1001203",
+      "databaseMet": "MET.000.006646 2021"
+    },
+    {
+      "nama": "Ir. A. Leksmono Muljadinata",
+      "noRegistrasiAskom": "74312 2424 4 0192578 2024",
+      "databaseId": 1872,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Supadma",
+      "noRegistrasiAskom": "74312 2424 4 0192578 2024",
+      "databaseId": 89,
+      "databaseSkk": "F 2146 82683 2025 0411674 SI 01",
+      "databaseMet": "MET.000.006648 2021"
+    },
+    {
+      "nama": "Sigit Sunarjati",
+      "noRegistrasiAskom": "93000 2419 0127295 2021",
+      "databaseId": 90,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006649 2021"
+    },
+    {
+      "nama": "Agus Supriyanta",
+      "noRegistrasiAskom": "93000 2419 0127296 2021",
+      "databaseId": 93,
+      "databaseSkk": "F 2146 01198 2022 0035197 SI 10",
+      "databaseMet": "MET.000.006650 2021"
+    },
+    {
+      "nama": "Wahyu Setya Dwiyanto",
+      "noRegistrasiAskom": "93000 2419 0127296 2021",
+      "databaseId": 1873,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Bambang Sutejo",
+      "noRegistrasiAskom": "93000 2419 0127296 2021",
+      "databaseId": 96,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006652 2021"
+    },
+    {
+      "nama": "Edi Binuka, ST",
+      "noRegistrasiAskom": "93000 2419 0127297 2021",
+      "databaseId": 98,
+      "databaseSkk": "F 1993 26504 2022 0034691 SI 01",
+      "databaseMet": "MET.000.006653 2021"
+    },
+    {
+      "nama": "Triandri Komarozzaman, ST",
+      "noRegistrasiAskom": "93000 2419 0127298 2021",
+      "databaseId": 103,
+      "databaseSkk": "F 2146 04806 2023 0004252 SI 10",
+      "databaseMet": "MET.000.006654 2021"
+    },
+    {
+      "nama": "Duwi Budi Utomo",
+      "noRegistrasiAskom": "93000 2419 0127298 2021",
+      "databaseId": 105,
+      "databaseSkk": "1.2.202.2.148.04.1944805",
+      "databaseMet": "MET.000.006655 2021"
+    },
+    {
+      "nama": "Erwin Princen Banggas Sihite",
+      "noRegistrasiAskom": "93000 2419 0127298 2021",
+      "databaseId": 108,
+      "databaseSkk": "F 2146 23027 2024 0108401 SI 10",
+      "databaseMet": "MET.000.006656 2021"
+    },
+    {
+      "nama": "Irsan, ST, MT",
+      "noRegistrasiAskom": "93000 2419 0127298 2021",
+      "databaseId": 111,
+      "databaseSkk": "F 1994 00469 2022 0001404 MP 01",
+      "databaseMet": "MET.000.006657 2021"
+    },
+    {
+      "nama": "Jajang Agustina, ST",
+      "noRegistrasiAskom": "93000 2419 0127299 2021",
+      "databaseId": 112,
+      "databaseSkk": "F 2146 09965 2023 0117712 SI 10",
+      "databaseMet": "MET.000.006658 2021"
+    },
+    {
+      "nama": "Fitra Tresna, ST",
+      "noRegistrasiAskom": "93000 2419 0127300 2021",
+      "databaseId": 117,
+      "databaseSkk": "F 2146 22197 2024 0074657 SI 16",
+      "databaseMet": "MET.000.006659 2021"
+    },
+    {
+      "nama": "Ir. Bambang Eko Prabowo",
+      "noRegistrasiAskom": "93000 2419 0127301 2021",
+      "databaseId": 121,
+      "databaseSkk": "F 1993 41672 2023 0101532 SI 10",
+      "databaseMet": "MET.000.006827 2021"
+    },
+    {
+      "nama": "Sigit Winarto",
+      "noRegistrasiAskom": "74312 2424 4 0190209 2024 ",
+      "databaseId": 122,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006828 2021"
+    },
+    {
+      "nama": "Reynando Purba",
+      "noRegistrasiAskom": "74312 2424 4 0190209 2024 ",
+      "databaseId": 123,
+      "databaseSkk": "1.2.201.2.142.31.1057352",
+      "databaseMet": "MET.000.006829 2021"
+    },
+    {
+      "nama": "Farid Fayedi",
+      "noRegistrasiAskom": "74312 2424 4 0190209 2024 ",
+      "databaseId": 134,
+      "databaseSkk": "F 2100 00842 2023 0075454  SI 10",
+      "databaseMet": "MET.000.006830 2021"
+    },
+    {
+      "nama": "Godfriet Hutabarat",
+      "noRegistrasiAskom": "74312 2424 4 0190209 2024 ",
+      "databaseId": 139,
+      "databaseSkk": "F 2146 17791 2023 0037618 SI 01",
+      "databaseMet": "MET.000.006831 2021"
+    },
+    {
+      "nama": "Erwin Dwiyanto",
+      "noRegistrasiAskom": "93000 2419 0127303 2021",
+      "databaseId": 140,
+      "databaseSkk": "1.2.210.2.155.09.1139493",
+      "databaseMet": "MET.000.006832 2021"
+    },
+    {
+      "nama": "Harun Latif",
+      "noRegistrasiAskom": "93000 2419 0127304 2021",
+      "databaseId": 1874,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Rengki Alekander, ST",
+      "noRegistrasiAskom": "93000 2419 0127305 2021",
+      "databaseId": 146,
+      "databaseSkk": "F 1994 07712 2022 0039138 MP 01",
+      "databaseMet": "MET.000.006834 2021"
+    },
+    {
+      "nama": "Sapta Dewangga AR",
+      "noRegistrasiAskom": "93000 2419 0127305 2021",
+      "databaseId": 147,
+      "databaseSkk": "1.6.602.2.038.09.1128046",
+      "databaseMet": "MET.000.006835 2021"
+    },
+    {
+      "nama": "Hari Priyadi, ST",
+      "noRegistrasiAskom": "93000 2419 0127305 2021",
+      "databaseId": 148,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006836 2021"
+    },
+    {
+      "nama": "Ir. Misbahuddin Hamid",
+      "noRegistrasiAskom": "93000 2419 0127305 2021",
+      "databaseId": 150,
+      "databaseSkk": "F 2146 13576 2023 0159674 SI 10",
+      "databaseMet": "MET.000.006837 2021"
+    },
+    {
+      "nama": "Raden Agung Setyawan, ST, M.Sc",
+      "noRegistrasiAskom": "93000 2419 0127306 2021",
+      "databaseId": 153,
+      "databaseSkk": "F 2146 20041 2023 0218763 SI 03",
+      "databaseMet": "MET.000.006838 2021"
+    },
+    {
+      "nama": "Sunarko, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190206 2024",
+      "databaseId": 154,
+      "databaseSkk": "F 1993 14517 2022 0018446 SI 03",
+      "databaseMet": "MET.000.006839 2021"
+    },
+    {
+      "nama": "Raden Supracoyo, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190206 2024",
+      "databaseId": 156,
+      "databaseSkk": "1.2.203.2.150.10.1105000",
+      "databaseMet": "MET.000.006840 2021"
+    },
+    {
+      "nama": "Benidiktus Susanto, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0190206 2024",
+      "databaseId": 161,
+      "databaseSkk": "F 1994 17046 2023 0204975 MP 02",
+      "databaseMet": "MET.000.006841 2021"
+    },
+    {
+      "nama": "Bambang Irawan",
+      "noRegistrasiAskom": "74312 2424 4 0190206 2024",
+      "databaseId": 163,
+      "databaseSkk": "F 2146 14968 2023 0074645 SI 01",
+      "databaseMet": "MET.000.006842 2021"
+    },
+    {
+      "nama": "Ir. Mardasar Sihombing",
+      "noRegistrasiAskom": "74312 2424 4 0190206 2024",
+      "databaseId": 1875,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Johanan Repriyanto",
+      "noRegistrasiAskom": "93000 2419 0127308 2021",
+      "databaseId": 165,
+      "databaseSkk": "F 2146 02278 2022 0051167 SI 03",
+      "databaseMet": "MET.000.006844 2021"
+    },
+    {
+      "nama": "Hengki Muliawan Silalahi",
+      "noRegistrasiAskom": "93000 2419 0127309 2021",
+      "databaseId": 167,
+      "databaseSkk": "F 2146 02270 2022 0051165 SI 04",
+      "databaseMet": "MET.000.006845 2021"
+    },
+    {
+      "nama": "Meiborn Simanjuntak",
+      "noRegistrasiAskom": "74312 2424 4 0192580 2024",
+      "databaseId": 1876,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. Ismedy",
+      "noRegistrasiAskom": "74312 2424 4 0192580 2024",
+      "databaseId": 168,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007252 2021"
+    },
+    {
+      "nama": "Agus Sumarsono",
+      "noRegistrasiAskom": "74312 2424 4 0192580 2024",
+      "databaseId": 171,
+      "databaseSkk": "1.2.211.2.148.04.1043758",
+      "databaseMet": "MET.000.007253 2021"
+    },
+    {
+      "nama": "Wirawan Prasodho",
+      "noRegistrasiAskom": "74312 2424 4 0192580 2024",
+      "databaseId": 172,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007254 2021"
+    },
+    {
+      "nama": "Ir. Misbahul Fallah",
+      "noRegistrasiAskom": "93000 2419 0127794 2021",
+      "databaseId": 173,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007255 2021"
+    },
+    {
+      "nama": "Muhammad Reza",
+      "noRegistrasiAskom": "93000 2419 0127795 2021",
+      "databaseId": 174,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007256 2021"
+    },
+    {
+      "nama": "Budi Setiawan",
+      "noRegistrasiAskom": "93000 2419 0127796 2021",
+      "databaseId": 176,
+      "databaseSkk": "1.2.216.1.191.09.1000587",
+      "databaseMet": "MET.000.007257 2021"
+    },
+    {
+      "nama": "Angky Putra Librata",
+      "noRegistrasiAskom": "93000 2419 0127796 2021",
+      "databaseId": 177,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007258 2021"
+    },
+    {
+      "nama": "Oskar Harris",
+      "noRegistrasiAskom": "74312 2424 4 0199655 2025",
+      "databaseId": 178,
+      "databaseSkk": "1.2.202.1.191.09.1090307",
+      "databaseMet": "MET.000.007259 2021"
+    },
+    {
+      "nama": "Edy Setyawan",
+      "noRegistrasiAskom": "74312 2424 4 0199655 2025",
+      "databaseId": 179,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007260 2021"
+    },
+    {
+      "nama": "Burhamsyah Amin",
+      "noRegistrasiAskom": "93000 2419 0127798 2021",
+      "databaseId": 180,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007261 2021"
+    },
+    {
+      "nama": "Bambang Eko Widyanto",
+      "noRegistrasiAskom": "93000 2419 0127798 2021",
+      "databaseId": 181,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007262 2021"
+    },
+    {
+      "nama": "Frenki Tres Widyantoro",
+      "noRegistrasiAskom": "93000 2419 0127798 2021",
+      "databaseId": 182,
+      "databaseSkk": "F 1993 01770 2022 0002087 SI 10",
+      "databaseMet": "MET.000.007263 2021"
+    },
+    {
+      "nama": "Irwan",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 183,
+      "databaseSkk": "F 2146 07679 2023 0093426 SI 10",
+      "databaseMet": "MET.000.007264 2021"
+    },
+    {
+      "nama": "Martsela Dewi Pramanti",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 185,
+      "databaseSkk": "F 0612 00903 2023 0015615 MP 01",
+      "databaseMet": "MET.000.007265 2021"
+    },
+    {
+      "nama": "Yudi Bhenny Harsono Sinaga, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 189,
+      "databaseSkk": "1.2.211.3.148.02.1174827",
+      "databaseMet": "MET.000.007266 2021"
+    },
+    {
+      "nama": "Ir. Lamhot Parulian Simanjuntak",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 194,
+      "databaseSkk": "F 1993 35861 2023 0087257 SI 03",
+      "databaseMet": "MET.000.007267 2021"
+    },
+    {
+      "nama": "Irfan Hari Ispandana",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 195,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007268 2021"
+    },
+    {
+      "nama": "Wahyudi Lababa",
+      "noRegistrasiAskom": "74312 2424 4 0190208 2024",
+      "databaseId": 196,
+      "databaseSkk": "F 1993 115725 2022 0014885 SI 03",
+      "databaseMet": "MET.000.007269 2021"
+    },
+    {
+      "nama": "Sari Wahyuni",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 198,
+      "databaseSkk": "F 2146 50618 2024 0110882 SI 04",
+      "databaseMet": "MET.000.007270 2021"
+    },
+    {
+      "nama": "Sonny Indrasaputra",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 206,
+      "databaseSkk": "F 2146 32159 2024 0041381 SI 04",
+      "databaseMet": "MET.000.007271 2021"
+    },
+    {
+      "nama": "Ade Hapidin ",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 1877,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. Afied Djoko Prijonggo ",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 1878,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Wasino, ST, MT ",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 1879,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Azis AlHuda, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 214,
+      "databaseSkk": "F 1994 10964 2023 0008884 MP 01",
+      "databaseMet": "MET.000.004962 2020"
+    },
+    {
+      "nama": "Benny Surjawan",
+      "noRegistrasiAskom": "74312 2424 4 0190213 2024",
+      "databaseId": 218,
+      "databaseSkk": "F 2146 13035 2023 0025525 SI 01",
+      "databaseMet": "MET.000.005154 2020"
+    },
+    {
+      "nama": "Ir. Didik Budi Fariadi",
+      "noRegistrasiAskom": "74312 2424 4 0190217 2024",
+      "databaseId": 222,
+      "databaseSkk": "F 2146 00157 2022 0008216 SI 10",
+      "databaseMet": "MET.000.005050 2020"
+    },
+    {
+      "nama": "Yudit Kurniawan",
+      "noRegistrasiAskom": "74312 2424 4 0190217 2024",
+      "databaseId": 227,
+      "databaseSkk": "F 1993 16378 2022 0021271 SI 10",
+      "databaseMet": "MET.000.004959 2020"
+    },
+    {
+      "nama": "Sitti Idarwati Syam, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190217 2024",
+      "databaseId": 1880,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Andi Erwin",
+      "noRegistrasiAskom": "93000 2419 0127803 2021",
+      "databaseId": 228,
+      "databaseSkk": "F 2018 00478 2022 0023710 SI 03",
+      "databaseMet": "MET.000.006922 2020"
+    },
+    {
+      "nama": "Desi Kusmiati, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190214 2024",
+      "databaseId": 232,
+      "databaseSkk": "F 2146 71565 2025 0065437 SI 01",
+      "databaseMet": "MET.000.006904 2020"
+    },
+    {
+      "nama": "Julianus Tandi Sau’, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190214 2024",
+      "databaseId": 233,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.002105 2020"
+    },
+    {
+      "nama": "Sugiharto ",
+      "noRegistrasiAskom": "74312 2424 4 0190214 2024",
+      "databaseId": 1881,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. H. Mei Purwowidodo",
+      "noRegistrasiAskom": "74312 2424 4 0190219 2024",
+      "databaseId": 236,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006908 2020"
+    },
+    {
+      "nama": "Ir. Heru Cahyudi ",
+      "noRegistrasiAskom": "74312 2424 4 0190219 2024",
+      "databaseId": 1882,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Joko Suseno",
+      "noRegistrasiAskom": "93000 2419 0127806 2021",
+      "databaseId": 1883,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Jurisman Amin, ST (HATSINDO)",
+      "noRegistrasiAskom": "93000 2419 0127807 2021",
+      "databaseId": 237,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.004736 2020"
+    },
+    {
+      "nama": "Yusrizal",
+      "noRegistrasiAskom": "93000 2419 0127807 2021",
+      "databaseId": 1884,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Humairo Saidah, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0190218 2024",
+      "databaseId": 240,
+      "databaseSkk": "F 2146 17259 2023 0042375 SI 04",
+      "databaseMet": "MET.000.001064 2020"
+    },
+    {
+      "nama": "Mohamad Indrayana",
+      "noRegistrasiAskom": "74312 2424 4 0190218 2024",
+      "databaseId": 1885,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Servasius Boy Ola, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190218 2024",
+      "databaseId": 243,
+      "databaseSkk": "F 2146 76511 2025 0050059 SI 01",
+      "databaseMet": "MET.000.005211 2020"
+    },
+    {
+      "nama": "H. Syahrul Parsan, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0190218 2024",
+      "databaseId": 244,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.001054 2020"
+    },
+    {
+      "nama": "David Oktavianus Pelata, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190218 2024",
+      "databaseId": 246,
+      "databaseSkk": "F 2146 01732 2022 0039837 SI 03",
+      "databaseMet": "MET.000.005201 2020"
+    },
+    {
+      "nama": "Effendi, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190220 2024",
+      "databaseId": 1886,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Fahrudin Y. Hiola, ST",
+      "noRegistrasiAskom": "74312 2424 4 0190220 2024",
+      "databaseId": 1887,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Saesario Maulana Satya Indrawan, ST (LSP K3 KONSTRUKSI)",
+      "noRegistrasiAskom": "93000 2419 0127810 2021",
+      "databaseId": 252,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.004704 2018"
+    },
+    {
+      "nama": "Lalu Hendi Akbar, ST ",
+      "noRegistrasiAskom": "93000 2419 0127810 2021",
+      "databaseId": 1888,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. I Made Sutrisna, MM ",
+      "noRegistrasiAskom": "93000 2419 0127810 2021",
+      "databaseId": 1889,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Syafarudin Lakadjo, A.Md ",
+      "noRegistrasiAskom": "74312 2424 4 0192581 2024",
+      "databaseId": 1890,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Yuningsi Danial ",
+      "noRegistrasiAskom": "74312 2424 4 0192581 2024",
+      "databaseId": 1891,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Yustinus Eka Wiyana, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0192581 2024",
+      "databaseId": 1892,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "La Ode Minzar, ST",
+      "noRegistrasiAskom": "93000 2419 0127812 2021",
+      "databaseId": 1893,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Agung Cahyadi",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 1894,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "RANDY P. PANGGABEAN",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 262,
+      "databaseSkk": "F 2146 21517 2023 0030185 SI 01",
+      "databaseMet": "MET.000.005152 2020"
+    },
+    {
+      "nama": "Dr. Sugimin Pranoto",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 265,
+      "databaseSkk": "F 2146 54491 2023 0021811 SI 10",
+      "databaseMet": "MET.000.009607 2022"
+    },
+    {
+      "nama": "SUHARTONO,ST",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 267,
+      "databaseSkk": "F 2146 06931 2023 0041190 SI 03",
+      "databaseMet": "MET.000.007232 2022"
+    },
+    {
+      "nama": "Hematang Sasongko",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 270,
+      "databaseSkk": "F 2146 85302 2025 0174223 SI 01",
+      "databaseMet": "MET.000.007247 2022"
+    },
+    {
+      "nama": "Supriyanto",
+      "noRegistrasiAskom": "74312 2424 4 0192582 2024",
+      "databaseId": 275,
+      "databaseSkk": "F 2146 77377 2025 0036459 SI 01",
+      "databaseMet": "MET.000.007230 2022"
+    },
+    {
+      "nama": "Muchamad Alifi",
+      "noRegistrasiAskom": "93000 2419 0128176 2021",
+      "databaseId": 277,
+      "databaseSkk": "F 2160 02346 2023 0007465 MP 01",
+      "databaseMet": "MET.000.007246 2022"
+    },
+    {
+      "nama": "R Dodong Prasetyo Wibowo, ST",
+      "noRegistrasiAskom": "93000 2419 0128176 2021",
+      "databaseId": 279,
+      "databaseSkk": "F 2146 04544 2023 0013075 SI 10",
+      "databaseMet": "MET.000.007223 2022"
+    },
+    {
+      "nama": "Brian Mustiko Edi",
+      "noRegistrasiAskom": "93000 2419 0128176 2021",
+      "databaseId": 285,
+      "databaseSkk": "F 2146 86688 2025 0007463 SI 01",
+      "databaseMet": "MET.000.007235 2022"
+    },
+    {
+      "nama": "ACHMAD RIDHOI",
+      "noRegistrasiAskom": "93000 2419 0128176 2021",
+      "databaseId": 287,
+      "databaseSkk": "F 2146 12168 2023 0008351 SI 01",
+      "databaseMet": "MET.000.007248 2022"
+    },
+    {
+      "nama": "Sugeng Suseno",
+      "noRegistrasiAskom": "74312 2424 4 0192583 2024",
+      "databaseId": 289,
+      "databaseSkk": "F 1994 08377 2023 0023053 MP 01",
+      "databaseMet": "MET.000 007225 2022"
+    },
+    {
+      "nama": "Ir. RUSLAN HIDAYAT, M.Si, MT",
+      "noRegistrasiAskom": "93000 2419 0128178 2021",
+      "databaseId": 292,
+      "databaseSkk": "1.2.203.3.088.13.1050695",
+      "databaseMet": "MET.000.007255 2022"
+    },
+    {
+      "nama": "JOKO WIYONO",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 293,
+      "databaseSkk": "F 1993 03594 2022 0004342 SI 01",
+      "databaseMet": "MET.000.007253 2022"
+    },
+    {
+      "nama": "DHOHIRUL FAUZI",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 294,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007256 2022"
+    },
+    {
+      "nama": "Muhammad Haidar Nur Hilmy",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 298,
+      "databaseSkk": "F 2146 20181 2023 0028713 SI 10",
+      "databaseMet": "MET.000.007262 2022"
+    },
+    {
+      "nama": "Ir. Mohamad Budi Hartono, ST., MT., IPM.",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 304,
+      "databaseSkk": "F 1993 12041 2022 0013139 SI 01",
+      "databaseMet": "MET.000.007245 2022"
+    },
+    {
+      "nama": "AHMAD HANDRI WIDIYANTO",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 306,
+      "databaseSkk": "1.2.208.2.142.31.1056935",
+      "databaseMet": "MET.000.007222 2022"
+    },
+    {
+      "nama": "HJ. SITI FATHONAH RACHMANIYAH, ST., MM.",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 312,
+      "databaseSkk": "F 2146 76518 2025 0023073 SI 01",
+      "databaseMet": "MET.000.007254 2022"
+    },
+    {
+      "nama": "Muafi",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 1895,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Rizal Armando Renaldi",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 317,
+      "databaseSkk": "F 2146 86689 2025 0039870 SI 04",
+      "databaseMet": "MET.000.007227 2022"
+    },
+    {
+      "nama": "Alif Alfianto",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 318,
+      "databaseSkk": "F 2146 10661 20230125411 SI 03",
+      "databaseMet": "MET.000.007226 2022"
+    },
+    {
+      "nama": "Joko Widodo",
+      "noRegistrasiAskom": "MET.000.006830 2021",
+      "databaseId": 323,
+      "databaseSkk": "F 2160 03444 2024 0008897 MP 01",
+      "databaseMet": "MET.000.007234 2022"
+    },
+    {
+      "nama": "Iqbal Ahadi",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 327,
+      "databaseSkk": "F 2146 77379 2025 0035105 SI 10",
+      "databaseMet": "MET.000.007244 2022"
+    },
+    {
+      "nama": "WINDU NUGROHO",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 328,
+      "databaseSkk": "F 1993 10299 2022 0013078 SI 03",
+      "databaseMet": "MET.000.007265 2022"
+    },
+    {
+      "nama": "Fendy rachmanto",
+      "noRegistrasiAskom": "74312 2424 4 0191601 2024",
+      "databaseId": 334,
+      "databaseSkk": "F 2146 85301 2025 0039879 SI 01",
+      "databaseMet": "MET.000.007259 2022"
+    },
+    {
+      "nama": "Danang Wijanarko Nugroho",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 336,
+      "databaseSkk": "F 2146 00152 2022 0007472 SI 10",
+      "databaseMet": "MET.000.007233 2022"
+    },
+    {
+      "nama": "Agus Wibisono, S.T",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 338,
+      "databaseSkk": "F 0612 00684 2024 0028746 MP 01",
+      "databaseMet": "MET.000.007237 2022"
+    },
+    {
+      "nama": "MOCH. SAIFUL RIZKI, S. Tr. T",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 339,
+      "databaseSkk": "F 2146 00111 2022  0023072 SI 01",
+      "databaseMet": "MET.000.007260 2022"
+    },
+    {
+      "nama": "SUHADI",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 342,
+      "databaseSkk": "F 2146 06190 2023 0039803 SI 03",
+      "databaseMet": "MET.000.007238 2022"
+    },
+    {
+      "nama": "Heni Pujiastuti",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 1896,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "HARIADI YUSANDIANTO",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 346,
+      "databaseSkk": "F 2146 00525 2022 0028760 SI 03",
+      "databaseMet": "MET.000.007261 2022"
+    },
+    {
+      "nama": "Titik Wahyuningsih",
+      "noRegistrasiAskom": "74312 2424 4 0190205 2024",
+      "databaseId": 1897,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. Anak Agung Putra Indrasena,ST.IPM",
+      "noRegistrasiAskom": "93000 2419 0128181 2021",
+      "databaseId": 353,
+      "databaseSkk": "F 2292 01719 2024 0038026 MP 01",
+      "databaseMet": "MET.000.007264 2022"
+    },
+    {
+      "nama": "MUHAMMAD AMIN",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 359,
+      "databaseSkk": "F 2146 00738 2022 0017196 SI 01",
+      "databaseMet": "MET.000.007252 2022"
+    },
+    {
+      "nama": "DJOKO BUDIONO",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 1898,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "ABDUL SOMAD, ST",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 360,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007240 2022"
+    },
+    {
+      "nama": "MOHAMAD ROHMAN AKBAR, ST.",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 363,
+      "databaseSkk": "F 2146 01602 2022 0038028 SI 10",
+      "databaseMet": "MET.000.007266 2022"
+    },
+    {
+      "nama": "Budi santoso St",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 1899,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "MUSHTHOFA",
+      "noRegistrasiAskom": "93000 2419 0128183 2021",
+      "databaseId": 370,
+      "databaseSkk": "F 2146 06189 2023 0029806 SI 03",
+      "databaseMet": "MET.000.007250 2022"
+    },
+    {
+      "nama": "Hariyadi, ST., M.Sc.(Eng), D.Eng.",
+      "noRegistrasiAskom": "93000 2419 0128184 2021",
+      "databaseId": 1900,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "SOLEH WAHAB",
+      "noRegistrasiAskom": "93000 2419 0128185 2021",
+      "databaseId": 376,
+      "databaseSkk": "F 2146 10592 2023 0124926 SI 07",
+      "databaseMet": "MET.000.007241 2022"
+    },
+    {
+      "nama": "ZULKARNAIN",
+      "noRegistrasiAskom": "93000 2419 0128186 2021",
+      "databaseId": 378,
+      "databaseSkk": "F 2146 86690 2025 0089444 SI 10",
+      "databaseMet": "MET.000.007220 2022"
+    },
+    {
+      "nama": "Sugeng Hariyono",
+      "noRegistrasiAskom": "93000 2419 0128186 2021",
+      "databaseId": 1901,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "AGUS GENDROYONO",
+      "noRegistrasiAskom": "93000 2419 0128187 2021",
+      "databaseId": 379,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.004966 2021"
+    },
+    {
+      "nama": "THO'AT MASRUCHI",
+      "noRegistrasiAskom": "93000 2419 0128187 2021",
+      "databaseId": 385,
+      "databaseSkk": "F 1993 23668 2024 0023109 SI 01",
+      "databaseMet": "MET.000.003883 2021"
+    },
+    {
+      "nama": "EMAN AGUS TUNGGAL PUTRANTO",
+      "noRegistrasiAskom": "93000 2419 0128187 2021",
+      "databaseId": 389,
+      "databaseSkk": "F 1993 05350 2022 0005587 SI 11",
+      "databaseMet": "MET.000.002198 2020"
+    },
+    {
+      "nama": "Moch. Dandy Adi Tachlies Shakti, ST",
+      "noRegistrasiAskom": "93000 2419 0128188 2021",
+      "databaseId": 391,
+      "databaseSkk": "F 1994 03817 2022 0007452 MP 04",
+      "databaseMet": "MET.000.004960 2020"
+    },
+    {
+      "nama": "Moch Chanip Harahap",
+      "noRegistrasiAskom": "74312 2424 4 0190216 2024",
+      "databaseId": 395,
+      "databaseSkk": "F 2146 77824 2025 0104861 SI 04",
+      "databaseMet": "MET.000.007221 2022"
+    },
+    {
+      "nama": "Salim Novel",
+      "noRegistrasiAskom": "74312 2424 4 0190216 2024",
+      "databaseId": 398,
+      "databaseSkk": "F  2146 44300 2024 0038027 SI 10",
+      "databaseMet": "MET.000.007224 2022"
+    },
+    {
+      "nama": "Suwadi",
+      "noRegistrasiAskom": "74312 2424 4 0190215 2024",
+      "databaseId": 399,
+      "databaseSkk": "F 2146 00109 2022 0023070 SI 03",
+      "databaseMet": "MET.000.007228 2022"
+    },
+    {
+      "nama": "Alfan Affandi",
+      "noRegistrasiAskom": "74312 2424 4 0190215 2024",
+      "databaseId": 404,
+      "databaseSkk": "F 2146 11736 2023 0039869 SI 03",
+      "databaseMet": "MET.000.007229 2022"
+    },
+    {
+      "nama": "Achmad Supadi",
+      "noRegistrasiAskom": "74312 2424 4 0190215 2024",
+      "databaseId": 405,
+      "databaseSkk": "F  2146 08898 2023 0104771 SI 01",
+      "databaseMet": "MET.000.007231 2022"
+    },
+    {
+      "nama": "Hadi Sumarsono",
+      "noRegistrasiAskom": "74312 2424 4 0190215 2024",
+      "databaseId": 412,
+      "databaseSkk": "F 2146 76050 2025 0039871 SI 10",
+      "databaseMet": "MET.000.007236 2022"
+    },
+    {
+      "nama": "Muhammad Hilmi",
+      "noRegistrasiAskom": "74312 2424 4 0190215 2024",
+      "databaseId": 415,
+      "databaseSkk": "F 1993 30989 2022 0040838 SI 10",
+      "databaseMet": "MET.000.007243 2022"
+    },
+    {
+      "nama": "Iwan Hadiana, S.T., M.T",
+      "noRegistrasiAskom": "93000 2419 0128191 2021",
+      "databaseId": 419,
+      "databaseSkk": "F 2146 00009 2022 0000942 SI 01",
+      "databaseMet": "MET.000.009369 2022"
+    },
+    {
+      "nama": "Bambang Nugroho, S.T.",
+      "noRegistrasiAskom": "93000 2419 0128191 2021",
+      "databaseId": 425,
+      "databaseSkk": "F 2160 00822 2023 0028166 MP 01",
+      "databaseMet": "MET.000.009370 2022"
+    },
+    {
+      "nama": "R. Iran Pahlevi Wahjoe, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0192584 2024",
+      "databaseId": 428,
+      "databaseSkk": "F 1994 02746 2025 0074665 MP 01",
+      "databaseMet": "MET.000.009371 2022"
+    },
+    {
+      "nama": "DR. IR. Asep Supriatna, M.Eng.SC",
+      "noRegistrasiAskom": "74312 2424 4 0192584 2024",
+      "databaseId": 1902,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Adi Wijaya, ST.",
+      "noRegistrasiAskom": "93000 2419 0128193 2021",
+      "databaseId": 435,
+      "databaseSkk": "F 2160 04952 2024 0021553 MP 01",
+      "databaseMet": "MET.000.009373 2022"
+    },
+    {
+      "nama": "Maman Firmansyah, ST.",
+      "noRegistrasiAskom": "93000 2419 0128194 2021",
+      "databaseId": 439,
+      "databaseSkk": "F 2146 01108 2023 0069416 SI 10",
+      "databaseMet": "MET.000.009374 2022"
+    },
+    {
+      "nama": "Rida Heryanto, ST",
+      "noRegistrasiAskom": "93000 2419 0128194 2021",
+      "databaseId": 443,
+      "databaseSkk": "F 2146 28338 2024 0020740 SI 01",
+      "databaseMet": "MET.000.009375 2022"
+    },
+    {
+      "nama": "IR. Ibrahim Thales",
+      "noRegistrasiAskom": "93000 2419 0128601 2021",
+      "databaseId": 1903,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ermin Kuntadi, S.T",
+      "noRegistrasiAskom": "93000 2419 0128602 2021",
+      "databaseId": 452,
+      "databaseSkk": "F 2146 35842 2024 0072585 SI 01",
+      "databaseMet": "MET.000.009378 2022"
+    },
+    {
+      "nama": "Adhy Setiawan",
+      "noRegistrasiAskom": "93000 2419 0128602 2021",
+      "databaseId": 454,
+      "databaseSkk": "F 2146 00014 2026 0031394 SI 01",
+      "databaseMet": "MET.000.009379 2022"
+    },
+    {
+      "nama": "Andi P. Siagian",
+      "noRegistrasiAskom": "93000 2419 0128602 2021",
+      "databaseId": 457,
+      "databaseSkk": "F 1994 06123 2022 0027158 MP 01",
+      "databaseMet": "MET.000.009380 2022"
+    },
+    {
+      "nama": "Benny Oktobaran",
+      "noRegistrasiAskom": "93000 2419 0128603 2021",
+      "databaseId": 461,
+      "databaseSkk": "F 2146 50288 2024 0025133 SI 04",
+      "databaseMet": "MET.000.009381 2022"
+    },
+    {
+      "nama": "Bernadette Christin",
+      "noRegistrasiAskom": "93000 2419 0128604 2021",
+      "databaseId": 464,
+      "databaseSkk": "F 1993 50970 2023 0054827 SI 04",
+      "databaseMet": "MET.000.009382 2022"
+    },
+    {
+      "nama": "Edy Rahmat",
+      "noRegistrasiAskom": "93000 2419 0128605 2021",
+      "databaseId": 465,
+      "databaseSkk": "F 1993 11578 2022 0014891 SI 10",
+      "databaseMet": "MET.000.009383 2022"
+    },
+    {
+      "nama": "Eko Chandra Simanjuntak",
+      "noRegistrasiAskom": "93000 2419 0128606 2021",
+      "databaseId": 467,
+      "databaseSkk": "F 2146 00441 2022 0028214 SI 10",
+      "databaseMet": "MET.000.009384 2022"
+    },
+    {
+      "nama": "Jimmy Panjaitan",
+      "noRegistrasiAskom": "93000 2419 0128606 2021",
+      "databaseId": 468,
+      "databaseSkk": "F 1993  04544 2022 0005436 SI 03",
+      "databaseMet": "MET.000.009385 2022"
+    },
+    {
+      "nama": "Jimmy Silalahi",
+      "noRegistrasiAskom": "93000 2419 0128607 2021",
+      "databaseId": 472,
+      "databaseSkk": "F 2092 06304 2023 0005078 SI 04",
+      "databaseMet": "MET.000.009386 2022"
+    },
+    {
+      "nama": "Musa Firmansyah",
+      "noRegistrasiAskom": "93000 2419 0128608 2021",
+      "databaseId": 473,
+      "databaseSkk": "F 2146 13261 2023 0156728 SI 01",
+      "databaseMet": "MET.000.009387 2022"
+    },
+    {
+      "nama": "Oky Freddy Siregar",
+      "noRegistrasiAskom": "93000 2419 0128609 2021",
+      "databaseId": 474,
+      "databaseSkk": "F 1993 31678 2023 0088673 SI 01",
+      "databaseMet": "MET.000.009388 2022"
+    },
+    {
+      "nama": "Paulus V M H Napitupulu",
+      "noRegistrasiAskom": "93000 2419 0128610 2021",
+      "databaseId": 476,
+      "databaseSkk": "F  2146 00926 2022  0014573 SI 10",
+      "databaseMet": "MET.000.009389 2022"
+    },
+    {
+      "nama": "Ponco Tri Meidy",
+      "noRegistrasiAskom": "93000 2419 0128611 2021",
+      "databaseId": 477,
+      "databaseSkk": "F 2146 11620 2023 0137413 SI 01",
+      "databaseMet": "MET.000.009390 2022"
+    },
+    {
+      "nama": "Sumitra Banurea",
+      "noRegistrasiAskom": "93000 2419 0128612 2021",
+      "databaseId": 478,
+      "databaseSkk": "F 1993 19869 2022 0026515 SI 01",
+      "databaseMet": "MET.000.009392 2022"
+    },
+    {
+      "nama": "Sunggulan Sinaga, ST",
+      "noRegistrasiAskom": "93000 2419 0128613 2021",
+      "databaseId": 481,
+      "databaseSkk": "F 2292 05434 2025 0031393 MP 02",
+      "databaseMet": "MET.000.009393 2022"
+    },
+    {
+      "nama": "Tamba Sihombing, ST",
+      "noRegistrasiAskom": "74312 2424 4 0192579 2024",
+      "databaseId": 482,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009394 2022"
+    },
+    {
+      "nama": "Uncu Syarial",
+      "noRegistrasiAskom": "74312 2424 4 0192579 2024",
+      "databaseId": 484,
+      "databaseSkk": "F 1993 116641 2023 0227254 SI 03",
+      "databaseMet": "MET.000.009395 2022"
+    },
+    {
+      "nama": "H. Samsudin, BE, ST",
+      "noRegistrasiAskom": "74312 2424 4 0192579 2024",
+      "databaseId": 485,
+      "databaseSkk": "F 2146 20664 2023 0224361 SI 01",
+      "databaseMet": "MET.000.009396 2022"
+    },
+    {
+      "nama": "Anung Hasmara Dwipa, ST",
+      "noRegistrasiAskom": "93000 2419 0128615 2021",
+      "databaseId": 487,
+      "databaseSkk": "F 2193 00428 2022 0016227 SI 03",
+      "databaseMet": "MET.000.009397 2022"
+    },
+    {
+      "nama": "Muji Raharjo, ST",
+      "noRegistrasiAskom": "93000 2419 0128615 2021",
+      "databaseId": 491,
+      "databaseSkk": "F 1993 32011 2022 0006358 SI 10",
+      "databaseMet": "MET.000.009398 2022"
+    },
+    {
+      "nama": "Suryana Suhari, ST",
+      "noRegistrasiAskom": "93000 2419 0128615 2021",
+      "databaseId": 497,
+      "databaseSkk": "1.2.203.2.144.28.1063871",
+      "databaseMet": "MET.000.009399 2022"
+    },
+    {
+      "nama": "Apriyadi Andeska",
+      "noRegistrasiAskom": "93000 2419 0128615 2021",
+      "databaseId": 499,
+      "databaseSkk": "F  2146 07348 2023 0017113 SI 03",
+      "databaseMet": "MET.000.009401 2022"
+    },
+    {
+      "nama": "Alexander Oloando Siagian",
+      "noRegistrasiAskom": "74312 2424 4 0190211 2024",
+      "databaseId": 503,
+      "databaseSkk": "F 2146 24947 2024 0038942 SI 15",
+      "databaseMet": "MET.000.009400 2022"
+    },
+    {
+      "nama": "Krisman Sinaga",
+      "noRegistrasiAskom": "74312 2424 4 0190211 2024",
+      "databaseId": 509,
+      "databaseSkk": "1.2.207.2.142.31.1175621",
+      "databaseMet": "MET.000.010008 2022"
+    },
+    {
+      "nama": "IR. H. Kuntung Endra",
+      "noRegistrasiAskom": "74312 2424 4 0190211 2024",
+      "databaseId": 510,
+      "databaseSkk": "1.2.211.1.187.09.1127389",
+      "databaseMet": "MET.000.010009 2022"
+    },
+    {
+      "nama": "Christian Ronald S",
+      "noRegistrasiAskom": "74312 2424 4 0190211 2024",
+      "databaseId": 511,
+      "databaseSkk": "F 2146 06876 2023 0089401 SI 10",
+      "databaseMet": "MET.000.010007 2022"
+    },
+    {
+      "nama": "Sarimun Nandar",
+      "noRegistrasiAskom": "74312 2424 4 0190211 2024",
+      "databaseId": 515,
+      "databaseSkk": "F 2581 705 2025 0027106 MP 01",
+      "databaseMet": "MET.000.010012 2022"
+    },
+    {
+      "nama": "Sari Anton",
+      "noRegistrasiAskom": "93000 2419 0128617 2021",
+      "databaseId": 518,
+      "databaseSkk": "F 2581 45 2025 0027123 MP 01",
+      "databaseMet": "MET.000.010011 2022"
+    },
+    {
+      "nama": "Dedih Sutardi, ST",
+      "noRegistrasiAskom": "93000 2419 0128618 2021",
+      "databaseId": 521,
+      "databaseSkk": "1.2.201.2.168.29.1072474",
+      "databaseMet": "MET.000.010026 2022"
+    },
+    {
+      "nama": "Purwadi",
+      "noRegistrasiAskom": "74312 2424 4 0192585 2024",
+      "databaseId": 522,
+      "databaseSkk": "1.2.201.2.150.10.1157728",
+      "databaseMet": "MET.000.010031 2022"
+    },
+    {
+      "nama": "Andi M. Ilhamsyah A., ST",
+      "noRegistrasiAskom": "74312 2424 4 0192585 2024",
+      "databaseId": 524,
+      "databaseSkk": "F 1993 24664 2023 0080618 SI 01",
+      "databaseMet": "MET.000.009478 2022"
+    },
+    {
+      "nama": "A. Rahman Djamil",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 526,
+      "databaseSkk": "F 2146 18509 2023 0079780 SI 03",
+      "databaseMet": "MET.000.009486 2022"
+    },
+    {
+      "nama": "Andi Ana Humaerah Amran",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 1904,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Muhamad Sulkifli Baharuddin, ST",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 530,
+      "databaseSkk": "F 1993 74086 2023 0053701 SI 11",
+      "databaseMet": "MET.000.009490 2022"
+    },
+    {
+      "nama": "Asri Mulya Setiawan",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 535,
+      "databaseSkk": "F 2146 20055 2023 0033403 SI 10",
+      "databaseMet": "MET.000.009480 2022"
+    },
+    {
+      "nama": "Achmad Setiawan, ST., MT.",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 1905,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Akmal Syah, ST",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 537,
+      "databaseSkk": "1.2.201.3.049.09.1891728",
+      "databaseMet": "MET.000.009479 2022"
+    },
+    {
+      "nama": "Nur Khaerat Nur, ST., MT.",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 540,
+      "databaseSkk": "F 1994 02393 2022 0010866 MP 02",
+      "databaseMet": "MET.000.009481 2022"
+    },
+    {
+      "nama": "Fatmawaty Rachim, ST., MT.",
+      "noRegistrasiAskom": "93000 2419 0128620 2021",
+      "databaseId": 547,
+      "databaseSkk": "F 2146 17097 2023 0037847 SI 15",
+      "databaseMet": "MET.000.009484 2022"
+    },
+    {
+      "nama": "Erdawaty, ST., MT.",
+      "noRegistrasiAskom": "93000 2419 0091396 2019",
+      "databaseId": 554,
+      "databaseSkk": "F 2146 20626 2023 0031868 SI 01",
+      "databaseMet": "MET.000.009483 2022"
+    },
+    {
+      "nama": "Ir. Zulharnah HR",
+      "noRegistrasiAskom": "93000 2419 0113124 2020",
+      "databaseId": 559,
+      "databaseSkk": "F 2146 20053 2023 0040052 SI 02",
+      "databaseMet": "MET.000.009488 2022"
+    },
+    {
+      "nama": "Sudirman",
+      "noRegistrasiAskom": "93000 2419 0113296 2020",
+      "databaseId": 563,
+      "databaseSkk": "1.2.211.3.088.20.1958220",
+      "databaseMet": "MET.000.009487 2022"
+    },
+    {
+      "nama": "Kahar HM",
+      "noRegistrasiAskom": "93000 2419 0174394 2023",
+      "databaseId": 568,
+      "databaseSkk": "F 2146 13079 2023 0010995 SI 09",
+      "databaseMet": "MET.000.009489 2022"
+    },
+    {
+      "nama": "Andi Ibrahim Yunus, ST., MT.",
+      "noRegistrasiAskom": "93000 2419 0174394 2023",
+      "databaseId": 574,
+      "databaseSkk": "F 2146 20054 2023 0039497 SI 10",
+      "databaseMet": "MET.000.009477 2022"
+    },
+    {
+      "nama": "Ritnawati",
+      "noRegistrasiAskom": "93000 2419 0174394 2023",
+      "databaseId": 581,
+      "databaseSkk": "F 2146 20625 2023 0033021 SI 01",
+      "databaseMet": "MET.000.009482 2022"
+    },
+    {
+      "nama": "Nuky Yanuari Perdana Amir",
+      "noRegistrasiAskom": "93000 2419 0174394 2023",
+      "databaseId": 1906,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Parindra",
+      "noRegistrasiAskom": "93000 2419 0174394 2023",
+      "databaseId": 582,
+      "databaseSkk": "F 2146 09434 2023 0111441 SI 03",
+      "databaseMet": "MET.000.009492 2022"
+    },
+    {
+      "nama": "Denny Irawan",
+      "noRegistrasiAskom": "93000 2419 0174397 2023",
+      "databaseId": 583,
+      "databaseSkk": "F 2146 01727 2023 0071078 SI 03",
+      "databaseMet": "MET.000.009485 2022"
+    },
+    {
+      "nama": "Rahayu Efendy, ST",
+      "noRegistrasiAskom": "93000 2419 0174397 2023",
+      "databaseId": 584,
+      "databaseSkk": "F 1993 12653 2024 0268445 SI 15",
+      "databaseMet": "MET.000.009493 2022"
+    },
+    {
+      "nama": "Agustinus Panggalo",
+      "noRegistrasiAskom": "93000 2419 0174397 2023",
+      "databaseId": 586,
+      "databaseSkk": "F 03381 2023 0067349 SI 03",
+      "databaseMet": "MET.000.009852 2022"
+    },
+    {
+      "nama": "Mega Nospita Matana",
+      "noRegistrasiAskom": "93000 2419 0174397 2023",
+      "databaseId": 587,
+      "databaseSkk": "F 2146 01543 2023 0070944 SI 04",
+      "databaseMet": "MET.000.009855 2022"
+    },
+    {
+      "nama": "Rudy M Waromi, ST, MT, CST",
+      "noRegistrasiAskom": "93000 2419 0174397 2023",
+      "databaseId": 591,
+      "databaseSkk": "F 2146 05391 2023 0078215 SI 03",
+      "databaseMet": "MET.000.009842 2022"
+    },
+    {
+      "nama": "Ronald M Kambu",
+      "noRegistrasiAskom": "93000 2419 0174393 2023",
+      "databaseId": 596,
+      "databaseSkk": "f 1993 38521 2025 0005099 SI 10",
+      "databaseMet": "MET.000.009843 2022"
+    },
+    {
+      "nama": "Larz Waromi",
+      "noRegistrasiAskom": "93000 2419 0174393 2023",
+      "databaseId": 601,
+      "databaseSkk": "F 2146 11703 2023 0002854 SI 03",
+      "databaseMet": "MET.000.009844 2022"
+    },
+    {
+      "nama": "Muh Hatta Imsa Malikin",
+      "noRegistrasiAskom": "93000 2419 0174393 2023",
+      "databaseId": 604,
+      "databaseSkk": "F 03379 2023 0067347 SI 03",
+      "databaseMet": "MET.000.009845 2022"
+    },
+    {
+      "nama": "Ika Yulianti",
+      "noRegistrasiAskom": "93000 2419 0174393 2023",
+      "databaseId": 607,
+      "databaseSkk": "F 1993 59547 2023 0032373 SI 10",
+      "databaseMet": "MET.000.009846 2022"
+    },
+    {
+      "nama": "Bonaventura Tito Unggul Sedayu",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 609,
+      "databaseSkk": "F 2146 01504 2023 0067348 SI 03",
+      "databaseMet": "MET.000.009847 2022"
+    },
+    {
+      "nama": "Simon josua",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 610,
+      "databaseSkk": "F 2146 00438 2022 0028211 SI 03",
+      "databaseMet": "MET.000.009848 2022"
+    },
+    {
+      "nama": "Muh Iqbal Imsa Malikin",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 1907,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Florida Margaretha Turot",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 613,
+      "databaseSkk": "F 2146 00425 2022 0028198 SI 01",
+      "databaseMet": "MET.000.009850 2022"
+    },
+    {
+      "nama": "Yusverison Andika",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 616,
+      "databaseSkk": "F 1993 15490 2025 0070896 SI 04",
+      "databaseMet": "MET.000.009851 2022"
+    },
+    {
+      "nama": "Ridwan Demianus",
+      "noRegistrasiAskom": "93000 2419 0174396 2023",
+      "databaseId": 622,
+      "databaseSkk": "F 03378 2023 0067346 SI 01",
+      "databaseMet": "MET.000.009853 2022"
+    },
+    {
+      "nama": "Dede Maulana Effendi",
+      "noRegistrasiAskom": "93000 2419 0115773 2020",
+      "databaseId": 625,
+      "databaseSkk": "F 2146 29657 2024 0050349 SI 10",
+      "databaseMet": "MET.000.010860 2022"
+    },
+    {
+      "nama": "Andreni Octora Kurnia",
+      "noRegistrasiAskom": "93000 2419 0174402 2023",
+      "databaseId": 630,
+      "databaseSkk": "F 2146 86085 2025 0035759 SI 01",
+      "databaseMet": "MET.000.010848 2022"
+    },
+    {
+      "nama": "Ormuz Firdaus, ST, MT",
+      "noRegistrasiAskom": "93000 2419 0174402 2023",
+      "databaseId": 634,
+      "databaseSkk": "F 2146 60168 2024 0202005 SI 15",
+      "databaseMet": "MET.000.010847 2022"
+    },
+    {
+      "nama": "Tony Ardiansyah, ST",
+      "noRegistrasiAskom": "93000 2419 0174402 2023",
+      "databaseId": 639,
+      "databaseSkk": "F 2146 28432 2024 0031049 SI 01",
+      "databaseMet": "MET.000.010864 2022"
+    },
+    {
+      "nama": "Yanti Sarmila. ST",
+      "noRegistrasiAskom": "93000 2419 0174402 2023",
+      "databaseId": 643,
+      "databaseSkk": "F 2160 03817 2024 0078767 MP 01",
+      "databaseMet": "MET.000.010848 2022"
+    },
+    {
+      "nama": "Heriady, ST",
+      "noRegistrasiAskom": "93000 2419 0107797 2020",
+      "databaseId": 647,
+      "databaseSkk": "F 2146 28439 2024 0024093 SI 04",
+      "databaseMet": "MET.000.010852 2022"
+    },
+    {
+      "nama": "Muhammad Riffani",
+      "noRegistrasiAskom": "93000 2419 0113194 2020",
+      "databaseId": 652,
+      "databaseSkk": "F 2146 78056 2025 0073779 SI 10",
+      "databaseMet": "MET.000.010862 2022"
+    },
+    {
+      "nama": "Muhammad Agustian",
+      "noRegistrasiAskom": "93000 2419 0113194 2020",
+      "databaseId": 658,
+      "databaseSkk": "F 2146 78055 2025 0074756 SI 10",
+      "databaseMet": "MET.000.010854 2022"
+    },
+    {
+      "nama": "Mulyanto, ST, MT",
+      "noRegistrasiAskom": "93000 2419 0115759 2020",
+      "databaseId": 664,
+      "databaseSkk": "F 1994 06515 2023 0049360 MP 01",
+      "databaseMet": "MET.000.010856 2022"
+    },
+    {
+      "nama": "Dharsi Milandhany",
+      "noRegistrasiAskom": "93000 2419 0126226 2021",
+      "databaseId": 668,
+      "databaseSkk": "F 2160 03814 2024 0249266 MP 01",
+      "databaseMet": "MET.000.010850 2022"
+    },
+    {
+      "nama": "Nurain Kaluku",
+      "noRegistrasiAskom": "93000 2419 0126226 2021",
+      "databaseId": 1909,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ramat Indra Gobel",
+      "noRegistrasiAskom": "93000 2419 0126226 2021",
+      "databaseId": 1910,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Dr. Ir. H. Nirwan, M.Si",
+      "noRegistrasiAskom": "93000 2419 0126226 2021",
+      "databaseId": 670,
+      "databaseSkk": "F 1993 24580 2024 0033501 SI 01",
+      "databaseMet": "MET.000.006858 2022"
+    },
+    {
+      "nama": "Dr. Ir. Muhammad Junaedy R, S.T., M.T.",
+      "noRegistrasiAskom": "93000 2419 0113205 2020",
+      "databaseId": 672,
+      "databaseSkk": "F 2146 20050 2023 0079777 SI 01",
+      "databaseMet": "MET.000.003543 2022"
+    },
+    {
+      "nama": "Asman Dila",
+      "noRegistrasiAskom": "93000 2419 0113205 2020",
+      "databaseId": 674,
+      "databaseSkk": "F 2146 01144 2023 0069448 SI 10",
+      "databaseMet": "MET.000.004056 2022"
+    },
+    {
+      "nama": "Alharia Dinata",
+      "noRegistrasiAskom": "93000 2419 0113205 2020",
+      "databaseId": 675,
+      "databaseSkk": "F 2146 54421 2023 0085089 SI 10",
+      "databaseMet": "MET.000.011098 2022"
+    },
+    {
+      "nama": "Mega Yunanda",
+      "noRegistrasiAskom": "93000 2419 0113205 2020",
+      "databaseId": 681,
+      "databaseSkk": "F 2160 05745 2024 0046069 MP 01",
+      "databaseMet": "MET.000.009418 2022"
+    },
+    {
+      "nama": "Asri Mulyadi, ST, MT",
+      "noRegistrasiAskom": "93000 2419 0112880 2020",
+      "databaseId": 685,
+      "databaseSkk": "F 2146 16727 2023 0190681 SI 11",
+      "databaseMet": "MET.000.011107 2022"
+    },
+    {
+      "nama": "Adi Sumariadi, ST",
+      "noRegistrasiAskom": "74312 2424 4 0207644 2025",
+      "databaseId": 690,
+      "databaseSkk": "F 2146 75753 2025 0159945 SI 10",
+      "databaseMet": "MET.000.003144 2023"
+    },
+    {
+      "nama": "Astiana Tandisau",
+      "noRegistrasiAskom": "74312 2424 4 0207644 2025",
+      "databaseId": 694,
+      "databaseSkk": "F 2146 76699 2025 0076019 SI 01",
+      "databaseMet": "MET.000.003147 2023"
+    },
+    {
+      "nama": "Elly Sukaesih",
+      "noRegistrasiAskom": "74312 2424 4 0207644 2025",
+      "databaseId": 698,
+      "databaseSkk": "F 2146 76694 2025 0129650 SI 04",
+      "databaseMet": "MET.000.003129 2023"
+    },
+    {
+      "nama": "Ir. Muksin",
+      "noRegistrasiAskom": "93000 2419 0174404 2023",
+      "databaseId": 701,
+      "databaseSkk": "F 1993 54773 2023 0118376 SI 01",
+      "databaseMet": "MET.000.003131 2023"
+    },
+    {
+      "nama": "Ir. Pajar Purnomo",
+      "noRegistrasiAskom": "93000 2419 0174404 2023",
+      "databaseId": 702,
+      "databaseSkk": "F 1993 26364 2022 0035750 SI 04",
+      "databaseMet": "MET.000.003132 2023"
+    },
+    {
+      "nama": "Muhammad Khadromi, ST",
+      "noRegistrasiAskom": "93000 2419 0106215 220",
+      "databaseId": 704,
+      "databaseSkk": "F 2018 02173 2023 0009159 SI 03",
+      "databaseMet": "MET.000.003133 2023"
+    },
+    {
+      "nama": "Muhammad Syabhan",
+      "noRegistrasiAskom": "93000 2419 0113357 2020",
+      "databaseId": 707,
+      "databaseSkk": "F 2017 02095 2023 0017869 SI 03",
+      "databaseMet": "MET.000.003142 2023"
+    },
+    {
+      "nama": "Rizkan",
+      "noRegistrasiAskom": "93000 2419 0113357 2020",
+      "databaseId": 710,
+      "databaseSkk": "F 2292 00429 2024 0015700 MP 01",
+      "databaseMet": "MET.000.003134 2023"
+    },
+    {
+      "nama": "Sihol Sanggam Marulam Sitompul",
+      "noRegistrasiAskom": "93000 2419 0174395 2023",
+      "databaseId": 716,
+      "databaseSkk": "F 2146 39143 2024 0093735 SI 01",
+      "databaseMet": "MET.000.003149 2023"
+    },
+    {
+      "nama": "Singgih Dwi Ertanto",
+      "noRegistrasiAskom": "93000 2419 0174395 2023",
+      "databaseId": 718,
+      "databaseSkk": "F 1993 78559 2023 0066444 SI 03",
+      "databaseMet": "MET.000.003143 2023"
+    },
+    {
+      "nama": "Siti Nurlaily Kadarini, ST. MT",
+      "noRegistrasiAskom": "93000 2419 0174395 2023",
+      "databaseId": 721,
+      "databaseSkk": "F 2146 00854 2026 0102657 SI 01",
+      "databaseMet": "MET.000.003135 2023"
+    },
+    {
+      "nama": "Tirto Admojo",
+      "noRegistrasiAskom": "93000 2419 0174395 2023",
+      "databaseId": 725,
+      "databaseSkk": "F 2146 50883 2024 0050875 SI 19",
+      "databaseMet": "MET.000.003141 2023"
+    },
+    {
+      "nama": "Zulchaidir",
+      "noRegistrasiAskom": "93000 24190071976 2018",
+      "databaseId": 732,
+      "databaseSkk": "F 1993 15395 2024 0102658 SI 10",
+      "databaseMet": "MET.000.003136 2023"
+    },
+    {
+      "nama": "Diah Erliasih",
+      "noRegistrasiAskom": "93000 2419 0106232 2020",
+      "databaseId": 735,
+      "databaseSkk": "F 1993 28539 2023 0084919 SI 01",
+      "databaseMet": "MET.000.003137 2023"
+    },
+    {
+      "nama": "Aprilian Dedy Suryadi",
+      "noRegistrasiAskom": "93000 2419 0113057 2020",
+      "databaseId": 739,
+      "databaseSkk": "F 1993 63467 2023 0042686 SI 04",
+      "databaseMet": "MET.000.003138 2023"
+    },
+    {
+      "nama": "Ir. Vivo Henu Ballo",
+      "noRegistrasiAskom": "93000 2419 0174405 2023",
+      "databaseId": 748,
+      "databaseSkk": "F 2146 23551 2025 0050060 SI 04",
+      "databaseMet": "MET.000.003146 2023"
+    },
+    {
+      "nama": "Ir. E Hidayat Hanas",
+      "noRegistrasiAskom": "93000 2419 0174405 2023",
+      "databaseId": 1911,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. M. REZA HASRUL, S.T., M.T.",
+      "noRegistrasiAskom": "93000 2419 0174405 2023",
+      "databaseId": 749,
+      "databaseSkk": "F 2146 05842 2023 0079769 SI 03",
+      "databaseMet": "MET.000.003544 2022"
+    },
+    {
+      "nama": "Ardian Pritra Putra, S.T.",
+      "noRegistrasiAskom": "93000 2419 0174405 2023",
+      "databaseId": 752,
+      "databaseSkk": "F 2146 13750 2023 0162116 SI 10",
+      "databaseMet": "MET.000.005101 2020"
+    },
+    {
+      "nama": "Andi Tendri Yampa",
+      "noRegistrasiAskom": "93000 2419 0145115 2022",
+      "databaseId": 758,
+      "databaseSkk": "F 2146 13744 2023 0096812 SI 01",
+      "databaseMet": "MET.000.005094 2020"
+    },
+    {
+      "nama": "Lailal Gusri",
+      "noRegistrasiAskom": "93000 2419 0145115 2022",
+      "databaseId": 1912,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Herizal, HB",
+      "noRegistrasiAskom": "93000 2419 0145115 2022",
+      "databaseId": 763,
+      "databaseSkk": "F 2146 75924 2025 0059490 SI 04",
+      "databaseMet": "MET.000.005036 2020"
+    },
+    {
+      "nama": "Berliando Filiano",
+      "noRegistrasiAskom": "74312 2424 4 0198018 2024",
+      "databaseId": 768,
+      "databaseSkk": "F 2146 70002 2025 0150520 SI 08",
+      "databaseMet": "MET.000.005037 2020"
+    },
+    {
+      "nama": "Tunti Asparingga",
+      "noRegistrasiAskom": "74312 2424 4 0198018 2024",
+      "databaseId": 770,
+      "databaseSkk": "F 1993 30671 2022 0041805 SI 10",
+      "databaseMet": "MET.000.005035 2020"
+    },
+    {
+      "nama": "Juski",
+      "noRegistrasiAskom": "74312 2424 4 0198018 2024",
+      "databaseId": 771,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006591 2020"
+    },
+    {
+      "nama": "Ema Agustina",
+      "noRegistrasiAskom": "74312 2424 4 0198018 2024",
+      "databaseId": 774,
+      "databaseSkk": "F 2146 18346 2023 0206956 SI 04",
+      "databaseMet": "MET.000.005722 2023"
+    },
+    {
+      "nama": "Saiful Muthaher, Ir, H",
+      "noRegistrasiAskom": "93000 2419 0148997 2022",
+      "databaseId": 778,
+      "databaseSkk": "F 2146 50669 20240023602 SI 04",
+      "databaseMet": "MET.000.005723 2023"
+    },
+    {
+      "nama": "Rifki Fauzi Norhadi",
+      "noRegistrasiAskom": "93000 2419 0148997 2022",
+      "databaseId": 779,
+      "databaseSkk": "F 1993 14577 2022 0019123 SI 01",
+      "databaseMet": "MET.000.005724 2023"
+    },
+    {
+      "nama": "Erma Junita Wulandari",
+      "noRegistrasiAskom": "74312 2424 4 0207636 2025",
+      "databaseId": 781,
+      "databaseSkk": "F 1993 02888 2023 0054172 SI 11",
+      "databaseMet": "MET.000.005725 2023"
+    },
+    {
+      "nama": "Muhammad Jefriyandi",
+      "noRegistrasiAskom": "74312 2424 4 0207636 2025",
+      "databaseId": 786,
+      "databaseSkk": "F 1993 49226 2023 0055400 SI 08",
+      "databaseMet": "MET.000.005725 2023"
+    },
+    {
+      "nama": "Mursid Rachman Hadi",
+      "noRegistrasiAskom": "74312 2424 4 0207636 2025",
+      "databaseId": 789,
+      "databaseSkk": "F 1993 0839 2023 0061136 SI 04",
+      "databaseMet": "MET.000.005727 2023"
+    },
+    {
+      "nama": "M. Fahmiansyah, Ir",
+      "noRegistrasiAskom": "74312 2424 4 0207636 2025",
+      "databaseId": 790,
+      "databaseSkk": "1.2.203.2.175.29.1058898",
+      "databaseMet": "MET.000.005728 2023"
+    },
+    {
+      "nama": "Kartika Musdeni, Ir, H",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 796,
+      "databaseSkk": "F 2146 50670 2024 0392249 SI 04",
+      "databaseMet": "MET.000.005729 2023"
+    },
+    {
+      "nama": "Basriansyah, S.T, M.T",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 798,
+      "databaseSkk": "F 1993 57942 2023 0069773 SI 01",
+      "databaseMet": "MET.000.005730 2023"
+    },
+    {
+      "nama": "Muhammad Sam'ani, Ir, S.T, S.H, M.M, H",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 801,
+      "databaseSkk": "F 2146 50245 2024 0017966 SI 04",
+      "databaseMet": "MET.000.005731 2023"
+    },
+    {
+      "nama": "Sasmalini, S.T., M.T",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 804,
+      "databaseSkk": "F 2146 21649 2025 0205697 SI 01",
+      "databaseMet": "MET.000.005732 2023"
+    },
+    {
+      "nama": "Ahmad Rubani, Ir",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 808,
+      "databaseSkk": "F 2146 28417 2024 0075935 SI 03",
+      "databaseMet": "MET.000.005733 2023"
+    },
+    {
+      "nama": "Gt. Surya Rifani",
+      "noRegistrasiAskom": "74312 2424 4 0207616 2025",
+      "databaseId": 809,
+      "databaseSkk": "1.2.211.2.148.04.1074190",
+      "databaseMet": "MET.000.005734 2023"
+    },
+    {
+      "nama": "Mulyatno",
+      "noRegistrasiAskom": "74312 2424 4 0207614 2025",
+      "databaseId": 810,
+      "databaseSkk": "F 2146 50575 2024 0390550 SI 04",
+      "databaseMet": "MET.000.005735 2023"
+    },
+    {
+      "nama": "Abdul Majid, Ir, S.T. CSE, IPM, H",
+      "noRegistrasiAskom": "74312 2424 4 0207614 2025",
+      "databaseId": 811,
+      "databaseSkk": "F 1993 65423 2023 0133550 SI 01",
+      "databaseMet": "MET.000.005736 2023"
+    },
+    {
+      "nama": "Fathus Suza'ie, Ir, H",
+      "noRegistrasiAskom": "74312 2424 4 0207614 2025",
+      "databaseId": 813,
+      "databaseSkk": "F 2146 16454 2023 0186963 SI 04",
+      "databaseMet": "MET.000.005737 2023"
+    },
+    {
+      "nama": "Richard Muchsin, S.T.",
+      "noRegistrasiAskom": "93000 2419 0148988 2022",
+      "databaseId": 814,
+      "databaseSkk": "F 1993 71371 2023 0142296 SI 10",
+      "databaseMet": "MET.000.005738 2023"
+    },
+    {
+      "nama": "Nur Adha Yuda, S.T",
+      "noRegistrasiAskom": "93000 2419 0148988 2022",
+      "databaseId": 816,
+      "databaseSkk": "F 2146 16451 2023 0055401 SI 01",
+      "databaseMet": "MET.000.005739 2023"
+    },
+    {
+      "nama": "Mokhamad Khuzaimi, Ir, M.M, H",
+      "noRegistrasiAskom": "74312 2424 4 0207625 2025",
+      "databaseId": 820,
+      "databaseSkk": "F 2146 24559 2024 0193721 SI 01",
+      "databaseMet": "MET.000.005740 2023"
+    },
+    {
+      "nama": "Dzulkifli",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 823,
+      "databaseSkk": "F 1993 62187 2023 0128839 SI 01",
+      "databaseMet": "MET.000.005741 2023"
+    },
+    {
+      "nama": "Syamsul Bahri, S.T.",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 826,
+      "databaseSkk": "F  2146 1644920230172719 SI 03",
+      "databaseMet": "MET.000.005742 2023"
+    },
+    {
+      "nama": "Ardi Wiliyanto",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 831,
+      "databaseSkk": "F 2146 27230 2024 0063835 SI 04",
+      "databaseMet": "MET.000.005743 2023"
+    },
+    {
+      "nama": "Erning Ertami Anton",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 835,
+      "databaseSkk": "F 2212 00741 2025 0102711 SI 01",
+      "databaseMet": "MET.000.003549 2022"
+    },
+    {
+      "nama": "AMIN FATAH",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 839,
+      "databaseSkk": "F 2146 00855 2022 0030732 SI 01",
+      "databaseMet": "MET.000.006096 2023"
+    },
+    {
+      "nama": "ANTONIUS SONNY D",
+      "noRegistrasiAskom": "93000 2419 0149000 2022",
+      "databaseId": 1913,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "BAGUS WIBOWO AJI",
+      "noRegistrasiAskom": "74312 2424 4 0207617 2025",
+      "databaseId": 844,
+      "databaseSkk": "F 1993 06652 2022 0008104 SI 01",
+      "databaseMet": "MET.000.006098 2023"
+    },
+    {
+      "nama": "BAHRUDIN ISHAK",
+      "noRegistrasiAskom": "74312 2424 4 0207617 2025",
+      "databaseId": 849,
+      "databaseSkk": "F 1993 06308 2024 0026743 SI 10",
+      "databaseMet": "MET.000.006099 2023"
+    },
+    {
+      "nama": "DWI SULISTYAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207631 2025",
+      "databaseId": 850,
+      "databaseSkk": "F 1993 04642 2022 0005541 SI 11",
+      "databaseMet": "MET.000.006100 2023"
+    },
+    {
+      "nama": "Ir. FARID ZAMRONI M",
+      "noRegistrasiAskom": "93000 2419 014899 2022",
+      "databaseId": 854,
+      "databaseSkk": "F 2581 691 2025 0032386 MP 01",
+      "databaseMet": "MET.000.006101 2023"
+    },
+    {
+      "nama": "MUHAMMAD MUSLIM, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0207641 2025",
+      "databaseId": 858,
+      "databaseSkk": "F 2146 77567 2025 0086170 SI 10",
+      "databaseMet": "MET.000.006102 2023"
+    },
+    {
+      "nama": "PURWOKO IWAN SANTOSO, ST",
+      "noRegistrasiAskom": "74312 2424 4 0207641 2025",
+      "databaseId": 862,
+      "databaseSkk": "F 2146 77566 2025 0088919 SI 04",
+      "databaseMet": "MET.000.006103 2023"
+    },
+    {
+      "nama": "IR. SONNY INDRAPUTRA",
+      "noRegistrasiAskom": "74312 2424 4 0207641 2025",
+      "databaseId": 867,
+      "databaseSkk": "F 2146 26958 2024 0134620 SI 04",
+      "databaseMet": "MET.000.006104 2023"
+    },
+    {
+      "nama": "SYAHID",
+      "noRegistrasiAskom": "93000 2419 0149018 2022",
+      "databaseId": 871,
+      "databaseSkk": "F 2146 76326 2025 0130084 SI 03",
+      "databaseMet": "MET.000.006105 2023"
+    },
+    {
+      "nama": "THEO MAHENDRA WIJAYA",
+      "noRegistrasiAskom": "93000 2419 0149021 2022",
+      "databaseId": 874,
+      "databaseSkk": "F 2146 01530 2022 0036405 SI 10",
+      "databaseMet": "MET.000.006106 2023"
+    },
+    {
+      "nama": "AGENG PURNOMO JATI",
+      "noRegistrasiAskom": "74312 2424 4 0207635 2025",
+      "databaseId": 875,
+      "databaseSkk": "F 2018 04496 2023 0166617 SI 03",
+      "databaseMet": "MET.000.006107 2023"
+    },
+    {
+      "nama": "ANDDY WIJAYA",
+      "noRegistrasiAskom": "74312 2424 4 0207635 2025",
+      "databaseId": 877,
+      "databaseSkk": "F 2018 00312 2022 0002301 SI 10",
+      "databaseMet": "MET.000.006108 2023"
+    },
+    {
+      "nama": "DADI SETIYO SASONGKO, ST",
+      "noRegistrasiAskom": "74312 2424 4 0207635 2025",
+      "databaseId": 879,
+      "databaseSkk": "F 1993 08113 2022 0010036 SI 04",
+      "databaseMet": "MET.000.006109 2023"
+    },
+    {
+      "nama": "DENI DWI MURIANOTO",
+      "noRegistrasiAskom": "74312 2424 4 0207635 2025",
+      "databaseId": 880,
+      "databaseSkk": "F 2018 05018 2023 0161231 SI 03",
+      "databaseMet": "MET.000.006110 2023"
+    },
+    {
+      "nama": "EKO SETYO RAHARJO",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 881,
+      "databaseSkk": "F 2018 00582 2022 0027101 SI 03",
+      "databaseMet": "MET.000.006111 2023"
+    },
+    {
+      "nama": "MUHAMMAD NUR RAFI",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 882,
+      "databaseSkk": "F 2146 04446 2023 0074428 SI 03",
+      "databaseMet": "MET.000.006112 2023"
+    },
+    {
+      "nama": "PERHAT RAKAJAYA",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 883,
+      "databaseSkk": "F 2018 04497 2023 0166616 SI 03",
+      "databaseMet": "MET.000.006113 2023"
+    },
+    {
+      "nama": "SULIH AYU DIANI",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 884,
+      "databaseSkk": "F 2018 05021 2023 0175626 SI 03",
+      "databaseMet": "MET.000.006114 2023"
+    },
+    {
+      "nama": "SUPRAYITNO",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 885,
+      "databaseSkk": "F 2018 05016 2023 0175624 SI 03",
+      "databaseMet": "MET.000.006115 2023"
+    },
+    {
+      "nama": "TARAM",
+      "noRegistrasiAskom": "74312 2424 4 0205037 2025",
+      "databaseId": 886,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.006116 2023"
+    },
+    {
+      "nama": "WISNU DANISWARA",
+      "noRegistrasiAskom": "93000 2419 0148987 2022",
+      "databaseId": 887,
+      "databaseSkk": "F 2018 04501 2023 0166614 SI 03",
+      "databaseMet": "MET.000.006117 2023"
+    },
+    {
+      "nama": "ZULYADI HASNAN POHAN",
+      "noRegistrasiAskom": "93000 2419 0148987 2022",
+      "databaseId": 891,
+      "databaseSkk": "F 2146 23463 2024 0158215 SI 10",
+      "databaseMet": "MET.000.006440 2023"
+    },
+    {
+      "nama": "HERU PRASTIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 893,
+      "databaseSkk": "F 2146  10869 2023 0039890 SI 03",
+      "databaseMet": "MET.000.006441 2023"
+    },
+    {
+      "nama": "IGNATIUS ANDI KURNIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 898,
+      "databaseSkk": "F 2146 73153 2025 0096010 SI 04",
+      "databaseMet": "MET.000.006442 2023"
+    },
+    {
+      "nama": "ZAINAL SIMANJUNTAK, ST",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 902,
+      "databaseSkk": "F 2146 77155 2025 0144395 SI 01",
+      "databaseMet": "MET.000.006443 2023"
+    },
+    {
+      "nama": "HERU LAKSONO",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 903,
+      "databaseSkk": "F 2146 20494 2023 0223100 SI 01",
+      "databaseMet": "MET.000.006444 2023"
+    },
+    {
+      "nama": "KOMANG ERIK KURNIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 904,
+      "databaseSkk": "F 1993 94534 2023 0007449 SI 01",
+      "databaseMet": "MET.000.006445 2023"
+    },
+    {
+      "nama": "KORINA KARTIKA SARI",
+      "noRegistrasiAskom": "74312 2424 4 0207618 2025",
+      "databaseId": 905,
+      "databaseSkk": "F 1993 94533 2023 0181411 SI 01",
+      "databaseMet": "MET.000.006446 2023"
+    },
+    {
+      "nama": "ROMI KELANA",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 913,
+      "databaseSkk": "f 2160 02970 2024 0090700 MP 01",
+      "databaseMet": "MET.000.006448 2023"
+    },
+    {
+      "nama": "AGUNG PRIMA SADELI",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 916,
+      "databaseSkk": "F 2146 01187 2022 0035187 SI 03",
+      "databaseMet": "MET.000.006449 2023"
+    },
+    {
+      "nama": "ZAKIE MUNANDA",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 920,
+      "databaseSkk": "F 2146 76435 2025 0178497 SI 15",
+      "databaseMet": "MET.000.006450 2023"
+    },
+    {
+      "nama": "ZULFIKRAM",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 921,
+      "databaseSkk": "F 2146 15831 2023 0182787 SI 04",
+      "databaseMet": "MET.000.006451 2023"
+    },
+    {
+      "nama": "GUNAWAN SALIM",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 924,
+      "databaseSkk": "F 2146 35288 2024 0190687 SI 10",
+      "databaseMet": "MET.000.006452 2023"
+    },
+    {
+      "nama": "JAN PITER PAUNG LUMBAN GAOL",
+      "noRegistrasiAskom": "74312 2424 4 0207621 2025",
+      "databaseId": 928,
+      "databaseSkk": "F 1993 35472 2025 0190384 SI 01",
+      "databaseMet": "MET.000.006453 2023"
+    },
+    {
+      "nama": "SAHAT HASUDUNGAN TAMPUBOLON IR",
+      "noRegistrasiAskom": "93000 2419 0148991 2022",
+      "databaseId": 931,
+      "databaseSkk": "F 1993 22294 2022 0030506 SI 01",
+      "databaseMet": "MET.000.006454 2023"
+    },
+    {
+      "nama": "SOFAN SUFRI",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 933,
+      "databaseSkk": "F 2146 22002 2023 0238435 SI 01",
+      "databaseMet": "MET.000.006455 2023"
+    },
+    {
+      "nama": "EFAN HIDAYAT",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 938,
+      "databaseSkk": "F 2146 24495 2024 0079347 SI 03",
+      "databaseMet": "MET.000.006456 2023"
+    },
+    {
+      "nama": "KEANDHY SARKAWI",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 940,
+      "databaseSkk": "F 2249 13807 2025 0064163 SI 10",
+      "databaseMet": "MET.000.006457 2023"
+    },
+    {
+      "nama": "MUHAMAD ARIEF IRFAN",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 942,
+      "databaseSkk": "F 2146 13915 2023 0163144 SI 01",
+      "databaseMet": "MET.000.006458 2023"
+    },
+    {
+      "nama": "LA ODE MINZAR",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 948,
+      "databaseSkk": "F 2146 14761 2023 0132609 SI 04",
+      "databaseMet": "MET.000.006459 2023"
+    },
+    {
+      "nama": "RAHMAT SALEH",
+      "noRegistrasiAskom": "74312 2424 4 0207619 2025",
+      "databaseId": 949,
+      "databaseSkk": "F 2146 08054 2023 0096007 SI 01",
+      "databaseMet": "MET.000.006460 2023"
+    },
+    {
+      "nama": "SUGIHARTO",
+      "noRegistrasiAskom": "74312 2424 4 0207632 2025",
+      "databaseId": 950,
+      "databaseSkk": "F 1993 08037 2022 0009961 SI 01",
+      "databaseMet": "MET.000.006461 2023"
+    },
+    {
+      "nama": "MUHAMMAD MUQARRABIN ARI",
+      "noRegistrasiAskom": "74312 2424 4 0207632 2025",
+      "databaseId": 951,
+      "databaseSkk": "F 2146 15008 2023 0174812 SI 16",
+      "databaseMet": "MET.000.006462 2023"
+    },
+    {
+      "nama": "ARTHUR SIRAIT",
+      "noRegistrasiAskom": "74312 2424 4 0207632 2025",
+      "databaseId": 956,
+      "databaseSkk": "F 2146 16362 2023  0062404 SI 01",
+      "databaseMet": "MET.000.006463 2023"
+    },
+    {
+      "nama": "IR SRI WREDININGSIH",
+      "noRegistrasiAskom": "74312 2424 4 0207632 2025",
+      "databaseId": 957,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.010106 2021"
+    },
+    {
+      "nama": "SARTONO",
+      "noRegistrasiAskom": "93000 2419 01441265 2022",
+      "databaseId": 958,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.010109 2021"
+    },
+    {
+      "nama": "YOHANES WIDAYAT",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 962,
+      "databaseSkk": "F 2146 15815 2023 0058599 SI 10",
+      "databaseMet": "MET.000.007135 2023"
+    },
+    {
+      "nama": "JOY FREESTER TELAUMBANUA",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 967,
+      "databaseSkk": "F 1994 06975 2024 0007590 MP 01",
+      "databaseMet": "MET.000.007136 2023"
+    },
+    {
+      "nama": "NURUL FARIDAH",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 969,
+      "databaseSkk": "F 2146 27355 2024 0290450 SI 04",
+      "databaseMet": "MET.000.007137 2023"
+    },
+    {
+      "nama": "TRY SUGIYARTO SOEPARYANTO",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 973,
+      "databaseSkk": "F 2146 13714 2023 0162114 SI 04",
+      "databaseMet": "MET.000.007138 2023"
+    },
+    {
+      "nama": "AHMAD YUDI",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 975,
+      "databaseSkk": "F 2146 16765 2023 0191544 SI 10",
+      "databaseMet": "MET.000.007139 2023"
+    },
+    {
+      "nama": "ZULQADRI ANSAR",
+      "noRegistrasiAskom": "74312 2424 4 0207627 2025",
+      "databaseId": 977,
+      "databaseSkk": "F 2146 16744 2023  0191542 SI 16",
+      "databaseMet": "MET.000.007140 2023"
+    },
+    {
+      "nama": "LAILI YUMNA NAIFAH",
+      "noRegistrasiAskom": "93000 2419 0148998 2022",
+      "databaseId": 983,
+      "databaseSkk": "F 1993 03173 2026 0338035 SI 16",
+      "databaseMet": "MET.000.007141 2023"
+    },
+    {
+      "nama": "IBRAHIM",
+      "noRegistrasiAskom": "93000 2419 0148998 2022",
+      "databaseId": 985,
+      "databaseSkk": "F  2146 35116 2024 0346475 SI 01",
+      "databaseMet": "MET.000.007142 2023"
+    },
+    {
+      "nama": "ANDREAS PRAYOGO, ST",
+      "noRegistrasiAskom": "93000 2419 0149002 2022",
+      "databaseId": 988,
+      "databaseSkk": "F  2146 17506 2023 0188828 SI 04",
+      "databaseMet": "MET.000.007143 2023"
+    },
+    {
+      "nama": "MASUD",
+      "noRegistrasiAskom": "93000 2419 0149002 2022",
+      "databaseId": 993,
+      "databaseSkk": "F 2146 85305 2025 0013785 SI 04",
+      "databaseMet": "MET.000.007144 2023"
+    },
+    {
+      "nama": "SUYANTO PRIAMBODO",
+      "noRegistrasiAskom": "93000 2419 0149025 2022",
+      "databaseId": 995,
+      "databaseSkk": "F 2160 00198 2023 0073017 MP 01",
+      "databaseMet": "MET.000.007145 2023"
+    },
+    {
+      "nama": "RIBUDI EFENDI",
+      "noRegistrasiAskom": "74312 2424 4 0207620 2025",
+      "databaseId": 1000,
+      "databaseSkk": "F 2146 32105 2024 0006031SI01",
+      "databaseMet": "MET.000.007146 2023"
+    },
+    {
+      "nama": "ANDREANTO S.",
+      "noRegistrasiAskom": "93000 2419 0149003 2022",
+      "databaseId": 1004,
+      "databaseSkk": "F 1993 105370 2023 0053188 SI 01",
+      "databaseMet": "MET.000.007147 2023"
+    },
+    {
+      "nama": "ARDINAL SAPUTRA, ST",
+      "noRegistrasiAskom": "93000 2419 0149003 2022",
+      "databaseId": 1009,
+      "databaseSkk": "F2146 17792 2023 0178103 SI 01",
+      "databaseMet": "MET.000.007148 2023"
+    },
+    {
+      "nama": "RINTO KUSHARJONO",
+      "noRegistrasiAskom": "74312 2424 4 0207628 2025",
+      "databaseId": 1013,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007150 2023"
+    },
+    {
+      "nama": "MUHAMAD YUSUF",
+      "noRegistrasiAskom": "74312 2424 4 0207628 2025",
+      "databaseId": 1017,
+      "databaseSkk": "F 214616608 2023 0171512 SI 04",
+      "databaseMet": "MET.000.007151 2023"
+    },
+    {
+      "nama": "AGUNG SUKATON",
+      "noRegistrasiAskom": "74312 2424 4 0207628 2025",
+      "databaseId": 1018,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007152 2023"
+    },
+    {
+      "nama": "NELPIANUS.",
+      "noRegistrasiAskom": "74312 2424 4 0207628 2025",
+      "databaseId": 1914,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "RACHMAD DJAUHARI",
+      "noRegistrasiAskom": "74312 2424 4 0207643 2025",
+      "databaseId": 1023,
+      "databaseSkk": "F 2146 32062 2024 0027638 SI 15",
+      "databaseMet": "MET.000.007154 2023"
+    },
+    {
+      "nama": "ACHNAN AYATULLAH KURNIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207643 2025",
+      "databaseId": 1027,
+      "databaseSkk": "F 2146 31893 2024 0089117 SI 10",
+      "databaseMet": "MET.000.007155 2023"
+    },
+    {
+      "nama": "YURIZKY FIKRI",
+      "noRegistrasiAskom": "74312 2424 4 0207643 2025",
+      "databaseId": 1031,
+      "databaseSkk": "F 2218 01118 2023 0032629 MP 01",
+      "databaseMet": "MET.000.007737 2023"
+    },
+    {
+      "nama": "AMIANY, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207633 2025",
+      "databaseId": 1032,
+      "databaseSkk": "F 1994 19523 203 0233864 MP 02",
+      "databaseMet": "MET.000.007738 2023"
+    },
+    {
+      "nama": "I GEDE ARDIKA ADISUARDHANA",
+      "noRegistrasiAskom": "93000 2419 0149029 2022",
+      "databaseId": 1035,
+      "databaseSkk": "F 1993 45990 2025 0298097 SI 04",
+      "databaseMet": "MET.000.007739 2023"
+    },
+    {
+      "nama": "DANDY GARDA DIRGANTARA",
+      "noRegistrasiAskom": "93000 2419 0149029 2022",
+      "databaseId": 1036,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007740 2023"
+    },
+    {
+      "nama": "EXCEL NAISHAR ELFRANSA",
+      "noRegistrasiAskom": "93000 2419 0149029 2022",
+      "databaseId": 1040,
+      "databaseSkk": "F 1993 45991 2025 0227851 SI 04",
+      "databaseMet": "MET.000.007741 2023"
+    },
+    {
+      "nama": "SRI TUNGGAL WIJI",
+      "noRegistrasiAskom": "74312 2424 4 0207634 2025",
+      "databaseId": 1042,
+      "databaseSkk": "F 2146 21674 2025 0164917 SI 08",
+      "databaseMet": "MET.000.007742 2023"
+    },
+    {
+      "nama": "ANDRI KURNIAWAN",
+      "noRegistrasiAskom": "93000 2419 0149016 2022",
+      "databaseId": 1045,
+      "databaseSkk": "1.2.202.2.088.11.1152342",
+      "databaseMet": "MET.000.007743 2023"
+    },
+    {
+      "nama": "IR. AKHMAD",
+      "noRegistrasiAskom": "93000 2419 0149016 2022",
+      "databaseId": 1046,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007744 2023"
+    },
+    {
+      "nama": "HANDOKO",
+      "noRegistrasiAskom": "74312 2424 4 0207624 2024",
+      "databaseId": 1052,
+      "databaseSkk": "F 2146 85150 2025 0234526 SI 10",
+      "databaseMet": "MET.000.007745 2023"
+    },
+    {
+      "nama": "PETRONELA F. RAMANDEY",
+      "noRegistrasiAskom": "93000 2419 0149017 2022",
+      "databaseId": 1057,
+      "databaseSkk": "F 1993 39178 2025 0074996 SI 04",
+      "databaseMet": "MET.000.007746 2023"
+    },
+    {
+      "nama": "SANTARIA SRIRENI TUGIONO, ST",
+      "noRegistrasiAskom": "93000 2419 0149017 2022",
+      "databaseId": 1060,
+      "databaseSkk": "F 2146 17184 2023 0197753 SI 11",
+      "databaseMet": "MET.000.007747 2023"
+    },
+    {
+      "nama": "MUHAMMAD LUTHFI",
+      "noRegistrasiAskom": "93000 2419 0149005 2022",
+      "databaseId": 1065,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.007749 2023"
+    },
+    {
+      "nama": "KHOIRUL HUDA",
+      "noRegistrasiAskom": "74312 2424 4 0207639 2025",
+      "databaseId": 1066,
+      "databaseSkk": "F 1993 49580 2023 0110907 SI 04",
+      "databaseMet": "MET.000.007750 2023"
+    },
+    {
+      "nama": "HERA LIMAYA",
+      "noRegistrasiAskom": "74312 2424 4 0207639 2025",
+      "databaseId": 1068,
+      "databaseSkk": "F 2218 00714 2023 0153711 MP 01",
+      "databaseMet": "MET.000.007751 2023"
+    },
+    {
+      "nama": "MUHAMMAD NASIR YUSUF",
+      "noRegistrasiAskom": "74312 2424 4 0207639 2025",
+      "databaseId": 1070,
+      "databaseSkk": "F 2160 00047 2025 0215460 MP 01",
+      "databaseMet": "MET.000.007752 2023"
+    },
+    {
+      "nama": "ACHMAD AFIF ALWI",
+      "noRegistrasiAskom": "74312 2424 4 0207645 2025",
+      "databaseId": 1072,
+      "databaseSkk": "F 2249 42215 2025 0000404 SI 14",
+      "databaseMet": "MET.000.007753 2023"
+    },
+    {
+      "nama": "TOHIR IBNUSH SHOLAH",
+      "noRegistrasiAskom": "74312 2424 4 0207645 2025",
+      "databaseId": 1073,
+      "databaseSkk": "F 1994 01334 2023 0062928 MP 01",
+      "databaseMet": "MET.000.007754 2023"
+    },
+    {
+      "nama": "MOH. IHSAN SIBGOTULOH",
+      "noRegistrasiAskom": "74312 2424 4 0207645 2025",
+      "databaseId": 1074,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009246 2023"
+    },
+    {
+      "nama": "SARWONO",
+      "noRegistrasiAskom": "74312 2424 4 0207645 2025",
+      "databaseId": 1075,
+      "databaseSkk": "F 1993 21356 2022 0029042 SI 01",
+      "databaseMet": "MET.000.009247 2023"
+    },
+    {
+      "nama": "BUDIJONO KISWANDIHARDJO",
+      "noRegistrasiAskom": "74312 2424 4 0207623 2025",
+      "databaseId": 1076,
+      "databaseSkk": "F 2146 06346 2023 0085549 SI 04",
+      "databaseMet": "MET.000.009249 2023"
+    },
+    {
+      "nama": "TIARA NURJANITA",
+      "noRegistrasiAskom": "74312 2424 4 0207623 2025",
+      "databaseId": 1077,
+      "databaseSkk": "F2160 00256 2023 0094544 MP 01",
+      "databaseMet": "MET.000.009250 2023"
+    },
+    {
+      "nama": "FIRMAN BUDI PRIHARTONO",
+      "noRegistrasiAskom": "74312 2424 4 0207623 2025",
+      "databaseId": 1078,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009251 2023"
+    },
+    {
+      "nama": "KEVIN SINAR UTAMA GIRSANG",
+      "noRegistrasiAskom": "74312 2424 4 0207642 2025",
+      "databaseId": 1081,
+      "databaseSkk": "F 1993 39645 2025 0331228 SI 04",
+      "databaseMet": "MET.000.009252 2023"
+    },
+    {
+      "nama": "DHARMAWAN PUTRA, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207642 2025",
+      "databaseId": 1086,
+      "databaseSkk": "F 2249 02710 2024 0110915 SI 10",
+      "databaseMet": "MET.000.009253 2023"
+    },
+    {
+      "nama": "ROMI ISWANDI, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207642 2025",
+      "databaseId": 1089,
+      "databaseSkk": "F 2146 86469 2025 0212353 SI 10",
+      "databaseMet": "MET.000.009254 2023"
+    },
+    {
+      "nama": "BUDIPRASETIYO KUSUMONUGROHO",
+      "noRegistrasiAskom": "74312 2424 4 0207642 2025",
+      "databaseId": 1090,
+      "databaseSkk": "F 2146 19570 2023 0214338 SI 01",
+      "databaseMet": "MET.000.009255 2023"
+    },
+    {
+      "nama": "Dr. DIHARYO, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207642 2025",
+      "databaseId": 1091,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009256 2023"
+    },
+    {
+      "nama": "JOHAN BARLIANA ALSIN",
+      "noRegistrasiAskom": "93000 2419 0149006 2022",
+      "databaseId": 1092,
+      "databaseSkk": "F 1993 116583 2023 0227060 SI 16",
+      "databaseMet": "MET.000.009257 2023"
+    },
+    {
+      "nama": "INDAH ARISKI DATASA",
+      "noRegistrasiAskom": "74312 2424 4 0207622 2025",
+      "databaseId": 1096,
+      "databaseSkk": "F 2146 86696 2025 0246407 SI 01",
+      "databaseMet": "MET.000.009258 2023"
+    },
+    {
+      "nama": "Ir. DAFID IRAWAN, M.T.",
+      "noRegistrasiAskom": "93000 2419 0126229 2021",
+      "databaseId": 1101,
+      "databaseSkk": "F 1994 05330 2022 0000011 SI 02",
+      "databaseMet": "MET.000.009259 2023"
+    },
+    {
+      "nama": "IR. TANGGOR M. L . TORUAN",
+      "noRegistrasiAskom": "93000 2419 0126229 2021",
+      "databaseId": 1102,
+      "databaseSkk": "F 1993 03881 2022 0004664 SI 01",
+      "databaseMet": "MET.000.009260 2023"
+    },
+    {
+      "nama": "NYOMAN LANANG KRESNA ERLANGGA",
+      "noRegistrasiAskom": "93000 2419 0126229 2021",
+      "databaseId": 1103,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009261 2023"
+    },
+    {
+      "nama": "MOH. REZA RIZQI PRATAMA",
+      "noRegistrasiAskom": "93000 2419 0126229 2021",
+      "databaseId": 1104,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.009263 2023"
+    },
+    {
+      "nama": "PUJI WIDODO, S.H.",
+      "noRegistrasiAskom": "74312 2424 4 0207622 2025",
+      "databaseId": 1105,
+      "databaseSkk": "F 2160 00777 2023 0138116 MP 01",
+      "databaseMet": "MET.000.009264 2023"
+    },
+    {
+      "nama": "M. ARIF EKO HADI PURNOMO",
+      "noRegistrasiAskom": "93000 2419 0124405 2021",
+      "databaseId": 1107,
+      "databaseSkk": "F 2146 32903 2024 0182413 SI 03",
+      "databaseMet": "MET.000.009264 2023"
+    },
+    {
+      "nama": "ADI SISWANTO",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1108,
+      "databaseSkk": "1.2.207.1.187.09.1091822",
+      "databaseMet": "MET.000.000223 2024"
+    },
+    {
+      "nama": "APRIANTO KURNIAWAN",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1109,
+      "databaseSkk": "F 1993 25344 2022 0033445 SI 04",
+      "databaseMet": "MET.000.000224 2024"
+    },
+    {
+      "nama": "IHSAN PRASETYO, S.T.",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1110,
+      "databaseSkk": "F 2193 00879 2022 0021081 SI 03",
+      "databaseMet": "MET.000.000225 2024"
+    },
+    {
+      "nama": "MUHAJIR",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1111,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.000226 2024"
+    },
+    {
+      "nama": "FAISAL FAHMI, S.T.",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1114,
+      "databaseSkk": "1.2.207.1.187.09.1055637",
+      "databaseMet": "MET.000.000227 2024"
+    },
+    {
+      "nama": "HENDRA WIJAYA, S.T.",
+      "noRegistrasiAskom": "74321 2424 4 018159 2024",
+      "databaseId": 1115,
+      "databaseSkk": "1.2.202.1.142.09.1875480",
+      "databaseMet": "MET.000.000228 2024"
+    },
+    {
+      "nama": "NURKHOLID WIDYAPRAJA MIRZA",
+      "noRegistrasiAskom": "93000 2419 0174401 2023",
+      "databaseId": 1116,
+      "databaseSkk": "F 1993 37155 2023 0095763 SI",
+      "databaseMet": "MET.000.000229 2024"
+    },
+    {
+      "nama": "DOLLY ADHI PRADIGDO, S.T.",
+      "noRegistrasiAskom": "93000 2419 0174401 2023",
+      "databaseId": 1117,
+      "databaseSkk": "F 1993 10189 2023 0062614 SI 04",
+      "databaseMet": "MET.000.000230 2024"
+    },
+    {
+      "nama": "BUDI HARIYANTO",
+      "noRegistrasiAskom": "93000 2419 0174401 2023",
+      "databaseId": 1118,
+      "databaseSkk": "F1993 13555 2022 0002303 SI 03",
+      "databaseMet": "MET.000.000231 2024"
+    },
+    {
+      "nama": "I PUTU INDRA PRABAWA",
+      "noRegistrasiAskom": "93000 2419 0174398 2023",
+      "databaseId": 1120,
+      "databaseSkk": "F 2146 21515 2023  0234989 SI 01",
+      "databaseMet": "MET.000.000232 2024"
+    },
+    {
+      "nama": "KUSNO ERIANTO",
+      "noRegistrasiAskom": "93000 2419 0174398 2023",
+      "databaseId": 1122,
+      "databaseSkk": "F 1993 35320 2023 0092583 SI 03",
+      "databaseMet": "MET.000.000233 2024"
+    },
+    {
+      "nama": "I MADE JAYA WIJAYA",
+      "noRegistrasiAskom": "74312 2424 4 0207636  2025",
+      "databaseId": 1123,
+      "databaseSkk": "F 1993 63152 2023 0006193 SI 15",
+      "databaseMet": "MET.000.000234 2024"
+    },
+    {
+      "nama": "EDY NURPADMO HARDI",
+      "noRegistrasiAskom": "74312 2424 4 0207636  2025",
+      "databaseId": 1124,
+      "databaseSkk": "F 2146 21990 2023 0238425 SI 03",
+      "databaseMet": "MET.000.000235 2024"
+    },
+    {
+      "nama": "SULUH DAMAR HARBIAN",
+      "noRegistrasiAskom": "74312 2424 4 0207636  2025",
+      "databaseId": 1125,
+      "databaseSkk": "F 2193 01293 2022 0040993 SI 04",
+      "databaseMet": "MET.000.000236 2024"
+    },
+    {
+      "nama": "RINTO YUNIARTO, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207636  2025",
+      "databaseId": 1126,
+      "databaseSkk": "F 2193 01195 2022 0033569 SI 03",
+      "databaseMet": "MET.000.000237 2024"
+    },
+    {
+      "nama": "NURYONO",
+      "noRegistrasiAskom": "74312 2424 4 0207638 2025",
+      "databaseId": 1128,
+      "databaseSkk": "F 1993 65144 2023 0129182 SI 10",
+      "databaseMet": "MET.000.000238 2024"
+    },
+    {
+      "nama": "NUR SYAMSUL RIJAL",
+      "noRegistrasiAskom": "74312 2424 4 0207638 2025",
+      "databaseId": 1129,
+      "databaseSkk": "F 1993 00659 2024 0241057 SI 01",
+      "databaseMet": "MET.000.000239 2024"
+    },
+    {
+      "nama": "BAMBANG LASMONO DHIAN Nep. S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207638 2025",
+      "databaseId": 1132,
+      "databaseSkk": "F 1994 01004 2022 0004916 MP 04",
+      "databaseMet": "MET.000.000240 2024"
+    },
+    {
+      "nama": "MUHAMMAD ARDANY AFIANTO",
+      "noRegistrasiAskom": "93000 2419 0148993 2022",
+      "databaseId": 1137,
+      "databaseSkk": "F 1994 01063 2022 0004895 MP 02",
+      "databaseMet": "MET.000.000241 2024"
+    },
+    {
+      "nama": "YANDRA AMIRTA, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207626 2025",
+      "databaseId": 1138,
+      "databaseSkk": "1.2.201.1.142.09.1158967",
+      "databaseMet": "MET.000.000242 2024"
+    },
+    {
+      "nama": "ADI SUCIPTO, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207626 2025",
+      "databaseId": 1140,
+      "databaseSkk": "F  1993 03105 2022 0003757 SI 10",
+      "databaseMet": "MET.000.000243 2024"
+    },
+    {
+      "nama": "SUDARMANTO",
+      "noRegistrasiAskom": "74312 2424 4 0207626 2025",
+      "databaseId": 1143,
+      "databaseSkk": "F  1993 78726 2023 0154021 SI 04",
+      "databaseMet": "MET.000.000244 2024"
+    },
+    {
+      "nama": "DONY RAHARJO JATI, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0207626 2025",
+      "databaseId": 1144,
+      "databaseSkk": "F 1993 107843 2023 0154027 SI 01",
+      "databaseMet": "MET.000.000245 2024"
+    },
+    {
+      "nama": "WAHYU MUSTAKIM",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1154,
+      "databaseSkk": "F 2146 22197 2025 0034377 SI 03",
+      "databaseMet": "MET.000.000992 2024"
+    },
+    {
+      "nama": "EKI KURNANDA",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1155,
+      "databaseSkk": "F 1993 106738 2023 0207340 SI 01",
+      "databaseMet": "MET.000.000993 2024"
+    },
+    {
+      "nama": "MUKHELNALIS SUTAZRIL",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1160,
+      "databaseSkk": "F 2249 01932 2024 0153882 SI 10",
+      "databaseMet": "MET.000.000994 2024"
+    },
+    {
+      "nama": "FADLAN HAWARI",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1164,
+      "databaseSkk": "F 2249 14667 2024 0108605 SI 16",
+      "databaseMet": "MET.000.000995 2024"
+    },
+    {
+      "nama": "AHMAD RIZAL MASROFI",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1166,
+      "databaseSkk": "F 2146 20663 2023 0076249 SI 01",
+      "databaseMet": "MET.000.000996 2024"
+    },
+    {
+      "nama": "NI PUTU EMMY OKTARIANI, ST, MT",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1169,
+      "databaseSkk": "F 2146 29828 2024 0251164 SI 01",
+      "databaseMet": "MET.000.000997 2024"
+    },
+    {
+      "nama": "I GEDE BAYU KURNIA ATMAJA, ST",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1171,
+      "databaseSkk": "F 1994 14685 2023 0175544 MP 01",
+      "databaseMet": "MET.000.000998 2024"
+    },
+    {
+      "nama": "HIDAYAT KARIM",
+      "noRegistrasiAskom": "74312 2424 4 0207615 2025",
+      "databaseId": 1173,
+      "databaseSkk": "F 2582 13 2025 0262275 SR 02",
+      "databaseMet": "MET.000.000999 2024"
+    },
+    {
+      "nama": "BESAR ANGGARA P, S.Ars",
+      "noRegistrasiAskom": "74312 2424 4 0207630 2025",
+      "databaseId": 1175,
+      "databaseSkk": "F 2582 9 2025 0262274 SR 02",
+      "databaseMet": "MET.000.001000 2024"
+    },
+    {
+      "nama": "R. HARBAYU BUDHI WARYAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0207630 2025",
+      "databaseId": 1177,
+      "databaseSkk": "F 2582 5 2025 0262273 SR 02",
+      "databaseMet": "MET.000.001001 2024"
+    },
+    {
+      "nama": "DICKY A. P. BUDIONO",
+      "noRegistrasiAskom": "74312 2424 4 0207630 2025",
+      "databaseId": 1181,
+      "databaseSkk": "f 1993 43038 2025 0267196 SI 10",
+      "databaseMet": "MET.000.001002 2024"
+    },
+    {
+      "nama": "MUHAMMAD GUNTUR HARTANDI",
+      "noRegistrasiAskom": "74312 2424 4 0211083 2025",
+      "databaseId": 1182,
+      "databaseSkk": "F 2146 15004 2023 0174810 SI 08",
+      "databaseMet": "MET.000.001003 2024"
+    },
+    {
+      "nama": "LINDA TAMAELA",
+      "noRegistrasiAskom": "74312 2424 4 0211083 2025",
+      "databaseId": 1189,
+      "databaseSkk": "F 2146 26957 2024 0082416 SI 10",
+      "databaseMet": "MET.000.001004 2024"
+    },
+    {
+      "nama": "MARIA SKOLASTIKA DEMOR",
+      "noRegistrasiAskom": "74312 2424 4 0211083 2025",
+      "databaseId": 1192,
+      "databaseSkk": "F 2146 25978 2024 0152631 SI 03",
+      "databaseMet": "MET.000.001005 2024"
+    },
+    {
+      "nama": "HENRY ALISMAN GULTOM",
+      "noRegistrasiAskom": "74312 2424 4 0211083 2025",
+      "databaseId": 1198,
+      "databaseSkk": "F 2146 27723 2024 0274363 SI 10",
+      "databaseMet": "MET.000.001006 2024"
+    },
+    {
+      "nama": "MUH. SYAHRUL LATIF",
+      "noRegistrasiAskom": "74312 2424 4 0211083 2025",
+      "databaseId": 1199,
+      "databaseSkk": "F 2146 25947 2024 0057014 SI 01",
+      "databaseMet": "MET.000.001007 2024"
+    },
+    {
+      "nama": "YOHANES PEMANDI ERICK A.",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1200,
+      "databaseSkk": "F  2146 25946 2024 0282633 SI 01",
+      "databaseMet": "MET.000.001008 2024"
+    },
+    {
+      "nama": "IRFAN SULFRIANSYAH B",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1915,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "Ir. ANDI BASO M. CHAIRAN",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1201,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.001010 2024"
+    },
+    {
+      "nama": "NINDYA RATNASARI",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1205,
+      "databaseSkk": "F 1993 02889 2023 0011119 SI 11",
+      "databaseMet": "MET.000.001011 2024"
+    },
+    {
+      "nama": "T. ZULKARNAINI",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1207,
+      "databaseSkk": "F 2146 39205 2024 0289813 SI 10",
+      "databaseMet": "MET.000.001012 2024"
+    },
+    {
+      "nama": "RADIFAN RAMADHAN AL KHAIRI",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1211,
+      "databaseSkk": "F 2146 00486 2026 0247638 SI 01",
+      "databaseMet": "MET.000.001013 2024"
+    },
+    {
+      "nama": "TA'ZIL FAUZA",
+      "noRegistrasiAskom": "74312 2424 4 0211084 2025",
+      "databaseId": 1213,
+      "databaseSkk": "F 1246 22385 2025 0061429 SI 01",
+      "databaseMet": "MET.000.001014 2024"
+    },
+    {
+      "nama": "TAUFIK RAMADHAN",
+      "noRegistrasiAskom": "74312 2424 4 0211085 2025",
+      "databaseId": 1215,
+      "databaseSkk": "F 2146 71617 2025 0052020 SI 01",
+      "databaseMet": "MET.000.001015 2024"
+    },
+    {
+      "nama": "NOVA SETIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0211085 2025",
+      "databaseId": 1219,
+      "databaseSkk": "F 2146 86284 2025 0135561 SI 10",
+      "databaseMet": "MET.000.001306 2024"
+    },
+    {
+      "nama": "HILWAN ARIEF",
+      "noRegistrasiAskom": "74312 2424 4 0211085 2025",
+      "databaseId": 1221,
+      "databaseSkk": "F 1993 07559 2022 0009363 SI 04",
+      "databaseMet": "MET.000.001307 2024"
+    },
+    {
+      "nama": "ROBERTUS RIANTO SUNUR",
+      "noRegistrasiAskom": "74312 2424 4 0211085 2025",
+      "databaseId": 1222,
+      "databaseSkk": "F 2146 01733 2022 0039838 SI 03",
+      "databaseMet": "MET.000.001308 2024"
+    },
+    {
+      "nama": "PAULUS SAPTONO H.",
+      "noRegistrasiAskom": "74312 2424 4 0211082 2025",
+      "databaseId": 1224,
+      "databaseSkk": "F 1993 82148 2023 0159255 SI 16",
+      "databaseMet": "MET.000.001309 2024"
+    },
+    {
+      "nama": "AMANDUS H. W. GALUS",
+      "noRegistrasiAskom": "74312 2424 4 0211082 2025",
+      "databaseId": 1229,
+      "databaseSkk": "F 2146 21532 2023 0002977 SI 10",
+      "databaseMet": "MET.000.001310 2024"
+    },
+    {
+      "nama": "ERMAN HERNADI",
+      "noRegistrasiAskom": "74312 2424 4 0211082 2025",
+      "databaseId": 1230,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.001311 2024"
+    },
+    {
+      "nama": "FAHRUDDIN, MT",
+      "noRegistrasiAskom": "74312 2424 4 0211082 2025",
+      "databaseId": 1231,
+      "databaseSkk": "F 1993 24346 2023 0080030 SI 01",
+      "databaseMet": "MET.000.001312 2024"
+    },
+    {
+      "nama": "IR. IWAN CAHYONO, MT.",
+      "noRegistrasiAskom": "74312 2424 4 0211086 2025",
+      "databaseId": 1233,
+      "databaseSkk": "F  2146 54333 2023 0023105 SI 03",
+      "databaseMet": "MET.000.001313 2024"
+    },
+    {
+      "nama": "SAIFUL ARFAAH, ST",
+      "noRegistrasiAskom": "74312 2424 4 0211086 2025",
+      "databaseId": 1235,
+      "databaseSkk": "F 1993 20519 2023 0075118 SI 10",
+      "databaseMet": "MET.000.001314 2024"
+    },
+    {
+      "nama": "WIDI HARSOYO",
+      "noRegistrasiAskom": "74312 2424 4 0211086 2025",
+      "databaseId": 1238,
+      "databaseSkk": "F 2249 17727 2025 0436850 SI 01",
+      "databaseMet": "MET.000.001315 2024"
+    },
+    {
+      "nama": "HASSAN SAJALI",
+      "noRegistrasiAskom": "74312 2424 4 0211086 2025",
+      "databaseId": 1239,
+      "databaseSkk": "F 2146 08059 2023 0096013 SI 01",
+      "databaseMet": "MET.000.001316 2024"
+    },
+    {
+      "nama": "HUSNI MUBARAK",
+      "noRegistrasiAskom": "74312 2424 4 0211086 2025",
+      "databaseId": 1241,
+      "databaseSkk": "1.6.603.2.195.17.1103466",
+      "databaseMet": "MET.000.001317 2024"
+    },
+    {
+      "nama": "PUTRI HANDAYANI",
+      "noRegistrasiAskom": "93000 2419 0153396 2022",
+      "databaseId": 1243,
+      "databaseSkk": "F  2146 20554 2023 0016572 SI 03",
+      "databaseMet": "MET.000.001318 2024"
+    },
+    {
+      "nama": "WIJALISTYO DWI P.",
+      "noRegistrasiAskom": "93000 2419 0153396 2022",
+      "databaseId": 1244,
+      "databaseSkk": "F 2146 32009 2024 0317303 SI 03",
+      "databaseMet": "MET.000.001319 2024"
+    },
+    {
+      "nama": "PASTIMAN EFAKUASI W.",
+      "noRegistrasiAskom": "93000 2419 0153396 2022",
+      "databaseId": 1246,
+      "databaseSkk": "F 1993 40649 20230100154 SI 04",
+      "databaseMet": "MET.000.001320 2024"
+    },
+    {
+      "nama": "MARWAH SADIK DAELI",
+      "noRegistrasiAskom": "93000 2419 0153396 2022",
+      "databaseId": 1248,
+      "databaseSkk": "F 1993 91023 2023 0006373 SI 03",
+      "databaseMet": "MET.000.001321 2024"
+    },
+    {
+      "nama": "IR. DERMAWAN TARIGAN",
+      "noRegistrasiAskom": "74312 2424 4 0211087 2025",
+      "databaseId": 1249,
+      "databaseSkk": "F 1994 14176 2023 0176338 MP 02",
+      "databaseMet": "MET.000.001322 2024"
+    },
+    {
+      "nama": "RUSNIA PARDEDE, SE.",
+      "noRegistrasiAskom": "74312 2424 4 0211087 2025",
+      "databaseId": 1254,
+      "databaseSkk": "F 2146 60162 2024 0266610 SI 01",
+      "databaseMet": "MET.000.001323 2024"
+    },
+    {
+      "nama": "DEDI ASWAR",
+      "noRegistrasiAskom": "74312 2424 4 0211087 2025",
+      "databaseId": 1258,
+      "databaseSkk": "F 2018 13024 2024 0160780 SI 15",
+      "databaseMet": "MET.000.001324 2024"
+    },
+    {
+      "nama": "IDARWATI SYAM, ST",
+      "noRegistrasiAskom": "74312 2424 4 0211087 2025",
+      "databaseId": 1260,
+      "databaseSkk": "1.2.202.2.026.20.1076469",
+      "databaseMet": "MET.000.001325 2024"
+    },
+    {
+      "nama": "JAMES JEFFRY T.",
+      "noRegistrasiAskom": "93000 2419 0153398 2022",
+      "databaseId": 1262,
+      "databaseSkk": "F 1993 78757 2023 0013566 SI 03",
+      "databaseMet": "MET.000.001326 2024"
+    },
+    {
+      "nama": "GRIMALDY MARSELLINO K.",
+      "noRegistrasiAskom": "93000 2419 0153398 2022",
+      "databaseId": 1263,
+      "databaseSkk": "F 1994 08603 2023 0125133 MP 01",
+      "databaseMet": "MET.000.001327 2024"
+    },
+    {
+      "nama": "UMBU JESSE RATUNDIMA",
+      "noRegistrasiAskom": "74312 2424 4 0211088 2025",
+      "databaseId": 1265,
+      "databaseSkk": "F 2146 04401 2026 0203057 SI 01",
+      "databaseMet": "MET.000.002929 2024"
+    },
+    {
+      "nama": "HASBI ARRIPAINI",
+      "noRegistrasiAskom": "74312 2424 4 0211088 2025",
+      "databaseId": 1266,
+      "databaseSkk": "F 1994 13827 2023 0172722 MP 02",
+      "databaseMet": "MET.000.002930 2024"
+    },
+    {
+      "nama": "AFRIADI HASTRO PAGADE",
+      "noRegistrasiAskom": "74312 2424 4 0211088 2025",
+      "databaseId": 1268,
+      "databaseSkk": "F 2146 13745 2023 0162177 SI 01",
+      "databaseMet": "MET.000.002931 2024"
+    },
+    {
+      "nama": "MUCHLIS SUTAN",
+      "noRegistrasiAskom": "74312 2424 4 0211088 2025",
+      "databaseId": 1270,
+      "databaseSkk": "F 1994 084962024 0267026 MP 01",
+      "databaseMet": "MET.000.002932 2024"
+    },
+    {
+      "nama": "HARYO SURYONO",
+      "noRegistrasiAskom": "74312 2424 4 0211088 2025",
+      "databaseId": 1272,
+      "databaseSkk": "F 2582 6 2025 0443789 SR 02",
+      "databaseMet": "MET.000.002933 2024"
+    },
+    {
+      "nama": "MUKHTAR LUTFIE",
+      "noRegistrasiAskom": "74312 2424 4 0211089 2025",
+      "databaseId": 1276,
+      "databaseSkk": "F 2146 33321 2024 0267029 SI 10",
+      "databaseMet": "MET.000.002934 2024"
+    },
+    {
+      "nama": "PETRUS PAULINUS SUBAN KERAF",
+      "noRegistrasiAskom": "93000 2419 0153401 2022",
+      "databaseId": 1279,
+      "databaseSkk": "F 2092 00034 2022 0008625 SI  03",
+      "databaseMet": "MET.000.002935 2024"
+    },
+    {
+      "nama": "HERBAYU ADI",
+      "noRegistrasiAskom": "93000 2419 0153402 2022",
+      "databaseId": 1281,
+      "databaseSkk": "F 2582 12 2025 0346316 SR 02",
+      "databaseMet": "MET.000.002936 2024"
+    },
+    {
+      "nama": "GREGORIUS A GEGANA A",
+      "noRegistrasiAskom": "93000 2419 0153402 2022",
+      "databaseId": 1283,
+      "databaseSkk": "F 2582 7 2025 0354196 SR 02",
+      "databaseMet": "MET.000.002937 2024"
+    },
+    {
+      "nama": "FREDY GUNAWAN",
+      "noRegistrasiAskom": "93000 2419 0153402 2022",
+      "databaseId": 1285,
+      "databaseSkk": "F 2582 8 2025 0346474 SR 02",
+      "databaseMet": "MET.000.002938 2024"
+    },
+    {
+      "nama": "YOSEFAT CANDRA",
+      "noRegistrasiAskom": "74312 2424 4 0212554 2025",
+      "databaseId": 1286,
+      "databaseSkk": "F 2146 08540 2023 0102045 SI 03",
+      "databaseMet": "MET.000.002939 2024"
+    },
+    {
+      "nama": "FAUZAN FITYANI PUTRA",
+      "noRegistrasiAskom": "74312 2424 4 0212554 2025",
+      "databaseId": 1290,
+      "databaseSkk": "F 2146 75222 2025 0323775 SI 03",
+      "databaseMet": "MET.000.002940 2024"
+    },
+    {
+      "nama": "VICTOR ADI MULYA",
+      "noRegistrasiAskom": "74312 2424 4 0212554 2025",
+      "databaseId": 1291,
+      "databaseSkk": "F 1993 21715 2023 0076811 SI 01",
+      "databaseMet": "MET.000.002941 2024"
+    },
+    {
+      "nama": "SOFIAN KAEFA",
+      "noRegistrasiAskom": "74312 2424 4 0212554 2025",
+      "databaseId": 1293,
+      "databaseSkk": "F  2058 00389 2023 0162154 SI 03",
+      "databaseMet": "MET.000.002942 2024"
+    },
+    {
+      "nama": "LAURENTIUS DHANGANG",
+      "noRegistrasiAskom": "74312 2424 4 0212547 2025",
+      "databaseId": 1294,
+      "databaseSkk": "F 1994 19482 2023 0233171 MP 02",
+      "databaseMet": "MET.000.002943 2024"
+    },
+    {
+      "nama": "SALDO MAULANA",
+      "noRegistrasiAskom": "74312 2424 4 0212547 2025",
+      "databaseId": 1296,
+      "databaseSkk": "F 2582 4 2025 0338037 SR 02",
+      "databaseMet": "MET.000.002944 2024"
+    },
+    {
+      "nama": "SATRIANI S. KOMBO",
+      "noRegistrasiAskom": "93000 2419 0153405 2022",
+      "databaseId": 1298,
+      "databaseSkk": "F 2146 00044 2026 0421493 SI 01",
+      "databaseMet": "MET.000.002945 2024"
+    },
+    {
+      "nama": "JUMRIL AMALYA",
+      "noRegistrasiAskom": "93000 2419 0153406 2022",
+      "databaseId": 1299,
+      "databaseSkk": "F 2146 24760 2024 0267090 SI 03",
+      "databaseMet": "MET.000.002946 2024"
+    },
+    {
+      "nama": "M. GUNAWAN PERDANA",
+      "noRegistrasiAskom": "93000 2419 0153407 2022",
+      "databaseId": 1303,
+      "databaseSkk": "F 2146 27231 2024 0158485 SI 04",
+      "databaseMet": "MET.000.004554 2023"
+    },
+    {
+      "nama": "NATHANIA YOSEPHINE SUMAMPOUW",
+      "noRegistrasiAskom": "93000 2419 0153408 2022",
+      "databaseId": 1305,
+      "databaseSkk": "F 1994 08405 2023 0124030 MP 01",
+      "databaseMet": "MET.000.002634 2024"
+    },
+    {
+      "nama": "ASRULLAH",
+      "noRegistrasiAskom": "93000 2419 0153408 2022",
+      "databaseId": 1308,
+      "databaseSkk": "F 1993 13079 2023 0065700 SI 03",
+      "databaseMet": "MET.000.004245 2024"
+    },
+    {
+      "nama": "ETEP SURYADI",
+      "noRegistrasiAskom": "93000 2419 0153408 2022",
+      "databaseId": 1312,
+      "databaseSkk": "F 2146  71526 2025 0067223 SI 04",
+      "databaseMet": "MET.000.005906 2024"
+    },
+    {
+      "nama": "PIPIN ARIFIN",
+      "noRegistrasiAskom": "93000 2419 0153408 2022",
+      "databaseId": 1314,
+      "databaseSkk": "F 2018 09804 2024  0259742 SI 03",
+      "databaseMet": "MET.000.005907 2024"
+    },
+    {
+      "nama": "BARMANSYAH BURSYAH",
+      "noRegistrasiAskom": "93000 2419 0153409 2022",
+      "databaseId": 1317,
+      "databaseSkk": "F 2146 72477 2025 0188291 SI 04",
+      "databaseMet": "MET.000.005908 2024"
+    },
+    {
+      "nama": "DEDI ENDANG KOSWARA",
+      "noRegistrasiAskom": "93000 2419 0153410 2022",
+      "databaseId": 1319,
+      "databaseSkk": "F 2146 33171 2024 0332633 SI 01",
+      "databaseMet": "MET.000.005909 2024"
+    },
+    {
+      "nama": "ERNING YUNIARSO",
+      "noRegistrasiAskom": "74312 2424 4 0212550 2025",
+      "databaseId": 1322,
+      "databaseSkk": "F 2146 41534 2024 0093027 SI 01",
+      "databaseMet": "MET.000.005910 2024"
+    },
+    {
+      "nama": "MUHAMMAD NASRI M. NUR",
+      "noRegistrasiAskom": "74312 2424 4 0212550 2025",
+      "databaseId": 1323,
+      "databaseSkk": "F 2146 115123 2023 0135011 SI 10",
+      "databaseMet": "MET.000.005911 2024"
+    },
+    {
+      "nama": "WILLY ANDREAN FIRMANSYAH",
+      "noRegistrasiAskom": "93000 2419 0153412 2022",
+      "databaseId": 1324,
+      "databaseSkk": "F 1993 44622 2023 0106116 SI 01",
+      "databaseMet": "MET.000.005912 2024"
+    },
+    {
+      "nama": "FIQI AZMIN",
+      "noRegistrasiAskom": "93000 2419 0153414 2022",
+      "databaseId": 1325,
+      "databaseSkk": "F 2146 12592 2023 0149478 SI 03",
+      "databaseMet": "MET.000.005913 2024"
+    },
+    {
+      "nama": "ZUBRIYANTO SOFJAN",
+      "noRegistrasiAskom": "93000 2419 0153415 2022",
+      "databaseId": 1326,
+      "databaseSkk": "F 1993 12407 2023 0064965 SI 01",
+      "databaseMet": "MET.000.005914 2024"
+    },
+    {
+      "nama": "BAGIA SUHARTONO",
+      "noRegistrasiAskom": "93000 2419 0153415 2022",
+      "databaseId": 1327,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.005915 2024"
+    },
+    {
+      "nama": "MARTHARIONALDI",
+      "noRegistrasiAskom": "93000 2419 0153415 2022",
+      "databaseId": 1328,
+      "databaseSkk": "F 1993 37842 2024 0334341 SI 01",
+      "databaseMet": "MET.000.005916 2024"
+    },
+    {
+      "nama": "YUSSVINOZA",
+      "noRegistrasiAskom": "93000 2419 0153416 2022",
+      "databaseId": 1331,
+      "databaseSkk": "F 2146 10325 2023 0027155 SI 10",
+      "databaseMet": "MET.000.005917 2024"
+    },
+    {
+      "nama": "HERNOWO",
+      "noRegistrasiAskom": "93000 2419 0153417 2022",
+      "databaseId": 1332,
+      "databaseSkk": "F 2018 12103 2024 0320136 SI 10",
+      "databaseMet": "MET.000.005918 2024"
+    },
+    {
+      "nama": "JATI NOHANTO",
+      "noRegistrasiAskom": "93000 2419 0153417 2022",
+      "databaseId": 1333,
+      "databaseSkk": "F 2146 50961 2024 0395578 SI 01",
+      "databaseMet": "MET.000.005919 2024"
+    },
+    {
+      "nama": "PURBOHADI KASIAJI",
+      "noRegistrasiAskom": "93000 2419 0153418 2022",
+      "databaseId": 1334,
+      "databaseSkk": "F 1993 24366 2024 0303756 SI 04",
+      "databaseMet": "MET.000.005920 2024"
+    },
+    {
+      "nama": "CANDRA",
+      "noRegistrasiAskom": "93000 2419 0153419 2022",
+      "databaseId": 1339,
+      "databaseSkk": "F 2146 86278 2025 0320156 SI 04",
+      "databaseMet": "MET.000.005921 2024"
+    },
+    {
+      "nama": "HERMAN TONI",
+      "noRegistrasiAskom": "93000 2419 0153419 2022",
+      "databaseId": 1344,
+      "databaseSkk": "F 2146 76171 2025 0020579 SI 10",
+      "databaseMet": "MET.000.005922 2024"
+    },
+    {
+      "nama": "BURHAN LATUCONSINA",
+      "noRegistrasiAskom": "74312 2424 4 0212549 2025",
+      "databaseId": 1346,
+      "databaseSkk": "F 2146 40249 2025 0453248 SI 04",
+      "databaseMet": "MET.000.005923 2024"
+    },
+    {
+      "nama": "MOH. IQBAL ARIF RUMRA",
+      "noRegistrasiAskom": "74312 2424 4 0212549 2025",
+      "databaseId": 1348,
+      "databaseSkk": "F 2146 40251 2025 0453249 SI 08",
+      "databaseMet": "MET.000.005924 2024"
+    },
+    {
+      "nama": "AHMAD RIFKY",
+      "noRegistrasiAskom": "74312 2424 4 0212549 2025",
+      "databaseId": 1350,
+      "databaseSkk": "F 1993  50447 2023 0112706 SI 04",
+      "databaseMet": "MET.000.005925 2024"
+    },
+    {
+      "nama": "ABDUL SAMAD",
+      "noRegistrasiAskom": "74312 2424 4 0212549 2025",
+      "databaseId": 1352,
+      "databaseSkk": "F 1993 07004 2023 0059331 SI 01",
+      "databaseMet": "MET.000.005926 2024"
+    },
+    {
+      "nama": "RUHIYAT",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1356,
+      "databaseSkk": "F 2146 33716 2024 0346669 SI 03",
+      "databaseMet": "MET.000.005927 2024"
+    },
+    {
+      "nama": "DADAN SAEBULDAN",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1357,
+      "databaseSkk": "1.2.203.1.155.09.1089018",
+      "databaseMet": "MET.000.005928 2024"
+    },
+    {
+      "nama": "PENGKI SUANTO",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1361,
+      "databaseSkk": "F 2146 24953 2024 0020745 SI 03",
+      "databaseMet": "MET.000.004258 2024"
+    },
+    {
+      "nama": "RUSLAN RIVAI",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1362,
+      "databaseSkk": "F 2160 07379 2024 0393022 MP 01",
+      "databaseMet": "MET.000.004959 2021"
+    },
+    {
+      "nama": "YULIANTINI EKA PUTRI",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1366,
+      "databaseSkk": "F 1993 10604 2023 0006950 SI 04",
+      "databaseMet": "MET.000.001851 2020"
+    },
+    {
+      "nama": "FERRY DESROMI",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1369,
+      "databaseSkk": "F 1993 24873 2023 0080792 SI 01",
+      "databaseMet": "MET.000.011114 2022"
+    },
+    {
+      "nama": "WITARMIN SUTRISNO S.",
+      "noRegistrasiAskom": "74312 2424 4 0212548 2025",
+      "databaseId": 1373,
+      "databaseSkk": "F 2017 02096 2023 0097688 SI 10",
+      "databaseMet": "MET.000.008570 2022"
+    },
+    {
+      "nama": "MUHAMAD KUSMULYONO, S.T.",
+      "noRegistrasiAskom": "93000 2419 0153423 2022",
+      "databaseId": 1376,
+      "databaseSkk": "F 2017 16410 2023 0026672 SI 10",
+      "databaseMet": "MET.000.004378 2023"
+    },
+    {
+      "nama": "IRMAN HADI SARSANTO",
+      "noRegistrasiAskom": "93000 2419 0153423 2022",
+      "databaseId": 1379,
+      "databaseSkk": "F 2017 00869 2023 0096020 SI 04",
+      "databaseMet": "MET.000.009636 2022"
+    },
+    {
+      "nama": "GERCI FAIRIO",
+      "noRegistrasiAskom": "93000 2419 0153423 2022",
+      "databaseId": 1382,
+      "databaseSkk": "F 1993 32595 2022 0045259 SI 10",
+      "databaseMet": "MET.000.009637 2023"
+    },
+    {
+      "nama": "DODY ANTONIUS",
+      "noRegistrasiAskom": "93000 2419 0153422 2022",
+      "databaseId": 1384,
+      "databaseSkk": "F 2017 35191 20240016659 SI 15",
+      "databaseMet": "MET.000.008571 2022"
+    },
+    {
+      "nama": "CHRIS NATH DANIEL, S.H.",
+      "noRegistrasiAskom": "93000 2419 0153422 2022",
+      "databaseId": 1388,
+      "databaseSkk": "F 2017 23799 2023 0135799 SI 10",
+      "databaseMet": "MET.000.008569 2022"
+    },
+    {
+      "nama": "AGUNG PANGARSO",
+      "noRegistrasiAskom": "93000 2419 0153422 2022",
+      "databaseId": 1393,
+      "databaseSkk": "F 2100 00141 2022 0022237 SI 01",
+      "databaseMet": "MET.000.005944 2021"
+    },
+    {
+      "nama": "MUFLIHUN",
+      "noRegistrasiAskom": "93000 2419 0153422 2022",
+      "databaseId": 1399,
+      "databaseSkk": "F 2146 39931 2025 0017566 SI 03",
+      "databaseMet": "MET.000.009985 2022"
+    },
+    {
+      "nama": "PUJI SIHONO",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1404,
+      "databaseSkk": "F 1993 07991 2023 0060362 SI 04",
+      "databaseMet": "MET.000.003921 2023"
+    },
+    {
+      "nama": "RAHMAT EFENDI",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1408,
+      "databaseSkk": "F 2100 01588 2024 0085141 SI 10",
+      "databaseMet": "MET.000.010000 2022"
+    },
+    {
+      "nama": "SUWANDI RAJAGUKGUK",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1413,
+      "databaseSkk": "F 1994 02221 2023 0071195 MP 01",
+      "databaseMet": "MET.000.010004 2022"
+    },
+    {
+      "nama": "AGUNG PRASETYO",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1416,
+      "databaseSkk": "F 2160 02294 2023 0092932 MP 01",
+      "databaseMet": "MET.000.003935 2023"
+    },
+    {
+      "nama": "AGUS SUPARNA PUTRA",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1421,
+      "databaseSkk": "F 1994 04653 2023 0093628 MP 01",
+      "databaseMet": "MET.000.0024872 2023"
+    },
+    {
+      "nama": "ARIEF HARIADI",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1423,
+      "databaseSkk": "F 2160 02295 2023 0168659 MP 01",
+      "databaseMet": "MET.000.003924 2023"
+    },
+    {
+      "nama": "DODI RIYANTO",
+      "noRegistrasiAskom": "93000 2419 0154635 2022",
+      "databaseId": 1427,
+      "databaseSkk": "F 2100 02867 2023 0112854 SI 01",
+      "databaseMet": "MET.000.003936 2023"
+    },
+    {
+      "nama": "FRENGKI ANDI SIAHAAN",
+      "noRegistrasiAskom": "93000 2419 0154636 2022",
+      "databaseId": 1431,
+      "databaseSkk": "F 2100 04677 2023 0136087 SI 10",
+      "databaseMet": "MET.000.003938 2023"
+    },
+    {
+      "nama": "HARRY LAKSONO",
+      "noRegistrasiAskom": "93000 2419 0154634 2022",
+      "databaseId": 1434,
+      "databaseSkk": "F 2017 56397 2024 0055078 SI 10",
+      "databaseMet": "MET.000.0024871 2023"
+    },
+    {
+      "nama": "SUKARMAN",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1438,
+      "databaseSkk": "F 2100 04029 2023 0096511 SI 10",
+      "databaseMet": "MET.000.003937 2023"
+    },
+    {
+      "nama": "NINA RESTINA",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1442,
+      "databaseSkk": "F 2100 02620 2023 0012560 SI 04",
+      "databaseMet": "MET.000.005952 2021"
+    },
+    {
+      "nama": "RISKA BUDI KURNIAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1446,
+      "databaseSkk": "F 2100 03069 2023 0112247 SI 03",
+      "databaseMet": "MET.000.010001 2022"
+    },
+    {
+      "nama": "AIRMA NOVIYANTI SARI SAMAD",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1450,
+      "databaseSkk": "F 2100 02808 2023 0107555 SI 10",
+      "databaseMet": "MET.000.010005 2022"
+    },
+    {
+      "nama": "SUKMAWATI",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1454,
+      "databaseSkk": "F 2100 03070 2023 0107556 SI 03",
+      "databaseMet": "MET.000.010013 2022"
+    },
+    {
+      "nama": "SURATIN",
+      "noRegistrasiAskom": "74312 2424 4 0212556 2025",
+      "databaseId": 1458,
+      "databaseSkk": "F 2100 02201 2023 0102729 SI 03",
+      "databaseMet": "MET.000.005949 2021"
+    },
+    {
+      "nama": "CHAIRIL UMRI",
+      "noRegistrasiAskom": "74312 2424 4 0212555 2025",
+      "databaseId": 1463,
+      "databaseSkk": "F 2218 01409 2023 0148194 MP 01",
+      "databaseMet": "MET.000.011329 2022"
+    },
+    {
+      "nama": "TONI SUGIARTO",
+      "noRegistrasiAskom": "74312 2424 4 0212555 2025",
+      "databaseId": 1466,
+      "databaseSkk": "F 2018 05241 2023 0179358 SI 10",
+      "databaseMet": "MET.000.011332 2022"
+    },
+    {
+      "nama": "EDI HENDRI ASRI",
+      "noRegistrasiAskom": "74312 2424 4 0212555 2025",
+      "databaseId": 1470,
+      "databaseSkk": "F 2017 26446 2024 0247572 SI 01",
+      "databaseMet": "MET.000.000801 2024"
+    },
+    {
+      "nama": "R KOORNIAWAN HADI PURWO",
+      "noRegistrasiAskom": "74312 2424 4 0212555 2025",
+      "databaseId": 1471,
+      "databaseSkk": "F 0612 00031 2022 0023601 MP 01",
+      "databaseMet": "MET.000.006373 2024"
+    },
+    {
+      "nama": "HIDAYAT",
+      "noRegistrasiAskom": "74312 2424 4 0212555 2025",
+      "databaseId": 1476,
+      "databaseSkk": "F 2193 01035 2022 0029451 SI 01",
+      "databaseMet": "MET.000.011273 2018"
+    },
+    {
+      "nama": "TINI AGUSTINI",
+      "noRegistrasiAskom": "93000 2419 0154653 2022",
+      "databaseId": 1480,
+      "databaseSkk": "F 2100 02715 2023 0101087 SI 01",
+      "databaseMet": "MET.000.0059.2021"
+    },
+    {
+      "nama": "AGUS BUDHY PRASETYO",
+      "noRegistrasiAskom": "93000 2419 0154653 2022",
+      "databaseId": 1485,
+      "databaseSkk": "F 2017 31886 2024 0029455 SI 04",
+      "databaseMet": "MET.000.008510 2022"
+    },
+    {
+      "nama": "GUSBENI",
+      "noRegistrasiAskom": "93000 2419 0154653 2022",
+      "databaseId": 1489,
+      "databaseSkk": "F 2017 08305 2023 0014033 SI 01",
+      "databaseMet": "MET.000.0024575 2023"
+    },
+    {
+      "nama": "IR ULINSON SIMON SILALAHI",
+      "noRegistrasiAskom": "93000 2419 0154658 2022",
+      "databaseId": 1492,
+      "databaseSkk": "F 2100 03997 2023 0005400 SI 03",
+      "databaseMet": "MET.000 003939 2023"
+    },
+    {
+      "nama": "AFRY RISTIANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213918 2025",
+      "databaseId": 1494,
+      "databaseSkk": "F 2017 56878 2004 0295965 SI 09",
+      "databaseMet": "MET.000.003426 2025"
+    },
+    {
+      "nama": "ALDIB SYAGLI",
+      "noRegistrasiAskom": "74312 2424 4 0213918 2025",
+      "databaseId": 1498,
+      "databaseSkk": "F 2017 38903 2024 0001874 SI 03",
+      "databaseMet": "MET.000.000811 2024"
+    },
+    {
+      "nama": "Ir. ANDHI KUSWARIANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213918 2025",
+      "databaseId": 1502,
+      "databaseSkk": "F 2017 36891 2024 0097683 SI 10",
+      "databaseMet": "MET.000.000643 2022"
+    },
+    {
+      "nama": "APRIYAN SUSANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213918 2025",
+      "databaseId": 1506,
+      "databaseSkk": "F 1993 00225 2022 0000006 SI 01",
+      "databaseMet": "MET.000.002167 2020"
+    },
+    {
+      "nama": "ARIF SUGESTIYO",
+      "noRegistrasiAskom": "74321 2424 4 0213916 2025",
+      "databaseId": 1510,
+      "databaseSkk": "F 2017 35936 2024 0049544 SI 01",
+      "databaseMet": "MET.000.000796 2024"
+    },
+    {
+      "nama": "DIMAS MAYOSE FATURAHMAN",
+      "noRegistrasiAskom": "74321 2424 4 0213916 2025",
+      "databaseId": 1514,
+      "databaseSkk": "F 2017 09428 2023 0105129 SI 01",
+      "databaseMet": "MET.000.004374 2023"
+    },
+    {
+      "nama": "MAIZAR KURNIAWAN",
+      "noRegistrasiAskom": "93000 2419 0153512 2022",
+      "databaseId": 1521,
+      "databaseSkk": "F 2087 00026 2024 0173874 SI 01",
+      "databaseMet": "MET.000.011335 2022"
+    },
+    {
+      "nama": "SULVIA INDRA",
+      "noRegistrasiAskom": "93000 2419 0153512 2022",
+      "databaseId": 1525,
+      "databaseSkk": "F 2017 32920 2024 0276009 SI 01",
+      "databaseMet": "MET.000.000797 2024"
+    },
+    {
+      "nama": "YEKI LESMANA",
+      "noRegistrasiAskom": "93000 2419 0153512 2022",
+      "databaseId": 1529,
+      "databaseSkk": "F 2087 00027 2024 0248069 SI 01",
+      "databaseMet": "MET.000.005041 2023"
+    },
+    {
+      "nama": "AHMADI HELMI",
+      "noRegistrasiAskom": "93000 2419 0153512 2022",
+      "databaseId": 1531,
+      "databaseSkk": "F 2100 02982 2024 0238681 SI 03",
+      "databaseMet": "MET.000.00739 2024"
+    },
+    {
+      "nama": "HAMZAH HASANUDDIN",
+      "noRegistrasiAskom": "74312 2424 4 0213919 2025",
+      "databaseId": 1535,
+      "databaseSkk": "F 2581 439 2025 0265853 MP 01",
+      "databaseMet": "MET.000.005889 2024"
+    },
+    {
+      "nama": "MUHAMMAD AKASHA",
+      "noRegistrasiAskom": "74312 2424 4 0213919 2025",
+      "databaseId": 1537,
+      "databaseSkk": "F 2016 00308 2023 0086190 SI 01",
+      "databaseMet": "MET.000.007689 2024"
+    },
+    {
+      "nama": "HERU HADI SAPUTRO",
+      "noRegistrasiAskom": "74312 2424 4 0213919 2025",
+      "databaseId": 1539,
+      "databaseSkk": "F 2018 13886 2024 0027272 SI 03",
+      "databaseMet": "MET.000.007688 2024"
+    },
+    {
+      "nama": "Dr. SUKIMAN NURDIN, S.T., M.Sc.",
+      "noRegistrasiAskom": "74312 2424 4 0213919 2025",
+      "databaseId": 1540,
+      "databaseSkk": "F 2249 45084 2024 0413182 SI 15",
+      "databaseMet": "MET.000.005888 2024"
+    },
+    {
+      "nama": "HARUN MALLISA",
+      "noRegistrasiAskom": "74312 2424 4 0213919 2025",
+      "databaseId": 1541,
+      "databaseSkk": "F 1993 54519 2024 0390323 SI 01",
+      "databaseMet": "MET.000.006935 2020"
+    },
+    {
+      "nama": "YASSIR ARAFAT",
+      "noRegistrasiAskom": "93000 2419 0153501 2022",
+      "databaseId": 1543,
+      "databaseSkk": "1.2.211.2.056.19.1979808",
+      "databaseMet": "MET.000.010299  2024"
+    },
+    {
+      "nama": "ANGGA KURNIA RIYADI",
+      "noRegistrasiAskom": "93000 2419 0153501 2022",
+      "databaseId": 1916,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "MARTINUS GINTING",
+      "noRegistrasiAskom": "93000 2419 0153503 2022",
+      "databaseId": 1545,
+      "databaseSkk": "F 2017 18711 2023 0204637 SI 01",
+      "databaseMet": "MET.000.008564 2022"
+    },
+    {
+      "nama": "DIMAS HADI PRASETYO",
+      "noRegistrasiAskom": "93000 2419 0153503 2022",
+      "databaseId": 1549,
+      "databaseSkk": "F 2017 09833 2023 0082778 SI 03",
+      "databaseMet": "MET.000.0024584 2023"
+    },
+    {
+      "nama": "PUJO BASUKI",
+      "noRegistrasiAskom": "93000 2419 0153503 2022",
+      "databaseId": 1553,
+      "databaseSkk": "F 2017 49086 2024 0201733 SI 10",
+      "databaseMet": "MET.000.000738 2024"
+    },
+    {
+      "nama": "ERWIN LESMANA",
+      "noRegistrasiAskom": "93000 2419 0153503 2022",
+      "databaseId": 1557,
+      "databaseSkk": "F 2017 45719 2024 0135835 SI 10",
+      "databaseMet": "MET.000.000735 2024"
+    },
+    {
+      "nama": "MURI RAHARJA",
+      "noRegistrasiAskom": "93000 2419 0153503 2022",
+      "databaseId": 1561,
+      "databaseSkk": "F 2193 00910 2022 0022007 SI 04",
+      "databaseMet": "MET.000.000806 2024"
+    },
+    {
+      "nama": "BAYU RAKHMAN",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1566,
+      "databaseSkk": "F 2017 38919 2024 0114305 SI 01",
+      "databaseMet": "MET.000.8821 2023"
+    },
+    {
+      "nama": "EKO PURWANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1570,
+      "databaseSkk": "F 2017 13012 2023 0029008 SI 03",
+      "databaseMet": "MET.000.004373 2023"
+    },
+    {
+      "nama": "MASRIANTO ABDULLAH",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1575,
+      "databaseSkk": "F 2160 02611 2024 0073423 MP 01",
+      "databaseMet": "MET.000.000802 2024"
+    },
+    {
+      "nama": "HASAN M",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1917,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "ERNA RAHMAWATI",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1584,
+      "databaseSkk": "F 1994 08918 2023 0049675 MP 01",
+      "databaseMet": "MET.000.001136 2025"
+    },
+    {
+      "nama": "PUTU NUGROHO WISNU BROTO",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1590,
+      "databaseSkk": "F 2146 75538 2025 0021918 SI 01",
+      "databaseMet": "MET.000.001137 2025"
+    },
+    {
+      "nama": "DWI YOFI AFRIDO",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1594,
+      "databaseSkk": "F 2146 75850 2025 0018139 SI 01",
+      "databaseMet": "MET.000.001138 2025"
+    },
+    {
+      "nama": "RANGGA PUTRA MAKMUR",
+      "noRegistrasiAskom": "74312 2424 4 0213923 2025",
+      "databaseId": 1600,
+      "databaseSkk": "F 1993 05053 2023 0017744 SI 09",
+      "databaseMet": "MET.000.001139 2025"
+    },
+    {
+      "nama": "SUDIRMAN NAPITUPULU",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1605,
+      "databaseSkk": "F 2146 75952 2025 0401778 SI 03",
+      "databaseMet": "MET.000.001140 2025"
+    },
+    {
+      "nama": "YUYUN ZULFIKAR, IR",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1608,
+      "databaseSkk": "F 2160 00121 2025 0416212 MP 01",
+      "databaseMet": "MET.000.001141 2025"
+    },
+    {
+      "nama": "MUHAMMAD IHSAN DJAJADI WANGSA",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1610,
+      "databaseSkk": "F 2366 00562 2024 0160055 MP 01",
+      "databaseMet": "MET.000.001142 2025"
+    },
+    {
+      "nama": "RAHMAN AULIA JAUHARI",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1612,
+      "databaseSkk": "F 1993 85179 2023 0163699 SI 01",
+      "databaseMet": "MET.000.001143 2025"
+    },
+    {
+      "nama": "ACHMAD REZA PAHLEVI",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1614,
+      "databaseSkk": "F 2249 12682 2025 0362583 SI 01",
+      "databaseMet": "MET.000.001144 2025"
+    },
+    {
+      "nama": "M. PAHLEVI PRIBADI, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1615,
+      "databaseSkk": "F 2146 50664 2024 0392241 SI 01",
+      "databaseMet": "MET.000.001145 2025"
+    },
+    {
+      "nama": "TRIE REZKY NOVIANTI, S.ST., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1618,
+      "databaseSkk": "F 2193 01157 2022 0033128 SI 10",
+      "databaseMet": "MET.000.001146 2025"
+    },
+    {
+      "nama": "CUNCUN CHANDRA SUHERA",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1623,
+      "databaseSkk": "F 2146 81623 2025 0024841 SI 10",
+      "databaseMet": "MET.000.001147 2025"
+    },
+    {
+      "nama": "M. NURMANSYAH",
+      "noRegistrasiAskom": "74312 2424 4 0213922 2025",
+      "databaseId": 1627,
+      "databaseSkk": "F 2146 00011 2022 0021556 SI 01",
+      "databaseMet": "MET.000.001148 2025"
+    },
+    {
+      "nama": "AGUNG TRI SANTOSO",
+      "noRegistrasiAskom": "74312 2424 4 0213927 2025",
+      "databaseId": 1632,
+      "databaseSkk": "F 1993 09762 2023 0060870 SI 10",
+      "databaseMet": "MET.000.001149 2025"
+    },
+    {
+      "nama": "NANANG ELVA JULIANOOR PUTRA",
+      "noRegistrasiAskom": "74312 2424 4 0213927 2025",
+      "databaseId": 1635,
+      "databaseSkk": "F 1994 13832 2023 0111775 MP 01",
+      "databaseMet": "MET.000.001150 2025"
+    },
+    {
+      "nama": "MUHAMMAD ANDHIKA",
+      "noRegistrasiAskom": "74312 2424 4 0213927 2025",
+      "databaseId": 1637,
+      "databaseSkk": "F 0612 00202 2025 0428633 MP 01",
+      "databaseMet": "MET.000.001151 2025"
+    },
+    {
+      "nama": "GAMALIELYA GERA SIMANJUNTAK",
+      "noRegistrasiAskom": "74312 2424 4 0213927 2025",
+      "databaseId": 1644,
+      "databaseSkk": "F 2581 4 2025 0112803 MP 01",
+      "databaseMet": "MET.000.001152 2025"
+    },
+    {
+      "nama": "HARDINATA PUTRA",
+      "noRegistrasiAskom": "74312 2424 4 0213927 2025",
+      "databaseId": 1649,
+      "databaseSkk": "F 1993 25531 2022 0034647 SI 10",
+      "databaseMet": "MET.000.001153 2025"
+    },
+    {
+      "nama": "WAWAN AFFRIA",
+      "noRegistrasiAskom": "74312 2424 4 0213926 2025",
+      "databaseId": 1650,
+      "databaseSkk": "F 1993 04909 2022 0005779 SI 03",
+      "databaseMet": "MET.000.001154 2025"
+    },
+    {
+      "nama": "ANDRI YANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213926 2025",
+      "databaseId": 1654,
+      "databaseSkk": "F 1994 02016 2025 0055475 MP 01",
+      "databaseMet": "MET.000.001155 2025"
+    },
+    {
+      "nama": "RENOL REGEN",
+      "noRegistrasiAskom": "74312 2424 4 0213926 2025",
+      "databaseId": 1657,
+      "databaseSkk": "F 2160 03304 2024 0145301 MP 01",
+      "databaseMet": "MET.000.001156 2025"
+    },
+    {
+      "nama": "GUSTI DIMAS FIRMANSYAH",
+      "noRegistrasiAskom": "74312 2424 4 0213926 2025",
+      "databaseId": 1659,
+      "databaseSkk": "F 1994 04210 2024 0066557 MP 01",
+      "databaseMet": "MET.000.001157 2025"
+    },
+    {
+      "nama": "EKA PRAYITNO",
+      "noRegistrasiAskom": "74312 2424 4 0213926 2025",
+      "databaseId": 1661,
+      "databaseSkk": "F 1994 07355 2022 0039596 MP 01",
+      "databaseMet": "MET.000.001158 2025"
+    },
+    {
+      "nama": "MACHMUDDIN MUHAMMAD",
+      "noRegistrasiAskom": "74312 2424 4 0213925 2025",
+      "databaseId": 1662,
+      "databaseSkk": "F 2146 39059 2024 0413081 SI 01",
+      "databaseMet": "MET.000.001159 2025"
+    },
+    {
+      "nama": "RIZAL HADIPRAWIKO",
+      "noRegistrasiAskom": "74312 2424 4 0213925 2025",
+      "databaseId": 1663,
+      "databaseSkk": "F 2146 21488 2025 0422973 SI 01",
+      "databaseMet": "MET.000.006126 2018"
+    },
+    {
+      "nama": "BINSAR PARULIAN SILITONGA",
+      "noRegistrasiAskom": "74312 2424 4 0213925 2025",
+      "databaseId": 1667,
+      "databaseSkk": "F 1993 26796 2022 0036724 SI 15",
+      "databaseMet": "MET.000.003920 2023"
+    },
+    {
+      "nama": "CHARLES DARWIN SITINDAON. IR., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213925 2025",
+      "databaseId": 1671,
+      "databaseSkk": "F 74321 2142.06 8 00004272 2023",
+      "databaseMet": "MET.000.010006 2022"
+    },
+    {
+      "nama": "REYNALDO, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213925 2025",
+      "databaseId": 1674,
+      "databaseSkk": "F 2100 01502 2023 0081338 SI 10",
+      "databaseMet": "MET.000.003930 2023"
+    },
+    {
+      "nama": "IR. S. M. SAHAT SIHOMBING",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1676,
+      "databaseSkk": "F 2146 50016 2024 0383968 SI 01",
+      "databaseMet": "MET.000.007270 2024"
+    },
+    {
+      "nama": "ANDAR SITOHANG, IR",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1678,
+      "databaseSkk": "F 2100 03618 2023 0149447 SI 04",
+      "databaseMet": "MET.000.011360 2018"
+    },
+    {
+      "nama": "Drs. Ir. EDISON H MANURUNG, M.M., IICD",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1682,
+      "databaseSkk": "F 2100 00009 2022 0016088 SI 03",
+      "databaseMet": "MET.000.005939 2021"
+    },
+    {
+      "nama": "ALIEF GALIH MAHATMA",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1685,
+      "databaseSkk": "F 2017 04856 2023 0003252 SI 14",
+      "databaseMet": "MET.000.0024605 2023"
+    },
+    {
+      "nama": "DARMA JASULI",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1687,
+      "databaseSkk": "F 2017 03341 2023 0124413 SI 03",
+      "databaseMet": "MET.000.0024604 2023"
+    },
+    {
+      "nama": "DEDY JUNI INDRAWAN",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1688,
+      "databaseSkk": "F 2017 04709 2023 0141401 SI 19",
+      "databaseMet": "MET.000.0024604 2023"
+    },
+    {
+      "nama": "DONNY TRI SUSANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213917 2025",
+      "databaseId": 1691,
+      "databaseSkk": "F 2017 04711 2023 0141406 SI 03",
+      "databaseMet": "MET.000.0024606 2023"
+    },
+    {
+      "nama": "NOER ELITA PRATAMA DEWI. S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1693,
+      "databaseSkk": "F 2017 04857 2023 0141394 SI 08",
+      "databaseMet": "MET.000.0024607 2023"
+    },
+    {
+      "nama": "WAWAN KRISTIANTO",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1695,
+      "databaseSkk": "F 2017 03342 2023 0021184 SI 04",
+      "databaseMet": "MET.000.0024603 2023"
+    },
+    {
+      "nama": "ANDI PRASETYO, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1698,
+      "databaseSkk": "F 1993 39313 2023 0000124 SI 01",
+      "databaseMet": "MET.000.007148 2022"
+    },
+    {
+      "nama": "LEWI VIRGINIUS",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1701,
+      "databaseSkk": "F 1994 19463 2023 0128320 MP 01",
+      "databaseMet": "MET.000.003568 2024"
+    },
+    {
+      "nama": "TIRTO AMSAL VICTORIO SIAHAAN",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1702,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.008804 2023"
+    },
+    {
+      "nama": "HAMKAH",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1707,
+      "databaseSkk": "F 1993 86782 2023 0020092 SI 03",
+      "databaseMet": "MET.000.006392 2022"
+    },
+    {
+      "nama": "LEDI APRIZAL",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1708,
+      "databaseSkk": "F 2218 00217 2025 0442850 MP 01",
+      "databaseMet": "MET.000.006965 2024"
+    },
+    {
+      "nama": "SJAID S. FAIS ASSAGAF",
+      "noRegistrasiAskom": "74312 2424 4 0213921 2025",
+      "databaseId": 1710,
+      "databaseSkk": "F 2017 10590 2023 0168040 SI 01",
+      "databaseMet": "MET.000.002810 2024"
+    },
+    {
+      "nama": "MUHAMMAD RIZALDI SIREGAR",
+      "noRegistrasiAskom": "93000 2419 0153514 2022",
+      "databaseId": 1715,
+      "databaseSkk": "F 1993 41758 2025 0152350 SI 04",
+      "databaseMet": "MET.000.003933 2023"
+    },
+    {
+      "nama": "RIZKY PUTRANTO",
+      "noRegistrasiAskom": "93000 2419 0153514 2022",
+      "databaseId": 1716,
+      "databaseSkk": "F 2092 09077 2024 0138579 SI 01",
+      "databaseMet": "MET.000.007854 2022"
+    },
+    {
+      "nama": "ARY DWI JATMIKO",
+      "noRegistrasiAskom": "93000 2419 0153507 2022",
+      "databaseId": 1918,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "MUHAMMAD ILHAM KURNIAWAN FREDY",
+      "noRegistrasiAskom": "93000 2419 0153515 2022",
+      "databaseId": 1719,
+      "databaseSkk": "F 2146 13717 2023 0162132 SI 04",
+      "databaseMet": "MET.000.003404 2025"
+    },
+    {
+      "nama": "MUCHAMMAD AMIEN",
+      "noRegistrasiAskom": "93000 2419 0154479 2022",
+      "databaseId": 1919,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "IR. LIBERTY HERINIUS GINTING, S.T.",
+      "noRegistrasiAskom": "93000 2419 0154479 2022",
+      "databaseId": 1724,
+      "databaseSkk": "F 2016 00527 2025 0468892 SI 15",
+      "databaseMet": "MET.000.003406 2025"
+    },
+    {
+      "nama": "MUH. SAYFULLAH. S",
+      "noRegistrasiAskom": "74312 2424 4 0217266 2025",
+      "databaseId": 1727,
+      "databaseSkk": "F 2146 76204 2025 0098161 SI 10",
+      "databaseMet": "MET.000.003407 2025"
+    },
+    {
+      "nama": "H. BAMBANG HARIADI, S.T., S.E., M.M.",
+      "noRegistrasiAskom": "74312 2424 4 0212557 2025",
+      "databaseId": 1728,
+      "databaseSkk": "F 2146 42578 2025 0491708 SI 15",
+      "databaseMet": "MET.000.003408 2025"
+    },
+    {
+      "nama": "IR. INDRADJAJA MANOPOL, M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0212557 2025",
+      "databaseId": 1729,
+      "databaseSkk": "F 2146 42576 2025 0491706 SI 04",
+      "databaseMet": "MET.000.003409 2025"
+    },
+    {
+      "nama": "IR. WIDYO PRASENO, M.M.",
+      "noRegistrasiAskom": "74312 2424 4 0212557 2025",
+      "databaseId": 1730,
+      "databaseSkk": "F 2146 42577 2025 0491707 SI 01",
+      "databaseMet": "MET.000.003410 2025"
+    },
+    {
+      "nama": "DR. IR. BAMBANG E MARSONO, M.M.",
+      "noRegistrasiAskom": "74312 2424 4 0212557 2025",
+      "databaseId": 1731,
+      "databaseSkk": "F 2146 42575 2025 0491705 SI 10",
+      "databaseMet": "MET.000.003411 2025"
+    },
+    {
+      "nama": "IKSAN MUSTOFA",
+      "noRegistrasiAskom": "74312 2424 4 0212553 2025",
+      "databaseId": 1920,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "ANDRIANI EFFENDI",
+      "noRegistrasiAskom": "74312 2424 4 0212553 2025",
+      "databaseId": 1734,
+      "databaseSkk": "F 2146 76354 2025 0512847 SI 04",
+      "databaseMet": "MET.000.003413 2025"
+    },
+    {
+      "nama": "PETRUS OHOIWUTUN",
+      "noRegistrasiAskom": "74312 2424 4 0212553 2025",
+      "databaseId": 1738,
+      "databaseSkk": "F 2017 02164 2023 0111311 SI 01",
+      "databaseMet": "MET.000.003414 2025"
+    },
+    {
+      "nama": "I MADE DARMAYANA, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0212553 2025",
+      "databaseId": 1739,
+      "databaseSkk": "F 2146 02064 2022 0041162 SI 07",
+      "databaseMet": "MET.000.003415 2025"
+    },
+    {
+      "nama": "HERMANSYAH SYAM",
+      "noRegistrasiAskom": "74312 2424 4 0212553 2025",
+      "databaseId": 1741,
+      "databaseSkk": "F 2146 76371 2025 0513384 SI 01",
+      "databaseMet": "MET.000.003416 2025"
+    },
+    {
+      "nama": "SALAHUDDIN",
+      "noRegistrasiAskom": "74312 2424 4 0212558 2025",
+      "databaseId": 1745,
+      "databaseSkk": "F 2292 08759 2025 0101887 MP 01",
+      "databaseMet": "MET.000.003417 2025"
+    },
+    {
+      "nama": "TIMAS GINTING",
+      "noRegistrasiAskom": "74312 2424 4 0212558 2025",
+      "databaseId": 1746,
+      "databaseSkk": "F 2146 42579 2025 0491709 SI 01",
+      "databaseMet": "MET.000.003418 2025"
+    },
+    {
+      "nama": "REMEINIS SRI HARDIYANTI ZAGOTO",
+      "noRegistrasiAskom": "74312 2424 4 0212558 2025",
+      "databaseId": 1747,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.003419 2025"
+    },
+    {
+      "nama": "PARLINDUNGAN SIHOTANG",
+      "noRegistrasiAskom": "74312 2424 4 0212558 2025",
+      "databaseId": 1752,
+      "databaseSkk": "F 1993 17553 2024 0094591 SI 04",
+      "databaseMet": "MET.000.003420 2025"
+    },
+    {
+      "nama": "HERI SUTIYO",
+      "noRegistrasiAskom": "74312 2424 4 0212558 2025",
+      "databaseId": 1755,
+      "databaseSkk": "F 1993 00178 2022 0000150 SI 01",
+      "databaseMet": "MET.000.003421 2025"
+    },
+    {
+      "nama": "DRA. MERY CATHERIN SINAGA",
+      "noRegistrasiAskom": "74312 2424 4 0217264 2025",
+      "databaseId": 1759,
+      "databaseSkk": "F 1993 46163 2025 0422087 SI 04",
+      "databaseMet": "MET.000.003422 2025"
+    },
+    {
+      "nama": "YAYA IRAWAN, S.T.",
+      "noRegistrasiAskom": "74312 2424 4 0217264 2025",
+      "databaseId": 1763,
+      "databaseSkk": "F 2146 76192 2025 0246254",
+      "databaseMet": "MET.000.003423 2025"
+    },
+    {
+      "nama": "BENHARD SUMIHE",
+      "noRegistrasiAskom": "74312 2424 4 0217264 2025",
+      "databaseId": 1768,
+      "databaseSkk": "F 2249 35660 2025 0494345 SI 01",
+      "databaseMet": "MET.000.003424 2025"
+    },
+    {
+      "nama": "ACHMAD HELMY",
+      "noRegistrasiAskom": "74312 2424 4 0217260 2025",
+      "databaseId": 1769,
+      "databaseSkk": "NULL",
+      "databaseMet": "MET.000.003425 2025"
+    },
+    {
+      "nama": "AZWAR HATMA",
+      "noRegistrasiAskom": "74312 2424 4 0217260 2025",
+      "databaseId": 1772,
+      "databaseSkk": "F 1993 105240 2023 0204580 SI 01",
+      "databaseMet": "MET.000.003426 2025"
+    },
+    {
+      "nama": "RAYMUNDUS RAYTHONY LAYAR",
+      "noRegistrasiAskom": "74312 2424 4 0217260 2025",
+      "databaseId": 1775,
+      "databaseSkk": "F 1993 32752 2023 0088434 SI 01",
+      "databaseMet": "MET.000.002090 2020"
+    },
+    {
+      "nama": "DRS. BOEDYA DJATMIKA, S.T., M.T\t",
+      "noRegistrasiAskom": "74312 2424 4 0217259 2025",
+      "databaseId": 1921,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "DRS. SUPARNO, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0217259 2025",
+      "databaseId": 1784,
+      "databaseSkk": "F 2100 04123 2023 0020200 SI 01",
+      "databaseMet": "MET.000.010002 2022"
+    },
+    {
+      "nama": "IR. EDI SANTOSO, M.T., IPM",
+      "noRegistrasiAskom": "93000 2419 0154475 2022",
+      "databaseId": 1787,
+      "databaseSkk": "F 2100 00129 2022 0020204 SI 03",
+      "databaseMet": "MET.000.010003 2022"
+    },
+    {
+      "nama": "MUHAMMAD SURYO NUGROHO, S.T., M.T\t",
+      "noRegistrasiAskom": "74312 2424 40217265 2025",
+      "databaseId": 1922,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "EKO SETYAWAN",
+      "noRegistrasiAskom": "74312 2424 40217265 2025",
+      "databaseId": 1797,
+      "databaseSkk": "F 2017 49152 2024 0020201 SI 01",
+      "databaseMet": "MET.000.005053 2020"
+    },
+    {
+      "nama": "ERIN RIZKI MAULANA",
+      "noRegistrasiAskom": "93000 2419 0154477 2022",
+      "databaseId": 1801,
+      "databaseSkk": "F 2017 02343 2023 0111323 SI 01",
+      "databaseMet": "MET.000.008516 2022"
+    },
+    {
+      "nama": "TUTANG MUHTAR KAMALUDIN",
+      "noRegistrasiAskom": "74312 2424 4 0217263 2025",
+      "databaseId": 1805,
+      "databaseSkk": "F 1993 32372 2022 0045077 SI 10",
+      "databaseMet": "MET.000.008444 2021"
+    },
+    {
+      "nama": "NELPIANUS",
+      "noRegistrasiAskom": "74312 2424 4 0217263 2025",
+      "databaseId": 1809,
+      "databaseSkk": "F 1993 01985 2024 0091412 SI 10",
+      "databaseMet": "MET.000.007153 2023"
+    },
+    {
+      "nama": "ACEP HIDAYAT",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1923,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "MAWARDI AMIN",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1924,
+      "databaseSkk": "-",
+      "databaseMet": "-"
+    },
+    {
+      "nama": "SARJONO PURO",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1817,
+      "databaseSkk": "F 2017 02132 2023 0109500 SI 03",
+      "databaseMet": "MET.000.005942 2021"
+    },
+    {
+      "nama": "ADRIYANSYAH",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1819,
+      "databaseSkk": "F 553 08523 2024 0025772 SI 01",
+      "databaseMet": "MET.000.004241 2024"
+    },
+    {
+      "nama": "SITI NURFAJRINA J. PATUNRANGI",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1821,
+      "databaseSkk": "F 1993 25665 2022 0034747 SI 01",
+      "databaseMet": "MET.000.005116 2025"
+    },
+    {
+      "nama": "RUHIYAT HENDAYANA",
+      "noRegistrasiAskom": "74312 2424 4 0217262 2025",
+      "databaseId": 1824,
+      "databaseSkk": "F 2122 00970 2023 0157475 SI 03",
+      "databaseMet": "MET.000.010033 2022"
+    },
+    {
+      "nama": "RUDI, M.T.",
+      "noRegistrasiAskom": "93000 2419 0154481 2022",
+      "databaseId": 1826,
+      "databaseSkk": "F 1993 102256 2023 0146480 SI 01",
+      "databaseMet": "MET.000.005114 2025"
+    },
+    {
+      "nama": "IR. REZA FERIAL ASHADI, M.T.",
+      "noRegistrasiAskom": "93000 2419 0155508 2022",
+      "databaseId": 1829,
+      "databaseSkk": "F 2017 11408 2023 0167994 SI 02",
+      "databaseMet": "MET.000.000399 2020"
+    },
+    {
+      "nama": "MUHAMMAD ISRADI, S.T., M.T.",
+      "noRegistrasiAskom": "93000 2419 0155508 2022",
+      "databaseId": 1832,
+      "databaseSkk": "F 1993 07360 2022 0009178 SI 03",
+      "databaseMet": "MET.000.003031 2018"
+    },
+    {
+      "nama": "DESIANA VIDAYANTI",
+      "noRegistrasiAskom": "93000 2419 0155508 2022",
+      "databaseId": 1833,
+      "databaseSkk": "F 2146 77888 2025 0531648 SI 15",
+      "databaseMet": "MET.000.005353 2024"
+    },
+    {
+      "nama": "RENI KARNO KINASIH, S.T., M.T.",
+      "noRegistrasiAskom": "74312 2424 4 0220771 2025",
+      "databaseId": 1835,
+      "databaseSkk": "1.2.201.2.142.31.1940255",
+      "databaseMet": "MET.000.000397 2020"
+    },
+    {
+      "nama": "SYLVIA INDRIANY",
+      "noRegistrasiAskom": "74312 2424 4 0220771 2025",
+      "databaseId": 1836,
+      "databaseSkk": "F 2017 18497 2023 0202288 SI 03",
+      "databaseMet": "MET.000.008814 2023"
+    },
+    {
+      "nama": "WAHYU HENDRASTOMO",
+      "noRegistrasiAskom": "74312 2424 4 0220771 2025",
+      "databaseId": 1838,
+      "databaseSkk": "F 2581 704 2025 0495499 MP 01",
+      "databaseMet": "MET.000.001352 2025"
+    },
+    {
+      "nama": "ARISTI AYUNINGSI ODE ASRI",
+      "noRegistrasiAskom": "93000 2419 0155496 2022",
+      "databaseId": 1841,
+      "databaseSkk": "1.2.201.3.168.29.1957219",
+      "databaseMet": "MET.000.005098 2025"
+    },
+    {
+      "nama": "MOH. SUTRISNO",
+      "noRegistrasiAskom": "74312 2424 4 0220777 2025",
+      "databaseId": 1842,
+      "databaseSkk": "1.1.101.3.027.09.1152895",
+      "databaseMet": "MET.000.005100 2025"
+    },
+    {
+      "nama": "YULIYANTI KADIR",
+      "noRegistrasiAskom": "74312 2424 4 0220777 2025",
+      "databaseId": 1843,
+      "databaseSkk": "1.2.202.2.194.29.1980128",
+      "databaseMet": "MET.000.005103 2025"
+    },
+    {
+      "nama": "IR. YUSUF SA.",
+      "noRegistrasiAskom": "74312 2424 4 0220777 2025",
+      "databaseId": 1847,
+      "databaseSkk": "F 2017 28402 2024 0185383 SI 07",
+      "databaseMet": "MET.000.005940 2021"
+    },
+    {
+      "nama": "OKKI WAHYUNI LARASATI",
+      "noRegistrasiAskom": "74312 2424 4 0220778 2025",
+      "databaseId": 1851,
+      "databaseSkk": "F 2058 00006 2023 0063394 SI 01",
+      "databaseMet": "MET.000.010857 2022"
+    },
+    {
+      "nama": "NURHAYATI SIHOMBING",
+      "noRegistrasiAskom": "74312 2424 4 0220778 2025",
+      "databaseId": 1853,
+      "databaseSkk": "F 1993 45979 2025 0400770 SI 04",
+      "databaseMet": "MET.000.005194 2025"
+    },
+    {
+      "nama": "AZWANDA",
+      "noRegistrasiAskom": "74312 2424 4 0220778 2025",
+      "databaseId": 1855,
+      "databaseSkk": "F 2146 85295 2025 0538753 SI 04",
+      "databaseMet": "MET.000.008297 2025"
+    },
+    {
+      "nama": "AGISTA SATRYO FALCK",
+      "noRegistrasiAskom": "74312 2424 4 0220778 2025",
+      "databaseId": 1856,
+      "databaseSkk": "F 2146 85939 2025 0212818 SI 01",
+      "databaseMet": "MET.000.008202 2025"
+    }
+  ]
+}

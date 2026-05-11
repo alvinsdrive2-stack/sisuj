@@ -20,42 +20,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Cek auth status saat mount
   useEffect(() => {
-    const token = authService.getToken()
-    const userData = authService.getUserData()
+    let cancelled = false
 
-    console.log("=== AUTH CONTEXT MOUNT ===")
-    console.log("Token:", token)
-    console.log("UserData from localStorage:", userData)
-    console.log("===========================")
+    const initAuth = async () => {
+      const token = authService.getToken()
+      console.log('[AuthContext] initAuth - token exists:', !!token)
 
-    if (token && userData) {
-      setUser(userData)
+      if (token) {
+        try {
+          // Fetch fresh user data from API to get latest fields (including noreg)
+          const userData = await authService.getCurrentUser()
+          if (!cancelled) {
+            authService.saveUserData(userData)
+            setUser(userData)
+          }
+        } catch (error) {
+          console.error('[AuthContext] Failed to fetch user data:', error)
+          // Fallback to localStorage if API fails
+          const cachedUserData = authService.getUserData()
+          console.log('[AuthContext] Cached user data exists:', !!cachedUserData)
+          if (!cancelled) {
+            if (cachedUserData) {
+              setUser(cachedUserData)
+            } else {
+              // No cached data and API failed — clear stale token
+              console.warn('[AuthContext] No cached data, clearing token')
+              authService.removeToken()
+            }
+          }
+        }
+      }
+
+      if (!cancelled) {
+        setIsLoading(false)
+      }
     }
-    setIsLoading(false)
+
+    initAuth()
+
+    return () => { cancelled = true }
   }, [])
 
   const login = async (credentials: LoginRequest): Promise<CurrentUser> => {
-    const response = await authService.login(credentials)
-
-    console.log("=== LOGIN RESPONSE ===")
-    console.log("Full response:", response)
-    console.log("======================")
-
-    // Simpan token dulu
-    authService.saveToken(response.data.access_token)
-
-    // Fetch full user data dari /auth/me
     try {
+      const response = await authService.login(credentials)
+
+      // Simpan token dulu
+      authService.saveToken(response.data.access_token)
+
+      // Fetch full user data dari /auth/me
       const userData = await authService.getCurrentUser()
-      console.log("=== USER DATA FROM /auth/me ===")
-      console.log("UserData:", userData)
-      console.log("==========================")
 
       authService.saveUserData(userData)
       setUser(userData)
-      return userData // Return user data for immediate use
+      setIsLoading(false)
+      return userData
     } catch (error) {
       console.error("Failed to fetch user data:", error)
+      setIsLoading(false)
       throw error
     }
   }

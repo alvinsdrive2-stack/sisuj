@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://backend.devgatensi.site/api"
+import { API_BASE_URL } from "@/config/api"
 
 export interface LoginRequest {
   account: string
@@ -35,12 +35,15 @@ export interface CurrentUser {
     guard_name: string
     permissions: string[]
   }
+  id_izin?: string
 }
 
 export interface MeResponse {
+  message: string
   data: {
     user: CurrentUser
     role: CurrentUser['role']
+    id_izin: string
   }
 }
 
@@ -128,15 +131,16 @@ class AuthService {
 
     if (!response.ok) {
       // If unauthorized, clear token and throw error
+      console.warn('[AuthService] /auth/me returned status:', response.status)
       if (response.status === 401) {
         this.removeToken()
       }
-      throw new Error("Failed to get current user")
+      throw new Error(`Failed to get current user (status: ${response.status})`)
     }
 
     const result: MeResponse = await response.json()
-    // Attach role to user object
-    return { ...result.data.user, role: result.data.role }
+    // Attach role and id_izin to user object
+    return { ...result.data.user, role: result.data.role, id_izin: result.data.id_izin }
   }
 
   // Logout from API

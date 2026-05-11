@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
 
 class UserManagementController extends Controller
 {
@@ -1439,6 +1441,490 @@ class UserManagementController extends Controller
                 'success' => false,
                 'message' => 'Bulk name update failed: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Create SSO User with Modular Account Distribution
+     * Auto injects user to all systems when created
+     */
+    public function createModularSSOUser(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:sso_users,name',
+            'email' => 'required|email|unique:sso_users,email',
+            'password' => 'required|string|min:6|confirmed',
+            'role' => 'required|in:user,admin',
+            'selected_roles' => 'required|array|min:1',
+            'selected_roles.*' => 'required|string|in:balai.adm_tuk,balai.adm_pusat,balai.prometheus,balai.banned,balai.keuangan,reguler.adm_tuk,reguler.adm_tuk_bpc,reguler.adm_pusat,reguler.prometheus,reguler.keuangan,fg.adm_tuk,fg.adm_pusat,fg.prometheus,fg.keuangan,tuk.ketua_tuk,tuk.verifikator,tuk.validator,tuk.admin_lsp,tuk.admin,tuk.direktur'
+        ]);
+
+        $selectedRoles = $request->selected_roles;
+
+        DB::beginTransaction();
+
+        try {
+            // Create SSO user
+            $ssoUser = SSOUser::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => now(),
+                'status' => 'active',
+                'role' => $request->role
+            ]);
+
+            $accountResults = [];
+            $accountsCreated = 0;
+
+            // Create accounts for each selected role
+            foreach ($selectedRoles as $roleKey) {
+                [$system, $role] = explode('.', $roleKey);
+
+                $accountResult = $this->injectUserToSystemWithRole($ssoUser, $system, $role);
+                $accountResults[] = $accountResult;
+
+                if ($accountResult['success']) {
+                    $accountsCreated++;
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'SSO user created successfully with ' . $accountsCreated . ' role account(s)',
+                'user' => [
+                    'id' => $ssoUser->id,
+                    'name' => $ssoUser->name,
+                    'email' => $ssoUser->email,
+                    'status' => $ssoUser->status,
+                    'created_at' => $ssoUser->created_at
+                ],
+                'injection_results' => $accountResults,
+                'accounts_created' => $accountsCreated,
+                'roles_selected' => count($selectedRoles)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Create modular SSO user failed: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create user: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sync user systems based on checklist
+     * Creates accounts for checked systems, deletes for unchecked
+     */
+    public function syncUserSystems(Request $request, $id)
+    {
+        $request->validate([
+            'selected_roles' => 'required|array|min:1',
+            'selected_roles.*' => 'required|string|in:balai.adm_tuk,balai.adm_pusat,balai.prometheus,balai.banned,balai.keuangan,reguler.adm_tuk,reguler.adm_tuk_bpc,reguler.adm_pusat,reguler.prometheus,reguler.keuangan,fg.adm_tuk,fg.adm_pusat,fg.prometheus,fg.keuangan,tuk.ketua_tuk,tuk.verifikator,tuk.validator,tuk.admin_lsp,tuk.admin,tuk.direktur'
+        ]);
+
+        $requestedRoles = $request->selected_roles;
+
+        try {
+            $ssoUser = SSOUser::find($id);
+            if (!$ssoUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Get current accounts by checking all target databases
+            $currentAccounts = $this->getCurrentUserAccountsFromDatabases($ssoUser->name);
+            $syncResults = [];
+            $createdCount = 0;
+            $deletedCount = 0;
+
+            // Process each requested role
+            foreach ($requestedRoles as $roleKey) {
+                [$system, $role] = explode('.', $roleKey);
+                $hasAccount = isset($currentAccounts[$system][$role]);
+
+                if (!$hasAccount) {
+                    // CREATE: Role requested but account doesn't exist
+                    $injectionResult = $this->injectUserToSystemWithRole($ssoUser, $system, $role);
+                    $syncResults[$roleKey] = $injectionResult;
+
+                    if ($injectionResult['success']) {
+                        $createdCount++;
+                    }
+                } else {
+                    // NO CHANGE: Account already exists
+                    $syncResults[$roleKey] = [
+                        'success' => true,
+                        'action' => 'no_change',
+                        'message' => 'Account already exists'
+                    ];
+                }
+            }
+
+            // DELETE: Accounts for roles not requested
+            foreach ($currentAccounts as $system => $roles) {
+                foreach ($roles as $role => $account) {
+                    $roleKey = $system . '.' . $role;
+                    if (!in_array($roleKey, $requestedRoles)) {
+                        $deletionResult = $this->deleteUserFromSystemByName($ssoUser->name, $system, $role);
+                        $syncResults[$roleKey] = $deletionResult;
+
+                        if ($deletionResult['success']) {
+                            $deletedCount++;
+                        }
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Role sync completed: {$createdCount} created, {$deletedCount} deleted",
+                'sync_results' => $syncResults,
+                'summary' => [
+                    'roles_requested' => count($requestedRoles),
+                    'accounts_created' => $createdCount,
+                    'accounts_deleted' => $deletedCount
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Sync user systems failed: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to sync roles: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get user system access status
+     */
+    public function getUserSystemAccess($id)
+    {
+        try {
+            $ssoUser = SSOUser::find($id);
+            if (!$ssoUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not found'
+                ], 404);
+            }
+
+            // Get accounts directly from target databases
+            $userAccounts = $this->getCurrentUserAccountsFromDatabases($ssoUser->name);
+
+            // Format accounts for display
+            $accounts = [];
+            $currentRoles = [];
+
+            foreach ($userAccounts as $system => $roles) {
+                foreach ($roles as $role => $account) {
+                    $accounts[] = [
+                        'id' => $account['id'],
+                        'system' => $system,
+                        'role' => $role,
+                        'email' => $account['email']
+                    ];
+                    $currentRoles[] = $system . '.' . $role;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $ssoUser->id,
+                    'name' => $ssoUser->name,
+                    'email' => $ssoUser->email,
+                    'status' => $ssoUser->status,
+                    'role' => $ssoUser->role
+                ],
+                'accounts' => $accounts,
+                'current_roles' => $currentRoles,
+                'total_accounts' => count($accounts)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Get user system access failed: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get user accounts: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Inject user to target system with specific role
+     */
+    private function injectUserToSystemWithRole($ssoUser, $system, $role)
+    {
+        $connections = [
+            'balai' => 'mysql_balai',
+            'reguler' => 'mysql_reguler',
+            'fg' => 'mysql_fg',
+            'tuk' => 'mysql_tuk'
+        ];
+
+        if (!isset($connections[$system])) {
+            return [
+                'success' => false,
+                'message' => 'Invalid system: ' . $system
+            ];
+        }
+
+        try {
+            $connection = $connections[$system];
+
+            // Generate unique email and password for the role
+            $randomEmail = $this->generateRandomEmailForRole($ssoUser->name, $system, $role);
+            $randomPassword = Str::random(12);
+
+            // Prepare user data
+            $userData = [
+                'name' => $ssoUser->name,
+                'email' => $randomEmail,
+                'password' => Hash::make($randomPassword),
+                'role' => $role,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+
+            // Add system-specific fields
+            if ($system === 'tuk') {
+                // Check if username column exists before trying to use it
+                try {
+                    $columns = DB::connection($connection)->select("SHOW COLUMNS FROM users WHERE Field = 'username'");
+                    if (!empty($columns)) {
+                        $userData['username'] = $randomEmail;
+                    }
+                    $userData['email_verified_at'] = now();
+                } catch (\Exception $e) {
+                    Log::warning("Could not check for username column in {$system}: " . $e->getMessage());
+                }
+            }
+
+            // Check if user already exists
+            $existing = DB::connection($connection)
+                ->table('users')
+                ->where('email', $randomEmail)
+                ->first();
+
+            if ($existing) {
+                return [
+                    'success' => false,
+                    'message' => 'User with this email already exists in ' . strtoupper($system)
+                ];
+            }
+
+            // Insert user
+            $systemUserId = DB::connection($connection)
+                ->table('users')
+                ->insertGetId($userData);
+
+            Log::info("User injected to {$system}: SSO ID={$ssoUser->id}, System ID={$systemUserId}, Role={$role}, Email={$randomEmail}");
+
+            return [
+                'success' => true,
+                'system_user_id' => $systemUserId,
+                'system_email' => $randomEmail,
+                'system_password' => $randomPassword,
+                'system_role' => $role,
+                'message' => "Successfully injected user to {$system} with role {$role}"
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Failed to inject user to {$system}: " . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => "Failed to inject user to {$system}: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Inject user to target system (legacy for backwards compatibility)
+     */
+    private function injectUserToSystem($ssoUser, $system)
+    {
+        return $this->injectUserToSystemWithRole($ssoUser, $system, 'admin');
+    }
+
+    /**
+     * Delete user from target system
+     */
+    private function deleteUserFromSystem($connection, $system)
+    {
+        $connections = [
+            'balai' => 'mysql_balai',
+            'reguler' => 'mysql_reguler',
+            'fg' => 'mysql_fg',
+            'tuk' => 'mysql_tuk'
+        ];
+
+        if (!isset($connections[$system])) {
+            return [
+                'success' => false,
+                'message' => 'Invalid system: ' . $system
+            ];
+        }
+
+        try {
+            $dbConnection = $connections[$system];
+            $systemUserId = $connection->system_user_id;
+
+            // Delete from target system
+            DB::connection($dbConnection)
+                ->table('users')
+                ->where('id', $systemUserId)
+                ->delete();
+
+            Log::info("User deleted from {$system}: System ID={$systemUserId}");
+
+            return [
+                'success' => true,
+                'message' => "Successfully deleted user from {$system}"
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Failed to delete user from {$system}: " . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => "Failed to delete user from {$system}: " . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Generate random email for specific role
+     */
+    private function generateRandomEmailForRole($name, $system, $role)
+    {
+        $nameParts = explode(' ', strtolower($name));
+        $lastname = array_pop($nameParts);
+        $firstName = $nameParts[0] ?? 'user';
+        $timestamp = time();
+        $random = Str::random(6);
+
+        return "{$firstName}.{$lastname}.{$system}.{$role}@lspgatensi.id";
+    }
+
+    /**
+     * Helper function to create system connection with safe column usage
+     */
+    private function createSystemConnection($ssoUserId, $system, $accountResult, $role)
+    {
+        $connectionData = [
+            'sso_user_id' => $ssoUserId,
+            'system_name' => $system,
+            'system_user_id' => $accountResult['system_user_id'],
+            'system_email' => $accountResult['system_email'],
+            'system_role' => $role,
+            'is_active' => true
+        ];
+
+        SSOUserSystem::create($connectionData);
+    }
+
+    /**
+     * Generate random email for system (legacy for backwards compatibility)
+     */
+    private function generateRandomEmail($name, $system)
+    {
+        return $this->generateRandomEmailForRole($name, $system, 'admin');
+    }
+
+    /**
+     * Get current user accounts from all target databases
+     */
+    private function getCurrentUserAccountsFromDatabases($name)
+    {
+        $databases = [
+            'balai' => 'mysql_balai',
+            'reguler' => 'mysql_reguler',
+            'fg' => 'mysql_fg',
+            'tuk' => 'mysql_tuk'
+        ];
+
+        $accounts = [];
+
+        foreach ($databases as $system => $connection) {
+            try {
+                $users = DB::connection($connection)
+                    ->table('users')
+                    ->where('name', $name)
+                    ->get();
+
+                foreach ($users as $user) {
+                    if ($user->role) {
+                        $accounts[$system][$user->role] = [
+                            'id' => $user->id,
+                            'email' => $user->email,
+                            'role' => $user->role
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error("Error checking accounts in {$system}: " . $e->getMessage());
+            }
+        }
+
+        return $accounts;
+    }
+
+    /**
+     * Delete user from target system by name
+     */
+    private function deleteUserFromSystemByName($name, $system, $role)
+    {
+        $connections = [
+            'balai' => 'mysql_balai',
+            'reguler' => 'mysql_reguler',
+            'fg' => 'mysql_fg',
+            'tuk' => 'mysql_tuk'
+        ];
+
+        if (!isset($connections[$system])) {
+            return [
+                'success' => false,
+                'message' => 'Invalid system: ' . $system
+            ];
+        }
+
+        try {
+            $connection = $connections[$system];
+
+            // Delete from target system
+            $deleted = DB::connection($connection)
+                ->table('users')
+                ->where('name', $name)
+                ->where('role', $role)
+                ->delete();
+
+            Log::info("Deleted user from {$system}: Name={$name}, Role={$role}, Deleted={$deleted}");
+
+            return [
+                'success' => true,
+                'message' => "Successfully deleted user from {$system} with role {$role}"
+            ];
+
+        } catch (\Exception $e) {
+            Log::error("Failed to delete user from {$system}: " . $e->getMessage());
+
+            return [
+                'success' => false,
+                'message' => "Failed to delete user from {$system}: " . $e->getMessage()
+            ];
         }
     }
 }

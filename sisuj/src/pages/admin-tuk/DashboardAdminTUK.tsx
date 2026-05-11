@@ -1,15 +1,24 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight } from "lucide-react"
+import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useState } from "react"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
   const { kegiatans, isLoading, error } = useKegiatanAdminTUK()
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
-  const adminTukStats = [
+  // Pagination logic
+  const totalPages = Math.ceil(kegiatans.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedKegiatans = kegiatans.slice(startIndex, endIndex)
+
+  const _adminTukStats = [
     {
       title: "Kegiatan Terjadwal",
       value: isLoading ? "..." : kegiatans.length.toString(),
@@ -43,19 +52,20 @@ export default function DashboardAdminTUK() {
       bgColor: "bg-emerald-50"
     }
   ]
+  // Prevent unused variable warning - stats reserved for future UI
+  void _adminTukStats.length
 
-  const getStatusBadge = (isStarted: string, isStartedPraAsesmen: string) => {
+  const getStatusBadge = (_isStarted: string, tahap: number) => {
     // is_started = "0" → Belum Mulai
-    if (isStarted === "0") {
+    if (tahap === 0) {
       return (
         <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
           Belum Mulai
         </Badge>
       )
     }
-
-    // is_started_praasesmen = "1" → Pra-Asesmen
-    if (isStartedPraAsesmen === "1") {
+    // tahap = "1" → Tahap 1 - Pra-Asesmen
+    if (tahap === 1) {
       return (
         <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300">
           Pra-Asesmen
@@ -63,7 +73,7 @@ export default function DashboardAdminTUK() {
       )
     }
 
-    // is_started = "1" → Asesmen
+    // tahap = "2" → Tahap 2 - Asesmen
     return (
       <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300">
         Asesmen
@@ -140,8 +150,9 @@ export default function DashboardAdminTUK() {
               Tidak ada jadwal mendatang
             </div>
           ) : (
+            <>
             <div className="space-y-3">
-              {kegiatans.map((kegiatan) => (
+              {paginatedKegiatans.map((kegiatan) => (
                 <div
                   key={kegiatan.jadwal_id}
                   onClick={() => navigate(`/admin-tuk/list-asesi/${kegiatan.jadwal_id}`)}
@@ -149,14 +160,14 @@ export default function DashboardAdminTUK() {
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h4>
+                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h4>
                       <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        {kegiatan.asesor.nama} • {kegiatan.tuk.nama}
+                        {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''} • {kegiatan.tuk?.nama?.toUpperCase() || ''}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk.alamat}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(kegiatan.is_started, kegiatan.is_started_praasesmen || "0")}
+                      {getStatusBadge(kegiatan.is_started, kegiatan.tahap)}
                       <ChevronRight className="w-5 h-5 text-slate-400" />
                     </div>
                   </div>
@@ -177,6 +188,35 @@ export default function DashboardAdminTUK() {
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                <div className="text-sm text-slate-600">
+                  Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm text-slate-600">
+                    Halaman {currentPage} dari {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
           )}
         </CardContent>
       </Card>

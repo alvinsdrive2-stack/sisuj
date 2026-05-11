@@ -1,13 +1,18 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, CheckCircle, XCircle, FileText, User, Calendar, MapPin, Phone, Mail, GraduationCap, AlertCircle, Shield, FileCheck, ExternalLink, X, Download, Clock, ZoomIn, ZoomOut, Info } from "lucide-react"
-import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { useState, useEffect, useCallback } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import DashboardNavbar from "@/components/DashboardNavbar"
+import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { ActionButton } from "@/components/ui/ActionButton"
+import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { WebcamModal } from "@/components/ui/WebcamModal"
+import { API_BASE_URL } from "@/config/api"
 
 interface PersonalData {
   nama: string
@@ -39,6 +44,16 @@ const documentConfig = [
   { key: "ijazah" as const, label: "Ijazah Terakhir" },
 ]
 
+// Format tanggal: 21-Juli-2000
+function formatDateIndo(dateString: string): string {
+  const date = new Date(dateString)
+  const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"]
+  const day = date.getDate()
+  const month = months[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day}-${month}-${year}`
+}
+
 export default function PraAsesmenPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -46,44 +61,108 @@ export default function PraAsesmenPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isConfirming, setIsConfirming] = useState(false)
   const { kegiatan } = useKegiatanAsesi()
+  const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+
+  // Get asesor data for absen check
+  const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzinFromUrl)
+
+  // DEBUG: Log when PraAsesmenPage mounts
+  console.log('[PraAsesmenPage] Component mounted', { userRole: user?.role?.name, idIzinFromUrl, isAsesor })
+
+  // Absen check - auto-detect role (asesi/asesor1/asesor2)
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+    phase: 'praasesmen',
+    role: 'auto',
+    checkOnMount: true, // Enable for both asesi and asesor
+    idIzin: idIzinFromUrl,
+    asesorList: asesorList
+  })
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch("https://backend.devgatensi.site/api/praasesmen/kebenaran-data", {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (!response.ok) {
-          throw new Error("Gagal memuat data")
-        }
-
-        const result: ApiResponse = await response.json()
-        if (result.success) {
-          setData(result.data)
-        } else {
-          throw new Error("Data tidak ditemukan")
-        }
-      } catch (error) {
-        console.error("Error fetching data:", error)
-        toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchData()
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0)
   }, [])
+
+  const fetchPraAsesmenData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch("" + API_BASE_URL + "/praasesmen/kebenaran-data", {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Gagal memuat data")
+      }
+
+      const result: ApiResponse = await response.json()
+      if (result.success) {
+        setData(result.data)
+      } else {
+        throw new Error("Data tidak ditemukan")
+      }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
+
+  const { publishUpdate: _publishUpdate } = useRealtimeSync({
+    channelName: `praasesmen:${idIzinFromUrl}`,
+    onUpdate: fetchPraAsesmenData
+  })
 
   const handleConfirm = async () => {
     setIsConfirming(true)
+    try {
+      // For asesor, skip the list-asesi fetch and navigate directly
+      if (isAsesor && idIzinFromUrl) {
+        navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
+        return
+      }
+
+      if (!kegiatan) {
+        toast("Tidak ada kegiatan aktif", "error")
+        return
+      }
+
+      const token = localStorage.getItem("access_token")
+
+      // Fetch id_izin dari list-asesi endpoint
+      const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (listAsesiResponse.ok) {
+        const listResult = await listAsesiResponse.json()
+        if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
+          // Cari asesi yang namanya match dengan user yang login
+          const matchedAsesi = listResult.list_asesi.find((a: any) => a.nama === user?.name)
+          if (matchedAsesi?.id_izin) {
+            navigate(`/asesi/praasesmen/${matchedAsesi.id_izin}/apl01`)
+            return
+          }
+        }
+      }
+
+      // Fallback: jika tidak ada id_izin, gunakan jadwal_id
+      navigate(`/asesi/praasesmen/${kegiatan.jadwal_id}/apl01`)
+    } catch (error) {
+      toast("Gagal mengambil data kegiatan", "error")
+    } finally {
+      setIsConfirming(false)
+    }
   }
 
   const openDocument = (url: string, label: string) => {
@@ -95,7 +174,6 @@ export default function PraAsesmenPage() {
   const closeDocPreview = () => {
     setSelectedDoc(null)
     setZoom(1)
-    setIsFullscreen(false)
   }
 
   const handleZoomIn = () => {
@@ -107,286 +185,312 @@ export default function PraAsesmenPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center">
-          <SimpleSpinner size="lg" className="text-indigo-400 mx-auto mb-4" />
-          <p className="text-slate-600 dark:text-slate-400">Memuat data...</p>
-        </div>
-      </div>
-    )
+    return <FullPageLoader text="Memuat data..." />
   }
 
   if (!data) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border border-slate-200 dark:border-slate-800">
-          <CardContent className="p-8 text-center">
-            <XCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-2">Data Tidak Ditemukan</h3>
-            <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">Silakan coba kembali atau hubungi admin</p>
-            <Button onClick={() => navigate(-1)} variant="outline" className="w-full">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Kembali
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
+        <div className="p-8 text-center max-w-md w-full" style={{ background: '#fff', border: '1px solid #999' }}>
+          <XCircle className="w-12 h-12 mx-auto mb-4" style={{ color: '#999' }} />
+          <h3 className="text-lg font-semibold mb-2" style={{ color: '#000' }}>Data Tidak Ditemukan</h3>
+          <p className="text-sm mb-6" style={{ color: '#666' }}>Silakan coba kembali atau hubungi admin</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="w-full px-4 py-2 text-sm"
+            style={{ border: '1px solid #999', background: '#fff', color: '#000' }}
+          >
+            Kembali
+          </button>
+        </div>
       </div>
     )
   }
 
-  const initial = data.nama.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       <DashboardNavbar userName={user?.name} />
 
       {/* Breadcrumb */}
-      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-        <div className="px-4 py-3 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-            <span className="hover:underline cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors" onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span className="text-slate-400">/</span>
-            <span className="text-slate-700 dark:text-slate-300">Pra-Asesmen</span>
-            <span className="text-slate-400">/</span>
-            <span className="text-indigo-700 dark:text-indigo-300 font-medium">Konfirmasi</span>
+      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
+        <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
+            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
+            <span>/</span>
+            <span>Pra-Asesmen</span>
+            <span>/</span>
+            <span style={{ fontWeight: 'normal' }}>Konfirmasi</span>
           </div>
         </div>
       </div>
 
-      <div className="px-4 py-8 sm:px-6 lg:px-8 max-w-5xl mx-auto">
-        {/* Title Section */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">Konfirmasi Data Diri</h2>
-          <p className="text-slate-600 dark:text-slate-400">Mohon periksa kembali data Anda sebelum memulai pra-asesmen</p>
+      
+
+      {/* Step Indicator */}
+      
+
+      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl} tahap={tahap}>
+{/* Info Card - Panduan Asesi */}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px 16px' }}>
+        <div className='shadow-md' style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d2137" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ minWidth: '16px' }}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Panduan Pra-Asesmen</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', fontSize: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Periksa data diri</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Pastikan semua data sudah benar</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Cek dokumen pendukung</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Klik "Lihat Dokumen" untuk preview</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+              <div style={{ width: '20px', height: '20px', background: '#f0f4f8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <polyline points="12 5 19 12 12 19" />
+                </svg>
+              </div>
+              <div>
+                <span style={{ fontWeight: '500', color: '#333' }}>Lanjut ke dokumen berikutnya</span>
+                <p style={{ color: '#666', margin: '2px 0 0' }}>Klik tombol biru untuk lanjut</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+        {/* Title */}
+        <div style={{ marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px' }}>Konfirmasi Data Diri</h2>
+          <p style={{ fontSize: '13px', color: '#666' }}>Mohon periksa kembali data Anda sebelum memulai pra-asesmen</p>
         </div>
 
-        {/* Profile Card */}
-        <Card className="mb-6 border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/30 dark:to-blue-950/30 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-indigo-100 dark:border-indigo-900">
-                <span className="text-xl font-semibold text-indigo-700 dark:text-indigo-300">{initial}</span>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-1">{data.nama}</h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{data.nik}</p>
-                {kegiatan && (
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/30 rounded-full text-sm text-indigo-700 dark:text-indigo-300">
-                    <span>{kegiatan.skema.nama}</span>
-                    <span className="text-indigo-400">•</span>
-                    <span>{kegiatan.tuk.nama}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Data Diri Table - 100% mirip HTML contoh */}
+        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+          <tbody>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Nama</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{data.nama}</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>No. NIK</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{data.nik}</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Tempat/tgl. Lahir</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>
+                {data.tempat_lahir.toUpperCase()}, {formatDateIndo(data.tanggal_lahir)}
+              </td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Jenis kelamin</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{data.jenis_kelamin}</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Alamat rumah</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{data.alamat}</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>No. Telp/E-mail</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ width: '90px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Rumah</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ width: '180px', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>-</td>
+              <td style={{ width: '90px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Kantor</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>-</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}></td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}></td>
+              <td style={{ width: '90px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>HP</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ width: '180px', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>{data.telepon}</td>
+              <td style={{ width: '90px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Email</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>{data.email}</td>
+            </tr>
+            <tr>
+              <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Kualifikasi/Pendidikan</td>
+              <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+              <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{data.pendidikan}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Personal Info Section */}
-        <Card className="mb-6 border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/20">
-            <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Informasi Pribadi</h3>
-          </div>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-              <InfoRow icon={Calendar} label="Tempat, Tanggal Lahir" value={`${data.tempat_lahir}, ${new Date(data.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`} />
-              <InfoRow icon={Shield} label="Jenis Kelamin" value={data.jenis_kelamin} />
-              <InfoRow icon={GraduationCap} label="Pendidikan" value={data.pendidikan} />
-              <InfoRow icon={Phone} label="Telepon" value={data.telepon} />
-              <InfoRow icon={Mail} label="Email" value={data.email} />
-              <div className="md:col-span-2">
-                <InfoRow icon={MapPin} label="Alamat" value={data.alamat} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Documents Section */}
-        <Card className="mb-6 border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/20">
-            <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Dokumen Pendukung</h3>
-          </div>
-          <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {documentConfig.map((doc) => {
-                const docUrl = data[doc.key]
-                return (
-                  <div key={doc.key} className="group">
-                    <div
-                      onClick={() => openDocument(docUrl, doc.label)}
-                      className="p-4 border border-slate-200 dark:border-slate-800 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/30 rounded-lg flex items-center justify-center">
-                            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                          </div>
-                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{doc.label}</span>
-                        </div>
-                        <Download className="w-4 h-4 text-indigo-400" />
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Info Box */}
-            <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-1">Instruksi Pemeriksaan Dokumen</p>
-                  <p className="text-sm text-indigo-700 dark:text-indigo-300">
-                    Anda dapat menekan tombol dokumen di atas untuk melihat dan memeriksa kelengkapan serta keabsahan dokumen. Setelah Anda yakin bahwa seluruh data yang tersaji telah sesuai dan benar, silakan lanjutkan dengan menekan tombol konfirmasi di bawah.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Exam Info (if available) */}
+        {/* Jadwal Pra-Asesmen */}
         {kegiatan && (
-          <Card className="mb-6 border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-indigo-50 to-transparent dark:from-indigo-950/20">
-              <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Jadwal Pra-Asesmen</h3>
-            </div>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoRow icon={FileText} label="Skema Sertifikasi" value={kegiatan.skema.nama} />
-                <InfoRow icon={MapPin} label="Tempat Uji Kompetensi" value={kegiatan.tuk.nama} />
-                <InfoRow icon={Calendar} label="Tanggal" value={new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
-                <InfoRow icon={Clock} label="Waktu" value={new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} />
-              </div>
-            </CardContent>
-          </Card>
+          <>
+            <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '12px' }}>Jadwal Pra-Asesmen</h3>
+            <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Skema Sertifikasi</td>
+                  <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.skema?.nama || '-'}</td>
+                </tr>
+                <tr>
+                  <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Tempat Uji Kompetensi</td>
+                  <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{kegiatan.tuk?.nama || '-'}</td>
+                </tr>
+                <tr>
+                  <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Tanggal</td>
+                  <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>{formatDateIndo(kegiatan.tanggal_uji)}</td>
+                </tr>
+                <tr>
+                  <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Waktu</td>
+                  <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>
+                    {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </>
         )}
 
+        {/* Dokumen Pendukung */}
+        <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '12px' }}>Dokumen Pendukung</h3>
+        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+          <tbody>
+            {documentConfig.map((doc) => {
+              const docUrl = data[doc.key]
+              return (
+                <tr key={doc.key}>
+                  <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>{doc.label}</td>
+                  <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
+                  <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>
+                    {docUrl ? (
+                      <button
+                        onClick={() => openDocument(docUrl, doc.label)}
+                        style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
+                      >
+                        Lihat Dokumen
+                      </button>
+                    ) : (
+                      <span style={{ color: '#999', fontSize: '13px' }}>Tidak ada</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+
         {/* Notice */}
-        <Card className="mb-6 border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/20 dark:border-indigo-900">
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
-                  Penting: Data yang Anda masukkan bersifat resmi dan dapat dipertanggungjawabkan secara hukum.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div style={{ background: '#fff9e6', border: '1px solid #e6b800', marginBottom: '20px', padding: '12px' }}>
+          <p style={{ fontSize: '13px', color: '#000', margin: 0 }}>
+            <strong>Penting:</strong> Data yang Anda masukkan bersifat resmi dan dapat dipertanggungjawabkan secara hukum.
+          </p>
+        </div>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-end">
-          <Button
-            variant="outline"
-            onClick={() => navigate(-1)}
-            className="border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isConfirming}>
             Kembali
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            disabled={isConfirming}
-            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-950"
-          >
-            {isConfirming ? (
-              <>
-                <SimpleSpinner size="sm" className="text-white mr-2" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Data Sudah Benar, Lanjut
-              </>
-            )}
-          </Button>
+          </ActionButton>
+          <ActionButton variant="primary" onClick={handleConfirm} disabled={isConfirming}>
+            {isConfirming ? 'Memproses...' : 'Data Sudah Benar, Lanjut ke APL 01'}
+          </ActionButton>
         </div>
-      </div>
+      </AsesiLayout>
 
       {/* Document Preview Modal */}
       {selectedDoc && (
         <div
-          className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in ${isFullscreen ? 'p-0' : ''}`}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.5)' }}
           onClick={closeDocPreview}
         >
           <div
-            className={`bg-white dark:bg-slate-900 ${isFullscreen ? 'w-full h-full rounded-none' : 'rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh]'} flex flex-col animate-scale-in`}
+            style={{ background: '#fff', borderRadius: '4px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', maxWidth: '900px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">{selectedDoc.label}</h3>
-              <div className="flex items-center gap-2">
-                {/* Zoom Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #999', background: '#f0f0f0' }}>
+              <h3 style={{ fontWeight: 'bold', color: '#000', margin: 0 }}>{selectedDoc.label}</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
                 {selectedDoc.type === "pdf" && (
                   <>
-                    <Button
-                      size="sm"
-                      variant="outline"
+                    <button
                       onClick={handleZoomOut}
                       disabled={zoom <= 0.5}
+                      style={{ padding: '4px', border: '1px solid #999', background: '#fff', cursor: zoom <= 0.5 ? 'not-allowed' : 'pointer', opacity: zoom <= 0.5 ? 0.5 : 1 }}
                     >
-                      <ZoomOut className="w-4 h-4" />
-                    </Button>
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-[3rem] text-center">
+                      <ZoomOut style={{ width: '16px', height: '16px' }} />
+                    </button>
+                    <span style={{ fontSize: '13px', fontWeight: 'normal', color: '#000', minWidth: '48px', textAlign: 'center' }}>
                       {Math.round(zoom * 100)}%
                     </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
+                    <button
                       onClick={handleZoomIn}
                       disabled={zoom >= 3}
+                      style={{ padding: '4px', border: '1px solid #999', background: '#fff', cursor: zoom >= 3 ? 'not-allowed' : 'pointer', opacity: zoom >= 3 ? 0.5 : 1 }}
                     >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
+                      <ZoomIn style={{ width: '16px', height: '16px' }} />
+                    </button>
                   </>
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
+                <button
                   onClick={() => window.open(selectedDoc.url, "_blank")}
+                  style={{ padding: '4px', border: '1px solid #999', background: '#fff', cursor: 'pointer' }}
                 >
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                  <ExternalLink style={{ width: '16px', height: '16px' }} />
+                </button>
+                <button
                   onClick={closeDocPreview}
+                  style={{ padding: '4px', border: '1px solid #999', background: '#fff', cursor: 'pointer' }}
                 >
-                  <X className="w-4 h-4" />
-                </Button>
+                  <X style={{ width: '16px', height: '16px' }} />
+                </button>
               </div>
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-auto bg-slate-100 dark:bg-slate-950">
+            <div style={{ flex: 1, overflow: 'auto', background: '#f5f5f5' }}>
               {selectedDoc.type === "image" ? (
-                <div className="flex items-center justify-center min-h-full p-4">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '16px' }}>
                   <img
                     src={selectedDoc.url}
                     alt={selectedDoc.label}
-                    className="max-w-full object-contain"
-                    style={{ transform: `scale(${zoom})`, transformOrigin: 'center' }}
+                    style={{ maxWidth: '100%', objectFit: 'contain', transform: `scale(${zoom})`, transformOrigin: 'center' }}
                   />
                 </div>
               ) : (
-                <div className="flex items-center justify-center min-h-full p-4">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100%', padding: '16px' }}>
                   <iframe
                     src={`${selectedDoc.url}#view=fitH`}
                     title={selectedDoc.label}
-                    className="border-0 shadow-lg"
-                    style={{
-                      width: '100%',
-                      height: isFullscreen ? '100%' : '80vh',
-                      transform: `scale(${zoom})`,
-                      transformOrigin: 'top center'
-                    }}
+                    style={{ border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', width: '100%', height: '80vh', transform: `scale(${zoom})`, transformOrigin: 'top center' }}
                   />
                 </div>
               )}
@@ -394,26 +498,16 @@ export default function PraAsesmenPage() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
 
-function InfoRow({
-  icon: Icon,
-  label,
-  value
-}: {
-  icon: any
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex items-start gap-3">
-      <Icon className="w-5 h-5 text-indigo-400 flex-shrink-0 mt-0.5" />
-      <div className="flex-1">
-        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-        <p className="text-sm text-slate-900 dark:text-slate-200">{value}</p>
-      </div>
+      {/* Absen Awal Modal */}
+      <WebcamModal
+        isOpen={showAwalModal}
+        onClose={handleAwalModalClose}
+        onSubmit={submitAbsenAwal}
+        title="Absen Masuk Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen masuk"
+        canClose={false}
+      />
     </div>
   )
 }

@@ -5,8 +5,9 @@ import { useLocation } from "react-router-dom"
 import DashboardSidebar from "./DashboardSidebar"
 import DashboardNavbar from "./DashboardNavbar"
 import { getRoleConfig } from "@/lib/rbac-config"
-import { PulseLogo } from "@/components/ui/loading-spinner"
-import bgImage from "@/assets/bg.webp"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
+import loopVideo from "@/assets/Sequence 01.mp4"
 
 interface DashboardLayoutProps {
   children: ReactNode
@@ -18,16 +19,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation()
   const [isPageLoading, setIsPageLoading] = useState(false)
   const [showContent, setShowContent] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   // Page transition on route change
   useEffect(() => {
     setIsPageLoading(true)
     setShowContent(false)
 
+    // Instant page transitions — no artificial delay
+    const delay = isInitialLoad ? 0 : 0
     const timer = setTimeout(() => {
       setIsPageLoading(false)
       setShowContent(true)
-    }, 200)
+      if (isInitialLoad) setIsInitialLoad(false)
+    }, delay)
 
     return () => clearTimeout(timer)
   }, [location.pathname])
@@ -46,9 +51,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
-        <PulseLogo text="Memuat..." />
-      </div>
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <FullPageLoader text="Memuat..." />
+      </>
     )
   }
 
@@ -57,15 +63,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <>
+      {/* Video Background */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
+
+      <div className="min-h-screen flex flex-col">
       {/* DashboardNavbar - Fixed at top */}
       <DashboardNavbar userName={user?.name || "User"} />
 
       {/* Page Loading Overlay */}
       {isPageLoading && (
-        <div className="page-loading-overlay">
-          <PulseLogo text="Memuat..." />
-        </div>
+        <FullPageLoader text="Memuat..." />
       )}
 
       {/* Main Content Area */}
@@ -75,11 +83,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto p-6">
-          <div className={`bg-white/90 dark:bg-slate-800/90 dark:text-slate-100 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 dark:border-slate-700 p-6 min-h-[calc(100vh-120px)] transition-all duration-300 ${showContent ? 'page-enter opacity-100' : 'opacity-0'}`}>
+          <div className={`bg-white/95 dark:bg-slate-800 dark:text-slate-100 rounded-2xl backdrop-blur-sm shadow-xl border border-white dark:border-slate-700 p-6 min-h-[calc(100vh-120px)] transition-all duration-300 ${showContent ? 'page-enter opacity-100' : 'opacity-0'}`}>
             {children}
           </div>
         </main>
       </div>
     </div>
+    </>
   )
 }

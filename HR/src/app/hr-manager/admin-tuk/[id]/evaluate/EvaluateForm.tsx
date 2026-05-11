@@ -1,0 +1,300 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/contexts/ToastContext";
+
+interface Aspect {
+  no: number;
+  name: string;
+  indicator: string;
+  weight: number;
+}
+
+interface EvaluateFormProps {
+  adminTukId: number;
+  adminTukName: string;
+  year: number;
+  quarter: number;
+  periodStartDate: string;
+  periodEndDate: string;
+  aspects: Aspect[];
+  evaluationId?: number;
+  initialScores?: number[];
+  initialDevelopmentNote?: string;
+}
+
+const DEFAULT_SCORES = [8, 7, 9, 7, 6, 6, 8, 7, 8, 7, 7, 8, 7];
+
+function distributeScores(targetFinal: number, weights: number[]): number[] {
+  const totalWeight = weights.reduce((a, b) => a + b, 0);
+  if (targetFinal >= 100) return weights.map(() => 10);
+  if (targetFinal <= 0) return weights.map(() => 1);
+
+  const seed = targetFinal * 13 + 7;
+  const rawScores = weights.map((_, i) => {
+    const hash = Math.sin(seed * (i + 1) * 0.618) * 10000;
+    return 5.5 + (hash - Math.floor(hash)) * 5;
+  });
+
+  const rawFinal = rawScores.reduce((sum, s, i) => sum + s * weights[i], 0) / totalWeight * 10;
+  const targetScale = targetFinal / rawFinal;
+  let scores = rawScores.map(s => Math.min(Math.max(Math.round(s * targetScale), 1), 10));
+
+  let currentFinal = Math.round(scores.reduce((sum, s, i) => sum + s * weights[i], 0) / totalWeight * 10);
+  if (currentFinal < targetFinal) {
+    const indices = scores.map((s, i) => ({ s, i })).sort((a, b) => a.s - b.s).map(x => x.i);
+    for (const idx of indices) {
+      if (currentFinal >= targetFinal) break;
+      if (scores[idx] >= 10) continue;
+      const gain = Math.round((10 - scores[idx]) * weights[idx] / totalWeight * 10);
+      scores[idx] = 10;
+      currentFinal += gain;
+    }
+  }
+
+  return scores;
+}
+
+function getScoreColor(score: number): string {
+  if (score >= 8) return "text-green-600";
+  if (score >= 6) return "text-amber-600";
+  return "text-red-500";
+}
+
+export default function EvaluateForm({
+  adminTukId,
+  adminTukName,
+  year,
+  quarter,
+  periodStartDate,
+  periodEndDate,
+  aspects,
+  evaluationId,
+  initialScores,
+  initialDevelopmentNote,
+}: EvaluateFormProps) {
+  const router = useRouter();
+  const { showSuccess, showError } = useToast();
+  const [scores, setScores] = useState<number[]>(initialScores || []);
+  const [developmentNote, setDevelopmentNote] = useState(initialDevelopmentNote || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sliderTarget, setSliderTarget] = useState<number | null>(null);
+  const initialized = useRef(false);
+
+  const weightMap = aspects.map(a => a.weight);
+  const totalWeight = weightMap.reduce((a, b) => a + b, 0);
+
+  if (!initialized.current && weightMap.length > 0 && !initialScores) {
+    initialized.current = true;
+    const initTarget = Math.round(DEFAULT_SCORES.reduce((sum, s, i) => sum + s * weightMap[i], 0) / totalWeight * 10);
+    setScores(distributeScores(initTarget, weightMap));
+    setSliderTarget(initTarget);
+  }
+  if (!initialized.current && initialScores && weightMap.length > 0) {
+    initialized.current = true;
+    const computedTarget = Math.round(initialScores.reduce((sum, s, i) => sum + s * weightMap[i], 0) / totalWeight * 10);
+    setSliderTarget(computedTarget);
+  }
+
+  const nilaiBobot = scores.length > 0 ? scores.map((s, i) => (s * weightMap[i]) / 10) : [];
+  const totalNilaiBobot = nilaiBobot.length > 0 ? nilaiBobot.reduce((a, b) => a + b, 0) : 0;
+  const computedFinal = scores.length > 0 ? Math.round(totalNilaiBobot) : 0;
+  const effectiveTarget = sliderTarget ?? 75;
+
+  let conclusion: string;
+  let conclusionColor: string;
+  if (computedFinal >= 90) { conclusion = "A - Kinerja sangat memuaskan"; conclusionColor = "text-green-600"; }
+  else if (computedFinal >= 75) { conclusion = "B - Kinerja memuaskan"; conclusionColor = "text-blue-600"; }
+  else if (computedFinal >= 60) { conclusion = "C - Kinerja cukup"; conclusionColor = "text-amber-600"; }
+  else { conclusion = "D - Perlu peningkatan"; conclusionColor = "text-red-500"; }
+
+  const handleFinalScoreChange = (target: number) => {
+    setSliderTarget(target);
+    setScores(distributeScores(target, weightMap));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const url = evaluationId
+        ? `/api/admin-tuk/evaluations/${evaluationId}`
+        : "/api/admin-tuk/evaluate";
+      const method = evaluationId ? "PATCH" : "POST";
+
+      const body = evaluationId
+        ? { scores, developmentNote: developmentNote || null }
+        : {
+            adminTukId,
+            year,
+            period: `Q${quarter}`,
+            periodStartDate,
+            periodEndDate,
+            scores,
+            developmentNote: developmentNote || null,
+          };
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Gagal menyimpan penilaian");
+      }
+
+      showSuccess(evaluationId ? "Penilaian berhasil diperbarui!" : "Penilaian berhasil disimpan!");
+      router.push(`/hr-manager/admin-tuk/${adminTukId}`);
+    } catch (err: any) {
+      showError(err.message || "Terjadi kesalahan");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Info Header */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <p className="text-slate-500">Nama Admin TUK</p>
+            <p className="font-semibold text-slate-900">{adminTukName}</p>
+          </div>
+          <div>
+            <p className="text-slate-500">Tahun</p>
+            <p className="font-semibold text-slate-900">{year}</p>
+          </div>
+          <div>
+            <p className="text-slate-500">Periode</p>
+            <p className="font-semibold text-slate-900">Q{quarter}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Scoring Table */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50">
+              <tr>
+                <th className="text-center py-3 px-3 font-semibold text-sm text-slate-700 w-10">No</th>
+                <th className="text-left py-3 px-3 font-semibold text-sm text-slate-700">Aspek Penilaian</th>
+                <th className="text-left py-3 px-3 font-semibold text-sm text-slate-700">Indikator Terukur</th>
+                <th className="text-center py-3 px-3 font-semibold text-sm text-slate-700 w-16">Bobot</th>
+                <th className="text-center py-3 px-3 font-semibold text-sm text-slate-700 w-16">Skor</th>
+                <th className="text-center py-3 px-3 font-semibold text-sm text-slate-700 w-24">Nilai Bobot</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scores.length > 0 && aspects.map((aspect, i) => (
+                <tr key={aspect.no} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="text-center py-3 px-3 text-sm text-slate-700">{aspect.no}</td>
+                  <td className="py-3 px-3 text-sm font-medium text-slate-900">{aspect.name}</td>
+                  <td className="py-3 px-3 text-xs text-slate-600">{aspect.indicator}</td>
+                  <td className="text-center py-3 px-3 text-sm font-semibold text-slate-700">{aspect.weight}</td>
+                  <td className="py-3 px-3 text-center">
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={scores[i]}
+                      onChange={(e) => {
+                        const val = Math.min(Math.max(parseInt(e.target.value) || 1, 1), 10);
+                        const newScores = [...scores];
+                        newScores[i] = val;
+                        setScores(newScores);
+                      }}
+                      className={`w-14 text-center text-lg font-bold tabular-nums border border-slate-200 rounded-lg py-1 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 ${getScoreColor(scores[i])}`}
+                    />
+                  </td>
+                  <td className="text-center py-3 px-3 text-sm font-semibold text-primary">
+                    {nilaiBobot[i].toFixed(1)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 className="font-semibold text-slate-900 mb-4">Rekap Hasil</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 bg-slate-50 rounded-lg">
+            <p className="text-sm text-slate-600">Total Bobot</p>
+            <p className="text-2xl font-bold text-slate-900">{totalWeight}</p>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-lg">
+            <p className="text-sm text-slate-600">Total Nilai Bobot</p>
+            <p className="text-2xl font-bold text-slate-900">{totalNilaiBobot.toFixed(1)}</p>
+          </div>
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <p className="text-sm text-slate-600 mb-2">Nilai Akhir</p>
+            <div className="flex flex-col items-center gap-2">
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={effectiveTarget}
+                onChange={(e) => handleFinalScoreChange(parseInt(e.target.value))}
+                className="w-full h-3 rounded-full appearance-none cursor-pointer accent-primary"
+              />
+              <span className={`text-3xl font-bold tabular-nums ${conclusionColor}`}>
+                {computedFinal}
+              </span>
+            </div>
+          </div>
+          <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <p className="text-sm text-primary">Kesimpulan</p>
+            <p className={`text-lg font-bold ${conclusionColor}`}>{conclusion}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Catatan */}
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <h3 className="font-semibold text-slate-900 mb-3">Catatan Pengembangan</h3>
+        <textarea
+          value={developmentNote}
+          onChange={(e) => setDevelopmentNote(e.target.value)}
+          placeholder="Tuliskan catatan pengembangan jika ada..."
+          rows={4}
+          className="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 resize-none"
+        />
+      </div>
+
+      {/* Submit */}
+      <div className="flex items-center gap-4 justify-end">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-primary hover:bg-primary/90"
+        >
+          {isSubmitting ? (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Menyimpan...
+            </div>
+          ) : (
+            "Simpan Penilaian"
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.back()}
+        >
+          Batal
+        </Button>
+      </div>
+    </form>
+  );
+}

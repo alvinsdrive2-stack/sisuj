@@ -1,0 +1,614 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// USERS TABLE
+// =====================================================
+model User {
+  id         Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password   String
+  role       UserRole @default(Employee)
+  position   String?
+  department  String?
+  phone      String?
+  avatar     String?
+  employeeId String?  @unique @map("employee_id")
+  joinDate   DateTime? @map("join_date")
+  location   String?
+  status     UserStatus @default(active)
+  managerId  Int?      @map("manager_id")
+  manager    User?     @relation("ManagerToTeam", fields: [managerId], references: [id], onDelete: SetNull)
+  team       User[]    @relation("ManagerToTeam")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  attendances         Attendance[]
+  leaveRequests       LeaveRequest[]       @relation("LeaveRequestUser")
+  leaveApproved       LeaveRequest[]       @relation("LeaveRequestApprover")
+  trainingEnrollments TrainingEnrollment[]
+  performanceReviews  PerformanceReview[] @relation("EmployeeReviews")
+  reviewsGiven        PerformanceReview[] @relation("ReviewerReviews")
+  payrolls            Payroll[]
+  notifications       Notification[]
+  documents           Document[]       @relation("DocumentOwner")
+  documentsUploaded   Document[]       @relation("DocumentUploader")
+  jobsPosted          Job[]               @relation("JobsPosted")
+  interviews          Interview[]         @relation("InterviewerInterviews")
+  trainingCreated     Training[]          @relation("TrainingCreated")
+  asesorEvaluations   AsesorEvaluation[]  @relation("AsesorEvaluator")
+  adminTukevaluations  AdminTUKEvaluation[] @relation("AdminTUKEvaluator")
+
+  @@map("users")
+}
+
+enum UserRole {
+  superadmin
+  HRManager
+  HRStaff
+  Recruiter
+  Employee
+}
+
+enum UserStatus {
+  active
+  inactive
+  on_leave
+  resigned
+}
+
+// =====================================================
+// ATTENDANCE TABLE
+// =====================================================
+model Attendance {
+  id               Int         @id @default(autoincrement())
+  userId           Int         @map("user_id")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date             DateTime
+  checkInTime      DateTime?   @map("check_in_time")
+  checkOutTime     DateTime?   @map("check_out_time")
+  checkInLocation  String?     @map("check_in_location")
+  checkOutLocation String?     @map("check_out_location")
+  status           AttendanceStatus @default(present)
+  notes            String?
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, date], map: "unique_attendance")
+  @@index([userId, date], map: "idx_attendance_user_date")
+  @@index([date], map: "idx_attendance_date")
+  @@map("attendance")
+}
+
+enum AttendanceStatus {
+  present
+  late
+  absent
+  leave
+  holiday
+}
+
+// =====================================================
+// LEAVE REQUESTS TABLE
+// =====================================================
+model LeaveRequest {
+  id              Int          @id @default(autoincrement())
+  userId          Int          @map("user_id")
+  user            User          @relation("LeaveRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  leaveType       LeaveType     @map("leave_type")
+  startDate       DateTime     @map("start_date")
+  endDate         DateTime     @map("end_date")
+  days            Int
+  reason          String?
+  status          LeaveStatus  @default(pending)
+  approvedBy      Int?         @map("approved_by")
+  approver        User?        @relation("LeaveRequestApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+  approvalDate    DateTime?    @map("approval_date")
+  rejectionReason String?      @map("rejection_reason")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index([userId, status], map: "idx_leave_user_status")
+  @@map("leave_requests")
+}
+
+enum LeaveType {
+  annual
+  sick
+  personal
+  maternity
+  paternity
+  unpaid
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+// =====================================================
+// JOBS TABLE
+// =====================================================
+model Job {
+  id             Int         @id @default(autoincrement())
+  title          String
+  department     String?
+  location       JobLocation @default(Jakarta)
+  employmentType EmploymentType @map("employment_type")
+  salaryMin      Decimal?    @map("salary_min")
+  salaryMax      Decimal?    @map("salary_max")
+  description    String?
+  requirements   String?
+  benefits       String?
+  status         JobStatus   @default(draft)
+  postedBy       Int         @map("posted_by")
+  poster         User         @relation("JobsPosted", fields: [postedBy], references: [id], onDelete: Cascade)
+  deadline       DateTime?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  candidates     Candidate[]
+  interviews     Interview[]
+
+  @@index([status], map: "idx_jobs_status")
+  @@map("jobs")
+}
+
+enum JobLocation {
+  Jakarta
+  Surabaya
+  Bandung
+  Remote
+  Other
+}
+
+enum EmploymentType {
+  Full_time
+  Part_time
+  Contract
+  Internship
+}
+
+enum JobStatus {
+  draft
+  active
+  closing_soon
+  closed
+}
+
+// =====================================================
+// CANDIDATES TABLE
+// =====================================================
+model Candidate {
+  id           Int             @id @default(autoincrement())
+  jobId        Int              @map("job_id")
+  job          Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name         String
+  email         String
+  phone        String?
+  resumeUrl    String?          @map("resume_url")
+  coverLetter  String?          @map("cover_letter")
+  status       CandidateStatus  @default(applied)
+  source       String?
+  notes        String?
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+  interviews   Interview[]
+
+  @@index([status], map: "idx_candidates_status")
+  @@map("candidates")
+}
+
+enum CandidateStatus {
+  applied
+  screening
+  interview
+  offered
+  hired
+  rejected
+}
+
+// =====================================================
+// INTERVIEWS TABLE
+// =====================================================
+model Interview {
+  id             Int         @id @default(autoincrement())
+  candidateId    Int         @map("candidate_id")
+  candidate      Candidate   @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobId          Int         @map("job_id")
+  job            Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  interviewDate  DateTime    @map("interview_date")
+  location       String?
+  type           InterviewType @map("interview_type") @default(offline)
+  interviewerId  Int         @map("interviewer_id")
+  interviewer    User         @relation("InterviewerInterviews", fields: [interviewerId], references: [id], onDelete: Cascade)
+  status         InterviewStatus @default(scheduled)
+  feedback       String?
+  rating         Int?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("interviews")
+}
+
+enum InterviewType {
+  online
+  offline
+  phone
+}
+
+enum InterviewStatus {
+  scheduled
+  completed
+  cancelled
+  no_show
+}
+
+// =====================================================
+// TRAINING TABLE
+// =====================================================
+model Training {
+  id            Int         @id @default(autoincrement())
+  title         String
+  description   String?
+  instructor    String?
+  category      String?
+  startDate     DateTime    @map("start_date")
+  endDate       DateTime    @map("end_date")
+  duration      String?
+  location      String?
+  type          TrainingType @map("training_type") @default(offline)
+  capacity      Int?
+  status        TrainingStatus @default(draft)
+  createdBy     Int         @map("created_by")
+  creator       User         @relation("TrainingCreated", fields: [createdBy], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  enrollments   TrainingEnrollment[]
+
+  @@index([status], map: "idx_training_status")
+  @@map("training")
+}
+
+enum TrainingType {
+  online
+  offline
+  hybrid
+}
+
+enum TrainingStatus {
+  draft
+  upcoming
+  ongoing
+  completed
+  cancelled
+}
+
+// =====================================================
+// TRAINING ENROLLMENTS TABLE
+// =====================================================
+model TrainingEnrollment {
+  id             Int         @id @default(autoincrement())
+  trainingId     Int         @map("training_id")
+  training       Training    @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  userId         Int         @map("user_id")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status         EnrollmentStatus @default(enrolled)
+  progress       Int         @default(0)
+  completionDate DateTime?   @map("completion_date")
+  certificateUrl String?     @map("certificate_url")
+  feedback       String?
+  rating         Int?
+  enrolledAt     DateTime    @default(now()) @map("enrolled_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@unique([trainingId, userId], map: "unique_enrollment")
+  @@map("training_enrollments")
+}
+
+enum EnrollmentStatus {
+  enrolled
+  in_progress
+  completed
+  dropped
+}
+
+// =====================================================
+// PERFORMANCE REVIEWS TABLE
+// =====================================================
+model PerformanceReview {
+  id             Int         @id @default(autoincrement())
+  userId         Int         @map("user_id")
+  user           User         @relation("EmployeeReviews", fields: [userId], references: [id], onDelete: Cascade)
+  reviewerId     Int         @map("reviewer_id")
+  reviewer       User         @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  period         String
+  reviewDate     DateTime?   @map("review_date")
+  overallScore   Int?        @map("overall_score")
+  rating         Rating      @default(Good)
+  strengths      String?
+  improvements   String?
+  goalsAchieved  Int         @default(0) @map("goals_achieved")
+  goalsTotal     Int         @default(0) @map("goals_total")
+  comments       String?
+  status         ReviewStatus @default(draft)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@index([userId, period], map: "idx_performance_user_period")
+  @@map("performance_reviews")
+}
+
+enum Rating {
+  Excellent
+  Very_Good
+  Good
+  Needs_Improvement
+}
+
+enum ReviewStatus {
+  draft
+  submitted
+  reviewed
+}
+
+// =====================================================
+// PAYROLL TABLE
+// =====================================================
+model Payroll {
+  id             Int         @id @default(autoincrement())
+  userId         Int         @map("user_id")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period         String
+  basicSalary    Decimal     @map("basic_salary")
+  allowances     Decimal     @default(0)
+  deductions     Decimal     @default(0)
+  bonuses        Decimal     @default(0)
+  netSalary      Decimal     @map("net_salary")
+  paymentDate    DateTime?   @map("payment_date")
+  status         PayrollStatus @default(pending)
+  paymentMethod  PaymentMethod @map("payment_method") @default(transfer)
+  notes          String?
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@unique([userId, period], map: "unique_payroll")
+  @@index([userId, period], map: "idx_payroll_user_period")
+  @@map("payroll")
+}
+
+enum PayrollStatus {
+  pending
+  processed
+  paid
+  failed
+}
+
+enum PaymentMethod {
+  transfer
+  cash
+  check
+}
+
+// =====================================================
+// NOTIFICATIONS TABLE
+// =====================================================
+model Notification {
+  id         Int         @id @default(autoincrement())
+  userId     Int         @map("user_id")
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  message    String
+  type       NotificationType @default(info)
+  link       String?
+  isRead     Boolean     @default(false) @map("is_read")
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  @@index([userId, isRead], map: "idx_notifications_user_read")
+  @@map("notifications")
+}
+
+enum NotificationType {
+  info
+  success
+  warning
+  error
+}
+
+// =====================================================
+// DOCUMENTS TABLE
+// =====================================================
+model Document {
+  id         Int          @id @default(autoincrement())
+  userId     Int?         @map("user_id")
+  user       User?        @relation("DocumentOwner", fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  description String?
+  fileUrl    String       @map("file_url")
+  fileType   String?      @map("file_type")
+  fileSize   Int?         @map("file_size")
+  category   DocumentCategory @default(other)
+  uploadedBy Int          @map("uploaded_by")
+  uploader   User         @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  @@map("documents")
+}
+
+enum DocumentCategory {
+  contract
+  id
+  certificate
+  tax
+  other
+}
+
+// =====================================================
+// ASESOR TABLE (from BALAI database)
+// =====================================================
+model Asesor {
+  id              Int             @id @default(autoincrement())
+  balaiAsesorId   Int?            @unique @map("balai_asesor_id")
+  name            String
+  metNumber       String?         @map("met_number")
+  registrationNo  String?         @map("registration_no")
+  skkNo           String?         @map("skk_no")
+  subklasifikasiSkk String?       @map("subklasifikasi_skk")
+  email           String?
+  phone           String?
+  address         String?
+  status          AsesorStatus    @default(active)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  evaluations     AsesorEvaluation[]
+
+  @@index([status], map: "idx_asesor_status")
+  @@map("asesors")
+}
+
+enum AsesorStatus {
+  active
+  inactive
+  suspended
+}
+
+// =====================================================
+// ASESOR EVALUATION TABLE
+// =====================================================
+model AsesorEvaluation {
+  id              Int             @id @default(autoincrement())
+  asesorId        Int             @map("asesor_id")
+  asesor          Asesor          @relation(fields: [asesorId], references: [id], onDelete: Cascade)
+
+  year            Int
+  period          String
+  periodStartDate DateTime        @map("period_start_date")
+  periodEndDate   DateTime        @map("period_end_date")
+  schema          String?
+
+  unit            String?
+
+  score1          Int?            @default(0) @map("score1")
+  score2          Int?            @default(0) @map("score2")
+  score3          Int?            @default(0) @map("score3")
+  score4          Int?            @default(0) @map("score4")
+  score5          Int?            @default(0) @map("score5")
+  score6          Int?            @default(0) @map("score6")
+  score7          Int?            @default(0) @map("score7")
+  score8          Int?            @default(0) @map("score8")
+  score9          Int?            @default(0) @map("score9")
+  score10         Int?            @default(0) @map("score10")
+  score11         Int?            @default(0) @map("score11")
+  score12         Int?            @default(0) @map("score12")
+  score13         Int?            @default(0) @map("score13")
+
+  totalWeight     Int             @default(100) @map("total_weight")
+  totalScore      Int?            @map("total_score")
+  finalScore      Int?            @map("final_score")
+
+  conclusion      AsesorGrade?
+  developmentNote String?         @map("development_note")
+
+  evaluatedBy     Int             @map("evaluated_by")
+  evaluator       User            @relation("AsesorEvaluator", fields: [evaluatedBy], references: [id], onDelete: Cascade)
+  evaluationDate  DateTime?       @map("evaluation_date")
+
+  status          EvaluationStatus @default(draft)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@unique([asesorId, year, period], map: "unique_asesor_evaluation")
+  @@index([asesorId, year], map: "idx_asesor_eval_asesor_year")
+  @@map("asesor_evaluations")
+}
+
+enum AsesorGrade {
+  A
+  B
+  C
+  D
+}
+
+model AdminTUK {
+  id              Int      @id @default(autoincrement())
+  submissionDate  DateTime? @map("submission_date")
+  registrationNo  String?  @map("registration_no")
+  name            String   @map("tuk_name")
+  tukType         Int      @default(1) @map("tuk_type") // 1=Mandiri, 2=Sewaktu
+  address         String?
+  province        String?
+  adminRegion     String?  @map("admin_region")
+  adminName       String?  @map("admin_name")
+  ketuaTuk        String?  @map("ketua_tuk")
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  evaluations     AdminTUKEvaluation[]
+
+  @@map("admin_tuks")
+}
+
+model AdminTUKEvaluation {
+  id              Int             @id @default(autoincrement())
+  adminTukId      Int             @map("admin_tuk_id")
+  adminTuk        AdminTUK        @relation(fields: [adminTukId], references: [id], onDelete: Cascade)
+
+  year            Int
+  period          String
+  periodStartDate DateTime        @map("period_start_date")
+  periodEndDate   DateTime        @map("period_end_date")
+  schema          String?
+  unit            String?
+
+  score1          Int?            @default(0) @map("score1")
+  score2          Int?            @default(0) @map("score2")
+  score3          Int?            @default(0) @map("score3")
+  score4          Int?            @default(0) @map("score4")
+  score5          Int?            @default(0) @map("score5")
+  score6          Int?            @default(0) @map("score6")
+  score7          Int?            @default(0) @map("score7")
+  score8          Int?            @default(0) @map("score8")
+  score9          Int?            @default(0) @map("score9")
+  score10         Int?            @default(0) @map("score10")
+  score11         Int?            @default(0) @map("score11")
+  score12         Int?            @default(0) @map("score12")
+  score13         Int?            @default(0) @map("score13")
+
+  totalWeight     Int             @default(100) @map("total_weight")
+  totalScore      Int?            @map("total_score")
+  finalScore      Int?            @map("final_score")
+  conclusion      AsesorGrade?
+  developmentNote String?         @map("development_note")
+
+  evaluatedBy     Int             @map("evaluated_by")
+  evaluator       User            @relation("AdminTUKEvaluator", fields: [evaluatedBy], references: [id], onDelete: Cascade)
+  evaluationDate  DateTime?       @map("evaluation_date")
+
+  status          EvaluationStatus @default(draft)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@unique([adminTukId, year, period])
+  @@map("admin_tuk_evaluations")
+}
+
+enum EvaluationStatus {
+  draft
+  submitted
+  approved
+  rejected
+}

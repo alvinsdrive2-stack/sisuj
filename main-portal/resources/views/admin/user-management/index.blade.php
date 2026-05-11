@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if(Auth::check())
+        <meta name="user-id" content="{{ Auth::user()->id }}">
+        @endif
         <title>User Management - {{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
@@ -272,11 +275,18 @@
                                     <i class="fas fa-shield-halved mr-2 text-blue-600"></i>
                                     SSO Users Management
                                 </h2>
-                                <button
-                                    @click="openAddMainUserModal()"
-                                    class="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 text-sm transition-all-smooth shadow-md ripple">
-                                    <i class="fas fa-user-plus mr-2"></i>Add Main User
-                                </button>
+                                <div class="flex gap-2">
+                                    <button
+                                        @click="openCreateSSOModal()"
+                                        class="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 text-sm transition-all-smooth shadow-md ripple">
+                                        <i class="fas fa-plus-circle mr-2"></i>Create SSO User
+                                    </button>
+                                    <button
+                                        @click="openAddMainUserModal()"
+                                        class="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 text-sm transition-all-smooth shadow-md ripple">
+                                        <i class="fas fa-user-plus mr-2"></i>Import User
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Search and Filters -->
@@ -362,7 +372,7 @@
                                                   x-transition:enter="transition ease-out duration-300"
                                                   x-transition:enter-start="opacity-0"
                                                   x-transition:enter-end="opacity-100">
-                                            <tr @click="openEditUserModal(user)"
+                                            <tr @click="openEditSSOModal(user)"
                                                 class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 cursor-pointer transition-colors duration-200">
                                                 <td class="px-6 py-4 whitespace-nowrap">
                                                     <div class="flex items-center">
@@ -895,6 +905,435 @@
         </div>
 
     
+        <!-- Create SSO User Modal (Modular) -->
+        <div x-show="showCreateSSOModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-60 modal-backdrop transition-opacity duration-300" @click="showCreateSSOModal = false"></div>
+
+                <div class="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl transform transition-all"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform scale-95 translate-y-4"
+                     x-transition:enter-end="opacity-100 transform scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100 transform scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 transform scale-95 translate-y-4">
+
+                    <h3 class="text-lg font-semibold mb-4">
+                        <i class="fas fa-user-plus mr-2"></i>Create New SSO User
+                    </h3>
+                    <p class="text-sm text-gray-600 mb-4">Create new SSO user and assign roles per system</p>
+
+                    <form @submit.prevent="performCreateSSOUser()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input
+                                type="text"
+                                x-model="createSSOForm.name"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Enter full name...">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email (SSO Login)</label>
+                            <input
+                                type="email"
+                                x-model="createSSOForm.email"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="user@example.com">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <input
+                                type="password"
+                                x-model="createSSOForm.password"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Min 6 characters">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                            <input
+                                type="password"
+                                x-model="createSSOForm.password_confirmation"
+                                required
+                                minlength="6"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Confirm password">
+                        </div>
+
+                        <!-- SSO User Role -->
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">SSO User Role</label>
+                            <select
+                                x-model="createSSOForm.role"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select role...</option>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">This role determines access level in the main SSO system</p>
+                        </div>
+
+                        <!-- Role Selection by System -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-semibold text-gray-900 mb-4">
+                                <i class="fas fa-user-tag mr-1"></i>
+                                Select Roles per System
+                            </h4>
+
+                            <div x-show="loading.systemRoles" class="text-center py-4">
+                                <i class="fas fa-spinner fa-spin text-blue-500"></i>
+                                <p class="text-sm text-gray-600 mt-2">Loading available roles...</p>
+                            </div>
+
+                            <div x-show="!loading.systemRoles" class="space-y-4">
+                                <!-- BALAI System -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-building text-blue-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">BALAI System</h5>
+                                        <span class="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                            <span x-text="createSSOForm.selectedRoles.filter(r => r.startsWith('balai.')).length"></span> roles selected
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.balai || []" :key="'balai-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-blue-50 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'balai.' + role"
+                                                    x-model="createSSOForm.selectedRoles"
+                                                    class="mr-2 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- REGULER System -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-graduation-cap text-green-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">REGULER System</h5>
+                                        <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                            <span x-text="createSSOForm.selectedRoles.filter(r => r.startsWith('reguler.')).length"></span> roles selected
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.reguler || []" :key="'reguler-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-green-50 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'reguler.' + role"
+                                                    x-model="createSSOForm.selectedRoles"
+                                                    class="mr-2 text-green-600 focus:ring-green-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- FG System -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-flask text-purple-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">FG System</h5>
+                                        <span class="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                            <span x-text="createSSOForm.selectedRoles.filter(r => r.startsWith('fg.')).length"></span> roles selected
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.fg || []" :key="'fg-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-purple-50 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'fg.' + role"
+                                                    x-model="createSSOForm.selectedRoles"
+                                                    class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- TUK System -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-certificate text-orange-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">TUK System</h5>
+                                        <span class="ml-auto text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                            <span x-text="createSSOForm.selectedRoles.filter(r => r.startsWith('tuk.')).length"></span> roles selected
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.tuk || []" :key="'tuk-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-orange-50 cursor-pointer transition-colors">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'tuk.' + role"
+                                                    x-model="createSSOForm.selectedRoles"
+                                                    class="mr-2 text-orange-600 focus:ring-orange-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary Section -->
+                        <div class="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <h4 class="text-sm font-semibold text-yellow-900 mb-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Account Creation Summary
+                            </h4>
+                            <p class="text-xs text-yellow-700 mb-2">
+                                User will be created with <span x-text="createSSOForm.selectedRoles.length" class="font-bold"></span> role account(s):
+                            </p>
+                            <div class="text-xs text-yellow-700">
+                                • Each selected role creates a separate account in the target system<br>
+                                • Each account gets unique email and password<br>
+                                • Same name used across all accounts for consistency
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <button
+                                type="button"
+                                @click="showCreateSSOModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="createSSOLoading"
+                                class="px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 transition-all duration-150 flex items-center">
+                                <i class="fas fa-plus-circle mr-2" x-show="!createSSOLoading"></i>
+                                <i class="fas fa-spinner fa-spin mr-2" x-show="createSSOLoading"></i>
+                                <span x-show="!createSSOLoading">Create User</span>
+                                <span x-show="createSSOLoading">Creating...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit SSO User Modal (System Access) -->
+        <div x-show="showEditSSOModal"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 overflow-y-auto z-50"
+             style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-60 modal-backdrop transition-opacity duration-300" @click="showEditSSOModal = false"></div>
+
+                <div class="relative bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl transform transition-all"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 transform scale-95 translate-y-4"
+                     x-transition:enter-end="opacity-100 transform scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-200"
+                     x-transition:leave-start="opacity-100 transform scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 transform scale-95 translate-y-4">
+
+                    <h3 class="text-lg font-semibold mb-2">
+                        <i class="fas fa-user-cog mr-2"></i>
+                        <span x-text="'Manage System Access for ' + editSSOForm.name"></span>
+                    </h3>
+                    <div class="mb-6">
+                        <p class="text-sm text-gray-600 mb-1" x-text="'Email: ' + editSSOForm.email"></p>
+                        <p class="text-sm text-gray-600" x-text="'SSO Role: ' + (editSSOForm.role || 'Not specified')"></p>
+                    </div>
+
+                    <div x-show="loading.systemAccess" class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin text-blue-500"></i>
+                        <p class="text-sm text-gray-600 mt-2">Loading system access...</p>
+                    </div>
+
+                    <form @submit.prevent="performSyncSystems()" x-show="!loading.systemAccess">
+                        <!-- Role Management by System -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                <i class="fas fa-user-tag mr-1"></i>
+                                Manage Roles per System
+                            </label>
+
+                            <div class="space-y-4">
+                                <!-- BALAI System Roles -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-building text-blue-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">BALAI System</h5>
+                                        <span class="ml-auto text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                            <span x-text="editSSOForm.selectedRoles.filter(r => r.startsWith('balai.')).length"></span> roles
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.balai || []" :key="'balai-edit-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-blue-50 cursor-pointer transition-colors"
+                                                  :class="editSSOForm.selectedRoles.includes('balai.' + role) ? 'bg-blue-100 border-blue-300' : ''">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'balai.' + role"
+                                                    x-model="editSSOForm.selectedRoles"
+                                                    class="mr-2 text-blue-600 focus:ring-blue-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- REGULER System Roles -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-graduation-cap text-green-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">REGULER System</h5>
+                                        <span class="ml-auto text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                                            <span x-text="editSSOForm.selectedRoles.filter(r => r.startsWith('reguler.')).length"></span> roles
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.reguler || []" :key="'reguler-edit-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-green-50 cursor-pointer transition-colors"
+                                                  :class="editSSOForm.selectedRoles.includes('reguler.' + role) ? 'bg-green-100 border-green-300' : ''">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'reguler.' + role"
+                                                    x-model="editSSOForm.selectedRoles"
+                                                    class="mr-2 text-green-600 focus:ring-green-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- FG System Roles -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-flask text-purple-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">FG System</h5>
+                                        <span class="ml-auto text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                                            <span x-text="editSSOForm.selectedRoles.filter(r => r.startsWith('fg.')).length"></span> roles
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.fg || []" :key="'fg-edit-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-purple-50 cursor-pointer transition-colors"
+                                                  :class="editSSOForm.selectedRoles.includes('fg.' + role) ? 'bg-purple-100 border-purple-300' : ''">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'fg.' + role"
+                                                    x-model="editSSOForm.selectedRoles"
+                                                    class="mr-2 text-purple-600 focus:ring-purple-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- TUK System Roles -->
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <div class="flex items-center mb-3">
+                                        <i class="fas fa-certificate text-orange-600 mr-2"></i>
+                                        <h5 class="font-semibold text-gray-900">TUK System</h5>
+                                        <span class="ml-auto text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                                            <span x-text="editSSOForm.selectedRoles.filter(r => r.startsWith('tuk.')).length"></span> roles
+                                        </span>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <template x-for="role in systemRoles.tuk || []" :key="'tuk-edit-' + role">
+                                            <label class="flex items-center p-2 border rounded hover:bg-orange-50 cursor-pointer transition-colors"
+                                                  :class="editSSOForm.selectedRoles.includes('tuk.' + role) ? 'bg-orange-100 border-orange-300' : ''">
+                                                <input
+                                                    type="checkbox"
+                                                    :value="'tuk.' + role"
+                                                    x-model="editSSOForm.selectedRoles"
+                                                    class="mr-2 text-orange-600 focus:ring-orange-500">
+                                                <span class="text-sm" x-text="role"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Current Accounts Display -->
+                        <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 class="text-sm font-semibold text-blue-900 mb-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Current Accounts
+                            </h4>
+                            <div class="text-xs text-blue-700 space-y-1">
+                                <template x-for="account in currentUserAccounts" :key="'account-' + account.id">
+                                    <div class="flex items-center justify-between py-1 border-b border-blue-100 last:border-0">
+                                        <span>
+                                            <strong x-text="account.system.toUpperCase()"></strong> -
+                                            <span x-text="account.role"></span>
+                                        </span>
+                                        <span class="text-blue-600" x-text="account.email"></span>
+                                    </div>
+                                </template>
+                                <div x-show="currentUserAccounts.length === 0" class="text-center py-2 text-blue-600">
+                                    No accounts created yet
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Section -->
+                        <div class="mb-6 p-4 bg-yellow-50 rounded-lg">
+                            <h4 class="text-sm font-semibold text-yellow-900 mb-2">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                Important Notes
+                            </h4>
+                            <ul class="text-xs text-yellow-700 space-y-1">
+                                <li>• <strong>Check Role = Create Account</strong>: New account will be created with that role</li>
+                                <li>• <strong>Uncheck Role = Delete Account</strong>: Account with that role will be deleted</li>
+                                <li>• Multiple roles per system = Multiple accounts with different emails</li>
+                                <li>• Each account gets unique email and password for security</li>
+                                <li>• Same name used across all accounts for consistency</li>
+                            </ul>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <button
+                                type="button"
+                                @click="showEditSSOModal = false"
+                                class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                :disabled="syncSystemsLoading"
+                                class="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-lg hover:from-orange-600 hover:to-red-700 disabled:opacity-50 transition-all duration-150 flex items-center">
+                                <i class="fas fa-sync-alt mr-2" x-show="!syncSystemsLoading"></i>
+                                <i class="fas fa-spinner fa-spin mr-2" x-show="syncSystemsLoading"></i>
+                                <span x-show="!syncSystemsLoading">Sync Systems</span>
+                                <span x-show="syncSystemsLoading">Syncing...</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Add Main User Modal -->
         <div x-show="showAddMainUserModal"
              x-transition:enter="transition ease-out duration-300"
@@ -1696,6 +2135,9 @@
     <x-ui.alert />
     <x-ui.confirm-dialog />
 
+    <!-- Include global functions -->
+    <script src="{{ asset('js/global-functions.js') }}"></script>
+
     </body>
 
     <script>
@@ -1716,9 +2158,27 @@
                 systemStats: {},
                 loading: {
                     ssoUsers: false,
-                    browseUsers: false
+                    browseUsers: false,
+                    systemAccess: false
                 },
                 selectedBrowseUsers: [],
+
+                // Update Names modal variables
+                showUpdateNamesModal: false,
+                updateNamesResults: [],
+                updateNamesLoading: false,
+                updateNamesForm: {
+                    new_name: ''
+                },
+
+                // Search variables
+                searchResults: [],
+                showUserSearchDropdown: false,
+                searchTimeout: null,
+
+                // SSO Users
+                selectedSSOUsers: [],
+                ssoUsers: { data: [] },
 
                 // Animation helpers
                 initAnimations() {
@@ -1856,7 +2316,40 @@
                     role: 'user'
                 },
 
-                
+                // Create SSO User modal
+                showCreateSSOModal: false,
+                createSSOLoading: false,
+                createSSOForm: {
+                    name: '',
+                    email: '',
+                    password: '',
+                    password_confirmation: '',
+                    role: 'user',
+                    selectedRoles: []
+                },
+
+                // Edit SSO User modal
+                showEditSSOModal: false,
+                syncSystemsLoading: false,
+                systemAccessOptions: [],
+                currentUserAccounts: [],
+                editSSOForm: {
+                    id: null,
+                    name: '',
+                    email: '',
+                    role: '',
+                    selectedRoles: []
+                },
+
+                // System roles configuration (based on real database)
+                systemRoles: {
+                    balai: ['adm_tuk', 'adm_pusat', 'prometheus', 'banned', 'keuangan'],
+                    reguler: ['adm_tuk', 'adm_tuk_bpc', 'adm_pusat', 'prometheus', 'keuangan'],
+                    fg: ['adm_tuk', 'adm_pusat', 'prometheus', 'keuangan'],
+                    tuk: ['ketua_tuk', 'verifikator', 'validator', 'admin_lsp', 'admin', 'direktur']
+                },
+
+
                 // Autocomplete search
                 searchResults: [],
                 showUserSearchDropdown: false,
@@ -2247,6 +2740,144 @@
                         showAlert('Error creating main user', 'error');
                     } finally {
                         this.addMainUserLoading = false;
+                    }
+                },
+
+                // Create SSO User functions
+                openCreateSSOModal() {
+                    this.createSSOForm = {
+                        name: '',
+                        email: '',
+                        password: '',
+                        password_confirmation: '',
+                        role: 'user',
+                        selectedRoles: []
+                    };
+                    this.showCreateSSOModal = true;
+                },
+
+                async performCreateSSOUser() {
+                    if (this.createSSOForm.password !== this.createSSOForm.password_confirmation) {
+                        showAlert('Passwords do not match', 'warning');
+                        return;
+                    }
+
+                    if (this.createSSOForm.selectedRoles.length === 0) {
+                        showAlert('Please select at least one role', 'warning');
+                        return;
+                    }
+
+                    this.createSSOLoading = true;
+
+                    try {
+                        const response = await fetch('/admin/sso-users/create-modular', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                name: this.createSSOForm.name,
+                                email: this.createSSOForm.email,
+                                password: this.createSSOForm.password,
+                                password_confirmation: this.createSSOForm.password_confirmation,
+                                role: this.createSSOForm.role,
+                                selected_roles: this.createSSOForm.selectedRoles
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert(`SSO user created successfully! Created ${result.accounts_created} role account(s).`, 'success');
+                            this.showCreateSSOModal = false;
+                            this.loadSSOUsers();
+
+                            // Show injection results
+                            if (result.injection_results) {
+                                console.log('Account Creation Results:', result.injection_results);
+                            }
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error creating SSO user', 'error');
+                        console.error('Create SSO User Error:', error);
+                    } finally {
+                        this.createSSOLoading = false;
+                    }
+                },
+
+                // Edit SSO User functions
+                async openEditSSOModal(user) {
+                    this.editSSOForm = {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role || 'user',
+                        selectedRoles: []
+                    };
+                    this.currentUserAccounts = [];
+                    this.showEditSSOModal = true;
+                    this.loading.systemAccess = true;
+
+                    try {
+                        const response = await fetch(`/admin/sso-users/${user.id}/system-access`);
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.currentUserAccounts = result.accounts || [];
+                            this.editSSOForm.selectedRoles = result.current_roles || [];
+                        } else {
+                            showAlert('Error loading user accounts: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error loading user accounts', 'error');
+                        console.error('User Accounts Error:', error);
+                    } finally {
+                        this.loading.systemAccess = false;
+                    }
+                },
+
+                async performSyncSystems() {
+                    if (this.editSSOForm.selectedRoles.length === 0) {
+                        showAlert('Please select at least one role', 'warning');
+                        return;
+                    }
+
+                    this.syncSystemsLoading = true;
+
+                    try {
+                        const response = await fetch(`/admin/sso-users/${this.editSSOForm.id}/sync-systems`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                selected_roles: this.editSSOForm.selectedRoles
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            showAlert(`Role sync completed! ${result.summary.accounts_created} created, ${result.summary.accounts_deleted} deleted.`, 'success');
+                            this.showEditSSOModal = false;
+                            this.loadSSOUsers();
+
+                            // Show sync results
+                            if (result.sync_results) {
+                                console.log('Sync Results:', result.sync_results);
+                            }
+                        } else {
+                            showAlert('Error: ' + result.message, 'error');
+                        }
+                    } catch (error) {
+                        showAlert('Error syncing roles', 'error');
+                        console.error('Sync Roles Error:', error);
+                    } finally {
+                        this.syncSystemsLoading = false;
                     }
                 },
 

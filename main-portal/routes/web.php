@@ -31,6 +31,11 @@ Route::middleware('auth')->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Optimized dashboard route
+    Route::get('/dashboard-optimized', function () {
+        return view('dashboard-optimized');
+    })->name('dashboard.optimized');
+
     // Admin Routes
     Route::prefix('admin')->name('admin.')->middleware('role:admin,super_admin')->group(function () {
         Route::get('/database-analysis', [DatabaseAnalysisController::class, 'analyzeUsersTable'])
@@ -77,6 +82,14 @@ Route::middleware('auth')->group(function () {
             ->name('users.update');
         Route::post('/check-sso-name-exists', [UserManagementController::class, 'checkSSONameExists'])
             ->name('users.check.name');
+
+        // Modular Account Distribution Routes
+        Route::post('/sso-users/create-modular', [UserManagementController::class, 'createModularSSOUser'])
+            ->name('users.sso.create.modular');
+        Route::post('/sso-users/{id}/sync-systems', [UserManagementController::class, 'syncUserSystems'])
+            ->name('users.sso.sync.systems');
+        Route::get('/sso-users/{id}/system-access', [UserManagementController::class, 'getUserSystemAccess'])
+            ->name('users.sso.system.access');
 
         // User Mapping Routes
         Route::get('/user-mapping', [UserMappingController::class, 'index'])

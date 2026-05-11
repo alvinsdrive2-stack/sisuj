@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
@@ -9,48 +9,89 @@ import {
   Calendar,
   Clock,
   MapPin,
-  FileText,
-  CheckCircle2,
   AlertCircle,
   ArrowRight,
   BookOpen,
   Award,
   Timer,
   ChevronRight,
-  Play,
   FileCheck
 } from "lucide-react"
+import { PulsingIcon } from "@/components/ui/PulsingIcon"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import DashboardNavbar from "@/components/DashboardNavbar"
-import bgImage from "@/assets/bg.webp"
+import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
+import { API_BASE_URL } from "@/config/api"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
-  const { kegiatan, isLoading, error } = useKegiatanAsesi()
+  const { kegiatan, isLoading: _isLoading, error: _error } = useKegiatanAsesi()
   const navigate = useNavigate()
   const [showPage, setShowPage] = useState(false)
+  const [isPageLoading, setIsPageLoading] = useState(true)
+  const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
 
-  // Debug logging
-  console.log("=== ASESI DASHBOARD DEBUG ===")
-  console.log("User data:", user)
-  console.log("kegiatan:", kegiatan)
-  console.log("isLoading:", isLoading)
-  console.log("error:", error)
-  console.log("==============================")
+  // Fetch jenjang from data-dokumen API
+  const { jenjang } = useDataDokumenAsesmen(idIzin)
+  const { metode } = useDataDokumenAsesmen(idIzin)
+
+  // Fetch id_izin from list-asesi
+  useEffect(() => {
+    const fetchIdIzin = async () => {
+      if (!kegiatan?.jadwal_id || !user?.name) return
+
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
+          if (matchedAsesi?.id_izin) {
+
+            setIdIzin(matchedAsesi.id_izin)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching id_izin:", error)
+      }
+    }
+
+    fetchIdIzin()
+  }, [kegiatan?.jadwal_id, user?.name])
+
+  // Page entrance animation
+
+
+
+
+
 
   // Page entrance animation
   useEffect(() => {
-    setShowPage(true)
+    const timer = setTimeout(() => {
+      setIsPageLoading(false)
+      setShowPage(true)
+    }, 2000)
+
+    return () => clearTimeout(timer)
   }, [])
 
   // Debug logging
-  console.log("=== ASESI DASHBOARD DEBUG ===")
-  console.log("User data:", user)
-  console.log("==============================")
 
-  const [, setCurrentTime] = useState(new Date())
+
+
+  const [, _setCurrentTime] = useState(new Date()) // Clock state reserved for future use
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,
@@ -60,8 +101,8 @@ export default function DashboardAsesiPage() {
   })
 
   useEffect(() => {
-    // Skip if no kegiatan or exam already started
-    if (!kegiatan?.tanggal_uji || kegiatan?.is_started === "1") {
+    // Skip if no exam date
+    if (!kegiatan?.tanggal_uji) {
       return
     }
 
@@ -71,16 +112,18 @@ export default function DashboardAsesiPage() {
       const diff = examDate.getTime() - now.getTime()
 
       if (diff <= 0) {
-        // Calculate how late (in minutes past the exam time)
+        // Calculate how late (elapsed time since exam started)
         const lateDiff = Math.abs(diff)
-        const lateMinutes = Math.floor(lateDiff / (1000 * 60))
-        const lateSeconds = Math.floor((lateDiff % (1000 * 60)) / 1000)
+        const totalMinutes = Math.floor(lateDiff / (1000 * 60))
+        const hours = Math.floor(totalMinutes / 60)
+        const minutes = totalMinutes % 60
+        const seconds = Math.floor((lateDiff % (1000 * 60)) / 1000)
 
         setCountdown({
           days: 0,
-          hours: 0,
-          minutes: lateMinutes,
-          seconds: lateSeconds,
+          hours,
+          minutes,
+          seconds,
           isLate: true
         })
         return
@@ -108,7 +151,7 @@ export default function DashboardAsesiPage() {
 
     const timer = setInterval(updateCountdown, interval)
     return () => clearInterval(timer)
-  }, [kegiatan?.tanggal_uji, kegiatan?.is_started])
+  }, [kegiatan?.tanggal_uji])
 
   const examData = useMemo(() => {
     if (!kegiatan) {
@@ -125,35 +168,73 @@ export default function DashboardAsesiPage() {
           venue: "-",
           address: "-"
         },
-        assessor: {
-          name: "-",
-          nip: "-",
-          license: "-"
-        },
+        assessors: [],
         status: "none"
       }
     }
 
     const tanggalUji = new Date(kegiatan.tanggal_uji)
 
+    // Handle multiple assessors - check if asesor is array or has multiple fields
+    const assessors = []
+
+    // Add first asesor if exists
+    if (kegiatan.asesor?.nama) {
+      assessors.push({
+        name: kegiatan.asesor.nama,
+        nip: kegiatan.asesor.noreg || "-",
+        license: kegiatan.asesor.noreg || "-"
+      })
+    }
+
+    // Add second asesor if exists (asesor2)
+    if (kegiatan.asesor2?.nama) {
+      assessors.push({
+        name: kegiatan.asesor2?.nama || '',
+        nip: kegiatan.asesor2?.noreg || "-",
+        license: kegiatan.asesor2?.noreg || "-"
+      })
+    }
+
+    // Determine phase
+    let phase: {
+      title: string
+      variant: "default" | "secondary"
+      color: string
+    } = {
+      title: "Belum Dimulai",
+      variant: "secondary",
+      color: "text-slate-600"
+    }
+    if (kegiatan.tahap === 1) {
+      phase = {
+        title: "Pra-Asesmen",
+        variant: "default",
+        color: "text-primary"
+      }
+    } else if (kegiatan.tahap === 2) {
+      phase = {
+        title: "Asesmen",
+        variant: "default",
+        color: "text-emerald-600"
+      }
+    }
+
     return {
-      scheme: kegiatan.skema.nama,
+      scheme: kegiatan.skema?.nama || "-",
       schemeCode: `SK-${kegiatan.skema_id}`,
       unit: {
         title: "Unit Kompetensi",
         code: kegiatan.skema_id
       },
+      phase,
       schedule: {
         date: tanggalUji.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
         time: `${tanggalUji.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
-        venue: kegiatan.tuk.nama,
-        address: kegiatan.tuk.alamat
+        venue: kegiatan.tuk?.nama || "-",
+        address: kegiatan.tuk?.alamat || "-"
       },
-      assessor: {
-        name: kegiatan.asesor?.nama || "-",
-        nip: kegiatan.asesor?.noreg || "-",
-        license: kegiatan.asesor?.noreg || "-"
-      },
+      assessors,
       status: kegiatan.is_started === "1" ? "in-progress" : "scheduled"
     }
   }, [kegiatan])
@@ -171,19 +252,6 @@ export default function DashboardAsesiPage() {
     return totalSeconds < 900 // 15 minutes = 900 seconds
   }
 
-  const checkListData = useMemo(() => [
-    { id: 1, text: "APL 01 - Permohonan Sertifikasi", completed: true },
-    { id: 2, text: "APL 02 - Rekaman Asesor", completed: true },
-    { id: 3, text: "Dokumen Pendukung (5/8)", completed: false },
-    { id: 4, text: "Pra Asesmen", completed: false },
-    { id: 5, text: "Asesmen Kompetensi", completed: false }
-  ], [])
-
-  const quickActions = useMemo(() => [
-    { id: 1, title: "Lengkapi Profil", icon: Play, desc: "Update data diri Anda", href: "/asesi/profile" },
-    { id: 2, title: "Upload Dokumen", icon: FileText, desc: "Lengkapi dokumen persyaratan", href: "/asesi/documents" },
-    { id: 3, title: "Materi Ujian", icon: BookOpen, desc: "Pelajari materi ujian", href: "#" }
-  ], [])
 
   // Memoize button text to prevent flickering - use stable state
   const [buttonText, setButtonText] = useState("Lihat Persiapan")
@@ -198,9 +266,9 @@ export default function DashboardAsesiPage() {
     const currentTimeToEnter = isExamTime(countdown)
     if (currentTimeToEnter) {
       setIsButtonLocked(true)
-      if (kegiatan?.tahap === "1") {
+      if (kegiatan?.is_started_praasesmen === "1") {
         setButtonText("Masuk Pra-Asesmen")
-      } else if (kegiatan?.tahap === "2") {
+      } else if (kegiatan?.is_started === "1") {
         setButtonText("Masuk Asesmen")
       } else {
         setButtonText("Masuk ke Ujian")
@@ -208,18 +276,20 @@ export default function DashboardAsesiPage() {
     }
   }, [countdown, isButtonLocked, kegiatan?.is_started, kegiatan?.tahap])
 
+  // Show loading overlay
+  if (isPageLoading) {
+    return (
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <FullPageLoader text="Memuat dashboard..." />
+      </>
+    )
+  }
+
   return (
     <>
-      {/* Fixed Background */}
-      <div
-        className="fixed inset-0 -z-10"
-        style={{
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed'
-        }}
-      />
+      {/* Fixed Background - Looping Video with Crossfade */}
+      <LoopingVideoBackground videoSrc={loopVideo} />
 
       {/* Main Content */}
       <div className={`min-h-screen relative transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
@@ -242,22 +312,28 @@ export default function DashboardAsesiPage() {
         </Card>
 
         {/* Countdown Banner - Big Container */}
-        <Card className="shadow-2xl animate-scale-in overflow-hidden">
+        <Card className="animate-scale-in overflow-hidden">
           <div className="bg-gradient-to-r from-primary to-primary/90 text-white p-8 relative">
             <div className="absolute inset-0 animate-shimmer"></div>
             <div className="relative">
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                 <div className="text-center lg:text-left">
                   <div className="flex items-center gap-3 mb-3">
-                    <Timer className="w-8 h-8 animate-pulse" />
+                    <PulsingIcon icon={Timer} className="w-8 h-8" autoHide={false} />
                     <h3 className="text-2xl font-bold">
-                      {countdown.isLate ? "Telat" : "Ujian Akan Dimulai Dalam"}
+                      {countdown.isLate && examData.phase?.title === "Asesmen" ? "Waktu Pengerjaan Asesi Telah Dimulai" :
+                       countdown.isLate ? "Ayo Kerjakan Ujian Waktu Sudah Berjalan" :
+                       "Ujian Akan Dimulai Dalam"}
                     </h3>
                   </div>
                   <p className="text-white/80">
                     {countdown.isLate ? (
                       <>
-                        Anda terlambat {countdown.minutes} menit {countdown.seconds} detik.
+                        {countdown.hours > 0 ? (
+                          <>Waktu pengerjaan telah berjalan {countdown.hours} jam {countdown.minutes} menit {countdown.seconds} detik.</>
+                        ) : (
+                          <>Waktu pengerjaan telah berjalan {countdown.minutes} menit {countdown.seconds} detik.</>
+                        )}
                         <br />
                         <span className="text-white font-semibold">Segera masuk ujian!</span>
                       </>
@@ -284,18 +360,30 @@ export default function DashboardAsesiPage() {
                     </div>
                   ))}
                 </div>
-
                 <Button
                   size="lg"
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
                   onClick={() => {
-                    if (kegiatan?.tahap === "1") {
-                      navigate("/asesi/praasesmen")
-                    } else if (kegiatan?.tahap === "2") {
-                      // TODO: Navigate to asesmen page
-                      toast("Halaman asesmen belum tersedia", "info")
-                    } else {
-                      navigate("/asesi/documents")
+                    console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap, 'jenjang:', jenjang)
+
+                    if (!idIzin) {
+                      toast("ID Izin tidak ditemukan", "error")
+                      return
+                    }
+                    if (kegiatan?.tahap === 1) {
+                      console.log('[Dashboard Button] Navigating to /asesi/praasesmen (confirmation page)')
+                      navigate(`/asesi/praasesmen`)
+                    }
+                    if (kegiatan?.tahap === 2) {
+                      // Check jenjang from data-dokumen API for low jenjang flow
+                      const jenjangId = parseInt(jenjang || "0")
+                      if (jenjangId < 4) {
+                        navigate(`/asesi/asesmen/${idIzin}/ia01`)
+                      } else if (metode === "portofolio") {
+                        navigate(`/asesi/asesmen/${idIzin}/ia08`)
+                      } else {
+                        navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+                      }
                     }
                   }}
                 >
@@ -329,11 +417,16 @@ export default function DashboardAsesiPage() {
 
                   <Separator />
 
-                  {/* Unit Info */}
+                  {/* Phase Info */}
                   <div className="animate-fade-in" style={{ animationDelay: "0.2s" }}>
-                    <p className="text-sm text-muted-foreground mb-1">Unit Kompetensi</p>
-                    <h4 className="font-semibold text-slate-800 mb-1">{examData.unit.title}</h4>
-                    <p className="text-sm text-muted-foreground">Kode: {examData.unit.code}</p>
+                    <p className="text-sm text-muted-foreground mb-1">Fase Ujian</p>
+                    <div className="flex items-center gap-2 font-bold">
+                        {examData.phase?.title}
+                      <span className={`text-xs font-semibold ${examData.phase?.color}`}>
+                        {examData.phase?.title === "Belum Dimulai" && "Menunggu jadwal"}
+                        {examData.phase?.title === "Pra-Asesmen" && "Persiapan dokumen"}
+                      </span>
+                    </div>
                   </div>
 
                   <Separator />
@@ -375,75 +468,63 @@ export default function DashboardAsesiPage() {
               </CardContent>
             </Card>
 
+
+          </div>
+
+          {/* Right Column - Sidebar */}
+          <div className="space-y-6">
+
             {/* Assessor Info */}
             <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
+
               <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <FileCheck className="w-6 h-6 text-primary" />
                   Informasi Asesor
                 </CardTitle>
               </CardHeader>
+
               <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                      AR
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold text-slate-800">{examData.assessor.name}</h4>
-                    <p className="text-sm text-muted-foreground">NIP: {examData.assessor.nip}</p>
-                    <Badge variant="info" className="mt-2">
-                      <Award className="w-3 h-3 mr-1" />
-                      No. Lisensi: {examData.assessor.license}
-                    </Badge>
+
+                {examData.assessors.length > 0 ? (
+                  <div className="space-y-4">
+                    {examData.assessors.map((assessor, index) => {
+                      const initials = assessor.name
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')
+                        .toUpperCase()
+                        .substring(0, 2)
+
+                      return (
+                        <div key={index} className="flex items-center gap-4 mb-10">
+                          <div className="relative">
+                            <Avatar className="w-16 h-16">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <Badge variant="default" className="absolute -top-1 -left-1 text-xs px-3 py-1">
+                              {index + 1}
+                            </Badge>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-lg font-semibold text-slate-800">{assessor.name.toUpperCase()}</h4>
+                            <Badge variant="error" className="mt-2">
+                              <Award className="w-3 h-3 mr-1" />
+                              No. Lisensi: {assessor.license}
+                            </Badge>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
-                  <Button variant="outline" size="sm">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Profil Asesor
-                  </Button>
-                </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">Belum ada informasi asesor</p>
+                )}
+
               </CardContent>
             </Card>
-          </div>
-
-          {/* Right Column - Sidebar */}
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              <CardHeader>
-                <CardTitle className="text-slate-800">Aksi Cepat</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {quickActions.map((action) => (
-                  <Button key={action.id} className="w-full justify-start" variant="default">
-                    <action.icon className="w-4 h-4 mr-2" />
-                    {action.title}
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
-
-            {/* Checklist Progress */}
-            <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <CardHeader>
-                <CardTitle className="text-slate-800">Status Persiapan</CardTitle>
-                <CardDescription>Progress persiapan ujian</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {checkListData.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${item.completed ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                      {item.completed && <CheckCircle2 className="w-4 h-4 text-white" />}
-                    </div>
-                    <span className={`text-sm ${item.completed ? 'text-slate-700' : 'text-slate-500'}`}>
-                      {item.text}
-                    </span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-
             {/* Help Card */}
             <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-lg animate-slide-up" style={{ animationDelay: "0.5s" }}>
               <CardContent className="p-6 text-center">
