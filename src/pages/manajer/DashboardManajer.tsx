@@ -1,41 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Activity, Users, Calendar, Clock, AlertCircle } from "lucide-react"
+import { Activity, Clock, AlertCircle } from "lucide-react"
 
 export default function DashboardManajer() {
   const monitoringStats = [
-    {
-      title: "Asesmen Aktif",
-      value: "12",
-      subtitle: "sedang berlangsung",
-      icon: Activity,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Asesi Menunggu",
-      value: "45",
-      subtitle: "perlu verifikasi",
-      icon: Clock,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50"
-    },
-    {
-      title: "Jadwal Hari Ini",
-      value: "8",
-      subtitle: "asesmen terjadwal",
-      icon: Calendar,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      title: "Total Asesor",
-      value: "23",
-      subtitle: "asesor aktif",
-      icon: Users,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50"
-    }
+    { title: "Asesmen Aktif", value: "12", subtitle: "sedang berlangsung" },
+    { title: "Asesi Menunggu", value: "45", subtitle: "perlu verifikasi" },
+    { title: "Jadwal Hari Ini", value: "8", subtitle: "asesmen terjadwal" },
+    { title: "Total Asesor", value: "23", subtitle: "asesor aktif" },
   ]
 
   const activeAssessments = [
@@ -96,27 +68,19 @@ export default function DashboardManajer() {
       </div>
 
       {/* Monitoring Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {monitoringStats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                    <Icon className={`w-7 h-7 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                    <p className="text-sm text-slate-600">{stat.title}</p>
-                    <p className="text-xs text-slate-500">{stat.subtitle}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            {monitoringStats.map((stat, index) => (
+              <div key={index} className="px-6 py-5">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</p>
+                <p className="text-3xl font-semibold text-slate-900 mt-1 tabular-nums">{stat.value}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{stat.subtitle}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Active Assessments */}
       <Card>
@@ -147,7 +111,7 @@ export default function DashboardManajer() {
                     </div>
                     <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-primary to-primary/80 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${assessment.progress}%` }}
                       />
                     </div>

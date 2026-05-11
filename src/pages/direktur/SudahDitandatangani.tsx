@@ -74,7 +74,7 @@ export default function SudahDitandatangani() {
                   { icon: Calendar, label: "Tanggal Uji", value: formatDate(doc.tanggal_uji) }
                 ]}
                 badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
-                cardClassName="bg-gradient-to-r from-emerald-50/50 to-transparent"
+                cardClassName="bg-emerald-50/40"
                 onClick={() => navigate(`/direktur/sudah-ditandatangani/${doc.jadwal_id}`)}
               />
             ))}

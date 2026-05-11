@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from "react"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faFile, faFileText, faChevronLeft, faChevronRight, faEye, faClose, faCheck, faTimes } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import kompetenImg from "@/assets/kompeten.png"
-import tidakKompetenImg from "@/assets/tidak-kompeten.png"
+import { StatusStamp } from "@/components/ui/StatusStamp"
 import { API_BASE_URL } from "@/config/api"
 
 interface DokumenResponse {
@@ -531,16 +530,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               transition: 'opacity 0.3s ease',
                               background: 'rgba(255, 255, 255, 0.7)'
                             }}>
-                              <img
-                                src={rekomendasiValue === 'K' ? kompetenImg : tidakKompetenImg}
-                                alt={rekomendasiValue === 'K' ? 'Kompeten' : 'Tidak Kompeten'}
-                                style={{
-                                  maxWidth: '100%',
-                                  maxHeight: '100%',
-                                  objectFit: 'contain',
-                                  opacity: 1
-                                }}
-                              />
+                              <StatusStamp kompeten={rekomendasiValue === 'K'} />
                             </div>
                           )}
                         </div>

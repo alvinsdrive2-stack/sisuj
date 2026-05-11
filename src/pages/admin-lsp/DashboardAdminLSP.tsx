@@ -1,42 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Users, FileText, Activity, TrendingUp, Calendar } from "lucide-react"
+import { Activity, TrendingUp, Calendar } from "lucide-react"
 
 export default function DashboardAdminLSP() {
-  // Mock data - replace with actual API calls
   const stats = [
-    {
-      title: "Total Asesi",
-      value: "1,234",
-      change: "+12%",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Sertifikasi Aktif",
-      value: "56",
-      change: "+5%",
-      icon: FileText,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50"
-    },
-    {
-      title: "Asesmen Hari Ini",
-      value: "23",
-      change: "0%",
-      icon: Calendar,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      title: "Tingkat Kelulusan",
-      value: "87%",
-      change: "+3%",
-      icon: TrendingUp,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50"
-    }
+    { title: "Total Asesi", value: "1,234", change: "+12%", note: "dari bulan lalu" },
+    { title: "Sertifikasi Aktif", value: "56", change: "+5%", note: "dari bulan lalu" },
+    { title: "Asesmen Hari Ini", value: "23", change: null, note: "Stabil bulan ini" },
+    { title: "Tingkat Kelulusan", value: "87%", change: "+3%", note: "dari bulan lalu" },
   ]
 
   const recentActivities = [
@@ -60,30 +31,22 @@ export default function DashboardAdminLSP() {
         <p className="text-slate-600">Overview aktivitas sertifikasi</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-600 mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                    <p className={`text-xs mt-1 ${stat.change.startsWith('+') ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {stat.change} dari bulan lalu
-                    </p>
-                  </div>
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      {/* Stats Strip */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            {stats.map((stat, index) => (
+              <div key={index} className="px-6 py-5">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</p>
+                <p className="text-3xl font-semibold text-slate-900 mt-1 tabular-nums">{stat.value}</p>
+                <p className={`text-xs mt-1 ${stat.change?.startsWith('+') ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {stat.change ? `${stat.change} ${stat.note}` : stat.note}
+                </p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -95,7 +95,7 @@ export default function BelumDitandatangani() {
                   { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                 ]}
                 badges={[getStatusBadge(doc.jadwal_id)]}
-                cardClassName="border-l-4 border-l-amber-400"
+                cardClassName="bg-amber-50/40"
                 onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}
               />
             ))}

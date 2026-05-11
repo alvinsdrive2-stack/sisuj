@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import * as Ably from 'ably'
 
 let ablyInstance: Ably.Realtime | null = null
+let refCount = 0
 
 function getAblyKey(): string {
   return import.meta.env.VITE_ABLY_API_KEY || localStorage.getItem('ably_api_key') || ''
@@ -16,6 +17,7 @@ interface UseRealtimeSyncOptions {
 
 /**
  * Real-time sync via Ably. Publishes/receives full data payloads.
+ * Auto-closes WebSocket when last consumer unmounts.
  */
 export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-updated' }: UseRealtimeSyncOptions) {
   const channelRef = useRef<Ably.RealtimeChannel | null>(null)
@@ -25,6 +27,8 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
   useEffect(() => {
     const ablyKey = getAblyKey()
     if (!channelName || !ablyKey) return
+
+    refCount++
 
     if (!ablyInstance) {
       ablyInstance = new Ably.Realtime({ key: ablyKey })
@@ -39,6 +43,12 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
 
     return () => {
       try { channel.unsubscribe() } catch {}
+
+      refCount--
+      if (refCount <= 0 && ablyInstance) {
+        try { ablyInstance.connection.close() } catch {}
+        ablyInstance = null
+      }
     }
   }, [channelName, eventName])
 

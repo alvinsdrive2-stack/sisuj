@@ -15,25 +15,35 @@ export default defineConfig({
     }
   },
   build: {
+    target: 'es2020',
     rollupOptions: {
       output: {
+        compact: true,
         manualChunks(id) {
-          // React core - include scheduler too to avoid circular deps
+          // React core
           if (id.includes('node_modules/react/') ||
               id.includes('node_modules/react-dom/') ||
               id.includes('node_modules/react-router-dom/') ||
               id.includes('node_modules/scheduler/')) {
             return 'react-vendor'
           }
-          // FontAwesome icons (used across many components)
+          // FontAwesome icons
           if (id.includes('node_modules/@fortawesome/')) {
             return 'fontawesome'
           }
-          // PDF library
+          // Real-time (Ably WebSocket - medium dep, used on several pages)
+          if (id.includes('node_modules/ably/')) {
+            return 'ably'
+          }
+          // PDF generation
           if (id.includes('node_modules/jspdf/')) {
             return 'jspdf'
           }
-          // UI libraries (small utilities)
+          // Screenshot/canvas
+          if (id.includes('node_modules/html2canvas/')) {
+            return 'html2canvas'
+          }
+          // UI utilities (small)
           if (id.includes('node_modules/lucide-react/') ||
               id.includes('node_modules/clsx/') ||
               id.includes('node_modules/tailwind-merge/') ||
@@ -43,6 +53,17 @@ export default defineConfig({
           // Other node_modules
           if (id.includes('node_modules/')) {
             return 'vendor'
+          }
+          // Extract shared asesi components used across multiple pages
+          if (id.includes('/src/hooks/useDataDokumenPraAsesmen') ||
+              id.includes('/src/hooks/useSigningState') ||
+              id.includes('/src/hooks/useAbsenCheck') ||
+              id.includes('/src/components/ui/WebcamModal') ||
+              id.includes('/src/components/ui/Radio') ||
+              id.includes('/src/components/ui/Checkbox') ||
+              id.includes('/src/components/ui/ActionButton') ||
+              id.includes('/src/components/ui/ConfirmDialog')) {
+            return 'asesi-shared'
           }
         }
       }

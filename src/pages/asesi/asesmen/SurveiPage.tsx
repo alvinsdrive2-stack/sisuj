@@ -11,6 +11,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -390,12 +391,10 @@ export default function SurveiPage() {
           {!isSubmitted && (
             <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
+                <CustomCheckbox
                   checked={pernyataan}
                   onChange={() => setPernyataan(!pernyataan)}
                   disabled={isFormDisabled}
-                  style={{ marginTop: '2px', accentColor: '#d10000' }}
                 />
                 <span style={{ fontSize: '13px', color: '#333' }}>
                   Saya menyatakan dengan sebenar-benarnya bahwa survei ini saya isi dengan jujur dan sesuai dengan pengalaman saya selama proses sertifikasi.

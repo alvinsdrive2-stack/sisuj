@@ -147,33 +147,25 @@ export default function DashboardAsesi() {
       </div>
 
       {/* Asesi Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {asesiStats.map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <Card
-              key={index}
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={stat.action}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                    <Icon className={`w-7 h-7 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-                    <p className="text-sm text-slate-600">{stat.title}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            {asesiStats.map((stat, index) => (
+              <button
+                key={index}
+                onClick={stat.action}
+                className="px-6 py-5 text-left hover:bg-slate-50 transition-colors"
+              >
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</p>
+                <p className="text-3xl font-semibold text-slate-900 mt-1 tabular-nums">{stat.value}</p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Current Assessment */}
-      <Card className="border-l-4 border-l-primary">
+      <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileCheck className="w-5 h-5 text-primary" />

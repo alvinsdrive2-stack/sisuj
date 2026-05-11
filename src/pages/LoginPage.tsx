@@ -164,7 +164,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-10 text-sm font-semibold shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary"
+                className="w-full h-10 text-sm font-semibold shadow-sm hover:shadow-md transition-all duration-200 animate-fade-in bg-primary hover:bg-primary/90"
                 style={{ animationDelay: "0.4s" }}
                 disabled={isSubmitting || isLoading}
               >

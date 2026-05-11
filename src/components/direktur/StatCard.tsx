@@ -4,23 +4,25 @@ import { LucideIcon } from "lucide-react"
 interface StatCardProps {
   value: string | number
   label: string
-  icon: LucideIcon
-  iconColor: string
-  bgColor: string
+  icon?: LucideIcon
+  iconColor?: string
+  bgColor?: string
+  trend?: string
+  trendUp?: boolean
 }
 
-export function StatCard({ value, label, icon: Icon, iconColor, bgColor }: StatCardProps) {
+export function StatCard({ value, label, trend, trendUp }: StatCardProps) {
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center`}>
-            <Icon className={`w-6 h-6 ${iconColor}`} />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-slate-800">{value}</p>
-            <p className="text-sm text-slate-600">{label}</p>
-          </div>
+      <CardContent className="px-6 py-5">
+        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+        <div className="flex items-end justify-between mt-1">
+          <p className="text-3xl font-semibold text-slate-900 tabular-nums">{value}</p>
+          {trend && (
+            <span className={`text-xs font-medium mb-1 ${trendUp ? 'text-emerald-600' : 'text-red-600'}`}>
+              {trend}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>

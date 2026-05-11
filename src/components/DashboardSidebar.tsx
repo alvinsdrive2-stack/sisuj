@@ -61,31 +61,28 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
                       to={item.path}
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        transition-all duration-200 group relative
+                        transition-all duration-200 group
                         ${isActive
-                          ? "bg-primary text-white shadow-md"
+                          ? "bg-primary/10 text-primary"
                           : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                         }
                         ${isCollapsed ? "justify-center" : ""}
                       `}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {isActive && !isCollapsed && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
-                      )}
                       <div className={`
                         w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
                         ${isActive
-                          ? "bg-white/20"
+                          ? "bg-primary/15"
                           : "bg-slate-100 group-hover:bg-slate-200"
                         }
                       `}>
-                        <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-600"}`} />
+                        <Icon className={`w-4 h-4 ${isActive ? "text-primary" : "text-slate-600"}`} />
                       </div>
                       {!isCollapsed && (
                         <>
-                          <span className="text-sm font-medium">{item.title}</span>
-                          {isActive && <ChevronRight className="w-4 h-4 ml-auto opacity-80" />}
+                          <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>{item.title}</span>
+                          {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary/60" />}
                         </>
                       )}
                     </NavLink>

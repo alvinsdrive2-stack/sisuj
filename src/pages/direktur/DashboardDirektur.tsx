@@ -1,44 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, Award, Users, Target, ArrowUpRight, ArrowDownRight } from "lucide-react"
+import { TrendingUp, ArrowUpRight, ArrowDownRight } from "lucide-react"
 
 export default function DashboardDirektur() {
   const executiveStats = [
-    {
-      title: "Total Sertifikasi",
-      value: "2,456",
-      change: "+18%",
-      trend: "up",
-      icon: Award,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50"
-    },
-    {
-      title: "Tingkat Kelulusan",
-      value: "89.5%",
-      change: "+4.2%",
-      trend: "up",
-      icon: Target,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50"
-    },
-    {
-      title: "Asesi Aktif",
-      value: "1,234",
-      change: "+12%",
-      trend: "up",
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50"
-    },
-    {
-      title: "Pendapatan",
-      value: "Rp 2.4M",
-      change: "-3%",
-      trend: "down",
-      icon: TrendingUp,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50"
-    }
+    { title: "Total Sertifikasi", value: "2,456", change: "+18%", trend: "up" },
+    { title: "Tingkat Kelulusan", value: "89.5%", change: "+4.2%", trend: "up" },
+    { title: "Asesi Aktif", value: "1,234", change: "+12%", trend: "up" },
+    { title: "Pendapatan", value: "Rp 2.4M", change: "-3%", trend: "down" },
   ]
 
   const performanceMetrics = [
@@ -64,29 +32,26 @@ export default function DashboardDirektur() {
       </div>
 
       {/* Executive Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {executiveStats.map((stat, index) => {
-          const Icon = stat.icon
-          const TrendIcon = stat.trend === "up" ? ArrowUpRight : ArrowDownRight
-          return (
-            <Card key={index} className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
+      <Card>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-slate-100">
+            {executiveStats.map((stat, index) => {
+              const TrendIcon = stat.trend === "up" ? ArrowUpRight : ArrowDownRight
+              return (
+                <div key={index} className="px-6 py-5">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{stat.title}</p>
+                    <span className={`flex items-center gap-0.5 text-xs font-medium ${stat.trend === 'up' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      <TrendIcon className="w-3 h-3" />{stat.change}
+                    </span>
                   </div>
-                  <div className={`flex items-center gap-1 text-sm font-medium ${stat.trend === 'up' ? 'text-emerald-600' : 'text-red-600'}`}>
-                    <TrendIcon className="w-4 h-4" />
-                    {stat.change}
-                  </div>
+                  <p className="text-3xl font-semibold text-slate-900 tabular-nums">{stat.value}</p>
                 </div>
-                <p className="text-sm text-slate-600">{stat.title}</p>
-                <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

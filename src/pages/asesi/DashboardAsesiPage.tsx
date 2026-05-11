@@ -300,22 +300,15 @@ export default function DashboardAsesiPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <Card className="mb-8 shadow-lg animate-slide-down">
-          <CardContent className="p-6">
-            <h2 className="text-3xl font-bold text-slate-800 mb-2">
-              Selamat Datang, {user?.name || "Asesi"}!
-            </h2>
-            <p className="text-muted-foreground">
-              Persiapkan diri Anda untuk mengikuti Uji Kompetensi
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mb-8 animate-slide-down">
+          <h2 className="text-2xl font-bold text-slate-900">{user?.name || "Asesi"}</h2>
+          <p className="text-slate-500 mt-0.5 text-sm">Uji Kompetensi Profesi</p>
+        </div>
 
         {/* Countdown Banner - Big Container */}
         <Card className="animate-scale-in overflow-hidden">
-          <div className="bg-gradient-to-r from-primary to-primary/90 text-white p-8 relative">
-            <div className="absolute inset-0 animate-shimmer"></div>
-            <div className="relative">
+          <div className="bg-primary text-white p-8">
+            <div>
               <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
                 <div className="text-center lg:text-left">
                   <div className="flex items-center gap-3 mb-3">
@@ -352,7 +345,7 @@ export default function DashboardAsesiPage() {
                   ].map((item, index) => (
                     <div
                       key={index}
-                      className="bg-white/20 backdrop-blur-sm rounded-xl p-4 min-w-[80px] text-center animate-fade-in"
+                      className="bg-white/20 rounded-lg p-4 min-w-[80px] text-center animate-fade-in"
                       style={{ animationDelay: `${index * 0.1}s` }}
                     >
                       <p className="text-4xl font-bold">{String(item.value).padStart(2, '0')}</p>
@@ -400,7 +393,7 @@ export default function DashboardAsesiPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Exam Details */}
             <Card className="shadow-lg animate-slide-up">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardHeader className="border-b border-slate-100">
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <BookOpen className="w-6 h-6 text-primary" />
                   Detail Uji Kompetensi
@@ -477,7 +470,7 @@ export default function DashboardAsesiPage() {
             {/* Assessor Info */}
             <Card className="shadow-lg animate-slide-up" style={{ animationDelay: "0.2s" }}>
 
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-transparent">
+              <CardHeader className="border-b border-slate-100">
                 <CardTitle className="flex items-center gap-2 text-slate-800">
                   <FileCheck className="w-6 h-6 text-primary" />
                   Informasi Asesor
@@ -526,12 +519,12 @@ export default function DashboardAsesiPage() {
               </CardContent>
             </Card>
             {/* Help Card */}
-            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 shadow-lg animate-slide-up" style={{ animationDelay: "0.5s" }}>
-              <CardContent className="p-6 text-center">
-                <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-6 h-6 text-primary" />
+            <Card className="border-slate-200 shadow-sm animate-slide-up" style={{ animationDelay: "0.5s" }}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-3 mb-3">
+                  <AlertCircle className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <h5 className="font-semibold text-slate-800 text-sm">Butuh Bantuan?</h5>
                 </div>
-                <h5 className="font-semibold text-slate-800 mb-2">Butuh Bantuan?</h5>
                 <p className="text-sm text-muted-foreground mb-4">Hubungi admin jika ada pertanyaan</p>
                 <Button variant="outline" size="sm" className="w-full">
                   Hubungi Admin

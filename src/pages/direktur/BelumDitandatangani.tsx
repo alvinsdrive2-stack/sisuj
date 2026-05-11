@@ -83,7 +83,7 @@ export default function BelumDitandatangani() {
                 badges={[
                   <Badge key="status" variant="outline" className="border-amber-200 text-amber-700">Menunggu</Badge>
                 ]}
-                cardClassName="border-l-4 border-l-amber-400"
+                cardClassName="bg-amber-50/40"
                 onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
               />
             ))}
