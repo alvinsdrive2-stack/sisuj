@@ -1,14 +1,19 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, FileText, Calendar, User, Clock } from "lucide-react"
+import { CheckCircle2, FileText, Calendar, User, Clock, Search } from "lucide-react"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
+import { Pagination } from "@/components/ui/Pagination"
 import { useKegiatanKomtek } from "@/hooks/useKegiatan"
+import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 
 export default function SudahDitandatangani() {
   const navigate = useNavigate()
-  const { kegiatans: signedDocs, isLoading } = useKegiatanKomtek(true) // true = sudah ditandatangani
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const { kegiatans: signedDocs, isLoading, error, pagination } = useKegiatanKomtek(true, page, search)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -28,6 +33,18 @@ export default function SudahDitandatangani() {
         <p className="text-slate-600">Daftar dokumen yang telah ditandatangani</p>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Cari kegiatan..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
       {/* Signed Documents List */}
       <Card>
         <CardHeader>
@@ -38,7 +55,12 @@ export default function SudahDitandatangani() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!isLoading && signedDocs.length === 0 ? (
+          {error && (
+            <div className="text-center py-8 text-red-500">
+              Gagal memuat data: {error}
+            </div>
+          )}
+          {!isLoading && !error && signedDocs.length === 0 ? (
             <EmptyState
               icon={FileText}
               title="Belum ada dokumen ditandatangani"
@@ -51,7 +73,7 @@ export default function SudahDitandatangani() {
                 <DocumentCard
                   key={doc.jadwal_id}
                   nomorKegiatan={doc.nama_kegiatan}
-                  skemaSertifikasi={doc.skema.nama}
+                  skemaSertifikasi={getUniqueSkemaNames(doc)}
                   jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                   documentInfo={[
                     { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
@@ -65,6 +87,14 @@ export default function SudahDitandatangani() {
               ))}
             </div>
           )}
+
+          <Pagination
+            page={page}
+            lastPage={pagination.lastPage}
+            total={pagination.total}
+            perPage={pagination.perPage}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

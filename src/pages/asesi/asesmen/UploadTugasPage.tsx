@@ -608,7 +608,7 @@ export default function UploadTugasPage() {
               setIsNavigating(true)
               const jenjangNum = parseInt(jenjang)
               if (jenjangNum < 4) {
-                navigate(isAsesor ? `/asesi/asesmen/${id}/ia05` : `/asesi/asesmen/${id}/uji`)
+                navigate(`/asesi/asesmen/${id}/ia05`)
               } else {
                 navigate(`/asesi/asesmen/${id}/ia04b`)
               }

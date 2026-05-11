@@ -187,7 +187,7 @@ export default function DetailDokumenAsesiPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ flex: 1, minWidth: '250px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
-                  {kegiatan.skema.nama}
+                  {kegiatan.nama_kegiatan}
                 </h3>
                 <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '12px' }}>
                   {kegiatan.tuk?.nama?.toUpperCase() || ''} • {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''}

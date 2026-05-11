@@ -82,7 +82,7 @@ export default function Ia03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId } = useDataDokumenAsesmen(id)
-  const { role: asesorRole, isAsesor1 } = useAsesorRole(id)
+  const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
@@ -90,7 +90,7 @@ export default function Ia03Page() {
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Asesor-only editable (asesi read-only)
-  const isFormDisabledBase = !isAsesor1
+  const isFormDisabledBase = !isAsesor1 && !isAsesor2
 
   // Absen check
   const {
@@ -297,10 +297,12 @@ export default function Ia03Page() {
         }))
       )
 
+      const is_kompeten = answers.length > 0 && answers.every(a => a.pencapaian === true)
       const payload = {
         dokumen_id: dokumenId,
         answers,
-        umpan_balik: umpanBalik
+        umpan_balik: umpanBalik,
+        is_kompeten,
       }
 
       const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia03`, {

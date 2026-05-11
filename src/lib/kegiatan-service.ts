@@ -41,6 +41,14 @@ export interface KegiatanResponse {
 }
 
 // Kegiatan Asesor Response (single object with jadwal_id)
+export interface AsesiSkema {
+  id_izin: string
+  skema_id: string
+  skema: { id: number; nama: string }
+  kompeten: string
+  nama: string
+}
+
 export interface KegiatanAsesor {
   jadwal_id: string
   id_izin?: string
@@ -75,6 +83,7 @@ export interface KegiatanAsesor {
     id: string
     nama: string
   }
+  asesi?: AsesiSkema[]
 }
 
 // Admin TUK / Komtek response (includes id field)
@@ -187,26 +196,6 @@ class KegiatanService {
     })
   }
 
-  // Get kegiatan asesor (single object)
-  async getKegiatanAsesor(): Promise<KegiatanAsesorResponse> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/asesor`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesor" }))
-      throw new Error(error.message || "Failed to fetch kegiatan asesor")
-    }
-
-    const result = await response.json()
-    return result
-  }
-
   // Get kegiatan asesi (single object)
   async getKegiatanAsesi(): Promise<KegiatanAsesorResponse> {
     const token = this.getToken()
@@ -247,10 +236,12 @@ class KegiatanService {
   }
 
   // Get kegiatan for direktur (paginated, by ttd status)
-  async getKegiatanDirektur(ttd: boolean): Promise<PaginatedKegiatanResponse> {
+  async getKegiatanDirektur(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
     const token = this.getToken()
+    const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
+    if (search) params.set('search', search)
 
-    const response = await fetch(`${this.baseUrl}/kegiatan/direktur?ttd=${ttd}`, {
+    const response = await fetch(`${this.baseUrl}/kegiatan/direktur?${params}`, {
       method: "GET",
       headers: {
         "Accept": "application/json",
@@ -267,10 +258,12 @@ class KegiatanService {
   }
 
   // Get kegiatan for komtek (paginated, by ttd status)
-  async getKegiatanKomtek(ttd: boolean): Promise<PaginatedKegiatanResponse> {
+  async getKegiatanKomtek(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
     const token = this.getToken()
+    const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
+    if (search) params.set('search', search)
 
-    const response = await fetch(`${this.baseUrl}/kegiatan/komtek?ttd=${ttd}`, {
+    const response = await fetch(`${this.baseUrl}/kegiatan/komtek?${params}`, {
       method: "GET",
       headers: {
         "Accept": "application/json",
@@ -284,6 +277,30 @@ class KegiatanService {
     }
 
     return response.json()
+  }
+
+  // Get kegiatan asesor (paginated)
+  async getKegiatanAsesor(page: number = 1, search: string = ''): Promise<KegiatanAsesorResponse> {
+    const token = this.getToken()
+    const params = new URLSearchParams({ page: String(page) })
+    if (search) params.set('search', search)
+
+    const url = `${this.baseUrl}/kegiatan/asesor?${params}`
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesor" }))
+      throw new Error(error.message || "Failed to fetch kegiatan asesor")
+    }
+
+    const result = await response.json()
+    return result
   }
 
   // Start assessment
@@ -520,3 +537,11 @@ export interface ListAsesiResponse {
 }
 
 export const kegiatanService = new KegiatanService()
+
+export function getUniqueSkemaNames(kegiatan: KegiatanAsesor): string {
+  if (kegiatan.asesi && kegiatan.asesi.length > 0) {
+    const names = [...new Set(kegiatan.asesi.map(a => a.skema?.nama).filter(Boolean) as string[])]
+    return names.join(', ')
+  }
+  return kegiatan.skema?.nama || '-'
+}

@@ -207,6 +207,24 @@ export default function DetailDokumenDirekturPage() {
       .map(([k]) => k)
   }
 
+  // Group asesi by skema
+  const skemaMap = new Map<string, string>()
+  if (kegiatan?.asesi) {
+    for (const a of kegiatan.asesi) {
+      skemaMap.set(a.id_izin, a.skema?.nama || '')
+    }
+  }
+  const groupedAsesi = asesiList.reduce((groups, asesi) => {
+    const skema = skemaMap.get(asesi.id_izin) || 'Lainnya'
+    const existing = groups.find(g => g.skema === skema)
+    if (existing) {
+      existing.asesi.push(asesi)
+    } else {
+      groups.push({ skema, asesi: [asesi] })
+    }
+    return groups
+  }, [] as { skema: string; asesi: typeof asesiList }[])
+
   return (
     <>
       <div className="space-y-6">
@@ -232,7 +250,7 @@ export default function DetailDokumenDirekturPage() {
             <div className="flex gap-6">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
+                  <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h3>
                   {kegiatan.is_started === "0" && (
                     <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                       Belum Mulai
@@ -353,38 +371,47 @@ export default function DetailDokumenDirekturPage() {
                 </div>
               )}
 
-              <div className="space-y-3">
-                {asesiList.map((asesi, index) => (
-                  <div
-                    key={asesi.id_izin}
-                    onClick={() => handleOpenDokumenModal({ id_izin: asesi.id_izin, nama: asesi.nama })}
-                    className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-bold text-primary">{index + 1}</span>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
-                        </div>
-                      </div>
+              <div className="space-y-4">
+                {groupedAsesi.map((group) => (
+                  <div key={group.skema}>
+                    <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
+                      {group.skema}
+                    </h5>
+                    <div className="space-y-2">
+                      {group.asesi.map((asesi) => (
+                        <div
+                          key={asesi.id_izin}
+                          onClick={() => handleOpenDokumenModal({ id_izin: asesi.id_izin, nama: asesi.nama })}
+                          className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-primary">{group.asesi.indexOf(asesi) + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                              </div>
+                            </div>
 
-                      <div className="flex items-center gap-3">
-                        {/* Kompeten Badge */}
-                        <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
-                          {asesi.kompeten}
-                        </Badge>
+                            <div className="flex items-center gap-3">
+                              {/* Kompeten Badge */}
+                              <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
+                                {asesi.kompeten}
+                              </Badge>
 
-                        {/* Status Indicator */}
-                        {asesi.is_started && (
-                          <div className="flex items-center gap-1.5 text-emerald-600">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-xs font-medium">Aktif</span>
+                              {/* Status Indicator */}
+                              {asesi.is_started && (
+                                <div className="flex items-center gap-1.5 text-emerald-600">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span className="text-xs font-medium">Aktif</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

@@ -118,10 +118,11 @@ export function useKegiatanAsesor(enabled = true) {
 }
 
 // New hook for getting all kegiatan asesor (full array)
-export function useKegiatanAsesorList(enabled = true) {
+export function useKegiatanAsesorList(enabled = true, page = 1, search = '') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
 
   const setKegiatansRef = useRef(setKegiatans)
   setKegiatansRef.current = setKegiatans
@@ -136,8 +137,12 @@ export function useKegiatanAsesorList(enabled = true) {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await kegiatanService.getKegiatanAsesor()
+        const response = await kegiatanService.getKegiatanAsesor(page, search)
         setKegiatansRef.current?.(response.data || [])
+        if ('current_page' in response) {
+          const pr = response as any
+          setPagination({ currentPage: pr.current_page || page, lastPage: pr.last_page || 1, total: pr.total || 0, perPage: pr.per_page || 10 })
+        }
       } catch (err) {
         console.error('Error fetching kegiatan asesor:', err)
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesor")
@@ -146,9 +151,9 @@ export function useKegiatanAsesorList(enabled = true) {
       }
     }
     fetchKegiatanAsesor()
-  }, [enabled])
+  }, [enabled, page, search])
 
-  return { kegiatans, isLoading, error }
+  return { kegiatans, isLoading, error, pagination }
 }
 
 export function useKegiatanAsesi(enabled = true) {
@@ -227,10 +232,11 @@ export function useKegiatanAdminTUK() {
   return { kegiatans, isLoading, error }
 }
 
-export function useKegiatanDirektur(ttd: boolean) {
+export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
 
   const setKegiatansRef = useRef(setKegiatans)
   setKegiatansRef.current = setKegiatans
@@ -240,8 +246,9 @@ export function useKegiatanDirektur(ttd: boolean) {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await kegiatanService.getKegiatanDirektur(ttd)
+        const response = await kegiatanService.getKegiatanDirektur(ttd, page, search)
         setKegiatansRef.current?.(response.data.data)
+        setPagination({ currentPage: response.data.current_page, lastPage: response.data.last_page, total: response.data.total, perPage: response.data.per_page })
       } catch (err) {
         console.error('Error fetching kegiatan direktur:', err)
         setError(err instanceof Error ? err.message : "Failed to fetch kegiatan direktur")
@@ -250,9 +257,39 @@ export function useKegiatanDirektur(ttd: boolean) {
       }
     }
     fetchKegiatanDirektur()
-  }, [ttd])
+  }, [ttd, page, search])
 
-  return { kegiatans, isLoading, error }
+  return { kegiatans, isLoading, error, pagination }
+}
+
+export function useKegiatanKomtek(ttd: boolean, page = 1, search = '') {
+  const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
+
+  const setKegiatansRef = useRef(setKegiatans)
+  setKegiatansRef.current = setKegiatans
+
+  useEffect(() => {
+    const fetchKegiatanKomtek = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await kegiatanService.getKegiatanKomtek(ttd, page, search)
+        setKegiatansRef.current?.(response.data.data)
+        setPagination({ currentPage: response.data.current_page, lastPage: response.data.last_page, total: response.data.total, perPage: response.data.per_page })
+      } catch (err) {
+        console.error('Error fetching kegiatan komtek:', err)
+        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan komtek")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchKegiatanKomtek()
+  }, [ttd, page, search])
+
+  return { kegiatans, isLoading, error, pagination }
 }
 
 export function useListAsesi(jadwalId: string) {
@@ -291,34 +328,6 @@ export function useListAsesi(jadwalId: string) {
   }, [fetchListAsesi])
 
   return { asesiList, isLoading, error, refetch }
-}
-
-export function useKegiatanKomtek(ttd: boolean) {
-  const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const setKegiatansRef = useRef(setKegiatans)
-  setKegiatansRef.current = setKegiatans
-
-  useEffect(() => {
-    const fetchKegiatanKomtek = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await kegiatanService.getKegiatanKomtek(ttd)
-        setKegiatansRef.current?.(response.data.data)
-      } catch (err) {
-        console.error('Error fetching kegiatan komtek:', err)
-        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan komtek")
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    fetchKegiatanKomtek()
-  }, [ttd])
-
-  return { kegiatans, isLoading, error }
 }
 
 // Absen data interface
@@ -579,4 +588,62 @@ export function useAsesiRekomendasiStatus(asesiList: AsesiItem[], enabled = true
   }, [asesiList.map(a => a.id_izin).join(','), enabled])
 
   return { asesiRekomendasiStatus, isLoading }
+}
+
+interface BaKomtekProgress {
+  my_ttd_signed: boolean
+  ba_komtek_ttd_progress: {
+    komtek1: boolean
+    komtek2: boolean
+    komtek3: boolean
+  }
+  my_position: number
+}
+
+export function useBaKomtekProgress(kegiatans: KegiatanAsesor[], enabled = true) {
+  const [baProgress, setBaProgress] = useState<Record<string, BaKomtekProgress>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!enabled || kegiatans.length === 0) return
+
+    const fetchProgress = async () => {
+      setIsLoading(true)
+      const token = localStorage.getItem("access_token")
+      const results: Record<string, BaKomtekProgress> = {}
+
+      await Promise.all(
+        kegiatans.map(async (kegiatan) => {
+          try {
+            const response = await fetch(`${API_BASE_URL}/komtek/files/${kegiatan.jadwal_id}`, {
+              headers: {
+                "Accept": "application/json",
+                "Authorization": `Bearer ${token}`,
+              },
+            })
+
+            if (!response.ok) return
+
+            const data = await response.json()
+            if (data.ba_komtek_ttd_progress) {
+              results[kegiatan.jadwal_id] = {
+                my_ttd_signed: data.my_ttd_signed ?? false,
+                ba_komtek_ttd_progress: data.ba_komtek_ttd_progress,
+                my_position: data.my_position ?? 0,
+              }
+            }
+          } catch (err) {
+            console.error(`Error fetching BA Komtek progress for ${kegiatan.jadwal_id}:`, err)
+          }
+        })
+      )
+
+      setBaProgress(results)
+      setIsLoading(false)
+    }
+
+    fetchProgress()
+  }, [kegiatans.map(k => k.jadwal_id).join(','), enabled])
+
+  return { baProgress, isLoading }
 }

@@ -28,7 +28,8 @@ export const ASESMEN_STEPS_ASESI: StepConfig[] = [
   { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 7, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesi (jenjang < 4) - IA01, IA02, IA03 instead of IA04A, IA04B
@@ -40,7 +41,8 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
   { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 8, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesor 1 (jenjang < 4)
@@ -104,7 +106,8 @@ export const ASESMEN_STEPS_PORTOFOLIO_ASESI: StepConfig[] = [
   { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
   { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 6, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_1: StepConfig[] = [

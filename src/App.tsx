@@ -78,6 +78,7 @@ const Ia10Page = lazy(() => import('./pages/asesi/asesmen/Ia10Page'))
 const UjianPage = lazy(() => import('./pages/asesi/asesmen/UjianPage'))
 const Ak02Page = lazy(() => import('./pages/asesi/asesmen/Ak02Page'))
 const Ak03Page = lazy(() => import('./pages/asesi/asesmen/Ak03Page'))
+const SurveiPage = lazy(() => import('./pages/asesi/asesmen/SurveiPage'))
 const Ak05Page = lazy(() => import('./pages/asesi/asesmen/Ak05Page'))
 const Ak06Page = lazy(() => import('./pages/asesi/asesmen/Ak06Page'))
 const AsesmenSelesaiPage = lazy(() => import('./pages/asesi/asesmen/AsesmenSelesaiPage'))
@@ -421,6 +422,14 @@ function App() {
               <AsesiOrAsesorRoute>
                 <Ak03Page />
               </AsesiOrAsesorRoute>
+            }
+          />
+          <Route
+            path="/asesi/asesmen/:id/survei"
+            element={
+              <AsesiRoute>
+                <SurveiPage />
+              </AsesiRoute>
             }
           />
           <Route

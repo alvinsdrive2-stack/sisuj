@@ -1,16 +1,21 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { PenTool, FileText, Calendar, User, Clock, CheckCircle2 } from "lucide-react"
+import { PenTool, FileText, Calendar, User, Clock, CheckCircle2, Search } from "lucide-react"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useKegiatanKomtek, useRekomendasiStatus } from "@/hooks/useKegiatan"
+import { Pagination } from "@/components/ui/Pagination"
+import { useKegiatanKomtek, useBaKomtekProgress } from "@/hooks/useKegiatan"
+import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 
 export default function TandatanganKomtek() {
   const navigate = useNavigate()
-  const { kegiatans: pendingDocs, isLoading: isLoadingPending } = useKegiatanKomtek(false)
+  const [page, setPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const { kegiatans: pendingDocs, isLoading: isLoadingPending, pagination } = useKegiatanKomtek(false, page, search)
   const { isLoading: isLoadingSigned } = useKegiatanKomtek(true)
-  const { rekomendasiStatus } = useRekomendasiStatus(pendingDocs, !isLoadingPending && pendingDocs.length > 0)
+  const { baProgress, isLoading: isLoadingProgress } = useBaKomtekProgress(pendingDocs, pendingDocs.length > 0)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -22,18 +27,17 @@ export default function TandatanganKomtek() {
     return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const isLoading = isLoadingPending || isLoadingSigned
+  const isLoading = isLoadingPending || isLoadingSigned || isLoadingProgress
 
-  // Get status badge for a kegiatan
   const getStatusBadge = (jadwalId: string) => {
-    const status = rekomendasiStatus[jadwalId]
-    if (!status) {
-      return <Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>
+    const progress = baProgress[jadwalId]
+    if (!progress) {
+      return <Badge key="status" className="bg-slate-100 text-slate-700">Menunggu</Badge>
     }
-    if (status.hasPending) {
-      return <Badge key="status" className="bg-amber-100 text-amber-700">Menunggu Persetujuan</Badge>
+    if (progress.my_ttd_signed) {
+      return <Badge key="status" className="bg-emerald-100 text-emerald-700">Telah Selesai Ditandatangani</Badge>
     }
-    return <Badge key="status" className="bg-emerald-100 text-emerald-700">Telah Selesai Ditinjau</Badge>
+    return <Badge key="status" className="bg-amber-100 text-amber-700">Menunggu Tandatangan</Badge>
   }
 
   return (
@@ -43,6 +47,19 @@ export default function TandatanganKomtek() {
         <h2 className="text-2xl font-bold text-slate-800">Tandatangan Dokumen</h2>
         <p className="text-slate-600">Daftar dokumen yang belum ditandatangani</p>
       </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Cari kegiatan..."
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
       {/* Documents to View */}
       <Card>
         <CardHeader>
@@ -66,7 +83,7 @@ export default function TandatanganKomtek() {
                 <DocumentCard
                   key={doc.jadwal_id}
                   nomorKegiatan={doc.nama_kegiatan}
-                  skemaSertifikasi={doc.skema.nama}
+                  skemaSertifikasi={getUniqueSkemaNames(doc)}
                   jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
                   documentInfo={[
                     { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
@@ -80,6 +97,14 @@ export default function TandatanganKomtek() {
               ))}
             </div>
           )}
+
+          <Pagination
+            page={page}
+            lastPage={pagination.lastPage}
+            total={pagination.total}
+            perPage={pagination.perPage}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

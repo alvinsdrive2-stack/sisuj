@@ -88,6 +88,24 @@ export default function ListAsesiAdminTUK() {
   const daftarHadirMenuRef = useRef<HTMLDivElement>(null)
   const { openDetailModal, openKegiatanModal } = useDaftarHadirModal()
 
+  // Group asesi by skema
+  const skemaMap = new Map<string, string>()
+  if (kegiatan?.asesi) {
+    for (const a of kegiatan.asesi) {
+      skemaMap.set(a.id_izin, a.skema?.nama || '')
+    }
+  }
+  const groupedAsesi = asesiList.reduce((groups, asesi) => {
+    const skema = skemaMap.get(asesi.id_izin) || 'Lainnya'
+    const existing = groups.find(g => g.skema === skema)
+    if (existing) {
+      existing.asesi.push(asesi)
+    } else {
+      groups.push({ skema, asesi: [asesi] })
+    }
+    return groups
+  }, [] as { skema: string; asesi: typeof asesiList }[])
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -174,7 +192,7 @@ export default function ListAsesiAdminTUK() {
             {/* Left: Kegiatan Info (70%) */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h3>
                 {kegiatan.is_started_praasesmen === "0" && (
                   <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                     Belum Mulai
@@ -348,20 +366,29 @@ export default function ListAsesiAdminTUK() {
             )}
 
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {asesiList.map((asesi, index) => (
-                <div
-                  key={asesi.id_izin}
-                  onClick={() => openDetailModal('asesi', asesi.id_izin, asesi.nama, jadwalId || "")}
-                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{index + 1}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
-                    </div>
+              {groupedAsesi.map((group) => (
+                <div key={group.skema}>
+                  <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
+                    {group.skema}
+                  </h5>
+                  <div className="space-y-2">
+                    {group.asesi.map((asesi, idx) => (
+                      <div
+                        key={asesi.id_izin}
+                        onClick={() => openDetailModal('asesi', asesi.id_izin, asesi.nama, jadwalId || "")}
+                        className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}

@@ -46,7 +46,11 @@
       "Bash(Select-Object -First 180)",
       "Bash(Get-ChildItem *)",
       "Bash(Select-String -Pattern '\"build\"|\"vercel\"')",
-      "Bash(vercel *)"
+      "Bash(vercel *)",
+      "Bash(dir /b /s src\\\\lib\\\\kegiatan-service.ts)",
+      "Bash(dir /s /b api.php)",
+      "Bash(dir /s /b web.php)",
+      "Bash(dir /s /b routes)"
     ]
   },
   "enableAllProjectMcpServers": true,

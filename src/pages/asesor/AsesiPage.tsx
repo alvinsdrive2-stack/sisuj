@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle } from "lucide-react"
-import { useKegiatanAsesorList, useListAsesi, useAbsenData, AbsenData } from "@/hooks/useKegiatan"
+import { useKegiatanAsesorList, useListAsesi, useAbsenData, AbsenData, KegiatanAsesor } from "@/hooks/useKegiatan"
+import { kegiatanService } from "@/lib/kegiatan-service"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
@@ -67,8 +68,43 @@ export default function AsesiPage() {
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
 
   const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesorList()
-  const currentKegiatan = kegiatans.find(k => k.jadwal_id === jadwalId) || kegiatans[0]
+  const [allKegiatans, setAllKegiatans] = useState<KegiatanAsesor[]>(kegiatans)
+  const currentKegiatan = allKegiatans.find(k => k.jadwal_id === jadwalId) || allKegiatans[0]
   const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
+
+  // Keep sync with hook data + fallback fetch all pages if kegiatan not found on page 1
+  useEffect(() => {
+    setAllKegiatans(kegiatans)
+  }, [kegiatans])
+
+  useEffect(() => {
+    if (kegiatanLoading) return
+    const found = allKegiatans.find(k => k.jadwal_id === jadwalId)
+    if (found) return
+    if (allKegiatans.length === 0 && !kegiatanError) return
+
+    const fetchAllPages = async () => {
+      let page = 2
+      let all = [...allKegiatans]
+      while (true) {
+        try {
+          const response = await kegiatanService.getKegiatanAsesor(page)
+          if (!response.data || response.data.length === 0) break
+          all = [...all, ...response.data]
+          const found = all.find(k => k.jadwal_id === jadwalId)
+          if (found) {
+            setAllKegiatans(all)
+            return
+          }
+          page++
+        } catch {
+          break
+        }
+      }
+      setAllKegiatans(all)
+    }
+    fetchAllPages()
+  }, [kegiatanLoading, jadwalId])
 
   // State for countdowns - keyed by jadwal_id
   const [countdowns, setCountdowns] = useState<Record<string, CountdownTime>>({})
@@ -77,7 +113,7 @@ export default function AsesiPage() {
   useEffect(() => {
     const updateCountdowns = () => {
       const newCountdowns: Record<string, CountdownTime> = {}
-      kegiatans.forEach(kegiatan => {
+      allKegiatans.forEach(kegiatan => {
         newCountdowns[kegiatan.jadwal_id] = calculateCountdown(kegiatan.tanggal_uji || "")
       })
       setCountdowns(newCountdowns)
@@ -86,7 +122,7 @@ export default function AsesiPage() {
     updateCountdowns()
     const timer = setInterval(updateCountdowns, 1000)
     return () => clearInterval(timer)
-  }, [kegiatans.length]) // Only re-run when number of kegiatans changes, not array reference
+  }, [allKegiatans.length]) // Only re-run when number of kegiatans changes, not array reference
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
@@ -259,6 +295,24 @@ export default function AsesiPage() {
     )
   }
 
+  // Group asesi by skema
+  const skemaMap = new Map<string, string>()
+  if (currentKegiatan?.asesi) {
+    for (const a of currentKegiatan.asesi) {
+      skemaMap.set(a.id_izin, a.skema?.nama || '')
+    }
+  }
+  const groupedAsesi = asesiList.reduce((groups, asesi) => {
+    const skema = skemaMap.get(asesi.id_izin) || 'Lainnya'
+    const existing = groups.find(g => g.skema === skema)
+    if (existing) {
+      existing.asesi.push(asesi)
+    } else {
+      groups.push({ skema, asesi: [asesi] })
+    }
+    return groups
+  }, [] as { skema: string; asesi: typeof asesiList }[])
+
   if (kegiatanError && !currentKegiatan) {
     return (
       <div className="text-center py-12">
@@ -268,7 +322,7 @@ export default function AsesiPage() {
     )
   }
 
-  if (!kegiatans || kegiatans.length === 0) {
+  if (!allKegiatans || allKegiatans.length === 0) {
     return (
       <div className="text-center py-12">
         <UserCheck className="w-16 h-16 mx-auto mb-4 text-slate-400" />
@@ -307,7 +361,7 @@ export default function AsesiPage() {
                 {/* Left: Kegiatan Info */}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-xl font-bold text-slate-800">{currentKegiatan.skema?.nama}</h3>
+                    <h3 className="text-xl font-bold text-slate-800">{currentKegiatan.nama_kegiatan}</h3>
                     {currentKegiatan.tahap === 0 && (
                       <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200">
                         Belum Mulai
@@ -325,7 +379,7 @@ export default function AsesiPage() {
                     )}
                   </div>
 
-                  <p className="text-sm text-slate-600 mb-3">{currentKegiatan.tuk?.nama}</p>
+                  <p className="text-sm text-slate-600 mb-3">{currentKegiatan.tuk?.nama} • {currentKegiatan.asesor?.nama}{currentKegiatan.asesor2 ? ` & ${currentKegiatan.asesor2.nama}` : ''}</p>
 
                   <div className="flex flex-wrap gap-4 text-sm text-slate-600">
                     <div className="flex items-center gap-1.5">
@@ -525,8 +579,14 @@ export default function AsesiPage() {
 
 
 
-          <div className="space-y-3">
-            {asesiList.map((asesi, index) => {
+          <div className="space-y-4">
+            {groupedAsesi.map((group) => (
+              <div key={group.skema}>
+                <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
+                  {group.skema}
+                </h5>
+                <div className="space-y-2">
+                  {group.asesi.map((asesi, idx) => {
               const absen = absenData[asesi.id_izin]
 
               const asesiStatus = currentKegiatan?.tahap === 2
@@ -551,7 +611,7 @@ export default function AsesiPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">{index + 1}</span>
+                        <span className="text-sm font-bold text-primary">{idx + 1}</span>
                       </div>
                       <div>
                         <h4 className="font-semibold text-slate-800">{asesi.nama}</h4>
@@ -583,6 +643,9 @@ export default function AsesiPage() {
                 </div>
               )
             })}
+            </div>
+            </div>
+          ))}
           </div>
         </CardContent>
       </Card>

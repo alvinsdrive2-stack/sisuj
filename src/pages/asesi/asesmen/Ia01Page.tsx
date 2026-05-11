@@ -729,10 +729,13 @@ export default function Ia01Page() {
                     umpan_balik: umpanBalik
                   }))
 
+                  const is_kompeten = answers.length > 0 && answers.every(a => a.pencapaian === true)
+
                   const payload = {
                     dokumen_id: dokumenId,
                     answers,
                     feedback,
+                    is_kompeten,
                   }
 
                   console.log('Sending IA01 payload:', payload)

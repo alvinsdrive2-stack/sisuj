@@ -84,16 +84,23 @@ export default function ListAsesiAsesor() {
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [jenjang, setJenjang] = useState<string>('0')
 
-  // Fetch kegiatan detail
+  // Fetch kegiatan detail — loop through pages until found
   useEffect(() => {
     const fetchKegiatan = async () => {
       try {
-        const response = await kegiatanService.getKegiatanAsesor()
-        // API now returns array - find the matching kegiatan
-        const kegiatanArray = response.data
-        const matchedKegiatan = kegiatanArray?.find(k => k.jadwal_id === jadwalId)
-        if (matchedKegiatan) {
-          setKegiatan(matchedKegiatan)
+        let currentPage = 1
+        let found = null as KegiatanAsesor | null
+
+        while (!found) {
+          const response = await kegiatanService.getKegiatanAsesor(currentPage)
+          const kegiatanArray = response.data
+          if (!kegiatanArray || kegiatanArray.length === 0) break
+          found = kegiatanArray.find(k => k.jadwal_id === jadwalId) || null
+          currentPage++
+        }
+
+        if (found) {
+          setKegiatan(found)
         }
       } catch (err) {
         console.error('Error fetching kegiatan:', err)
@@ -137,6 +144,24 @@ export default function ListAsesiAsesor() {
   // Always call hook, use empty string as fallback
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
 
+  // Group asesi by skema
+  const skemaMap = new Map<string, string>()
+  if (kegiatan?.asesi) {
+    for (const a of kegiatan.asesi) {
+      skemaMap.set(a.id_izin, a.skema?.nama || '')
+    }
+  }
+  const groupedAsesi = asesiList.reduce((groups, asesi) => {
+    const skema = skemaMap.get(asesi.id_izin) || 'Lainnya'
+    const existing = groups.find(g => g.skema === skema)
+    if (existing) {
+      existing.asesi.push(asesi)
+    } else {
+      groups.push({ skema, asesi: [asesi] })
+    }
+    return groups
+  }, [] as { skema: string; asesi: typeof asesiList }[])
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -162,7 +187,7 @@ export default function ListAsesiAsesor() {
             {/* Left: Kegiatan Info (70%) */}
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.skema.nama}</h3>
+                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h3>
                 {kegiatan.is_started_praasesmen === "0" && (
                   <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
                     Belum Mulai
@@ -179,7 +204,7 @@ export default function ListAsesiAsesor() {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{kegiatan.tuk.nama}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{kegiatan.tuk.nama} • {kegiatan.asesor.nama}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama}` : ''}</p>
 
               <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-center gap-1.5">
@@ -293,41 +318,50 @@ export default function ListAsesiAsesor() {
             </div>
           )}
 
-          <div className="space-y-3">
-            {asesiList.map((asesi, index) => (
-              <div
-                key={asesi.id_izin}
-                className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
-                onClick={() => {
-                  // Check jenjang from data-dokumen API for low jenjang flow
-                  const jenjangId = parseInt(jenjang || "0")
-                  if (jenjangId < 4) {
-                    navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`)
-                  } else {
-                    navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`)
-                  }
-                }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">{index + 1}</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
-                    </div>
-                  </div>
+          <div className="space-y-4">
+            {groupedAsesi.map((group) => (
+              <div key={group.skema}>
+                <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
+                  {group.skema}
+                </h5>
+                <div className="space-y-2">
+                  {group.asesi.map((asesi, idx) => (
+                    <div
+                      key={asesi.id_izin}
+                      className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
+                      onClick={() => {
+                        // Check jenjang from data-dokumen API for low jenjang flow
+                        const jenjangId = parseInt(jenjang || "0")
+                        if (jenjangId < 4) {
+                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`)
+                        } else {
+                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`)
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
+                          </div>
+                        </div>
 
-                  {/* Kompeten Indicator Only - Glowing Green */}
-                  {asesi.kompeten === "K" && (
-                    <div className="relative">
-                      {/* Glow effect */}
-                      <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
-                      {/* The dot */}
-                      <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+                        {/* Kompeten Indicator Only - Glowing Green */}
+                        {asesi.kompeten === "K" && (
+                          <div className="relative">
+                            {/* Glow effect */}
+                            <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
+                            {/* The dot */}
+                            <div className="relative w-4 h-4 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}

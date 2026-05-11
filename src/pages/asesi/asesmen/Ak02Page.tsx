@@ -26,6 +26,7 @@ interface UnitKompetensiAPI {
   pertanyaan_lisan: boolean
   pertanyaan_tertulis: boolean
   proyek_kerja: boolean
+  lainnya?: boolean
 }
 
 interface UnitKompetensi {
@@ -62,6 +63,7 @@ interface EvidenceCheck {
   pertanyaan_lisan: boolean
   pertanyaan_tertulis: boolean
   proyek_kerja: boolean
+  lainnya: boolean
 }
 
 export default function Ak02Page() {
@@ -78,7 +80,6 @@ export default function Ak02Page() {
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabled = !isAsesor
-  const showPortofolio = parseInt(jenjang || '0') >= 4
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   // Note: absen akhir for asesi is now handled in Ak03Page
@@ -150,6 +151,7 @@ export default function Ak02Page() {
               pertanyaan_lisan: unit.pertanyaan_lisan,
               pertanyaan_tertulis: unit.pertanyaan_tertulis,
               proyek_kerja: unit.proyek_kerja,
+              lainnya: unit.lainnya ?? false,
             }
           })
 
@@ -296,12 +298,30 @@ export default function Ak02Page() {
           <tbody>
             <tr style={{color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
               <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Unit kompetensi</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Observasi demonstrasi</th>
-              {showPortofolio && <th style={{ border: '1px solid #000', padding: '6px' }}>Portofolio</th>}
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan wawancara</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan lisan</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan tertulis</th>
-              <th style={{ border: '1px solid #000', padding: '6px' }}>Proyek kerja</th>
+              {[
+                ['Observasi Demonstrasi'],
+                ['Portofolio'],
+                ['Pernyataan Pihak Ketiga', 'Pertanyaan wawancara'],
+                ['Pertanyaan Lisan'],
+                ['Pertanyaan Tertulis'],
+                ['Proyek Kerja'],
+                ['Lainnya'],
+              ].map((lines) => (
+                <th key={lines.join('')} style={{ border: '1px solid #000', padding: '8px 4px', width: '20px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
+                  <div style={{ writingMode: 'vertical-rl', whiteSpace: 'nowrap', visibility: 'hidden', fontSize: '12px', lineHeight: '1.3' }}>
+                    {lines.map((line, i) => (
+                      <span key={i}>{line}{i < lines.length - 1 && <br/>}</span>
+                    ))}
+                  </div>
+                  <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '1.3' }}>
+                      {lines.map((line, i) => (
+                        <span key={i}>{line}{i < lines.length - 1 && <br/>}</span>
+                      ))}
+                    </div>
+                  </div>
+                </th>
+              ))}
             </tr>
 
             {unitKompetensi.map((unit) => (
@@ -318,16 +338,14 @@ export default function Ak02Page() {
                     style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
-                {showPortofolio && (
-                  <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
-                    <CustomCheckbox
-                      checked={evidenceChecks[unit.id]?.portofolio || false}
-                      onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
-                      disabled={isFormDisabled || signing.allSigned}
-                      style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
-                    />
-                  </td>
-                )}
+                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.portofolio || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'portofolio')}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
+                  />
+                </td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
                   <CustomCheckbox
                     checked={evidenceChecks[unit.id]?.pertanyaan_wawancara || false}
@@ -360,12 +378,20 @@ export default function Ak02Page() {
                     style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
                   />
                 </td>
+                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '20px' }}>
+                  <CustomCheckbox
+                    checked={evidenceChecks[unit.id]?.lainnya || false}
+                    onChange={() => handleEvidenceChange(unit.id, 'lainnya')}
+                    disabled={isFormDisabled || signing.allSigned}
+                    style={{ cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}
+                  />
+                </td>
               </tr>
             ))}
 
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}><b>Rekomendasi hasil asesmen</b></td>
-              <td colSpan={6} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+              <td colSpan={7} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginRight: '20px', cursor: (isFormDisabled || signing.allSigned) ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={isKompeten === true}
@@ -390,7 +416,7 @@ export default function Ak02Page() {
                 <b>Tindak lanjut yang dibutuhkan</b><br />
                 <span style={{ fontSize: '13px' }}>(Masukkan pekerjaan tambahan dan asesmen yang diperlukan untuk mencapai kompetensi)</span>
               </td>
-              <td colSpan={6} style={{ border: '1px solid #000', padding: '6px' }}>
+              <td colSpan={7} style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={tindakLanjut}
                   onChange={(e) => setTindakLanjut(e.target.value)}
@@ -403,7 +429,7 @@ export default function Ak02Page() {
 
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}><b>Komentar / Observasi oleh asesor</b></td>
-              <td colSpan={6} style={{ border: '1px solid #000', padding: '6px' }}>
+              <td colSpan={7} style={{ border: '1px solid #000', padding: '6px' }}>
                 <textarea
                   value={komentar}
                   onChange={(e) => setKomentar(e.target.value)}
@@ -575,11 +601,12 @@ export default function Ak02Page() {
                   const answers = unitKompetensi.map((unit) => ({
                     id_unit_kompetensi: unit.id,
                     observasi: evidenceChecks[unit.id]?.observasi || false,
-                    ...(showPortofolio ? { portofolio: evidenceChecks[unit.id]?.portofolio || false } : {}),
+                    portofolio: evidenceChecks[unit.id]?.portofolio || false,
                     pertanyaan_wawancara: evidenceChecks[unit.id]?.pertanyaan_wawancara || false,
                     pertanyaan_lisan: evidenceChecks[unit.id]?.pertanyaan_lisan || false,
                     pertanyaan_tertulis: evidenceChecks[unit.id]?.pertanyaan_tertulis || false,
                     proyek_kerja: evidenceChecks[unit.id]?.proyek_kerja || false,
+                    lainnya: evidenceChecks[unit.id]?.lainnya || false,
                   }))
 
                   const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ak02`, {
