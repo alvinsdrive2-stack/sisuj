@@ -300,8 +300,8 @@ export default function DashboardAsesiPage() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
-        <div className="mb-8 animate-slide-down">
-          <h2 className="text-2xl font-bold text-slate-900">{user?.name || "Asesi"}</h2>
+        <div className="mb-8 animate-slide-down bg-white backdrop-blur-sm rounded-lg p-6 text-center shadow-lg">
+          <h2 className="text-2xl font-bold text-primary">{user?.name || "Asesi"}</h2>
           <p className="text-slate-500 mt-0.5 text-sm">Uji Kompetensi Profesi</p>
         </div>
 
@@ -393,19 +393,19 @@ export default function DashboardAsesiPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Exam Details */}
             <Card className="shadow-lg animate-slide-up">
-              <CardHeader className="border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <BookOpen className="w-6 h-6 text-primary" />
-                  Detail Uji Kompetensi
-                </CardTitle>
-              </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-6">
+                <div className="space-y-6 ">
                   {/* Scheme Info */}
                   <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
-                    <p className="text-sm text-muted-foreground mb-1">Skema Sertifikasi</p>
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">{examData.scheme}</h3>
-                    <Badge variant="outline" className="text-xs">{examData.schemeCode}</Badge>
+                    
+                    <div className="flex items-center gap-3">
+                      <BookOpen className="w-20 h-20 text-primary/90 shrink-0 bg-blue-900/30 p-2.5 rounded-full" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Skema Sertifikasi</p>
+                        <h3 className="text-xl font-bold text-slate-800">{examData.scheme}</h3>
+                        <Badge variant="outline" className="text-xs mt-[2px]">{examData.schemeCode}</Badge>
+                      </div>
+                    </div>
                   </div>
 
                   <Separator />

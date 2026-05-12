@@ -1,4 +1,5 @@
-
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/contexts/auth-context"
 
 interface Step {
   number: number
@@ -45,7 +46,9 @@ const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
 }
 
 export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: AsesiStepIndicatorProps) {
-
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   // For tahap 0: hide Konfirmasi(1), K3(8), AK01(9), Selesai(10)
   const isTahap0 = tahap === 0
@@ -118,7 +121,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
           const stepPath = getStepPath(step.number, idIzin)
-          const isClickable = stepPath !== null
+          const isClickable = isAsesor && stepPath !== null
 
           return (
             <div
@@ -128,9 +131,9 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
                 alignItems: 'flex-start',
                 marginBottom: index < visibleSteps.length - 1 ? '24px' : '0',
                 position: 'relative',
-                cursor: isClickable ? 'help' : 'default'
+                cursor: isClickable ? 'pointer' : 'not-allowed'
               }}
-              onClick={() => isClickable}
+              onClick={() => isClickable && stepPath && navigate(stepPath)}
               title={isClickable ? `Klik untuk ke ${step.label}` : undefined}
             >
               {/* Step Circle */}
@@ -166,7 +169,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
                   }
                 }}
               >
-                {status === 'completed' ? '\u2713' : displayNumber}
+                {status === 'completed' ? '✓' : displayNumber}
               </div>
               {/* Label */}
               <span style={{

@@ -50,7 +50,8 @@
       "Bash(dir /b /s src\\\\lib\\\\kegiatan-service.ts)",
       "Bash(dir /s /b api.php)",
       "Bash(dir /s /b web.php)",
-      "Bash(dir /s /b routes)"
+      "Bash(dir /s /b routes)",
+      "WebFetch(domain:qontak.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

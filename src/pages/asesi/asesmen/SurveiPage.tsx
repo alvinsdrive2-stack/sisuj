@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import * as XLSX from "xlsx"
 import { useNavigate, useParams } from "react-router-dom"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -23,12 +24,26 @@ interface SurveyItem {
   skor: number | null
 }
 
+const DEFAULT_SURVEY_ITEMS: SurveyItem[] = [
+  { id: 1, no: '1', aspek: 'Informasi dan Transparansi', deskripsi: 'Informasi diterima dengan jelas meliputi persyaratan peserta dan biaya sertifikasi', skor: null },
+  { id: 2, no: '2', aspek: 'Ketidakberpihakan (Impartiality)', deskripsi: 'Proses uji kompetensi dilakukan secara adil tanpa diskriminasi dan sikap objektif asesor saat asesmen', skor: null },
+  { id: 3, no: '3', aspek: 'Kompetensi Asesor', deskripsi: 'Asesor bersikap profesional, komunikatif dan menguasai materi uji kompetensi', skor: null },
+  { id: 4, no: '4', aspek: 'Pelaksanaan Sertifikasi', deskripsi: 'Proses asesmen berjalan sesuai prosedur dan waktu pelaksanaan sesuai jadwal', skor: null },
+  { id: 5, no: '5', aspek: 'Hasil dan Banding', deskripsi: 'Hasil uji kompetensi dan mekanisme banding disampaikan dengan jelas', skor: null },
+  { id: 6, no: '6', aspek: 'Kesiapan dan Kelengkapan Fasilitas TUK', deskripsi: 'Peralatan dan fasilitas pendukung serta bahan uji tersedia sesuai standar dan siap digunakan', skor: null },
+  { id: 7, no: '7', aspek: 'Kondisi Lingkungan TUK', deskripsi: 'Keamanan, keselamatan, kebersihan dan kenyamanan area TUK terjaga', skor: null },
+  { id: 8, no: '8', aspek: 'Dukungan TUK Pelaksanaan Uji', deskripsi: 'Petugas TUK memberi informasi yang jelas dan membantu dengan baik', skor: null },
+  { id: 9, no: '9', aspek: 'Kepatuhan TUK terhadap Prosedur', deskripsi: 'Pelaksanaan uji kompetensi tanpa gangguan dan menerapkan protokol K3', skor: null },
+]
+
 interface SurveiResponse {
-  message: string
+  status: string
   data: {
-    pertanyaan: SurveyItem[]
-    saran: string
-    pernyataan: boolean
+    id_izin: string
+    surveys: {
+      LSP: { saran: string; pernyataan: boolean; answers: { pertanyaan_id: string; aspek: string; pertanyaan: string; skor: string }[] }
+      TUK: { saran: string; pernyataan: boolean; answers: { pertanyaan_id: string; aspek: string; pertanyaan: string; skor: string }[] }
+    }
   }
 }
 
@@ -62,7 +77,7 @@ export default function SurveiPage() {
   })
 
   // Form state
-  const [surveyItems, setSurveyItems] = useState<SurveyItem[]>([])
+  const [surveyItems, setSurveyItems] = useState<SurveyItem[]>(DEFAULT_SURVEY_ITEMS)
   const [saran, setSaran] = useState('')
   const [pernyataan, setPernyataan] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -78,19 +93,33 @@ export default function SurveiPage() {
 
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/survei`, {
+      const response = await fetch(`${API_BASE_URL}/survey/${id}`, {
         headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
       })
       if (response.ok) {
         const result: SurveiResponse = await response.json()
-        if (result.message === "Success" && result.data) {
-          if (result.data.pertanyaan) {
-            setSurveyItems(result.data.pertanyaan)
+        if (result.status === "success" && result.data?.surveys) {
+          const allAnswers = [
+            ...(result.data.surveys.LSP?.answers || []),
+            ...(result.data.surveys.TUK?.answers || []),
+          ]
+          if (allAnswers.length > 0) {
+            setSurveyItems(prev => prev.map(item => {
+              const answer = allAnswers.find(a => parseInt(a.pertanyaan_id) === item.id)
+              if (answer) {
+                return {
+                  ...item,
+                  aspek: answer.aspek.replace(/^Aspek\s+/i, ''),
+                  deskripsi: answer.pertanyaan.trim(),
+                  skor: parseInt(answer.skor),
+                }
+              }
+              return item
+            }))
           }
-
-          setSaran(result.data.saran || '')
-          setPernyataan(result.data.pernyataan || false)
-          setIsSubmitted(result.data.pernyataan === true)
+          setSaran(result.data.surveys.LSP?.saran || '')
+          setPernyataan(result.data.surveys.LSP?.pernyataan || false)
+          setIsSubmitted(result.data.surveys.LSP?.pernyataan === true)
         }
       }
     } catch (err) {
@@ -144,12 +173,15 @@ export default function SurveiPage() {
     try {
       const token = localStorage.getItem("access_token")
 
-      const answers = surveyItems.map((item) => ({
-        pertanyaan_id: item.id,
-        skor: item.skor,
-      }))
+      const lspAnswers = surveyItems
+        .filter(item => parseInt(item.no) <= 5 && item.skor !== null)
+        .map(item => ({ pertanyaan_id: item.id, skor: item.skor }))
 
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/survei`, {
+      const tukAnswers = surveyItems
+        .filter(item => parseInt(item.no) >= 6 && item.skor !== null)
+        .map(item => ({ pertanyaan_id: item.id, skor: item.skor }))
+
+      const response = await fetch(`${API_BASE_URL}/survey/${id}`, {
         method: 'POST',
         headers: {
           "Accept": "application/json",
@@ -157,7 +189,8 @@ export default function SurveiPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          answers,
+          LSP: lspAnswers,
+          TUK: tukAnswers,
           saran,
           pernyataan,
         }),
@@ -166,13 +199,7 @@ export default function SurveiPage() {
       if (response.ok) {
         showSuccess('Survei berhasil disimpan!')
         setIsSubmitted(true)
-
-        const result: SurveiResponse = await response.json()
-        if (result.data) {
-          if (result.data.pertanyaan) setSurveyItems(result.data.pertanyaan)
-          if (result.data.saran !== undefined) setSaran(result.data.saran)
-          setPernyataan(result.data.pernyataan || false)
-        }
+        setPernyataan(true)
 
         // Check absen akhir for asesi
         if (!isAsesor) {
@@ -204,6 +231,48 @@ export default function SurveiPage() {
     return `/asesi/asesmen/${id}/selesai`
   }
 
+  const handleExportXlsx = () => {
+    const wb = XLSX.utils.book_new()
+
+    // Sheet 1 - Identitas
+    const identitasData = [
+      ["FORM SURVEI KEPUASAN TERHADAP LSP"],
+      [],
+      ["A. Identitas Responden"],
+      ["Nama", namaAsesi || "-"],
+      ["ID Ijin", id || "-"],
+      ["Skema Sertifikasi", jabatanKerja || "-"],
+      ["Tempat Uji Kompetensi (TUK)", tuk || "-"],
+      ["Tanggal Uji Kompetensi", tanggalUji || "-"],
+    ]
+    const identitasSheet = XLSX.utils.aoa_to_sheet(identitasData)
+    XLSX.utils.book_append_sheet(wb, identitasSheet, "Identitas")
+
+    // Sheet 2 - Penilaian
+    const penilaianHeader = ["No.", "Aspek Penilaian", "Deskripsi", "Skor (1-5)"]
+    const penilaianRows = surveyItems.map(item => [
+      item.no,
+      item.aspek,
+      item.deskripsi,
+      item.skor !== null ? String(item.skor) : "",
+    ])
+    const penilaianSheet = XLSX.utils.aoa_to_sheet([penilaianHeader, ...penilaianRows])
+    XLSX.utils.book_append_sheet(wb, penilaianSheet, "Penilaian")
+
+    // Sheet 3 - Saran
+    const saranData = [
+      ["D. Saran dan Masukan"],
+      [saran || "-"],
+      [],
+      ["E. Pernyataan"],
+      ["Isi survei ini dengan jujur sesuai pengalaman saya:", pernyataan ? "Ya" : "Belum"],
+    ]
+    const saranSheet = XLSX.utils.aoa_to_sheet(saranData)
+    XLSX.utils.book_append_sheet(wb, saranSheet, "Saran & Pernyataan")
+
+    XLSX.writeFile(wb, `Survei-LSP-${id || "asesi"}.xlsx`)
+  }
+
   const handleNext = () => {
     navigate(getNextPath())
   }
@@ -215,16 +284,6 @@ export default function SurveiPage() {
       navigate(getNextPath())
     }
   }
-
-  const defaultSurveyItems: SurveyItem[] = [
-    { id: 1, no: '1', aspek: 'Informasi dan Transparansi', deskripsi: 'Informasi diterima dengan jelas meliputi persyaratan peserta dan biaya sertifikasi', skor: null },
-    { id: 2, no: '2', aspek: 'Ketidakberpihakan (Impartiality)', deskripsi: 'Proses uji kompetensi dilakukan secara adil tanpa diskriminasi dan sikap objektif asesor saat asesmen', skor: null },
-    { id: 3, no: '3', aspek: 'Kompetensi Asesor', deskripsi: 'Asesor bersikap profesional, komunikatif dan menguasai materi uji kompetensi', skor: null },
-    { id: 4, no: '4', aspek: 'Pelaksanaan Sertifikasi', deskripsi: 'Proses asesmen berjalan sesuai prosedur dan waktu pelaksanaan sesuai jadwal', skor: null },
-    { id: 5, no: '5', aspek: 'Hasil dan Banding', deskripsi: 'Hasil uji kompetensi dan mekanisme banding disampaikan dengan jelas', skor: null },
-  ]
-
-  const items = surveyItems.length > 0 ? surveyItems : defaultSurveyItems
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
@@ -247,7 +306,7 @@ export default function SurveiPage() {
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000' }}>
-            FORM SURVEI KEPUASAN TERHADAP LSP
+            FORM SURVEI KEPUASAN TERHADAP PROSES SERTIFIKASI
           </h1>
         </div>
 
@@ -328,7 +387,7 @@ export default function SurveiPage() {
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
+              {surveyItems.map((item) => (
                 <tr key={item.id}>
                   <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>{item.no}</td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>
@@ -337,16 +396,11 @@ export default function SurveiPage() {
                   </td>
                   {[1, 2, 3, 4, 5].map((skor) => (
                     <td key={skor} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                      <input
-                        type="radio"
-                        name={`survey-${item.id}`}
+                      <CustomCheckbox
                         checked={item.skor === skor}
                         onChange={() => handleSkorChange(item.id, skor)}
                         disabled={isFormDisabled}
-                        style={{
-                          cursor: isFormDisabled ? 'not-allowed' : 'pointer',
-                          accentColor: '#d10000',
-                        }}
+                        style={{ cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                   ))}
@@ -405,7 +459,10 @@ export default function SurveiPage() {
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <ActionButton variant="secondary" onClick={handleExportXlsx}>
+            Export XLSX
+          </ActionButton>
           <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
             Kembali
           </ActionButton>

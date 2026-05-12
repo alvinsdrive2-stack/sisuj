@@ -110,7 +110,7 @@ export default function ModularStepIndicator({ currentStep, steps, id, disableCl
                 alignItems: 'flex-start',
                 marginBottom: index < steps.length - 1 ? '24px' : '0',
                 position: 'relative',
-                cursor: isClickable ? 'pointer' : 'default'
+                cursor: isClickable ? 'pointer' : 'not-allowed'
               }}
               onClick={() => isClickable && handleStepClick(step)}
               title={isClickable ? `Klik untuk ke ${step.label}` : undefined}

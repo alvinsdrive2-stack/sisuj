@@ -61,6 +61,9 @@ const DashboardAsesor = lazy(() => import('./pages/asesor/DashboardAsesor'))
 const ListAsesiAsesor = lazy(() => import('./pages/asesor/ListAsesiAsesor'))
 const AsesiPage = lazy(() => import('./pages/asesor/AsesiPage'))
 
+// Qontak WhatsApp Pages
+const QontakWhatsAppPage = lazy(() => import('./pages/qontak/QontakWhatsAppPage'))
+
 // Asesi Pages
 const DashboardAsesiPage = lazy(() => import('./pages/asesi/DashboardAsesiPage'))
 const PraAsesmenPage = lazy(() => import('./pages/asesi/PraAsesmenPage'))
@@ -234,6 +237,21 @@ function App() {
                   </Routes>
                 </DashboardLayout>
               </AsesorRoute>
+            }
+          />
+
+          {/* Protected Routes - Qontak WhatsApp (any logged-in user) */}
+          <Route
+            path="/qontak/*"
+            element={
+              <DirekturLSPRoute>
+                <DashboardLayout>
+                  <Routes>
+                    <Route path="whatsapp" element={<QontakWhatsAppPage />} />
+                    <Route path="" element={<Navigate to="whatsapp" replace />} />
+                  </Routes>
+                </DashboardLayout>
+              </DirekturLSPRoute>
             }
           />
 

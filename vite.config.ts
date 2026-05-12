@@ -12,7 +12,19 @@ export default defineConfig({
   server: {
     hmr: {
       overlay: false
-    }
+    },
+    proxy: {
+      '/api/qontak': {
+        target: 'https://service-chat.qontak.com/api/open/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/qontak/, ''),
+      },
+      '/api/qontak-auth': {
+        target: 'https://service-chat.qontak.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/qontak-auth/, ''),
+      },
+    },
   },
   build: {
     target: 'es2020',
