@@ -302,7 +302,7 @@ export default function DashboardAsesiPage() {
         {/* Welcome Section */}
         <div className="mb-8 animate-slide-down bg-white backdrop-blur-sm rounded-lg p-6 text-center shadow-lg">
           <h2 className="text-2xl font-bold text-primary">{user?.name || "Asesi"}</h2>
-          <p className="text-slate-500 mt-0.5 text-sm">Uji Kompetensi Profesi</p>
+          <p className="text-slate-500 mt-0.5 text-sm">{user?.id_izin|| ""}</p>
         </div>
 
         {/* Countdown Banner - Big Container */}
@@ -399,7 +399,7 @@ export default function DashboardAsesiPage() {
                   <div className="animate-fade-in" style={{ animationDelay: "0.1s" }}>
                     
                     <div className="flex items-center gap-3">
-                      <BookOpen className="w-20 h-20 text-primary/90 shrink-0 bg-blue-900/30 p-2.5 rounded-full" />
+                      <BookOpen className="w-20 h-20 text-primary/90 shrink-0 bg-blue-400/15 p-2.5 rounded-full" />
                       <div>
                         <p className="text-sm text-muted-foreground">Skema Sertifikasi</p>
                         <h3 className="text-xl font-bold text-slate-800">{examData.scheme}</h3>
