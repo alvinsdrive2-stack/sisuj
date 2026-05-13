@@ -48,7 +48,7 @@ interface SurveiResponse {
 
 export default function SurveiPage() {
   const navigate = useNavigate()
-  const { user, isLoading: authLoading } = useAuth()
+  const { isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji } = useDataDokumenAsesmen(id)
