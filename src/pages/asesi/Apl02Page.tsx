@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import AsesiLayout from "@/components/AsesiLayout"
+import DashboardNavbar from "@/components/DashboardNavbar"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -1535,6 +1536,7 @@ export default function Apl02Page() {
     isSaving,
     idIzin: _idIzin || idIzin || undefined,
     jadwalId,
+    isUuidFlow,
     onRefresh: fetchData,
   })
 
@@ -1548,7 +1550,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
-        navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
+        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
       }
       return
     }
@@ -1557,7 +1559,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
-        navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
+        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
       }
       return
     }
@@ -1659,7 +1661,7 @@ export default function Apl02Page() {
         showSuccess('Metode asesmen berhasil disimpan!')
         // Untuk tahap 0, langsung navigasi
         if (tahap === 0) {
-          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
+          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
         }
       } catch (error) {
         console.error('Error saving metode:', error)
@@ -1799,9 +1801,9 @@ export default function Apl02Page() {
 
         showSuccess('APL 02 berhasil ditandatangani!')
         signing.publishUpdate()
-        // Untuk tahap 0, langsung navigasi ke halaman berikutnya
-        if (tahap === 0) {
-          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
+        // Untuk tahap 0 atau UUID flow, langsung navigasi ke halaman berikutnya
+        if (tahap === 0 || isUuidFlow) {
+          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
         }
       } else {
         showError('Gagal menyimpan data APL 02')
@@ -1829,19 +1831,22 @@ export default function Apl02Page() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      {/* Header */}
+      {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
 
       {/* Breadcrumb */}
+      {!isUuidFlow && (
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
         <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            {!isUuidFlow && <><span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span><span>/</span></>}
+            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
+            <span>/</span>
             <span>Pra-Asesmen</span>
             <span>/</span>
             <span>FR APL 02</span>
           </div>
         </div>
       </div>
+      )}
 
       <Layout>
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>

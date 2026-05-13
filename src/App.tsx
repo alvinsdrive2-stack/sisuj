@@ -126,6 +126,7 @@ function App() {
           <Route path="/praasesmen/:idIzin/konfirmasi" element={<KonfirmasiDataPage />} />
           <Route path="/praasesmen/:idIzin/apl01" element={<Apl01Page />} />
           <Route path="/praasesmen/:idIzin/apl02" element={<Apl02Page />} />
+          <Route path="/praasesmen/:idIzin/apl02/success" element={<Apl02SuccessPage />} />
           <Route
             path="/login"
             element={

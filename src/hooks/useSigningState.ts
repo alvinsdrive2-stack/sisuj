@@ -28,6 +28,8 @@ export interface SigningStateInput {
   isSaving?: boolean
   idIzin?: string
   jadwalId?: string | number | null
+  /** Jika true, skip nunggu asesor — langsung anggap allSigned */
+  isUuidFlow?: boolean
   /** Override next page label, e.g. "IA 02". Falls back to config. */
   nextPageName?: string
   /** Fallback full refetch when Ably data insufficient */
@@ -56,6 +58,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     pageKey, isAsesor, tahap, barcodes, setBarcodes,
     asesorList, userId, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
+    isUuidFlow = false,
   } = input
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -102,11 +105,12 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
+    if (isUuidFlow) return true
     if (asesorList.length === 0) return false
     if (!barcodes?.asesor1?.url) return false
     if (asesorList.length >= 2 && !barcodes?.asesor2?.url) return false
     return true
-  }, [tahap, asesorList, barcodes])
+  }, [tahap, isUuidFlow, asesorList, barcodes])
 
   const allSigned = useMemo(() => {
     if (config.order === 'asesi_only') return asesiHasSigned
@@ -116,11 +120,12 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const missingLabels = useMemo(() => {
     if (tahap === 0) return []
+    if (isUuidFlow) return []
     const labels: string[] = []
     if (!barcodes?.asesor1?.url) labels.push('Asesor 1')
     if (asesorList.length >= 2 && !barcodes?.asesor2?.url) labels.push('Asesor 2')
     return labels
-  }, [tahap, barcodes, asesorList])
+  }, [tahap, isUuidFlow, barcodes, asesorList])
 
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import AsesiLayout from "@/components/AsesiLayout"
+import DashboardNavbar from "@/components/DashboardNavbar"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -124,7 +125,7 @@ export default function Apl01Page() {
   const idIzin = isUuidFlow ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
 
   // Get asesor data for absen check
-  const { asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap, jadwalId, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
 
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -341,19 +342,22 @@ export default function Apl01Page() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>
-      {/* Header */}
+      {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
 
       {/* Breadcrumb */}
+      {!isUuidFlow && (
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
         <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            {!isUuidFlow && <><span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span><span>/</span></>}
+            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
+            <span>/</span>
             <span>Pra-Asesmen</span>
             <span>/</span>
             <span>FR APL 01</span>
           </div>
         </div>
       </div>
+      )}
 
       <Layout>
             {/* Title */}

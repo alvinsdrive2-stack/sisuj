@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 
+function clearUuidSession() {
+  localStorage.removeItem("access_token")
+  sessionStorage.removeItem("praasesmen_uuid_data")
+  sessionStorage.removeItem("isUuidFlow")
+}
+
 export default function Apl02SuccessPage() {
   const navigate = useNavigate()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
@@ -9,7 +15,8 @@ export default function Apl02SuccessPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-  }, [])
+    if (isUuidFlow) clearUuidSession()
+  }, [isUuidFlow])
 
   const handleBackToDashboard = () => {
     if (idIzinFromUrl) {
@@ -75,9 +82,14 @@ export default function Apl02SuccessPage() {
           </p>
 
           {isUuidFlow ? (
-            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>
-              Halaman ini sudah dapat ditutup.
-            </p>
+            <div>
+              <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6', marginBottom: '12px' }}>
+                Data berhasil dikirim. Sesi Anda telah berakhir.
+              </p>
+              <p style={{ fontSize: '13px', color: '#999', lineHeight: '1.6' }}>
+                Halaman ini sudah dapat ditutup.
+              </p>
+            </div>
           ) : (
             <>
               <p style={{ fontSize: '12px', color: '#999', marginBottom: '30px' }}>
