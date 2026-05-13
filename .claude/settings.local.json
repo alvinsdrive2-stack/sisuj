@@ -51,7 +51,10 @@
       "Bash(dir /s /b api.php)",
       "Bash(dir /s /b web.php)",
       "Bash(dir /s /b routes)",
-      "WebFetch(domain:qontak.com)"
+      "WebFetch(domain:qontak.com)",
+      "Bash(Get-Content *)",
+      "Bash(findstr /n \".\")",
+      "Bash(findstr /i \"Ã Ì ¶ ð à\")"
     ]
   },
   "enableAllProjectMcpServers": true,

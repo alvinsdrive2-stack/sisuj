@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -283,8 +282,7 @@ export default function Mapa01Page() {
   return (
     <div style={{ minHeight: '100vh'}}>
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
-
+      
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
         <div style={{ padding: '12px 16px' }}>

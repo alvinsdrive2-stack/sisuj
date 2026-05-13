@@ -18,7 +18,7 @@
 /* PDF Paper-like Container */
 #mapa01-content {
   /* A4 size: 210mm x 297mm */
-  max-width: 210mm;
+  max-width: 100%;
   margin: 0 auto;
   padding: 15mm 15mm 15mm 15mm;
 }
@@ -506,15 +506,20 @@ writing-mode: vertical-rl;
 /* PDF Export Styles */
 #mapa01-content {
   padding: 20px;
-  /* A4 size at 96 DPI: 794px x 1123px */
-  width: 794px;
-  min-height: 1123px;
+  width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
 .mapa01-container {
-  width: 900px;
+  width: 100%;
+}
+
+@media print {
+  #mapa01-content {
+    min-width: 794px;
+    min-height: 1123px;
+  }
 }
 
 @media print {

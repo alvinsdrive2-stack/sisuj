@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react"
 import { API_BASE_URL } from "@/config/api"
 
+const authHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("access_token")
+  const h: Record<string, string> = { "Accept": "application/json" }
+  if (token) h["Authorization"] = `Bearer ${token}`
+  return h
+}
+
 interface Asesor {
   id: number
   nama: string
@@ -123,12 +130,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
       }
 
       try {
-        const token = localStorage.getItem("access_token")
         const response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
+          headers: authHeaders(),
         })
 
         if (response.ok) {

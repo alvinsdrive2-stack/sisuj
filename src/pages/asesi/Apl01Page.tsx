@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
+import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { kegiatanService } from "@/lib/kegiatan-service"
@@ -14,6 +14,13 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+
+const authHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("access_token")
+  const h: Record<string, string> = { "Accept": "application/json" }
+  if (token) h["Authorization"] = `Bearer ${token}`
+  return h
+}
 
 interface DataPribadi {
   nama: string
@@ -109,11 +116,12 @@ interface ApiResponse {
 
 export default function Apl01Page() {
   const navigate = useNavigate()
+  const isUuidFlow = sessionStorage.getItem("isUuidFlow") === "true"
   const { user } = useAuth()
   const { isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const idIzin = isUuidFlow ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
 
   // Get asesor data for absen check
   const { asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
@@ -180,7 +188,7 @@ export default function Apl01Page() {
       }
 
       const apl01Response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`, {
-        headers: {
+        headers: isUuidFlow ? authHeaders() : {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
         },
@@ -256,6 +264,25 @@ export default function Apl01Page() {
       return
     }
 
+    // UUID flow: save and redirect to public route
+    if (isUuidFlow) {
+      if (!signing.agreedChecklist) { showWarning('Silakan centang pernyataan terlebih dahulu'); return }
+      setIsSaving(true)
+      try {
+        const res = await fetch(`${API_BASE_URL}/praasesmen/${targetIdIzin}/apl01`, {
+          method: "POST",
+          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          body: JSON.stringify(formDataPekerjaan),
+        })
+        if (!res.ok) throw new Error("Gagal menyimpan")
+        showSuccess('APL 01 berhasil disimpan!')
+        navigate(`/praasesmen/${targetIdIzin}/apl02`)
+      } catch (err) {
+        showError(err instanceof Error ? err.message : "Gagal menyimpan data pekerjaan")
+      } finally { setIsSaving(false) }
+      return
+    }
+
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
@@ -303,17 +330,24 @@ export default function Apl01Page() {
     return <FullPageLoader text="Memuat data APL 01..." />
   }
 
+  const Layout = ({ children }: any) =>
+    isUuidFlow ? <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
+      <UuidStepIndicator currentStep={2} />
+      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
+        {children}
+      </div>
+    </div>
+      : <AsesiLayout currentStep={2} idIzin={idIzin} tahap={tahap}>{children}</AsesiLayout>
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
 
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
+            {!isUuidFlow && <><span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span><span>/</span></>}
             <span>Pra-Asesmen</span>
             <span>/</span>
             <span>FR APL 01</span>
@@ -321,7 +355,7 @@ export default function Apl01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={2} idIzin={idIzin} tahap={tahap}>
+      <Layout>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>
@@ -342,7 +376,7 @@ anda pada saat ini.</span>
               <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>A. DATA PRIBADI</span>
             </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             <tr>
               <td style={{ width: '200px', background: '#fff', border: '1px solid #000', padding: '6px 8px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Nama</td>
@@ -481,7 +515,7 @@ anda pada saat ini.</span>
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>B. DATA PEKERJAAN</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             <tr>
               <td style={{ width: '200px', background: '#fff', border: '1px solid #000', padding: '6px 8px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Nama Perusahaan</td>
@@ -582,7 +616,7 @@ anda pada saat ini.</span>
             </div>
             
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '14px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '14px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             {/* Skema Sertifikasi */}
             <tr>
@@ -673,7 +707,7 @@ anda pada saat ini.</span>
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>DAFTAR UNIT KOMPETENSI</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
             <tr style={{ background: '#c40000', color: '#fff' }}>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', textTransform: 'uppercase' }}>No</th>
@@ -711,7 +745,7 @@ anda pada saat ini.</span>
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>A. BUKTI PERSYARATAN</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
             <tr style={{ background: '#c40000', color: '#fff' }}>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', verticalAlign: 'middle', textTransform: 'uppercase' }}>No</th>
@@ -760,7 +794,7 @@ anda pada saat ini.</span>
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>B. BUKTI ADMINISTRATIF</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
             <tr style={{ background: '#c40000', color: '#fff' }}>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', verticalAlign: 'middle', textTransform: 'uppercase' }}>No</th>
@@ -809,7 +843,7 @@ anda pada saat ini.</span>
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>G. CATATAN / REKOMENDASI</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             {/* Rekomendasi & Pemohon Row 1 */}
             <tr>
@@ -918,17 +952,18 @@ anda pada saat ini.</span>
             {isSaving ? "Menyimpan..." : signing.buttonText}
           </ActionButton>
         </div>
-      </AsesiLayout>
+      </Layout>
 
-      {/* Absen Awal Modal */}
-      <WebcamModal
-        isOpen={showAwalModal}
-        onClose={handleAwalModalClose}
-        onSubmit={submitAbsenAwal}
-        title="Absen Masuk Pra-Asesmen"
-        description="Silakan ambil foto wajah Anda untuk absen masuk"
-        canClose={false}
-      />
+      {!isUuidFlow && (
+        <WebcamModal
+          isOpen={showAwalModal}
+          onClose={handleAwalModalClose}
+          onSubmit={submitAbsenAwal}
+          title="Absen Masuk Pra-Asesmen"
+          description="Silakan ambil foto wajah Anda untuk absen masuk"
+          canClose={false}
+        />
+      )}
     </div>
   )
 }

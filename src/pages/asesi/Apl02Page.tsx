@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
+import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
@@ -1007,14 +1007,22 @@ const KukRow = React.memo(function KukRow({
   )
 })
 
+const authHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem("access_token")
+  const h: Record<string, string> = { "Accept": "application/json" }
+  if (token) h["Authorization"] = `Bearer ${token}`
+  return h
+}
+
 export default function Apl02Page() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  // Use idIzin from URL when accessed by asesor, otherwise use from user context
-  const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const isUuidFlow = !!sessionStorage.getItem("praasesmen_uuid_data")
+  // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
+  const idIzin = isUuidFlow ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
   const { asesorList, namaAsesi, jenjang, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -1022,6 +1030,7 @@ export default function Apl02Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
+
   const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string }>>([])
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK'>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
@@ -1033,6 +1042,13 @@ export default function Apl02Page() {
 
   // File type modal state
   const [showFileTypeModal, setShowFileTypeModal] = useState(false)
+
+  // Prevent layout shift from scrollbar appearing/disappearing
+  useEffect(() => {
+    const prev = document.body.style.overflowY
+    document.body.style.overflowY = 'scroll'
+    return () => { document.body.style.overflowY = prev }
+  }, [])
   // stagingFiles holds raw File objects from client — no upload until user confirms
   const [stagingFiles, setStagingFiles] = useState<ServerFile[]>([])
   const [fileDocTypes, setFileDocTypes] = useState<Record<string, string>>({}) // client index -> doc type
@@ -1166,11 +1182,11 @@ export default function Apl02Page() {
 
   const deleteFile = async (fileId: number) => {
     try {
-      const token = localStorage.getItem("access_token")
+      const token = isUuidFlow ? null : localStorage.getItem("access_token")
 
       const response = await fetch(`${API_BASE_URL}/praasesmen/apl02/files/${fileId}`, {
         method: 'DELETE',
-        headers: {
+        headers: isUuidFlow ? authHeaders() : {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
         },
@@ -1240,7 +1256,7 @@ export default function Apl02Page() {
     }
     setIsUploading(true)
     try {
-      const token = localStorage.getItem("access_token")
+      const token = isUuidFlow ? null : localStorage.getItem("access_token")
       const finalIdIzin = _idIzin || idIzin
       if (!finalIdIzin) {
         showWarning("ID Izin tidak ditemukan")
@@ -1264,7 +1280,7 @@ export default function Apl02Page() {
       })
       const uploadResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/files`, {
         method: 'POST',
-        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        headers: isUuidFlow ? authHeaders() : { "Accept": "application/json", "Authorization": `Bearer ${token}` },
         body: formData,
       })
       if (uploadResponse.ok) {
@@ -1302,8 +1318,6 @@ export default function Apl02Page() {
 
   const fetchData = useCallback(async () => {
       try {
-        const token = localStorage.getItem("access_token")
-
         // Use idIzin from URL when accessed by asesor, otherwise use from user context
         const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
 
@@ -1312,10 +1326,7 @@ export default function Apl02Page() {
 
         if (!fetchedIdIzin && !isAsesor && jadwalId) {
           const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
+            headers: authHeaders(),
           })
 
           if (listAsesiResponse.ok) {
@@ -1333,25 +1344,11 @@ export default function Apl02Page() {
         }
 
         // Fetch data-dokumen, apl02, and files in parallel
+        const h = authHeaders()
         const [dataDokumenResponse, apl02Response, filesResponse] = await Promise.all([
-          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/data-dokumen`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          }),
-          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          }),
-          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02/files`, {
-            headers: {
-              "Accept": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          }),
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/data-dokumen`, { headers: h }),
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02`, { headers: h }),
+          fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02/files`, { headers: h }),
         ])
 
         // Parse data-dokumen response
@@ -1551,7 +1548,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
-        navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+        navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
       }
       return
     }
@@ -1560,7 +1557,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
-        navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`)
+        navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
       }
       return
     }
@@ -1584,16 +1581,12 @@ export default function Apl02Page() {
 
       setIsSaving(true)
       try {
-        const token = localStorage.getItem("access_token")
-
         // POST metode ke apl02 endpoint
+
+
         const metodeResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
           method: 'POST',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
+          headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({
             metode: metodeAsesmen,
             is_dilanjutkan: true,
@@ -1616,11 +1609,7 @@ export default function Apl02Page() {
           try {
             const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
               method: 'POST',
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-              },
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 id_jadwal: jadwalId
               })
@@ -1670,7 +1659,7 @@ export default function Apl02Page() {
         showSuccess('Metode asesmen berhasil disimpan!')
         // Untuk tahap 0, langsung navigasi
         if (tahap === 0) {
-          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`), 500)
+          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
         }
       } catch (error) {
         console.error('Error saving metode:', error)
@@ -1751,14 +1740,9 @@ export default function Apl02Page() {
 
     setIsSaving(true)
     try {
-      const token = localStorage.getItem("access_token")
       const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
         method: 'POST',
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
           metode: metodeAsesmen,
           is_dilanjutkan: true,
@@ -1767,8 +1751,8 @@ export default function Apl02Page() {
       })
 
       if (response.ok) {
-        // Generate QR jika belum ada dan jadwalId tersedia
-        if (jadwalId) {
+        // Generate QR jika belum ada dan jadwalId tersedia (skip UUID flow)
+        if (jadwalId && !isUuidFlow) {
           // Cek apakah ada subunit yang belum punya barcode asesi
           const hasMissingBarcode = apl02Data?.units.some(unit =>
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
@@ -1778,11 +1762,7 @@ export default function Apl02Page() {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
+                headers: { ...authHeaders(), 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   id_jadwal: jadwalId
                 })
@@ -1821,7 +1801,7 @@ export default function Apl02Page() {
         signing.publishUpdate()
         // Untuk tahap 0, langsung navigasi ke halaman berikutnya
         if (tahap === 0) {
-          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa01`), 500)
+          setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
         }
       } else {
         showError('Gagal menyimpan data APL 02')
@@ -1838,17 +1818,24 @@ export default function Apl02Page() {
     return <FullPageLoader text="Memuat data APL 02..." />
   }
 
+  const Layout = ({ children }: any) =>
+    isUuidFlow ? <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
+      <UuidStepIndicator currentStep={3} />
+      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
+        {children}
+      </div>
+    </div>
+      : <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin} tahap={tahap}>{children}</AsesiLayout>
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
 
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
+            {!isUuidFlow && <><span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span><span>/</span></>}
             <span>Pra-Asesmen</span>
             <span>/</span>
             <span>FR APL 02</span>
@@ -1856,7 +1843,7 @@ export default function Apl02Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin} tahap={tahap}>
+      <Layout>
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
                 APL-02 ASESMEN MANDIRI<br />{apl02Data?.jabatan_kerja || '-'}
@@ -2211,7 +2198,7 @@ export default function Apl02Page() {
           <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>REKOMENDASI UNTUK ASESI</span>
         </div>
 
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             {/* Rekomendasi & Asesi Row 1 */}
             <tr>
@@ -2392,9 +2379,10 @@ export default function Apl02Page() {
             {signing.buttonText}
           </ActionButton>
         </div>
-      </AsesiLayout>
+      </Layout>
 
-      {/* Absen Awal Modal */}
+      {!isUuidFlow && (
+        <>
       <WebcamModal
         isOpen={showAwalModal}
         onClose={handleAwalModalClose}
@@ -2404,7 +2392,6 @@ export default function Apl02Page() {
         canClose={false}
       />
 
-      {/* Document Preview Modal for Asesor */}
       <DocumentPreviewModal
         isOpen={showPreview}
         onClose={() => {
@@ -2413,8 +2400,9 @@ export default function Apl02Page() {
         }}
         file={selectedPreviewFile}
       />
+        </>
+      )}
 
-      {/* Floating File Type Modal */}
       <FileTypeModal
         isOpen={showFileTypeModal}
         stagingFiles={stagingFiles}

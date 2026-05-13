@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
@@ -46,11 +45,10 @@ export default function Ak01SuccessPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
-
+      
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
             <span>/</span>

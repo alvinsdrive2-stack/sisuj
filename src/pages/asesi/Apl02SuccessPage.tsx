@@ -1,70 +1,29 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import DashboardNavbar from "@/components/DashboardNavbar"
-import { useAuth } from "@/contexts/auth-context"
-import { useKegiatanAsesi } from "@/hooks/useKegiatan"
-import { API_BASE_URL } from "@/config/api"
 
 export default function Apl02SuccessPage() {
   const navigate = useNavigate()
-  const { user } = useAuth()
-  const { kegiatan } = useKegiatanAsesi()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [countdown, setCountdown] = useState(3)
-  const [actualIdIzin, setActualIdIzin] = useState<string | null>(null)
+  const isUuidFlow = !!sessionStorage.getItem("praasesmen_uuid_data")
 
   useEffect(() => {
-    // Scroll to top when component mounts
     window.scrollTo(0, 0)
-
-    // For asesor, use idIzin from URL directly
-    if (isAsesor && idIzinFromUrl) {
-      setActualIdIzin(idIzinFromUrl)
-      return
-    }
-
-    // For asesi, fetch idIzin from list-asesi
-    const fetchIdIzin = async () => {
-      if (!kegiatan?.jadwal_id) return
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (listAsesiResponse.ok) {
-          const listResult = await listAsesiResponse.json()
-          if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            setActualIdIzin(listResult.list_asesi[0].id_izin)
-          }
-        }
-      } catch (error) {
-        // Silently handle error
-      }
-    }
-
-    fetchIdIzin()
-  }, [kegiatan, isAsesor, idIzinFromUrl])
+  }, [])
 
   const handleBackToDashboard = () => {
-    // Navigate with idIzin
-    if (actualIdIzin) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/mapa01`)
+    if (idIzinFromUrl) {
+      navigate(`/asesi/praasesmen/${idIzinFromUrl}/mapa01`)
     }
   }
 
   useEffect(() => {
-    // Auto redirect after 3 seconds
+    if (isUuidFlow) return // No auto-redirect for UUID flow
+
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          // Use timeout to avoid navigate during render
           setTimeout(() => handleBackToDashboard(), 0)
           return 0
         }
@@ -73,16 +32,13 @@ export default function Apl02SuccessPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [actualIdIzin])
+  }, [idIzinFromUrl, isUuidFlow])
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      {/* Header */}
-      <DashboardNavbar userName={user?.name} />
-
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '900px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
@@ -96,7 +52,6 @@ export default function Apl02SuccessPage() {
       </div>
 
       <div style={{ padding: '40px 20px', maxWidth: '600px', margin: '0 auto' }}>
-        {/* Success Card */}
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '8px', padding: '40px', textAlign: 'center' }}>
           <style>{`
             @keyframes stroke { 100% { stroke-dashoffset: 0; } }
@@ -118,38 +73,46 @@ export default function Apl02SuccessPage() {
           <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px', lineHeight: '1.6' }}>
             Terima kasih telah mengisi formulir APL 02 (Asesmen Mandiri). Data Anda telah tersimpan dengan baik.
           </p>
-          <p style={{ fontSize: '12px', color: '#999', marginBottom: '30px' }}>
-            Mengalihkan ke MAPA 01 dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...
-          </p>
 
-          <button
-            onClick={handleBackToDashboard}
-            style={{
-              padding: '12px 32px',
-              background: '#0066cc',
-              color: '#fff',
-              fontSize: '13px',
-              cursor: 'pointer',
-              border: 'none',
-              borderRadius: '4px',
-              textTransform: 'uppercase',
-              fontWeight: 'bold',
-              fontFamily: 'Arial, Helvetica, sans-serif',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = '#0052a3'
-              e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,204,0.3)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#0066cc'
-              e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = 'none'
-            }}
-          >
-            Lanjut ke MAPA 01 Sekarang
-          </button>
+          {isUuidFlow ? (
+            <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>
+              Halaman ini sudah dapat ditutup.
+            </p>
+          ) : (
+            <>
+              <p style={{ fontSize: '12px', color: '#999', marginBottom: '30px' }}>
+                Mengalihkan ke MAPA 01 dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...
+              </p>
+              <button
+                onClick={handleBackToDashboard}
+                style={{
+                  padding: '12px 32px',
+                  background: '#0066cc',
+                  color: '#fff',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  border: 'none',
+                  borderRadius: '4px',
+                  textTransform: 'uppercase',
+                  fontWeight: 'bold',
+                  fontFamily: 'Arial, Helvetica, sans-serif',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#0052a3'
+                  e.currentTarget.style.transform = 'translateY(-1px)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,204,0.3)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#0066cc'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                Lanjut ke MAPA 01 Sekarang
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

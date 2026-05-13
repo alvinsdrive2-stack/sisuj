@@ -20,7 +20,6 @@ import {
 import { PulsingIcon } from "@/components/ui/PulsingIcon"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
@@ -295,8 +294,7 @@ export default function DashboardAsesiPage() {
       <div className={`min-h-screen relative transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
 
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
-
+      
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Section */}

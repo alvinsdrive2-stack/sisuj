@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
@@ -495,8 +494,7 @@ export default function UjianPage() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <DashboardNavbar userName={user?.name} />
-        <FullPageLoader text="Memuat soal ujian..." />
+                <FullPageLoader text="Memuat soal ujian..." />
       </div>
     )
   }
@@ -504,8 +502,7 @@ export default function UjianPage() {
   if (!currentSoal) {
     return (
       <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <DashboardNavbar userName={user?.name} />
-        <div style={{ padding: '40px', textAlign: 'center' }}>
+                <div style={{ padding: '40px', textAlign: 'center' }}>
           <h2>Tidak ada soal ditemukan</h2>
         </div>
       </div>
@@ -648,9 +645,8 @@ export default function UjianPage() {
 
       {showCelebration && generateConfetti()}
 
-      <DashboardNavbar userName={user?.name} />
-
-      <div style={{ maxWidth: '820px', margin: '0 auto', padding: '20px 16px 40px' }}>
+      
+      <div style={{ width: '100%', margin: '0 auto', padding: '20px 16px 40px' }}>
         
 
         {/* Header Card */}

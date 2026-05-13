@@ -5,7 +5,6 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -123,8 +122,8 @@ export default function PraAsesmenPage() {
   const handleConfirm = async () => {
     setIsConfirming(true)
     try {
-      // For asesor, skip the list-asesi fetch and navigate directly
-      if (isAsesor && idIzinFromUrl) {
+      // If idIzin already in URL (from UUID redirect), use it directly
+      if (idIzinFromUrl) {
         navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
         return
       }
@@ -210,11 +209,10 @@ export default function PraAsesmenPage() {
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
-      <DashboardNavbar userName={user?.name} />
-
+      
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
@@ -232,7 +230,7 @@ export default function PraAsesmenPage() {
 
       <AsesiLayout currentStep={1} idIzin={idIzinFromUrl} tahap={tahap}>
 {/* Info Card - Panduan Asesi */}
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 16px 16px' }}>
+      <div style={{ width: '100%', margin: '0 auto', padding: '0 16px 16px' }}>
         <div className='shadow-md' style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d2137" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ minWidth: '16px' }}>
@@ -289,7 +287,7 @@ export default function PraAsesmenPage() {
         </div>
 
         {/* Data Diri Table - 100% mirip HTML contoh */}
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             <tr>
               <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Nama</td>
@@ -350,7 +348,7 @@ export default function PraAsesmenPage() {
         {kegiatan && (
           <>
             <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '12px' }}>Jadwal Pra-Asesmen</h3>
-            <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+            <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
               <tbody>
                 <tr>
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Skema Sertifikasi</td>
@@ -381,7 +379,7 @@ export default function PraAsesmenPage() {
 
         {/* Dokumen Pendukung */}
         <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '12px' }}>Dokumen Pendukung</h3>
-        <table style={{ width: '100%', maxWidth: '900px', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #999', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <tbody>
             {documentConfig.map((doc) => {
               const docUrl = data[doc.key]

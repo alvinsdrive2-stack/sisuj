@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import DashboardNavbar from "@/components/DashboardNavbar"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -151,8 +150,7 @@ export default function Ak03Page() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <DashboardNavbar userName={user?.name} />
-        <FullPageLoader text="Memuat data AK.03..." />
+                <FullPageLoader text="Memuat data AK.03..." />
       </div>
     )
   }
@@ -311,11 +309,10 @@ export default function Ak03Page() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      <DashboardNavbar userName={user?.name} />
-
+      
       {/* Breadcrumb */}
       <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', maxWidth: '1100px', margin: '0 auto' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
