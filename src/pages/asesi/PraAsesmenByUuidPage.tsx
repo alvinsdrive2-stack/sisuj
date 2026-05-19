@@ -19,7 +19,7 @@ export default function PraAsesmenByUuidPage() {
     if (!uuid) { setError("UUID tidak valid"); return }
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/praasesmen/by-uuid/${uuid}`, { headers: authHeaders() })
+        const res = await fetch(`${API_BASE_URL}/persiapan-asesmen/${uuid}`, { headers: authHeaders() })
         if (!res.ok) throw new Error("Gagal memuat data")
         const result = await res.json()
         if (!result.success || !result.data?.id_izin) throw new Error("Data tidak ditemukan")

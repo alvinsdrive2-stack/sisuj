@@ -122,7 +122,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/capture" element={<CapturePage />} />
           <Route path="/attendance" element={<AttendancePage />} />
-          <Route path="/praasesmen/by-uuid/:uuid" element={<PraAsesmenByUuidPage />} />
+          <Route path="/persiapan-asesmen/:uuid" element={<PraAsesmenByUuidPage />} />
           <Route path="/praasesmen/:idIzin/konfirmasi" element={<KonfirmasiDataPage />} />
           <Route path="/praasesmen/:idIzin/apl01" element={<Apl01Page />} />
           <Route path="/praasesmen/:idIzin/apl02" element={<Apl02Page />} />

@@ -54,7 +54,8 @@
       "WebFetch(domain:qontak.com)",
       "Bash(Get-Content *)",
       "Bash(findstr /n \".\")",
-      "Bash(findstr /i \"Ã Ì ¶ ð à\")"
+      "Bash(findstr /i \"Ã Ì ¶ ð à\")",
+      "PowerShell(New-Item *)"
     ]
   },
   "enableAllProjectMcpServers": true,

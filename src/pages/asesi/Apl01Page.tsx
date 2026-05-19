@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import AsesiLayout from "@/components/AsesiLayout"
@@ -113,6 +113,19 @@ interface ApiResponse {
       admin: BarcodeInfo
     }
   }
+}
+
+function Apl01Layout({ isUuidFlow, idIzin, tahap, children }: { isUuidFlow: boolean; idIzin?: string; tahap?: number; children: React.ReactNode }) {
+  return isUuidFlow ? (
+    <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
+      <UuidStepIndicator currentStep={2} />
+      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
+        {children}
+      </div>
+    </div>
+  ) : (
+    <AsesiLayout currentStep={2} idIzin={idIzin} tahap={tahap}>{children}</AsesiLayout>
+  )
 }
 
 export default function Apl01Page() {
@@ -250,7 +263,11 @@ export default function Apl01Page() {
     onRefresh: fetchData,
   })
 
+  const initialFetchDone = useRef(false)
+
   useEffect(() => {
+    if (initialFetchDone.current) return
+    initialFetchDone.current = true
     window.scrollTo(0, 0)
     if (idIzin) {
       fetchData()
@@ -331,15 +348,6 @@ export default function Apl01Page() {
     return <FullPageLoader text="Memuat data APL 01..." />
   }
 
-  const Layout = ({ children }: any) =>
-    isUuidFlow ? <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
-      <UuidStepIndicator currentStep={2} />
-      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
-        {children}
-      </div>
-    </div>
-      : <AsesiLayout currentStep={2} idIzin={idIzin} tahap={tahap}>{children}</AsesiLayout>
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>
       {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
@@ -359,7 +367,7 @@ export default function Apl01Page() {
       </div>
       )}
 
-      <Layout>
+      <Apl01Layout isUuidFlow={isUuidFlow} idIzin={idIzin} tahap={tahap}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>
@@ -956,7 +964,7 @@ anda pada saat ini.</span>
             {isSaving ? "Menyimpan..." : signing.buttonText}
           </ActionButton>
         </div>
-      </Layout>
+      </Apl01Layout>
 
       {!isUuidFlow && (
         <WebcamModal
