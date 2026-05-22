@@ -618,7 +618,6 @@ export default function FrAk07Page() {
                   if (!kategori.nama) return null
 
                   const allReferensis = kategori.referensis
-                  const hasNama = allReferensis.some(r => r.nama)
 
                   return allReferensis.map((ref, refIdx) => {
                     const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
