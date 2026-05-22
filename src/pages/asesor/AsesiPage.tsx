@@ -271,16 +271,19 @@ export default function AsesiPage() {
     const metode = metodeMap[idIzin] || ''
     const tahap = tahapMap[idIzin] ?? currentKegiatan?.tahap ?? 0
 
+    // Mark valid navigation entry for asesmen routes
+    sessionStorage.setItem('validNavigationEntry', 'true')
+
     if (tahap === 2) {
       if (jenjangId >= 4 && metode === 'observasi') {
-        navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+        navigate(`/asesi/asesmen/${idIzin}/ia04a`, { state: { fromInternal: true } })
       } else if (jenjangId >= 4 && metode === 'portofolio') {
-        navigate(`/asesi/asesmen/${idIzin}/ia08`)
+        navigate(`/asesi/asesmen/${idIzin}/ia08`, { state: { fromInternal: true } })
       } else {
-        navigate(`/asesi/asesmen/${idIzin}/ia01`)
+        navigate(`/asesi/asesmen/${idIzin}/ia01`, { state: { fromInternal: true } })
       }
     } else {
-      navigate(`/asesi/praasesmen/${idIzin}/apl01`)
+      navigate(`/asesi/praasesmen/${idIzin}/apl01`, { state: { fromInternal: true } })
     }
   }
 

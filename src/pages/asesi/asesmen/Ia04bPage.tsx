@@ -14,6 +14,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { API_BASE_URL } from "@/config/api"
 
 interface Soal {
@@ -171,6 +172,11 @@ export default function Ia04bPage() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData
+  })
 
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
@@ -333,6 +339,7 @@ export default function Ia04bPage() {
 
       // 4. Generate QR
       await signing.generateQR()
+      publishUpdate()
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
     } finally {
@@ -563,8 +570,9 @@ export default function Ia04bPage() {
                 >
                   <CustomCheckbox
                     checked={rekomendasi === 'kompeten'}
-                    onChange={() => setRekomendasi(rekomendasi === 'kompeten' ? null : 'kompeten')}
+                    onChange={() => {}}
                     disabled={!canEdit}
+                    style={{ pointerEvents: 'none' }}
                   />
                   Kompeten
                 </div>
@@ -574,8 +582,9 @@ export default function Ia04bPage() {
                 >
                   <CustomCheckbox
                     checked={rekomendasi === 'belum_kompeten'}
-                    onChange={() => setRekomendasi(rekomendasi === 'belum_kompeten' ? null : 'belum_kompeten')}
+                    onChange={() => {}}
                     disabled={!canEdit}
+                    style={{ pointerEvents: 'none' }}
                   />
                   Belum Kompeten
                 </div>

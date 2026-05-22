@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { API_BASE_URL } from "@/config/api"
 
 function clearUuidSession() {
+  const token = localStorage.getItem("access_token")
+  // Call API logout to invalidate token on server
+  if (token) {
+    fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${token}` },
+    }).catch(() => {})
+  }
   localStorage.removeItem("access_token")
   sessionStorage.removeItem("praasesmen_uuid_data")
   sessionStorage.removeItem("isUuidFlow")

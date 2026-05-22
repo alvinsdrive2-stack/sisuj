@@ -6,6 +6,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { DokumenModalProvider, useDokumenModal } from './contexts/DokumenModalContext'
 import { DaftarHadirModalProvider, useDaftarHadirModal } from './contexts/DaftarHadirModalContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ValidatedNavigationRoute from './components/ValidatedNavigationRoute'
 import {
   AdminLSPRoute,
   AdminTUKRoute,
@@ -89,6 +90,7 @@ const AsesmenSelesaiPage = lazy(() => import('./pages/asesi/asesmen/AsesmenSeles
 const Apl01Page = lazy(() => import('./pages/asesi/Apl01Page'))
 const Apl02Page = lazy(() => import('./pages/asesi/Apl02Page'))
 const Apl02SuccessPage = lazy(() => import('./pages/asesi/Apl02SuccessPage'))
+const Apl02FailedPage = lazy(() => import('./pages/asesi/Apl02FailedPage'))
 const Ak01SuccessPage = lazy(() => import('./pages/asesi/Ak01SuccessPage'))
 const Mapa01Page = lazy(() => import('./pages/asesi/Mapa01Page'))
 const Mapa02Page = lazy(() => import('./pages/asesi/Mapa02Page'))
@@ -127,6 +129,7 @@ function App() {
           <Route path="/praasesmen/:idIzin/apl01" element={<Apl01Page />} />
           <Route path="/praasesmen/:idIzin/apl02" element={<Apl02Page />} />
           <Route path="/praasesmen/:idIzin/apl02/success" element={<Apl02SuccessPage />} />
+          <Route path="/praasesmen/:idIzin/apl02/failed" element={<Apl02FailedPage />} />
           <Route
             path="/login"
             element={
@@ -275,6 +278,7 @@ function App() {
                   <Route path="praasesmen/:idIzin/apl01" element={<AsesiOrAsesorRoute><Apl01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/apl02" element={<AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/apl02/success" element={<AsesiOrAsesorRoute><Apl02SuccessPage /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin/apl02/failed" element={<AsesiOrAsesorRoute><Apl02FailedPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa01" element={<AsesiOrAsesorRoute><Mapa01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa02" element={<AsesiOrAsesorRoute><Mapa02Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/fr-ak-07" element={<AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute>} />
@@ -283,23 +287,23 @@ function App() {
                   <Route path="praasesmen/:idIzin/fr-ak-01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
                   <Route path="asesmen" element={<AsesiOrAsesorRoute><AsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia01" element={<AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia02" element={<AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia03" element={<AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia04a" element={<AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/upload-tugas" element={<AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia04b" element={<AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/uji" element={<AsesiRoute><UjianPage /></AsesiRoute>} />
-                  <Route path="asesmen/:id/ia05" element={<AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ak02" element={<AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ak03" element={<AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/survei" element={<AsesiRoute><SurveiPage /></AsesiRoute>} />
-                  <Route path="asesmen/:id/ak05" element={<AsesorRoute><Ak05Page /></AsesorRoute>} />
-                  <Route path="asesmen/:id/ak06" element={<AsesorRoute><Ak06Page /></AsesorRoute>} />
-                  <Route path="asesmen/:id/ia08" element={<AsesiOrAsesorRoute><Ia08Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia09" element={<AsesiOrAsesorRoute><Ia09Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia10" element={<AsesiOrAsesorRoute><Ia10Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/selesai" element={<AsesiOrAsesorRoute><AsesmenSelesaiPage /></AsesiOrAsesorRoute>} />
+                  <Route path="asesmen/:id/ia01" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia04a" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/upload-tugas" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia04b" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/uji" element={<ValidatedNavigationRoute><AsesiRoute><UjianPage /></AsesiRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia05" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ak02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ak03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/survei" element={<ValidatedNavigationRoute><AsesiRoute><SurveiPage /></AsesiRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ak05" element={<ValidatedNavigationRoute><AsesorRoute><Ak05Page /></AsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ak06" element={<ValidatedNavigationRoute><AsesorRoute><Ak06Page /></AsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia08" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia08Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia09" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia09Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia10" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia10Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/selesai" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><AsesmenSelesaiPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="profile" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Profil Saya</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />
                   <Route path="assessment" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />
                   <Route path="documents" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Dokumen</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />

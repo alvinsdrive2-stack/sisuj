@@ -282,7 +282,7 @@ export default function Apl01Page() {
       return
     }
 
-    // UUID flow: save and redirect to public route
+    // UUID flow: save, generate QR, then redirect to public route
     if (isUuidFlow) {
       if (!signing.agreedChecklist) { showWarning('Silakan centang pernyataan terlebih dahulu'); return }
       setIsSaving(true)
@@ -293,7 +293,21 @@ export default function Apl01Page() {
           body: JSON.stringify(formDataPekerjaan),
         })
         if (!res.ok) throw new Error("Gagal menyimpan")
-        showSuccess('APL 01 berhasil disimpan!')
+
+        // Generate QR for UUID flow
+        if (jadwalId) {
+          try {
+            await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
+              method: 'POST',
+              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id_jadwal: jadwalId }),
+            })
+          } catch (qrErr) {
+            console.error('Error generating QR APL01:', qrErr)
+          }
+        }
+
+        showSuccess('APL 01 berhasil ditandatangani!')
         navigate(`/praasesmen/${targetIdIzin}/apl02`)
       } catch (err) {
         showError(err instanceof Error ? err.message : "Gagal menyimpan data pekerjaan")

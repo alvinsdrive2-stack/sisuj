@@ -17,7 +17,7 @@
     }
 
     .page {
-      width: 210mm;
+      width: 100%;
       margin: 0 auto 40px auto;
       background: #ffffff;
       border: 1px solid #d1d5db;
@@ -30,12 +30,13 @@
     @media print {
       @page {
         size: A4;
-        margin: 20mm 5mm;
+        margin: 0;
       }
       .page {
         box-shadow: none;
         border: none;
         margin: 0 auto;
+        padding: 20mm 5mm;
       }
       body {
         padding: 0;

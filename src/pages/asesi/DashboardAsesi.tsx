@@ -39,11 +39,12 @@ export default function DashboardAsesi() {
       bgColor: "bg-emerald-50",
       action: () => {
         if (asesiId) {
+          sessionStorage.setItem('validNavigationEntry', 'true')
           const jenjangNum = parseInt(jenjang || "0")
           if (jenjangNum < 4) {
-            navigate(`/asesi/asesmen/${asesiId}/ia01`)
+            navigate(`/asesi/asesmen/${asesiId}/ia01`, { state: { fromInternal: true } })
           } else {
-            navigate(`/asesi/asesmen/${asesiId}/ia04a`)
+            navigate(`/asesi/asesmen/${asesiId}/ia04a`, { state: { fromInternal: true } })
           }
         }
       }
@@ -58,11 +59,12 @@ export default function DashboardAsesi() {
       bgColor: "bg-purple-50",
       action: () => {
         if (asesiId) {
+          sessionStorage.setItem('validNavigationEntry', 'true')
           const jenjangNum = parseInt(jenjang || "0")
           if (jenjangNum < 4) {
-            navigate(`/asesi/asesmen/${asesiId}/ia01`)
+            navigate(`/asesi/asesmen/${asesiId}/ia01`, { state: { fromInternal: true } })
           } else {
-            navigate(`/asesi/asesmen/${asesiId}/ia04a`)
+            navigate(`/asesi/asesmen/${asesiId}/ia04a`, { state: { fromInternal: true } })
           }
         }
       }
@@ -130,11 +132,15 @@ export default function DashboardAsesi() {
 
   const handleNavigateToAsesmen = () => {
     if (!asesiId) return
+
+    // Mark valid navigation entry
+    sessionStorage.setItem('validNavigationEntry', 'true')
+
     const jenjangNum = parseInt(jenjang || "0")
     if (jenjangNum < 4) {
-      navigate(`/asesi/asesmen/${asesiId}/ia01`)
+      navigate(`/asesi/asesmen/${asesiId}/ia01`, { state: { fromInternal: true } })
     } else {
-      navigate(`/asesi/asesmen/${asesiId}/ia04a`)
+      navigate(`/asesi/asesmen/${asesiId}/ia04a`, { state: { fromInternal: true } })
     }
   }
 

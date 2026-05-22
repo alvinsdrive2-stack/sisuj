@@ -55,7 +55,8 @@
       "Bash(Get-Content *)",
       "Bash(findstr /n \".\")",
       "Bash(findstr /i \"Ã Ì ¶ ð à\")",
-      "PowerShell(New-Item *)"
+      "PowerShell(New-Item *)",
+      "Bash(npx mammoth *)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -1540,6 +1540,23 @@ export default function Apl02Page() {
     onRefresh: fetchData,
   })
 
+  // Check if asesi is tidak kompeten on any subunit based on kukChecklist
+  const isAsesiTidakKompeten = () => {
+    if (!apl02Data?.units) return false
+    return apl02Data.units.some(unit =>
+      unit.subunits.some(subunit => {
+        const kukIds = subunit.kuk_list.map(kuk => `${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+        return kukIds.some(kukId => kukChecklist[kukId] === 'BK')
+      })
+    )
+  }
+
+  const getNextRoute = (id: string) => {
+    const base = isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'
+    if (isAsesiTidakKompeten()) return `${base}/${id}/apl02/failed`
+    return `${base}/${id}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`
+  }
+
   const handleSubmit = async () => {
     if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
@@ -1550,7 +1567,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
-        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
+        navigate(getNextRoute(finalIdIzin))
       }
       return
     }
@@ -1719,6 +1736,13 @@ export default function Apl02Page() {
       })
     })
 
+    // Validate at least 1 bukti uploaded
+    const totalFileIds = Array.from(subunitDataMap.values()).reduce((sum, d) => sum + d.allFileIds.size, 0)
+    if (totalFileIds === 0) {
+      showWarning("Wajib upload minimal 1 bukti sebelum menyimpan")
+      return
+    }
+
     // Convert to answers array format
     // asesi sends kompeten: null, asesor sends kompeten: true/false
     const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
@@ -1753,8 +1777,8 @@ export default function Apl02Page() {
       })
 
       if (response.ok) {
-        // Generate QR jika belum ada dan jadwalId tersedia (skip UUID flow)
-        if (jadwalId && !isUuidFlow) {
+        // Generate QR jika belum ada dan jadwalId tersedia
+        if (jadwalId) {
           // Cek apakah ada subunit yang belum punya barcode asesi
           const hasMissingBarcode = apl02Data?.units.some(unit =>
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
@@ -1803,7 +1827,7 @@ export default function Apl02Page() {
         signing.publishUpdate()
         // Untuk tahap 0 atau UUID flow, langsung navigasi ke halaman berikutnya
         if (tahap === 0 || isUuidFlow) {
-          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
+          setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
         }
       } else {
         showError('Gagal menyimpan data APL 02')

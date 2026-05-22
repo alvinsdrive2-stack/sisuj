@@ -12,6 +12,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -180,6 +181,11 @@ export default function Ia04aPage() {
     fetchData()
   }, [fetchData])
 
+  const { publishUpdate } = useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData
+  })
+
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04a')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04a',
@@ -225,8 +231,24 @@ export default function Ia04aPage() {
     const umpanBalikSoal = ia04aData?.soal.find(s => s.is_komentar === "2")
     if (isAsesor && isAsesor1 && umpanBalikSoal) {
       const umpanBalikValue = umpanBalikMap[umpanBalikSoal.id] || ''
-      if (!umpanBalikValue.trim()) {
+      const trimmed = umpanBalikValue.trim()
+      if (!trimmed) {
         showWarning('Silakan isi umpan balik terlebih dahulu')
+        return
+      }
+      if (trimmed.length < 10) {
+        showWarning('Umpan balik minimal 10 karakter')
+        return
+      }
+      const words = trimmed.split(/\s+/).filter(w => w.length > 0)
+      if (words.length < 3) {
+        showWarning('Umpan balik minimal 3 kata')
+        return
+      }
+      // Block single-char repeated / placeholder patterns like "-", "...", "bagus", "baik"
+      const strippedSpecial = trimmed.replace(/[^a-zA-Z0-9]/g, '')
+      if (strippedSpecial.length < 5) {
+        showWarning('Umpan balik terlalu singkat, berikan masukan yang lebih detail')
         return
       }
     }
@@ -248,6 +270,7 @@ export default function Ia04aPage() {
         }
 
         await signing.generateQR()
+        publishUpdate()
 
         showSuccess('IA 04.A berhasil disimpan!')
         return
@@ -272,6 +295,7 @@ export default function Ia04aPage() {
           if (response.ok) {
             await response.json()
             await signing.generateQR()
+            publishUpdate()
           } else {
             console.error('Failed to save umpan balik:', response.status)
           }
@@ -286,6 +310,7 @@ export default function Ia04aPage() {
       // Asesi: generate QR jika belum ada
       if (!isAsesor) {
         await signing.generateQR()
+        publishUpdate()
 
         showSuccess('IA 04.A berhasil disimpan!')
         return
@@ -442,7 +467,7 @@ export default function Ia04aPage() {
                         value={umpanBalikMap[soalItem.id] || ''}
                         onChange={(e) => setUmpanBalikMap(prev => ({ ...prev, [soalItem.id]: e.target.value }))}
                         style={{ width: '100%', height: '100px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
-                        placeholder="Tuliskan umpan balik untuk asesi..."
+                        placeholder="Tuliskan umpan balik untuk asesi (minimal 10 karakter / 3 kata)..."
                       />
                     ) : (
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>

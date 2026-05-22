@@ -20,15 +20,18 @@ export default function AsesmenPage() {
       return
     }
 
+    // Mark valid entry point
+    sessionStorage.setItem('validNavigationEntry', 'true')
+
     // Check jenjang_id to determine which flow to use
     const jenjangId = parseInt(kegiatan.jenjang_id || "0")
 
     // For jenjang < 4, start at IA01
     // For jenjang >= 4, start at IA04A
     if (jenjangId < 4) {
-      navigate("/asesi/asesmen/ia01", { replace: true })
+      navigate("/asesi/asesmen/ia01", { replace: true, state: { fromInternal: true } })
     } else {
-      navigate("/asesi/asesmen/ia04a", { replace: true })
+      navigate("/asesi/asesmen/ia04a", { replace: true, state: { fromInternal: true } })
     }
   }, [navigate, user, kegiatan, authLoading, kegiatanLoading])
 

@@ -331,11 +331,12 @@ export default function ListAsesiAsesor() {
                       className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
                       onClick={() => {
                         // Check jenjang from data-dokumen API for low jenjang flow
+                        sessionStorage.setItem('validNavigationEntry', 'true')
                         const jenjangId = parseInt(jenjang || "0")
                         if (jenjangId < 4) {
-                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`)
+                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`, { state: { fromInternal: true } })
                         } else {
-                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`)
+                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`, { state: { fromInternal: true } })
                         }
                       }}
                     >

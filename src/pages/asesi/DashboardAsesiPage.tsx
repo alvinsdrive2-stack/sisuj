@@ -361,19 +361,23 @@ export default function DashboardAsesiPage() {
                       toast("ID Izin tidak ditemukan", "error")
                       return
                     }
+
+                    // Mark valid navigation entry
+                    sessionStorage.setItem('validNavigationEntry', 'true')
+
                     if (kegiatan?.tahap === 1) {
                       console.log('[Dashboard Button] Navigating to /asesi/praasesmen (confirmation page)')
-                      navigate(`/asesi/praasesmen`)
+                      navigate(`/asesi/praasesmen`, { state: { fromInternal: true } })
                     }
                     if (kegiatan?.tahap === 2) {
                       // Check jenjang from data-dokumen API for low jenjang flow
                       const jenjangId = parseInt(jenjang || "0")
                       if (jenjangId < 4) {
-                        navigate(`/asesi/asesmen/${idIzin}/ia01`)
+                        navigate(`/asesi/asesmen/${idIzin}/ia01`, { state: { fromInternal: true } })
                       } else if (metode === "portofolio") {
-                        navigate(`/asesi/asesmen/${idIzin}/ia08`)
+                        navigate(`/asesi/asesmen/${idIzin}/ia08`, { state: { fromInternal: true } })
                       } else {
-                        navigate(`/asesi/asesmen/${idIzin}/ia04a`)
+                        navigate(`/asesi/asesmen/${idIzin}/ia04a`, { state: { fromInternal: true } })
                       }
                     }
                   }}

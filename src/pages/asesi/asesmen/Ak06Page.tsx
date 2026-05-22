@@ -297,6 +297,13 @@ export default function Ak06Page() {
           rekomendasi2: rekomendasiDimensi,
           catatan_asesor1: komentarAsesor[asesorList[0]?.id] || '',
           catatan_asesor2: komentarAsesor[asesorList[1]?.id] || '',
+          dimensi_kompetensi: {
+            task_skills: getDimensiKompetensiLabel(),
+            task_management_skills: getDimensiKompetensiLabel(),
+            contingency_management_skills: getDimensiKompetensiLabel(),
+            job_role_environment_skills: getDimensiKompetensiLabel(),
+            transfer_skills: getDimensiKompetensiLabel(),
+          },
         }),
       })
 
@@ -317,6 +324,24 @@ export default function Ak06Page() {
       showError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Get dimensi kompetensi labels based on jenjang and metode (same as MAPA01)
+  const getDimensiKompetensiLabel = (): string => {
+    const jenjangNum = parseInt(jenjang || "0")
+
+    // jenjang < 4: L/CL T/DPT
+    if (jenjangNum < 4) {
+      return "L/CL<br/> T/DPT"
+    }
+    // jenjang > 3 AND portofolio: TL/VP T/PW T/VPK
+    else if (metode === "portofolio") {
+      return "TL/VP<br/> T/PW<br/> T/VPK"
+    }
+    // jenjang > 3 AND observasi: L/DIT T/DPT
+    else {
+      return "L/DIT<br/> T/DPT"
     }
   }
 
