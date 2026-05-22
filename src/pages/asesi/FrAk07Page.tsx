@@ -410,7 +410,6 @@ export default function FrAk07Page() {
       const hasilPenyesuaianData = ak07Data.find(d => d.urut === 4)
       if (hasilPenyesuaianData) {
         hasilPenyesuaianData.kategoris[0]?.referensis.forEach(ref => {
-          if (!ref.nama) return // Skip null nama
           // Get user input, or use API value as fallback
           const userInput = textAnswers[ref.id]
           // Send empty string to clear the field on backend
@@ -618,39 +617,41 @@ export default function FrAk07Page() {
                 {modifikasiData.kategoris.map((kategori, kategoriIndex) => {
                   if (!kategori.nama) return null
 
-                  const filteredReferensis = kategori.referensis.filter(r => r.nama)
+                  const allReferensis = kategori.referensis
+                  const hasNama = allReferensis.some(r => r.nama)
 
-                  return filteredReferensis.map((ref, refIdx) => {
+                  return allReferensis.map((ref, refIdx) => {
                     const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
                     const isFirstRow = refIdx === 0
+                    const isDisabled = !ref.nama || isFormDisabled || isSaving
 
                     return (
                       <tr key={`${kategori.id || kategoriIndex}-${ref.id}`}>
                         {isFirstRow && (
                           <>
-                            <td rowSpan={filteredReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', verticalAlign: 'top' }}>
+                            <td rowSpan={allReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', verticalAlign: 'top' }}>
                               {kategori.urut || kategoriIndex + 1}
                             </td>
-                            <td rowSpan={filteredReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
+                            <td rowSpan={allReferensis.length} style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
                               {kategori.nama}
                             </td>
                           </>
                         )}
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={isChecked}
                             onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, true)}
-                            disabled={isFormDisabled || isSaving}
+                            disabled={isDisabled}
                           />
                         </td>
-                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={getReferenceState(kategori.id, modifikasiData.id, ref.id) === false}
                             onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, false)}
-                            disabled={isFormDisabled || isSaving}
+                            disabled={isDisabled}
                           />
                         </td>
-                        <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < filteredReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000', fontSize: '14px' }}>
+                        <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000', fontSize: '14px' }}>
                           {ref.nama}
                         </td>
                       </tr>
@@ -672,9 +673,10 @@ export default function FrAk07Page() {
                   <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%', background: '#fff', color: '#000', textAlign: 'left',fontSize: '14px' }}>Keterangan</th>
                 </tr>
 
-                {rencanaAsesmenData.kategoris[0].referensis.filter(r => r.nama).map((ref, refIdx) => {
+                {rencanaAsesmenData.kategoris[0].referensis.map((ref, refIdx) => {
                   const kategoriId = rencanaAsesmenData.kategoris[0]?.id || null
                   const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
+                  const isDisabled = !ref.nama || isFormDisabled || isSaving
 
                   return (
                     <tr key={ref.id}>
@@ -688,14 +690,14 @@ export default function FrAk07Page() {
                         <CustomCheckbox
                           checked={isChecked}
                           onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, true)}
-                          disabled={isFormDisabled || isSaving}
+                          disabled={isDisabled}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
                         <CustomCheckbox
                           checked={getReferenceState(kategoriId, rencanaAsesmenData.id, ref.id) === false}
                           onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, false)}
-                          disabled={isFormDisabled || isSaving}
+                          disabled={isDisabled}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '4px', fontSize: '14px' }}>
@@ -713,9 +715,9 @@ export default function FrAk07Page() {
                             }
                           }}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
-                          disabled={isFormDisabled || isSaving}
+                          disabled={isDisabled}
                           rows={1}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: isDisabled ? 'not-allowed' : 'text', background: isDisabled ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
                           placeholder="Keterangan..."
                         />
                       </td>
@@ -735,7 +737,8 @@ export default function FrAk07Page() {
 
                 </tr>
 
-                {hasilPenyesuaianData.kategoris[0].referensis.filter(r => r.nama).map((ref, refIdx) => {
+                {hasilPenyesuaianData.kategoris[0].referensis.map((ref, refIdx) => {
+                  const isDisabled = !ref.nama || isFormDisabled || isSaving
                   return (
                     <tr key={ref.id}>
                       <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left', verticalAlign: 'top',borderRight:'none' }}>
@@ -759,9 +762,9 @@ export default function FrAk07Page() {
                             }
                           }}
                           onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
-                          disabled={isFormDisabled || isSaving}
+                          disabled={isDisabled}
                           rows={1}
-                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isFormDisabled || isSaving) ? 'not-allowed' : 'text', background: (isFormDisabled || isSaving) ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
+                          style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', height: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: isDisabled ? 'not-allowed' : 'text', background: isDisabled ? '#f5f5f5' : '#fff', boxSizing: 'border-box' }}
                           placeholder="Jawaban..."
                         />
                       </td>
