@@ -1,48 +1,41 @@
 import { useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { useTahapStepCheck } from "@/hooks/useTahapStepCheck"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 export default function AsesmenPage() {
-  const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { kegiatan, isLoading: kegiatanLoading } = useKegiatanByRole()
 
+  const idIzin = kegiatan?.jadwal_id
+  const { jenjang } = useDataDokumenAsesmen(idIzin)
+  const { metode } = useDataDokumenAsesmen(idIzin)
+
+  // Auto-redirect to first step with empty QR (hook handles navigation internally)
+  const { redirectStep: _redirectStep, isLoading: stepLoading } = useTahapStepCheck({
+    tahap: 2,
+    idIzin,
+    replaceId: idIzin,
+    jenjang,
+    metode,
+  })
+
   useEffect(() => {
-    // Wait for auth and kegiatan data to load
-    if (authLoading || kegiatanLoading) {
-      return
-    }
-
-    if (!user || !kegiatan) {
-      console.error("No user or kegiatan data")
-      return
-    }
-
+    if (authLoading || kegiatanLoading || stepLoading) return
+    if (!user || !kegiatan) return
     // Mark valid entry point
     sessionStorage.setItem('validNavigationEntry', 'true')
+  }, [authLoading, kegiatanLoading, stepLoading, user, kegiatan, jenjang, metode])
 
-    // Check jenjang_id to determine which flow to use
-    const jenjangId = parseInt(kegiatan.jenjang_id || "0")
-
-    // For jenjang < 4, start at IA01
-    // For jenjang >= 4, start at IA04A
-    if (jenjangId < 4) {
-      navigate("/asesi/asesmen/ia01", { replace: true, state: { fromInternal: true } })
-    } else {
-      navigate("/asesi/asesmen/ia04a", { replace: true, state: { fromInternal: true } })
-    }
-  }, [navigate, user, kegiatan, authLoading, kegiatanLoading])
-
-  // Show loader while checking jenjang_id
-  if (authLoading || kegiatanLoading) {
+  if (authLoading || kegiatanLoading || stepLoading || !jenjang) {
     return (
       <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-        <FullPageLoader text="Memuat asesmen..." />
+        <FullPageLoader text="Memeriksa status langkah..." />
       </div>
     )
   }
 
-  return null // This page just redirects
+  return null
 }

@@ -16,6 +16,8 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
+import { useIa05Timer } from "@/hooks/useIa05Timer"
+import { useMissingStepsRedirect } from "@/hooks/useAsesmenStepQrStatus"
 
 interface Unit {
   id: number
@@ -122,17 +124,10 @@ export default function Ia05Page() {
             return numA - numB
           })
           setIa05Data({ ...result.data, soal: sortedSoal })
-          try {
-            const barcodeResponse = await fetch(`${API_BASE_URL}/asesmen/${id}/barcodes`, {
-              headers: { "Authorization": `Bearer ${token}` }
-            })
-            if (barcodeResponse.ok) {
-              const barcodeResult = await barcodeResponse.json()
-              if (barcodeResult.message === "Success") {
-                setBarcodes(barcodeResult.data)
-              }
-            }
-          } catch (e) { console.error("Error fetching barcodes:", e) }
+          // Ambil barcodes dari response utama jika ada
+          if ((result.data as any)?.barcodes) {
+            setBarcodes((result.data as any).barcodes)
+          }
           const newAnswers: Record<number, 'A' | 'B' | 'C' | 'D'> = {}
           sortedSoal.forEach((soal) => {
             if (soal.jawaban_asesi) {
@@ -153,6 +148,15 @@ export default function Ia05Page() {
   useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
+
+  // Timer for asesi (1 hour, sessionStorage)
+  const { remainingSeconds, isExpired } = useIa05Timer({
+    idIzin: id,
+    onExpired: () => { /* redirect handled by hook */ },
+  })
+
+  // Check all steps for missing QR and redirect
+  const { checked: stepsChecked } = useMissingStepsRedirect(id, isAsesi && !isLoading && !isDataLoading)
   const signing = useSigningState({
     pageKey: 'ia05',
     isAsesor,
@@ -175,6 +179,14 @@ export default function Ia05Page() {
 
   // Handler for asesor to save umpan_balik
   const handleSaveUmpanBalik = async () => {
+    // If asesor already signed → redirect
+    if (isAsesor && signing.asesorHasSigned) {
+      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
+      const next = asesmenSteps[idx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+
     if (!ia05Data || !id) return
 
     setIsSaving(true)
@@ -239,6 +251,14 @@ export default function Ia05Page() {
   }
 
   const handleSubmit = async () => {
+    // If asesi already signed → redirect (prevent re-generate QR)
+    if (isAsesi && signing.asesiHasSigned) {
+      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
+      const next = asesmenSteps[idx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+
     if (!ia05Data) {
       showWarning('Data belum dimuat.')
       return
@@ -327,7 +347,7 @@ export default function Ia05Page() {
 
   const isQuestionAnswered = (soalId: number) => answers[soalId]
 
-  if (isLoading || isDataLoading) {
+  if (isLoading || isDataLoading || !stepsChecked) {
     return <FullPageLoader text="Memuat data IA.05..." />
   }
 
@@ -399,7 +419,14 @@ export default function Ia05Page() {
             <tr>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Waktu</td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>60 menit</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', color: isExpired || signing.asesiHasSigned ? '#c00' : '#000', fontWeight: isExpired || signing.asesiHasSigned ? 'bold' : 'normal' }}>
+                {isExpired || signing.asesiHasSigned
+                  ? 'Waktu Habis'
+                  : isAsesi
+                    ? `${Math.floor(remainingSeconds / 60)} menit ${remainingSeconds % 60} detik`
+                    : '60 menit'
+                }
+              </td>
             </tr>
           </tbody>
         </table>
@@ -703,22 +730,26 @@ export default function Ia05Page() {
             {/* Buttons for Asesi */}
             {isAsesi && (
               <>
+                {isAsesor && (
                 <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia04b`)}>
                   Kembali
                 </ActionButton>
-                <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist} onClick={handleSubmit}>
-                  {isSaving ? "Menyimpan..." : "Lanjut"}
+                )}
+                <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist || isExpired} onClick={handleSubmit}>
+                  {isExpired ? "Waktu Habis" : isSaving ? "Menyimpan..." : "Lanjut"}
                 </ActionButton>
               </>
             )}
             {/* Buttons for Asesor */}
             {isAsesor && (
               <>
+                {isAsesor && (
                 <ActionButton variant="secondary" onClick={() => navigate(-1)}>
                   Kembali
                 </ActionButton>
-                  <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist} onClick={handleSaveUmpanBalik}>
-                    {isSaving ? "Menyimpan..." : "Simpan Umpan Balik"}
+                )}
+                  <ActionButton variant="primary" disabled={isSaving || !signing.agreedChecklist || (isAsesor && signing.asesorHasSigned)} onClick={handleSaveUmpanBalik}>
+                    {isSaving ? "Menyimpan..." : signing.asesorHasSigned ? "Lanjut" : "Simpan Umpan Balik"}
                   </ActionButton>
               </>
             )}

@@ -414,9 +414,11 @@ export default function Ak03Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
-              Kembali
-            </ActionButton>
+            {isAsesor && (
+              <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
+                Kembali
+              </ActionButton>
+            )}
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>

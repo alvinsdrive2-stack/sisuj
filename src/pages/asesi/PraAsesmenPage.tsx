@@ -414,9 +414,11 @@ export default function PraAsesmenPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isConfirming}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isConfirming}>
+              Kembali
+            </ActionButton>
+          )}
           <ActionButton variant="primary" onClick={handleConfirm} disabled={isConfirming}>
             {isConfirming ? 'Memproses...' : 'Data Sudah Benar, Lanjut ke APL 01'}
           </ActionButton>

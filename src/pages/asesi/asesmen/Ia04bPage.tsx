@@ -259,6 +259,7 @@ export default function Ia04bPage() {
   }
 
   const handleSave = async () => {
+    // If all signed → redirect
     if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -268,6 +269,21 @@ export default function Ia04bPage() {
       } else {
         navigate(`/asesi/asesmen/${id}/selesai`)
       }
+      return
+    }
+
+    // If current user already signed but others haven't → redirect (prevent re-generate QR)
+    if (!isAsesor && signing.asesiHasSigned) {
+      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+      const next = asesmenSteps[stepIdx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+
+    if (isAsesor && signing.asesorHasSigned) {
+      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+      const next = asesmenSteps[stepIdx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
 
@@ -334,12 +350,11 @@ export default function Ia04bPage() {
         }
       }
 
-      // 3. Navigate to next step
-      showSuccess('IA 04.B berhasil disimpan!')
-
-      // 4. Generate QR
+      // 3. Generate QR
       await signing.generateQR()
       publishUpdate()
+
+      showSuccess('IA 04.B berhasil disimpan!')
     } catch (error) {
       showError('Gagal menyimpan data. Silakan coba lagi.')
     } finally {
@@ -687,9 +702,11 @@ export default function Ia04bPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            {isAsesor && (
             <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/upload-tugas`)}>
               Kembali
             </ActionButton>
+            )}
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
               {signing.buttonText}
             </ActionButton>

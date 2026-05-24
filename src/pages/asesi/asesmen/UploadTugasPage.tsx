@@ -572,6 +572,7 @@ export default function UploadTugasPage() {
 
         {/* Actions - hide for asesor */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
+          {isAsesor && (
           <ActionButton
             variant="secondary"
             disabled={isNavigating}
@@ -586,6 +587,7 @@ export default function UploadTugasPage() {
           >
             Kembali
           </ActionButton>
+          )}
           <ActionButton
             variant="primary"
             disabled={isNavigating || (!allSigned && (!uploadedTugas || !agreedChecklist))}

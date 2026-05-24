@@ -34,6 +34,7 @@ export default function DashboardAsesiPage() {
   const [showPage, setShowPage] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
+  const [isStepsAllFilled, setIsStepsAllFilled] = useState(false)
 
   // Fetch jenjang from data-dokumen API
   const { jenjang } = useDataDokumenAsesmen(idIzin)
@@ -68,6 +69,77 @@ export default function DashboardAsesiPage() {
 
     fetchIdIzin()
   }, [kegiatan?.jadwal_id, user?.name])
+
+  // Check if all steps in current tahap are filled → disable button
+  useEffect(() => {
+    if (!idIzin || !kegiatan?.tahap) return
+    if (kegiatan.tahap === 2 && !jenjang) return  // Wait for jenjang/methode to load
+
+    const token = localStorage.getItem("access_token")
+    const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+
+    const tahap1Steps = [
+      `/praasesmen/${idIzin}/apl01`,
+      `/praasesmen/${idIzin}/apl02`,
+      `/praasesmen/${idIzin}/mapa01`,
+      `/praasesmen/${idIzin}/mapa02`,
+      `/praasesmen/${idIzin}/fr-ak-07`,
+      `/praasesmen/${idIzin}/fr-ak-04`,
+    ]
+
+    // Dynamic tahap 2 steps based on jenjang and methode
+    const jenjangId = parseInt(jenjang || "0")
+    const isLowJenjang = jenjangId < 4
+    const isPortofolio = metode?.toLowerCase() === 'portofolio'
+
+    let tahap2Steps: string[] = []
+    if (isPortofolio) {
+      tahap2Steps = [
+        `/asesmen/${idIzin}/ia08`,
+        `/asesmen/${idIzin}/ia09`,
+        `/asesmen/${idIzin}/ia10`,
+        `/asesmen/${idIzin}/ak02`,
+        `/asesmen/${idIzin}/ak03`,
+      ]
+    } else if (isLowJenjang) {
+      tahap2Steps = [
+        `/asesmen/${idIzin}/ia01`,
+        `/asesmen/${idIzin}/ia02`,
+        `/asesmen/${idIzin}/ia03`,
+        `/asesmen/${idIzin}/upload-tugas`,
+        `/asesmen/${idIzin}/ia05`,
+        `/asesmen/${idIzin}/ak02`,
+        `/asesmen/${idIzin}/ak03`,
+      ]
+    } else {
+      tahap2Steps = [
+        `/asesmen/${idIzin}/ia04a`,
+        `/asesmen/${idIzin}/upload-tugas`,
+        `/asesmen/${idIzin}/ia04b`,
+        `/asesmen/${idIzin}/ia05`,
+        `/asesmen/${idIzin}/ak02`,
+        `/asesmen/${idIzin}/ak03`,
+      ]
+    }
+
+    const steps = kegiatan.tahap === 1 ? tahap1Steps : tahap2Steps
+
+    const checkAll = async () => {
+      for (const path of steps) {
+        if (path.includes('upload-tugas')) continue
+        try {
+          const res = await fetch(`${API_BASE_URL}${path}`, { headers })
+          if (!res.ok) continue
+          const json = await res.json()
+          const filled = json.data?.barcodes?.asesi?.url ||
+            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+          if (!filled) { setIsStepsAllFilled(false); return }
+        } catch { /* continue */ }
+      }
+      setIsStepsAllFilled(true)
+    }
+    checkAll()
+  }, [idIzin, kegiatan?.tahap, jenjang, metode])
 
   // Page entrance animation
 
@@ -353,9 +425,10 @@ export default function DashboardAsesiPage() {
                 </div>
                 <Button
                   size="lg"
-                  className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg"
-                  onClick={() => {
-                    console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap, 'jenjang:', jenjang)
+                  disabled={isStepsAllFilled || !idIzin || !kegiatan?.tahap}
+                  className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg disabled:opacity-50"
+                  onClick={async () => {
+                    console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap)
 
                     if (!idIzin) {
                       toast("ID Izin tidak ditemukan", "error")
@@ -366,19 +439,86 @@ export default function DashboardAsesiPage() {
                     sessionStorage.setItem('validNavigationEntry', 'true')
 
                     if (kegiatan?.tahap === 1) {
-                      console.log('[Dashboard Button] Navigating to /asesi/praasesmen (confirmation page)')
-                      navigate(`/asesi/praasesmen`, { state: { fromInternal: true } })
+                      // Check steps before K3 (apl01-apl02-mapa01-mapa02-ak07-ak04)
+                      const token = localStorage.getItem("access_token")
+                      const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+                      const tahap1Steps = [
+                        { key: 'apl01', path: `/praasesmen/${idIzin}/apl01` },
+                        { key: 'apl02', path: `/praasesmen/${idIzin}/apl02` },
+                        { key: 'mapa01', path: `/praasesmen/${idIzin}/mapa01` },
+                        { key: 'mapa02', path: `/praasesmen/${idIzin}/mapa02` },
+                        { key: 'ak07', path: `/praasesmen/${idIzin}/fr-ak-07` },
+                        { key: 'ak04', path: `/praasesmen/${idIzin}/fr-ak-04` },
+                      ]
+                      for (const step of tahap1Steps) {
+                        try {
+                          const res = await fetch(`${API_BASE_URL}${step.path}`, { headers })
+                          if (!res.ok) continue
+                          const json = await res.json()
+                          const filled = json.data?.barcodes?.asesi?.url ||
+                            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+                          if (!filled) {
+                            sessionStorage.setItem('validNavigationEntry', 'true')
+                            navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+                            return
+                          }
+                        } catch { /* continue */ }
+                      }
+                      // All filled → button already disabled, do nothing
                     }
                     if (kegiatan?.tahap === 2) {
-                      // Check jenjang from data-dokumen API for low jenjang flow
+                      // Dynamic tahap 2 steps based on jenjang and methode
                       const jenjangId = parseInt(jenjang || "0")
-                      if (jenjangId < 4) {
-                        navigate(`/asesi/asesmen/${idIzin}/ia01`, { state: { fromInternal: true } })
-                      } else if (metode === "portofolio") {
-                        navigate(`/asesi/asesmen/${idIzin}/ia08`, { state: { fromInternal: true } })
+                      const isLowJenjang = jenjangId < 4
+                      const isPortofolio = metode?.toLowerCase() === 'portofolio'
+                      const token = localStorage.getItem("access_token")
+                      const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+
+                      let tahap2Steps: { key: string; path: string }[] = []
+                      if (isPortofolio) {
+                        tahap2Steps = [
+                          { key: 'ia08', path: `/asesmen/${idIzin}/ia08` },
+                          { key: 'ia09', path: `/asesmen/${idIzin}/ia09` },
+                          { key: 'ia10', path: `/asesmen/${idIzin}/ia10` },
+                          { key: 'ak02', path: `/asesmen/${idIzin}/ak02` },
+                          { key: 'ak03', path: `/asesmen/${idIzin}/ak03` },
+                        ]
+                      } else if (isLowJenjang) {
+                        tahap2Steps = [
+                          { key: 'ia01', path: `/asesmen/${idIzin}/ia01` },
+                          { key: 'ia02', path: `/asesmen/${idIzin}/ia02` },
+                          { key: 'ia03', path: `/asesmen/${idIzin}/ia03` },
+                          { key: 'upload-tugas', path: `/asesmen/${idIzin}/upload-tugas` },
+                          { key: 'ia05', path: `/asesmen/${idIzin}/ia05` },
+                          { key: 'ak02', path: `/asesmen/${idIzin}/ak02` },
+                          { key: 'ak03', path: `/asesmen/${idIzin}/ak03` },
+                        ]
                       } else {
-                        navigate(`/asesi/asesmen/${idIzin}/ia04a`, { state: { fromInternal: true } })
+                        tahap2Steps = [
+                          { key: 'ia04a', path: `/asesmen/${idIzin}/ia04a` },
+                          { key: 'upload-tugas', path: `/asesmen/${idIzin}/upload-tugas` },
+                          { key: 'ia04b', path: `/asesmen/${idIzin}/ia04b` },
+                          { key: 'ia05', path: `/asesmen/${idIzin}/ia05` },
+                          { key: 'ak02', path: `/asesmen/${idIzin}/ak02` },
+                          { key: 'ak03', path: `/asesmen/${idIzin}/ak03` },
+                        ]
                       }
+                      for (const step of tahap2Steps) {
+                        if (step.key === 'upload-tugas') continue
+                        try {
+                          const res = await fetch(`${API_BASE_URL}${step.path}`, { headers })
+                          if (!res.ok) continue
+                          const json = await res.json()
+                          const filled = json.data?.barcodes?.asesi?.url ||
+                            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+                          if (!filled) {
+                            sessionStorage.setItem('validNavigationEntry', 'true')
+                            navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+                            return
+                          }
+                        } catch { /* continue */ }
+                      }
+                      // All filled → button already disabled, do nothing
                     }
                   }}
                 >

@@ -1,12 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, Clock, ChevronRight, Search, AlertCircle } from "lucide-react"
+import { Calendar, Users, Clock, ChevronRight, Search, AlertCircle, UserCheck } from "lucide-react"
 import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
+import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
 
 const TAHAP_CONFIG: Record<number, { title: string; badge: string; badgeClass: string }> = {
   0: { title: "Persiapan Asesmen", badge: "Belum Mulai", badgeClass: "bg-slate-100 text-slate-700 hover:bg-slate-200" },
@@ -25,6 +26,7 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
   const [search, setSearch] = useState('')
   const { kegiatans, isLoading, error, pagination } = useKegiatanAsesorList(true, page, search, tahap)
   const absenPending = useAsesorAbsenPending()
+  const persiapanPending = useAsesorPersiapanPending()
 
   return (
     <div className="space-y-6">
@@ -104,6 +106,12 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
                         <span className="flex items-center gap-1 text-red-600 font-medium">
                           <AlertCircle className="w-4 h-4" />
                           {absenPending.perKegiatan[kegiatan.jadwal_id]} asesi belum anda selesaikan
+                        </span>
+                      )}
+                      {tahap === 0 && persiapanPending.perKegiatan[kegiatan.jadwal_id] > 0 && (
+                        <span className="flex items-center gap-1 text-blue-600 font-medium">
+                          <UserCheck className="w-4 h-4" />
+                          {persiapanPending.perKegiatan[kegiatan.jadwal_id]} asesi sudah isi APL02
                         </span>
                       )}
                     </div>

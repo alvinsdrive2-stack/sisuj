@@ -155,9 +155,11 @@ export default function K3AsesmenPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={handleBack}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={handleBack}>
+              Kembali
+            </ActionButton>
+          )}
           <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleLanjut}>
             Lanjut ke Perjanjian Asesmen
           </ActionButton>

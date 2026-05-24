@@ -83,6 +83,7 @@ export default function ListAsesiAsesor() {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [jenjang, setJenjang] = useState<string>('0')
+  const [asesiMeta, setAsesiMeta] = useState<Record<string, { jenjang: string; metode: string }>>({})
 
   // Fetch kegiatan detail — loop through pages until found
   useEffect(() => {
@@ -140,6 +141,30 @@ export default function ListAsesiAsesor() {
 
     fetchJenjang()
   }, [asesiList])
+
+  // Fetch jenjang + metode per-asesi (for step check on click)
+  useEffect(() => {
+    if (asesiLoading || asesiList.length === 0) return
+
+    const token = localStorage.getItem("access_token")
+    const fetchMeta = async () => {
+      const results: Record<string, { jenjang: string; metode: string }> = {}
+      for (const asesi of asesiList) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/data-dokumen`, { headers: { Accept: "application/json", Authorization: `Bearer ${token}` } })
+          if (res.ok) {
+            const json = await res.json()
+            results[asesi.id_izin] = {
+              jenjang: json.data?.jenjang || '0',
+              metode: json.data?.metode || '',
+            }
+          }
+        } catch { /* skip */ }
+      }
+      setAsesiMeta(results)
+    }
+    fetchMeta()
+  }, [asesiLoading, asesiList])
 
   // Always call hook, use empty string as fallback
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
@@ -329,15 +354,64 @@ export default function ListAsesiAsesor() {
                     <div
                       key={asesi.id_izin}
                       className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:bg-primary/5 transition-all cursor-pointer bg-white dark:bg-slate-800"
-                      onClick={() => {
-                        // Check jenjang from data-dokumen API for low jenjang flow
+                      onClick={async () => {
                         sessionStorage.setItem('validNavigationEntry', 'true')
-                        const jenjangId = parseInt(jenjang || "0")
-                        if (jenjangId < 4) {
-                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia01`, { state: { fromInternal: true } })
+                        const meta = asesiMeta[asesi.id_izin] || { jenjang: jenjang, metode: '' }
+                        const jenjangId = parseInt(meta.jenjang || "0")
+                        const isLowJenjang = jenjangId < 4
+                        const isPortofolio = meta.metode?.toLowerCase() === 'portofolio'
+
+                        // Dynamic tahap 2 steps
+                        let tahap2Steps: { key: string; path: string }[] = []
+                        if (isPortofolio) {
+                          tahap2Steps = [
+                            { key: 'ia08', path: `/asesi/asesmen/${asesi.id_izin}/ia08` },
+                            { key: 'ia09', path: `/asesi/asesmen/${asesi.id_izin}/ia09` },
+                            { key: 'ia10', path: `/asesi/asesmen/${asesi.id_izin}/ia10` },
+                            { key: 'ak02', path: `/asesi/asesmen/${asesi.id_izin}/ak02` },
+                            { key: 'ak03', path: `/asesi/asesmen/${asesi.id_izin}/ak03` },
+                          ]
+                        } else if (isLowJenjang) {
+                          tahap2Steps = [
+                            { key: 'ia01', path: `/asesi/asesmen/${asesi.id_izin}/ia01` },
+                            { key: 'ia02', path: `/asesi/asesmen/${asesi.id_izin}/ia02` },
+                            { key: 'ia03', path: `/asesi/asesmen/${asesi.id_izin}/ia03` },
+                            { key: 'upload-tugas', path: `/asesi/asesmen/${asesi.id_izin}/upload-tugas` },
+                            { key: 'ia05', path: `/asesi/asesmen/${asesi.id_izin}/ia05` },
+                            { key: 'ak02', path: `/asesi/asesmen/${asesi.id_izin}/ak02` },
+                            { key: 'ak03', path: `/asesi/asesmen/${asesi.id_izin}/ak03` },
+                          ]
                         } else {
-                          navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`, { state: { fromInternal: true } })
+                          tahap2Steps = [
+                            { key: 'ia04a', path: `/asesi/asesmen/${asesi.id_izin}/ia04a` },
+                            { key: 'upload-tugas', path: `/asesi/asesmen/${asesi.id_izin}/upload-tugas` },
+                            { key: 'ia04b', path: `/asesi/asesmen/${asesi.id_izin}/ia04b` },
+                            { key: 'ia05', path: `/asesi/asesmen/${asesi.id_izin}/ia05` },
+                            { key: 'ak02', path: `/asesi/asesmen/${asesi.id_izin}/ak02` },
+                            { key: 'ak03', path: `/asesi/asesmen/${asesi.id_izin}/ak03` },
+                          ]
                         }
+
+                        // Check steps: API path = /asesmen/{idIzin}/{stepKey}, nav path = /asesi/asesmen/{idIzin}/{stepKey}
+                        const token = localStorage.getItem("access_token")
+                        const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
+                        for (const step of tahap2Steps) {
+                          if (step.key === 'upload-tugas') continue
+                          try {
+                            const apiPath = `/asesmen/${asesi.id_izin}/${step.key}`
+                            const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
+                            if (!res.ok) continue
+                            const json = await res.json()
+                            const filled = json.data?.barcodes?.asesi?.url ||
+                              json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+                            if (!filled) {
+                              navigate(step.path, { state: { fromInternal: true } })
+                              return
+                            }
+                          } catch { /* continue */ }
+                        }
+                        // All filled → navigate to default page
+                        navigate(`/asesi/asesmen/${asesi.id_izin}/ia04a`, { state: { fromInternal: true } })
                       }}
                     >
                       <div className="flex items-center justify-between">

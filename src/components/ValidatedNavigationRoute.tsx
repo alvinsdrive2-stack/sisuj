@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react"
+	import { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface ValidatedNavigationRouteProps {
@@ -8,73 +7,45 @@ interface ValidatedNavigationRouteProps {
 }
 
 /**
- * ValidatedNavigationRoute - Prevents direct URL access / brute force attacks.
- * Only allows navigation from within the app (valid referrer or navigation state).
- * Redirects to user's dashboard if accessed directly.
+ * ValidatedNavigationRoute - Prevents direct URL access.
+ * If env VITE_VALIDATED_NAVIGATION=1, direct URL typing → redirect to /login.
  */
+const isEnabled = import.meta.env.VITE_VALIDATED_NAVIGATION === '1'
+
 export default function ValidatedNavigationRoute({ children }: ValidatedNavigationRouteProps) {
-  const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [isValid, setIsValid] = useState<boolean | null>(null)
 
+  // Bypass if env var is 0
   useEffect(() => {
-    // Check 1: Navigation state exists (internal navigate)
+    if (!isEnabled) {
+      setIsValid(true)
+      return
+    }
+  }, [])
+
+  useEffect(() => {
+    // Only allow if navigated from within app (fromInternal state)
     if (location.state?.fromInternal) {
       setIsValid(true)
-      return
+    } else {
+      setIsValid(false)
     }
-
-    // Check 2: Valid referrer (same origin)
-    const referrer = document.referrer
-    if (referrer) {
-      try {
-        const referrerUrl = new URL(referrer)
-        const currentOrigin = window.location.origin
-        if (referrerUrl.origin === currentOrigin) {
-          setIsValid(true)
-          return
-        }
-      } catch {
-        // Invalid URL, treat as direct access
-      }
-    }
-
-    // Check 3: Session storage flag (set on dashboard entry)
-    const hasValidSession = sessionStorage.getItem('validNavigationEntry')
-    if (hasValidSession === 'true') {
-      setIsValid(true)
-      return
-    }
-
-    // Direct access detected - redirect to dashboard
-    setIsValid(false)
   }, [location])
 
   useEffect(() => {
     if (isValid === false) {
-      const role = user?.role?.name
-      const fallbackPath: Record<string, string> = {
-        "Asesor": "/asesor/dashboard",
-        "Asesi": "/asesi/dashboard",
-        "Admin LSP": "/admin-lsp/dashboard",
-        "Direktur LSP": "/direktur/tandatangan",
-        "Manajer Sertifikasi": "/manajer/dashboard",
-        "Admin TUK": "/admin-tuk/dashboard",
-        "Komtek": "/komtek/tandatangan",
-      }
-
-      const defaultPath = role && fallbackPath[role] ? fallbackPath[role] : "/asesi/dashboard"
-      navigate(defaultPath, { replace: true })
+      navigate('/login', { replace: true })
     }
-  }, [isValid, user, navigate])
+  }, [isValid, navigate])
 
   if (isValid === null) {
     return <FullPageLoader text="Memvalidasi akses..." />
   }
 
   if (isValid === false) {
-    return null // Will redirect
+    return null
   }
 
   return <>{children}</>
@@ -82,7 +53,6 @@ export default function ValidatedNavigationRoute({ children }: ValidatedNavigati
 
 /**
  * Hook to mark a navigation as valid internal navigation
- * Use this when navigating to protected routes
  */
 export function useValidNavigate() {
   const navigate = useNavigate()

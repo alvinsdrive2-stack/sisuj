@@ -730,9 +730,11 @@ export default function FrAk01Page() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
-          <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
+              Kembali
+            </ActionButton>
+          )}
           <ActionButton variant="primary" onClick={handleSave} disabled={signing.buttonDisabled}>
             {isSaving ? 'Menyimpan...' : signing.buttonText}
           </ActionButton>

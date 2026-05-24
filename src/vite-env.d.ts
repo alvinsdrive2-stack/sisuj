@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL: string
+  readonly VITE_VALIDATED_NAVIGATION?: string
   // more env variables...
 }
 

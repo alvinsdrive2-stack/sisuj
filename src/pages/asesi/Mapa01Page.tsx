@@ -358,9 +358,11 @@ export default function Mapa01Page() {
           {/* Actions */}
           <div className="mapa01-actions">
 
-            <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
-              Kembali
-            </ActionButton>
+            {isAsesor && (
+              <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
+                Kembali
+              </ActionButton>
+            )}
             
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
               {signing.buttonText}

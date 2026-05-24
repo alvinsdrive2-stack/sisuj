@@ -665,21 +665,23 @@ export default function Ia01Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <ActionButton
-              variant="secondary"
-              onClick={() => {
-                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
-                const prevStep = asesmenSteps[currentStepIndex - 1]
-                if (prevStep) {
-                  const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                  navigate(prevPath)
-                } else {
-                  navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
-                }
-              }}
-            >
-              Kembali
-            </ActionButton>
+            {isAsesor && (
+              <ActionButton
+                variant="secondary"
+                onClick={() => {
+                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                  const prevStep = asesmenSteps[currentStepIndex - 1]
+                  if (prevStep) {
+                    const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                    navigate(prevPath)
+                  } else {
+                    navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
+                  }
+                }}
+              >
+                Kembali
+              </ActionButton>
+            )}
             <ActionButton
               variant="primary"
               disabled={signing.buttonDisabled}

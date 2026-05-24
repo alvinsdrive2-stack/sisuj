@@ -971,9 +971,11 @@ anda pada saat ini.</span>
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
+              Kembali
+            </ActionButton>
+          )}
           <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
             {isSaving ? "Menyimpan..." : signing.buttonText}
           </ActionButton>

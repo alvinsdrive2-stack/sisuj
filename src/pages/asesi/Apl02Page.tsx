@@ -1354,13 +1354,13 @@ export default function Apl02Page() {
           return
         }
 
-        // Fetch data-dokumen, apl02, files, and kebenaran-data in parallel
+        // Fetch data-dokumen, apl02, files, and dokumen-asesi in parallel
         const h = authHeaders()
-        const [dataDokumenResponse, apl02Response, filesResponse, kebenaranResponse] = await Promise.all([
+        const [dataDokumenResponse, apl02Response, filesResponse, dokumenAsesiResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/data-dokumen`, { headers: h }),
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02`, { headers: h }),
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02/files`, { headers: h }),
-          fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers: h }),
+          fetch(`${API_BASE_URL}/kegiatan/${fetchedIdIzin}/dokumen-asesi`, { headers: h }),
         ])
 
         // Parse data-dokumen response
@@ -1401,7 +1401,7 @@ export default function Apl02Page() {
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
-                if (subunit.kompeten !== undefined) {
+                if (subunit.kompeten !== undefined && subunit.kompeten !== null) {
                   // Set same status for all KUKs in this subunit
                   subunit.kuk_list.forEach(kuk => {
                     const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
@@ -1436,23 +1436,23 @@ export default function Apl02Page() {
           }
         }
 
-        // Parse kebenaran-data response and inject ijazah + referensi_kerja
-        if (kebenaranResponse.ok) {
+        // Parse dokumen-asesi response and inject ijazah + referensi_kerja
+        if (dokumenAsesiResponse.ok) {
           try {
-            const kebenaranResult = await kebenaranResponse.json()
-            if (kebenaranResult.success && kebenaranResult.data) {
-              const kebenaranFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
-              if (kebenaranResult.data.ijazah) {
-                kebenaranFiles.push({ id: -1, name: 'Ijazah (Kebenaran Data)', path: kebenaranResult.data.ijazah, kebenaran: true })
+            const dokumenAsesiResult = await dokumenAsesiResponse.json()
+            const data = dokumenAsesiResult.data || dokumenAsesiResult
+            if (data) {
+              const dokumenFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
+              if (data.ijazah) {
+                dokumenFiles.push({ id: -1, name: 'Ijazah (Dokumen Asesi)', path: data.ijazah, kebenaran: true })
               }
-              if (kebenaranResult.data.referensi_kerja) {
-                kebenaranFiles.push({ id: -2, name: 'Referensi Kerja (Kebenaran Data)', path: kebenaranResult.data.referensi_kerja, kebenaran: true })
+              if (data.referensi_kerja) {
+                dokumenFiles.push({ id: -2, name: 'Referensi Kerja (Dokumen Asesi)', path: data.referensi_kerja, kebenaran: true })
               }
-              if (kebenaranFiles.length > 0) {
+              if (dokumenFiles.length > 0) {
                 setUploadedFilesInfo(prev => {
-                  // Avoid duplicates if re-fetching
                   const existingIds = new Set(prev.map(f => f.id))
-                  const newFiles = kebenaranFiles.filter(f => !existingIds.has(f.id))
+                  const newFiles = dokumenFiles.filter(f => !existingIds.has(f.id))
                   return [...newFiles, ...prev]
                 })
               }
@@ -2436,9 +2436,11 @@ export default function Apl02Page() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-          <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
+              Kembali
+            </ActionButton>
+          )}
           <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
             {signing.buttonText}
           </ActionButton>

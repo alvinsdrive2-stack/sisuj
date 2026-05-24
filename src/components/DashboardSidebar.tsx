@@ -4,6 +4,7 @@ import { getFilteredMenus } from "@/lib/rbac-config"
 import { ChevronRight, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
+import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
 
 interface DashboardSidebarProps {
   isCollapsed?: boolean
@@ -21,9 +22,14 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
 
   // Fetch absen pending counts for asesor
   const asesorAbsen = userRole === "Asesor" ? useAsesorAbsenPending() : null
+  const asesorPersiapan = userRole === "Asesor" ? useAsesorPersiapanPending() : null
 
   // Map path to badge count
   const getBadgeCount = (path: string): number | null => {
+    if (path === "/asesor/persiapan") {
+      if (!asesorPersiapan || asesorPersiapan.isLoading) return null
+      return asesorPersiapan.pending || null
+    }
     if (!asesorAbsen || asesorAbsen.isLoading) return null
     if (path === "/asesor/praasesmen") return asesorAbsen.tahap1Pending || null
     if (path === "/asesor/asesmen") return asesorAbsen.tahap2Pending || null

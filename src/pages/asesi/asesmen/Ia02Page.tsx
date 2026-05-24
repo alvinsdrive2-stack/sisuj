@@ -455,9 +455,11 @@ export default function Ia02Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            {isAsesor && (
             <ActionButton variant="secondary" onClick={handleBack}>
               Kembali
             </ActionButton>
+            )}
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleNext}>
               {signing.buttonText}
             </ActionButton>

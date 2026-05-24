@@ -204,6 +204,7 @@ export default function Ia04aPage() {
   })
 
   const handleNext = async () => {
+    // If all signed → redirect
     if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -213,6 +214,21 @@ export default function Ia04aPage() {
       } else {
         navigate(`/asesi/asesmen/${id}/selesai`)
       }
+      return
+    }
+
+    // If current user already signed but others haven't → redirect (prevent re-generate QR)
+    if (!isAsesor && signing.asesiHasSigned) {
+      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
+      const next = asesmenSteps[stepIdx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+
+    if (isAsesor && signing.asesorHasSigned) {
+      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
+      const next = asesmenSteps[stepIdx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
 
@@ -315,8 +331,6 @@ export default function Ia04aPage() {
         showSuccess('IA 04.A berhasil disimpan!')
         return
       }
-
-      showSuccess('IA 04.A berhasil disimpan!')
     } finally {
       setIsSaving(false)
     }
@@ -652,9 +666,11 @@ export default function Ia04aPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            {isAsesor && (
             <ActionButton variant="secondary" onClick={() => navigate("/asesi/dashboard")}>
               Kembali
             </ActionButton>
+            )}
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleNext}>
               {signing.buttonText}
             </ActionButton>

@@ -543,21 +543,23 @@ export default function Ak02Page() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-            <ActionButton
-              variant="secondary"
-              onClick={() => {
-                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
-                const prevStep = asesmenSteps[currentStepIndex - 1]
-                if (prevStep) {
-                  const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                  navigate(prevPath)
-                } else {
-                  navigate(`/asesi/asesmen/${id}/ia05`)
-                }
-              }}
-            >
-              Kembali
-            </ActionButton>
+            {isAsesor && (
+              <ActionButton
+                variant="secondary"
+                onClick={() => {
+                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
+                  const prevStep = asesmenSteps[currentStepIndex - 1]
+                  if (prevStep) {
+                    const prevPath = prevStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                    navigate(prevPath)
+                  } else {
+                    navigate(`/asesi/asesmen/${id}/ia05`)
+                  }
+                }}
+              >
+                Kembali
+              </ActionButton>
+            )}
             <ActionButton
               variant="primary"
               disabled={signing.buttonDisabled}

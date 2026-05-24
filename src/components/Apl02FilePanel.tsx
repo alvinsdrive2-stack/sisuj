@@ -43,7 +43,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
 
         const [filesRes, kebenaranRes] = await Promise.all([
           fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl02/files`, { headers }),
-          fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers }),
+          fetch(`${API_BASE_URL}/kegiatan/${idIzin}/dokumen-asesi`, { headers }),
         ])
 
         let allFiles: Apl02File[] = []
@@ -58,8 +58,14 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
         if (kebenaranRes.ok) {
           try {
             const kebenaranJson = await kebenaranRes.json()
-            if (kebenaranJson.success && kebenaranJson.data) {
+            if ((kebenaranJson.success || kebenaranJson.message === "Success") && kebenaranJson.data) {
               const kebenaranFiles: Apl02File[] = []
+              if (kebenaranJson.data.ktp) {
+                kebenaranFiles.push({ id: -3, name: 'KTP (Kebenaran Data)', path: kebenaranJson.data.ktp, kebenaran: true })
+              }
+              if (kebenaranJson.data.npwp) {
+                kebenaranFiles.push({ id: -4, name: 'NPWP (Kebenaran Data)', path: kebenaranJson.data.npwp, kebenaran: true })
+              }
               if (kebenaranJson.data.ijazah) {
                 kebenaranFiles.push({ id: -1, name: 'Ijazah (Kebenaran Data)', path: kebenaranJson.data.ijazah, kebenaran: true })
               }
@@ -104,7 +110,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
   const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
   return (
-    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : undefined, transition: 'width 0.25s ease' }}>
+    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : 'auto', maxHeight: '500px', transition: 'width 0.25s ease' }}>
       <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         {/* Header - click to collapse */}
         <div style={{ padding: '12px 16px', borderBottom: collapsed ? 'none' : '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={toggleCollapse}>

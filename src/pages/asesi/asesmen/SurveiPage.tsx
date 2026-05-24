@@ -460,9 +460,11 @@ export default function SurveiPage() {
           <ActionButton variant="secondary" onClick={handleExportXlsx}>
             Export XLSX
           </ActionButton>
-          <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
-            Kembali
-          </ActionButton>
+          {isAsesor && (
+            <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
+              Kembali
+            </ActionButton>
+          )}
           {!isSubmitted ? (
             <ActionButton variant="primary" disabled={isSaving} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan"}
