@@ -183,15 +183,20 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
     setShowConfirmDialog(false)
   }
 
+  const isKebenaran = file.id < 0
+
   const handleCapsuleClick = () => {
-    if (isAsesor && onView) {
+    if (onView) {
       onView(file)
     }
   }
 
   const handleButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (isAsesor && onView) {
+    if (isKebenaran) {
+      // Kebenaran files are read-only, always open preview
+      if (onView) onView(file)
+    } else if (isAsesor && onView) {
       onView(file)
     } else if (!disabled) {
       handleDelete()
@@ -217,8 +222,8 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
           alignItems: 'center',
           gap: '8px',
           height: '38px',
-          background: isAsesor ? '#e0f2fe' : '#f5f5f5',
-          border: isAsesor ? '1px solid #0ea5e9' : '1px solid #ddd',
+          background: isKebenaran ? '#f5f3ff' : (isAsesor ? '#e0f2fe' : '#f5f5f5'),
+          border: isKebenaran ? '1px solid #ddd6fe' : (isAsesor ? '1px solid #0ea5e9' : '1px solid #ddd'),
           borderRadius: '6px',
           padding: '0 12px',
           fontSize: '12px',
@@ -228,13 +233,13 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
           transform: isExiting ? 'scale(0.9) translateX(-10px)' : 'scale(1) translateX(0)',
           opacity: isExiting ? 0 : 1,
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          cursor: isAsesor ? 'pointer' : 'default',
+          cursor: 'pointer',
           userSelect: 'none',
         }}
         onMouseEnter={(e) => {
           if (!isExiting) {
-            e.currentTarget.style.background = isAsesor ? '#bae6fd' : '#eee'
-            e.currentTarget.style.borderColor = isAsesor ? '#0284c7' : '#ccc'
+            e.currentTarget.style.background = isKebenaran ? '#ede9fe' : (isAsesor ? '#bae6fd' : '#eee')
+            e.currentTarget.style.borderColor = isKebenaran ? '#c4b5fd' : (isAsesor ? '#0284c7' : '#ccc')
           }
         }}
         onMouseLeave={(e) => {
@@ -255,14 +260,14 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
             {file.name || 'Unknown file'}
           </span>
         </span>
-        {/* Show Eye icon for asesor (view mode), Trash icon for asesi (delete mode) */}
-        {(isAsesor || !disabled) && (
+        {/* Eye icon for kebenaran/asesor, Trash for asesi regular files */}
+        {(isKebenaran || isAsesor || !disabled) && (
           <button
             onClick={handleButtonClick}
             style={{
               background: 'transparent',
               border: 'none',
-              color: isAsesor ? '#0284c7' : '#999',
+              color: (isAsesor || isKebenaran) ? '#0284c7' : '#999',
               cursor: 'pointer',
               padding: '0',
               width: '24px',
@@ -276,7 +281,7 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
             }}
             onMouseEnter={(e) => {
               if (!isExiting) {
-                if (isAsesor) {
+                if (isAsesor || isKebenaran) {
                   e.currentTarget.style.background = '#0284c7'
                   e.currentTarget.style.color = '#fff'
                 } else if (!disabled) {
@@ -288,12 +293,12 @@ function ServerFileCapsule({ file, onDelete, disabled, isAsesor, onView }: Serve
             onMouseLeave={(e) => {
               if (!isExiting) {
                 e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = isAsesor ? '#0284c7' : '#999'
+                e.currentTarget.style.color = (isAsesor || isKebenaran) ? '#0284c7' : '#999'
               }
             }}
-            title={isAsesor ? "Lihat preview dokumen" : "Hapus file dari server"}
+            title={isKebenaran ? "Lihat dokumen kebenaran data" : (isAsesor ? "Lihat preview dokumen" : "Hapus file dari server")}
           >
-            {isAsesor ? <Eye size={12} /> : <Trash2 size={12} />}
+            {(isAsesor || isKebenaran) ? <Eye size={12} /> : <Trash2 size={12} />}
           </button>
         )}
       </span>
@@ -498,7 +503,7 @@ function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalPro
       setIsLoading(true)
       setError(null)
 
-      const ext = file.name.split('.').pop()?.toLowerCase()
+      const ext = (file.name.includes('.') ? file.name.split('.').pop() : file.path.split('.').pop()?.split('?')[0])?.toLowerCase()
 
       // For images, show directly
       if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
@@ -518,8 +523,10 @@ function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalPro
     loadPreview()
   }, [isOpen, file])
 
+  const getExt = () => (file.name.includes('.') ? file.name.split('.').pop() : file.path.split('.').pop()?.split('?')[0])?.toLowerCase()
+
   const getFileTypeDisplay = () => {
-    const ext = file.name.split('.').pop()?.toLowerCase()
+    const ext = getExt()
     if (ext === 'pdf') return 'PDF Document'
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return 'Gambar'
     if (['doc', 'docx'].includes(ext || '')) return 'Document Microsoft Word'
@@ -527,7 +534,7 @@ function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalPro
   }
 
   const renderPreview = () => {
-    const ext = file.name.split('.').pop()?.toLowerCase()
+    const ext = getExt()
 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
       return (
@@ -1032,7 +1039,7 @@ export default function Apl02Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
 
-  const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string }>>([])
+  const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string; kebenaran?: boolean }>>([])
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK'>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
@@ -1182,6 +1189,9 @@ export default function Apl02Page() {
   }, [handleBuktiChange])
 
   const deleteFile = async (fileId: number) => {
+    // Kebenaran data files (negative IDs) are read-only, cannot be deleted
+    if (fileId < 0) return
+
     try {
       const token = isUuidFlow ? null : localStorage.getItem("access_token")
 
@@ -1344,12 +1354,13 @@ export default function Apl02Page() {
           return
         }
 
-        // Fetch data-dokumen, apl02, and files in parallel
+        // Fetch data-dokumen, apl02, files, and kebenaran-data in parallel
         const h = authHeaders()
-        const [dataDokumenResponse, apl02Response, filesResponse] = await Promise.all([
+        const [dataDokumenResponse, apl02Response, filesResponse, kebenaranResponse] = await Promise.all([
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/data-dokumen`, { headers: h }),
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02`, { headers: h }),
           fetch(`${API_BASE_URL}/praasesmen/${fetchedIdIzin}/apl02/files`, { headers: h }),
+          fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers: h }),
         ])
 
         // Parse data-dokumen response
@@ -1423,6 +1434,30 @@ export default function Apl02Page() {
           if (filesResult.message === "Success" && filesResult.data) {
             setUploadedFilesInfo(filesResult.data)
           }
+        }
+
+        // Parse kebenaran-data response and inject ijazah + referensi_kerja
+        if (kebenaranResponse.ok) {
+          try {
+            const kebenaranResult = await kebenaranResponse.json()
+            if (kebenaranResult.success && kebenaranResult.data) {
+              const kebenaranFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
+              if (kebenaranResult.data.ijazah) {
+                kebenaranFiles.push({ id: -1, name: 'Ijazah (Kebenaran Data)', path: kebenaranResult.data.ijazah, kebenaran: true })
+              }
+              if (kebenaranResult.data.referensi_kerja) {
+                kebenaranFiles.push({ id: -2, name: 'Referensi Kerja (Kebenaran Data)', path: kebenaranResult.data.referensi_kerja, kebenaran: true })
+              }
+              if (kebenaranFiles.length > 0) {
+                setUploadedFilesInfo(prev => {
+                  // Avoid duplicates if re-fetching
+                  const existingIds = new Set(prev.map(f => f.id))
+                  const newFiles = kebenaranFiles.filter(f => !existingIds.has(f.id))
+                  return [...newFiles, ...prev]
+                })
+              }
+            }
+          } catch { /* ignore parse errors */ }
         }
 
         // Set metode from API
@@ -1712,10 +1747,10 @@ export default function Apl02Page() {
       const data = subunitDataMap.get(subunitId)!
       data.statuses.push(status)
 
-      // Add user-selected file IDs (filter out excluded API files)
+      // Add user-selected file IDs (filter out excluded API files and kebenaran data files)
       const fileIds = kukBukti[kukId] || []
       fileIds.forEach(id => {
-        if (!excludedApiFileIds.has(id)) {
+        if (id > 0 && !excludedApiFileIds.has(id)) {
           data.allFileIds.add(id)
         }
       })

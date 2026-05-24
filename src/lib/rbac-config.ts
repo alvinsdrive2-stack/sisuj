@@ -9,7 +9,9 @@ import {
   Upload,
   FileCheck as FileCheckIcon,
   Activity,
-  PenTool
+  PenTool,
+  ClipboardList,
+  Award
 } from "lucide-react"
 
 // Role Types
@@ -158,9 +160,19 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         icon: LayoutDashboard
       },
       {
-        title: "Daftar Asesi",
-        path: "/asesor/asesi",
-        icon: Users
+        title: "Persiapan Asesmen",
+        path: "/asesor/persiapan",
+        icon: ClipboardList
+      },
+      {
+        title: "Praasesmen",
+        path: "/asesor/praasesmen",
+        icon: FileCheckIcon
+      },
+      {
+        title: "Asesmen",
+        path: "/asesor/asesmen",
+        icon: Award
       }
     ]
   },

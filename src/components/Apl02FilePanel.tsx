@@ -6,6 +6,7 @@ interface Apl02File {
   id: number
   name: string
   path: string
+  kebenaran?: boolean
 }
 
 interface Apl02FilePanelProps {
@@ -38,18 +39,44 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
       setError(null)
       try {
         const token = localStorage.getItem("access_token")
-        const res = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl02/files`, {
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        if (json.data && Array.isArray(json.data)) {
-          setFiles(json.data)
+        const headers = { Accept: "application/json", Authorization: `Bearer ${token}` }
+
+        const [filesRes, kebenaranRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl02/files`, { headers }),
+          fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers }),
+        ])
+
+        let allFiles: Apl02File[] = []
+
+        if (filesRes.ok) {
+          const json = await filesRes.json()
+          if (json.data && Array.isArray(json.data)) {
+            allFiles = json.data
+          }
+        }
+
+        if (kebenaranRes.ok) {
+          try {
+            const kebenaranJson = await kebenaranRes.json()
+            if (kebenaranJson.success && kebenaranJson.data) {
+              const kebenaranFiles: Apl02File[] = []
+              if (kebenaranJson.data.ijazah) {
+                kebenaranFiles.push({ id: -1, name: 'Ijazah (Kebenaran Data)', path: kebenaranJson.data.ijazah, kebenaran: true })
+              }
+              if (kebenaranJson.data.referensi_kerja) {
+                kebenaranFiles.push({ id: -2, name: 'Referensi Kerja (Kebenaran Data)', path: kebenaranJson.data.referensi_kerja, kebenaran: true })
+              }
+              allFiles = [...kebenaranFiles, ...allFiles]
+            }
+          } catch { /* ignore */ }
+        }
+
+        if (allFiles.length > 0 || filesRes.ok) {
+          setFiles(allFiles)
+        } else if (!filesRes.ok) {
+          throw new Error(`HTTP ${filesRes.status}`)
         } else {
-          throw new Error(json.message || "Gagal muat file")
+          throw new Error("Gagal muat file")
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Gagal muat file APL02")
@@ -60,18 +87,21 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
     fetchFiles()
   }, [idIzin])
 
-  const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
+  const getExt = (name: string, path?: string) =>
+    (name.includes('.') ? name.split('.').pop() : path?.split('.').pop()?.split('?')[0])?.toLowerCase()
 
-  const fileIcon = (name: string) => {
-    const ext = name.split('.').pop()?.toLowerCase()
+  const fileIcon = (name: string, path?: string) => {
+    const ext = getExt(name, path)
     if (!ext) return FileIcon
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(ext)) return FileImage
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return FileImage
     if (['pdf'].includes(ext)) return FileText
     if (['doc', 'docx'].includes(ext)) return FileText
     if (['xls', 'xlsx', 'csv'].includes(ext)) return FileSpreadsheet
     if (['zip', 'rar', '7z', 'gz', 'tar'].includes(ext)) return FileArchive
     return FileIcon
   }
+
+  const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
   return (
     <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : undefined, transition: 'width 0.25s ease' }}>
@@ -85,7 +115,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
             <line x1="16" y1="13" x2="8" y2="13" />
             <line x1="16" y1="17" x2="8" y2="17" />
           </svg>
-          <span style={{ fontSize: '14px', fontWeight: '600', color: '#333', flex: 1 }}>{collapsed ? 'File Referensi' : 'File Referensi'}</span>
+          <span style={{ fontSize: '14px', fontWeight: '600', color: '#333', flex: 1 }}>File Referensi</span>
         </div>
 
         {/* Content */}
@@ -103,19 +133,23 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {files.map((file) => {
                 const isOpen = expandedFile === file.id
-                const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(file.name)
+                const ext = getExt(file.name, file.path)
+                const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')
+                const Icon = fileIcon(file.name, file.path)
                 return (
                 <div key={file.id}>
                   <div
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '8px',
                       borderRadius: '6px', cursor: 'pointer',
-                      background: isOpen ? '#eef2ff' : '#f8f9fa',
-                      border: `1px solid ${isOpen ? '#c7d2fe' : '#e8e8e8'}`,
+                      background: file.kebenaran ? (isOpen ? '#ede9fe' : '#f5f3ff') : (isOpen ? '#eef2ff' : '#f8f9fa'),
+                      border: file.kebenaran
+                        ? `1px solid ${isOpen ? '#c4b5fd' : '#ddd6fe'}`
+                        : `1px solid ${isOpen ? '#c7d2fe' : '#e8e8e8'}`,
                     }}
                     onClick={() => setExpandedFile(isOpen ? null : file.id)}
                   >
-                    {(() => { const Icon = fileIcon(file.name); return <Icon size={16} style={{ color: '#666', flexShrink: 0 }} />; })()}
+                    <Icon size={16} style={{ color: file.kebenaran ? '#7c3aed' : '#666', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '13px', fontWeight: '600', color: '#222', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stripExt(file.name)}</p>
                     </div>

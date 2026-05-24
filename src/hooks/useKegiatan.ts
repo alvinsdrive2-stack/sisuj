@@ -118,7 +118,7 @@ export function useKegiatanAsesor(enabled = true) {
 }
 
 // New hook for getting all kegiatan asesor (full array)
-export function useKegiatanAsesorList(enabled = true, page = 1, search = '') {
+export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tahap?: number) {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
@@ -137,7 +137,7 @@ export function useKegiatanAsesorList(enabled = true, page = 1, search = '') {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await kegiatanService.getKegiatanAsesor(page, search)
+        const response = await kegiatanService.getKegiatanAsesor(page, search, tahap)
         setKegiatansRef.current?.(response.data || [])
         if ('current_page' in response) {
           const pr = response as any
@@ -151,7 +151,7 @@ export function useKegiatanAsesorList(enabled = true, page = 1, search = '') {
       }
     }
     fetchKegiatanAsesor()
-  }, [enabled, page, search])
+  }, [enabled, page, search, tahap])
 
   return { kegiatans, isLoading, error, pagination }
 }

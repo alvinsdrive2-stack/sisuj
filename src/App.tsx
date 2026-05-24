@@ -62,6 +62,7 @@ const ListAsesiAdminTUK = lazy(() => import('./pages/admin-tuk/ListAsesiAdminTUK
 const DashboardAsesor = lazy(() => import('./pages/asesor/DashboardAsesor'))
 const ListAsesiAsesor = lazy(() => import('./pages/asesor/ListAsesiAsesor'))
 const AsesiPage = lazy(() => import('./pages/asesor/AsesiPage'))
+const TahapListPage = lazy(() => import('./pages/asesor/TahapListPage'))
 
 // Qontak WhatsApp Pages
 const QontakWhatsAppPage = lazy(() => import('./pages/qontak/QontakWhatsAppPage'))
@@ -240,9 +241,10 @@ function App() {
                 <DashboardLayout>
                   <Routes>
                     <Route path="dashboard" element={<DashboardAsesor />} />
+                    <Route path="persiapan" element={<TahapListPage tahap={0} />} />
+                    <Route path="praasesmen" element={<TahapListPage tahap={1} />} />
+                    <Route path="asesmen" element={<TahapListPage tahap={2} />} />
                     <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
-                    <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="assessment" element={<div className="p-4"><h2 className="text-xl font-bold">Penilaian</h2><p className="text-slate-600">Coming soon...</p></div>} />
                     <Route path="asesi/:jadwalId" element={<AsesiPage />} />
                     <Route path="" element={<Navigate to="dashboard" replace />} />
                   </Routes>
@@ -286,6 +288,9 @@ function App() {
                   <Route path="praasesmen/:idIzin/k3-asesmen" element={<AsesiOrAsesorRoute><K3AsesmenPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/fr-ak-01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
+                  {/* Perjanjian Asesmen */}
+                  <Route path="perjanjian/:idIzin/fr-ak-01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
+                  <Route path="perjanjian/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
                   <Route path="asesmen" element={<AsesiOrAsesorRoute><AsesmenPage /></AsesiOrAsesorRoute>} />
                   <Route path="asesmen/:id/ia01" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ia02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />

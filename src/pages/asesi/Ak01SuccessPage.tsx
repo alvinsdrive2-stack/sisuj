@@ -5,6 +5,11 @@ import { useAuth } from "@/contexts/auth-context"
 import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
 
+const PERJANJIAN_STEPS = [
+  { number: 1, label: 'AK.01', href: '/asesi/perjanjian/:idIzin/fr-ak-01' },
+  { number: 2, label: 'Selesai', href: '/asesi/perjanjian/ak01-success' },
+]
+
 export default function Ak01SuccessPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -12,8 +17,9 @@ export default function Ak01SuccessPage() {
   const jadwalId = (location.state as any)?.jadwalId
   const [countdown, setCountdown] = useState(3)
 
-  // Step 10 (Selesai) for AK01 Success
-  const currentStep = 10
+  const isPerjanjianFlow = location.pathname.includes('/perjanjian/')
+  const currentStep = isPerjanjianFlow ? 2 : PRAASESMEN_STEPS.length + 1
+  const steps = isPerjanjianFlow ? PERJANJIAN_STEPS : [...PRAASESMEN_STEPS, { number: PRAASESMEN_STEPS.length + 1, label: 'Selesai', href: '' }]
 
   const isAsesor = user?.role?.name?.toLowerCase() === "asesor"
 
@@ -52,7 +58,7 @@ export default function Ak01SuccessPage() {
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
-            <span>Pra-Asesmen</span>
+            <span>{isPerjanjianFlow ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}</span>
             <span>/</span>
             <span>FR.AK.01</span>
             <span>/</span>
@@ -61,7 +67,7 @@ export default function Ak01SuccessPage() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={currentStep} steps={PRAASESMEN_STEPS}>
+      <ModularAsesiLayout currentStep={currentStep} steps={steps}>
         <div>
         {/* Success Card */}
         <div style={{ width: '100%', background: '#fff', border: '1px solid #000', padding: '40px', textAlign: 'center' }}>
@@ -80,11 +86,14 @@ export default function Ak01SuccessPage() {
           </svg>
 
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
-            Pra-Asesmen Selesai
+            {isPerjanjianFlow ? 'Perjanjian Asesmen Selesai' : 'Pra-Asesmen Selesai'}
           </h2>
           <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px', lineHeight: '1.6' }}>
-            Terima kasih! Seluruh formulir Pra-Asesmen telah Anda lengkapi.<br />
-            Data Anda akan direview oleh asesor sebelum pelaksanaan asesmen.
+            {isPerjanjianFlow ? (
+              <>Terima kasih! Perjanjian Asesmen telah Anda setujui.<br />Anda akan diarahkan ke dashboard.</>
+            ) : (
+              <>Terima kasih! Seluruh formulir Pra-Asesmen telah Anda lengkapi.<br />Data Anda akan direview oleh asesor sebelum pelaksanaan asesmen.</>
+            )}
           </p>
           <p style={{ fontSize: '12px', color: '#999', marginBottom: '30px' }}>
             Mengalihkan ke Dashboard dalam <span style={{ fontWeight: 'bold', color: '#0066cc' }}>{countdown}</span> detik...

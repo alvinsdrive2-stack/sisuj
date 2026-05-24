@@ -19,25 +19,34 @@ interface DokumenItem {
   docType: string
 }
 
-// Document order based on jenjang and metode
-const getDocumentOrder = (jenjang: string, metode?: string): string[] => {
+// Document groups for 3 sections
+const PRA_ASESMEN_DOCS = ['apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'k3']
+const PERJANJIAN_DOCS = ['ak01']
+
+const getAsesmenDocs = (jenjang: string, metode?: string): string[] => {
   const jenjangNum = parseInt(jenjang) || 0
   const isPortofolio = metode?.toLowerCase() === 'portofolio'
-
-  const praAsesmen = ['apl01', 'apl02', 'mapa01', 'mapa02', 'ak07', 'ak04', 'ak01']
   const closing = ['ak02', 'ak03', 'ak05', 'ak06', 'foto_kegiatan']
 
   if (jenjangNum >= 4 && isPortofolio) {
-    // Jenjang 4+ + portofolio: ia08, ia09, ia10 (no tugas)
-    return [...praAsesmen, 'ia08', 'ia09', 'ia10', ...closing]
+    return ['ia08', 'ia09', 'ia10', ...closing]
   } else if (jenjangNum >= 4) {
-    // Jenjang 4+ + observasi: ia04a, tugas, ia04b
-    return [...praAsesmen, 'ia04a', 'tugas', 'ia04b', 'ia05', ...closing]
+    return ['ia04a', 'tugas', 'ia04b', 'ia05', ...closing]
   } else {
-    // Jenjang 1-3: ia01, ia02, ia03, tugas
-    return [...praAsesmen, 'ia01', 'ia02', 'ia03', 'tugas', 'ia05', ...closing]
+    return ['ia01', 'ia02', 'ia03', 'tugas', 'ia05', ...closing]
   }
 }
+
+interface DocSection {
+  title: string
+  docs: string[]
+}
+
+const getDocSections = (jenjang: string, metode?: string): DocSection[] => [
+  { title: 'Pra Asesmen', docs: PRA_ASESMEN_DOCS },
+  { title: 'Perjanjian Asesmen (AK01)', docs: PERJANJIAN_DOCS },
+  { title: 'Asesmen', docs: getAsesmenDocs(jenjang, metode) },
+]
 
 interface RekomendasiData {
   komtek1?: { id: string; rekomendasi: string | null }
@@ -153,22 +162,27 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
     }
   }, [isOpen])
 
-  // Build document list from data object based on jenjang order
+  // Build document list from data object grouped by sections
   const documentList: DokumenItem[] = (() => {
     if (!dokumenResponse?.data) return []
 
-    const order = getDocumentOrder(jenjang, metode)
+    const sections = getDocSections(jenjang, metode)
     const data = dokumenResponse.data
 
-    // Filter and sort documents based on the order for this jenjang
-    return order
-      .filter(docType => docType in data) // Only include documents that exist in response
-      .map(docType => ({
-        key: `${asesiId}-${docType}`,
-        label: docType.toUpperCase().replace(/_/g, ' '),
-        url: data[docType] || null,
-        docType: docType,
-      }))
+    const items: DokumenItem[] = []
+    sections.forEach(section => {
+      section.docs.forEach(docType => {
+        if (docType in data) {
+          items.push({
+            key: `${asesiId}-${docType}`,
+            label: docType.toUpperCase().replace(/_/g, ' '),
+            url: data[docType] || null,
+            docType: docType,
+          })
+        }
+      })
+    })
+    return items
   })()
 
   // Get only documents that have URLs
@@ -346,120 +360,150 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px', width: '100%' }}>
-                {/* Left - Document List */}
-                <div style={{ display: 'flex', flexDirection: 'column'}}>
-                  <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase', marginLeft: '60px' }}>
+                {/* Left - Document List (Sectioned with Nodes) */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
                     Daftar Dokumen
                   </h4>
                   <div
                     ref={documentListRef}
                     style={{
-                      position: 'relative',
-                      marginLeft: '80px',
-                      overflowY: 'hidden',
-                      overflowX: 'hidden',
+                      overflowY: 'auto',
                       maxHeight: 'calc(90vh - 180px)',
                       paddingRight: '10px',
-                      paddingBottom: '20px'
-                    }}>
-                    {/* Documents */}
-                    {documentList.map((doc, index) => {
-                      const hasDocument = !!doc.url
-                      const isSelected = selectedDoc?.key === doc.key
-
-                      return (
-                        <div
-                          key={doc.key}
-                          data-doc-key={doc.key}
-                          onClick={() => hasDocument ? setSelectedDoc(doc) : null}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            marginBottom: index < documentList.length - 1 ? '24px' : '0px',
-                            position: 'relative',
-                            cursor: hasDocument ? 'pointer' : 'not-allowed',
-                            transform: index == 15 && isSelected? 'translateY(-7px)' : 'translateY(2px)',
-                          }}
-                        >
-                          {/* Document Circle */}
-                          <div
-                            style={{
-                              width: '30px',
-                              height: '30px',
-                              borderRadius: '50%',
-                              background: isSelected
-                                ? '#10b981'
-                                : hasDocument
-                                  ? '#0b815a'
-                                  : '#f5f5f5',
-                              color: isSelected
-                                ? '#fff'
-                                : hasDocument
-                                  ? '#fff'
-                                  : '#aaa',
-                              border: '3px solid',
-                              borderColor: isSelected
-                                ? '#10b981'
-                                : hasDocument
-                                  ? '#0b815a'
-                                  : '#ddd',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '14px',
-                              fontWeight: hasDocument ? 'bold' : 'normal',
-                              flexShrink: 0,
-                              zIndex: 1,
-                              transition: 'all 0.3s ease',
-                              transform: isSelected ? 'scale(1.2) translateX(10px) translateY(5px)' : 'scale(1) translateX(10px)',
-                            }}>
-                            {isSelected ? (
-                              <FontAwesomeIcon icon={faEye} style={{ color: 'white', fontSize: '12px' }} />
-                            ) : hasDocument ? (
-                              index + 1
-                            ) : (
-                              index + 1
-                            )}
-                          </div>
-
-                          {/* Label */}
-                          <span style={{
-                            marginLeft: '14px',
-                            fontSize: '14px',
-                            color: isSelected
-                              ? '#10b981'
-                              : hasDocument
-                                ? '#4e4e4e'
-                                : '#333',
-                            fontWeight: isSelected ? 'bold' : hasDocument ? '600' : 'normal',
-                            paddingTop: '6px',
-                            flex: 1,
-                            transition: 'all 0.3s ease',
-                            transform: index==15 && isSelected? 'scale(1) translateX(20px) translateY(2px)': isSelected ? 'scale(1.6) translateX(38px) translateY(1px)': 'scale(1) translateX(15px)'
-                          }}>
-                            {doc.label}
-                            {!hasDocument && (
-                              <span style={{ fontSize: '11px', color: '#999', fontWeight: 'normal', marginLeft: '8px' }}>
-                                (Belum ada)
-                              </span>
-                            )}
-                          </span>
-
-                          {/* Line Segment to next node */}
-                          {index < documentList.length - 1 && (
+                      paddingBottom: '20px',
+                    }}
+                  >
+                    {(() => {
+                      const sections = getDocSections(jenjang, metode)
+                      const sectionColors = ['#3b82f6', '#f59e0b', '#10b981']
+                      let globalIndex = 0
+                      return sections.map((section, si) => {
+                        const sectionDocs = documentList.filter(d => section.docs.includes(d.docType))
+                        if (sectionDocs.length === 0) return null
+                        const sectionColor = sectionColors[si] || sectionColors[0]
+                        const startIdx = globalIndex
+                        globalIndex += sectionDocs.length
+                        return (
+                          <div key={section.title} style={{ marginBottom: si < sections.length - 1 ? '20px' : '0' }}>
+                            {/* Section Title */}
                             <div style={{
-                              position: 'absolute',
-                              left: '24px',
-                              top: '30px',
-                              width: '3px',
-                              height: '24px',
-                              background: hasDocument ? '#10b981' : '#ddd',
-                              zIndex: 0
-                            }}></div>
-                          )}
-                        </div>
-                      )
-                    })}
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              color: sectionColor,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              marginBottom: '10px',
+                              paddingBottom: '4px',
+                              borderBottom: `2px solid ${sectionColor}20`,
+                            }}>
+                              {section.title}
+                            </div>
+                            {/* Section Docs with Timeline Nodes */}
+                            <div style={{ position: 'relative' }}>
+                              {/* Vertical Line */}
+                              <div style={{
+                                position: 'absolute',
+                                left: '17px',
+                                top: '12px',
+                                bottom: '12px',
+                                width: '3px',
+                                background: '#ddd',
+                                zIndex: 0,
+                              }} />
+                              {sectionDocs.map((doc, di) => {
+                                const hasDocument = !!doc.url
+                                const isSelected = selectedDoc?.key === doc.key
+                                const isLastInSection = di === sectionDocs.length - 1
+                                return (
+                                  <div
+                                    key={doc.key}
+                                    data-doc-key={doc.key}
+                                    onClick={() => hasDocument ? setSelectedDoc(doc) : null}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'flex-start',
+                                      marginBottom: isLastInSection ? '0' : '18px',
+                                      position: 'relative',
+                                      cursor: hasDocument ? 'pointer' : 'not-allowed',
+                                    }}
+                                  >
+                                    {/* Node Circle */}
+                                    <div style={{
+                                      width: '34px',
+                                      height: '34px',
+                                      borderRadius: '50%',
+                                      background: isSelected
+                                        ? sectionColor
+                                        : hasDocument
+                                          ? '#0b815a'
+                                          : '#f5f5f5',
+                                      color: isSelected
+                                        ? '#fff'
+                                        : hasDocument
+                                          ? '#fff'
+                                          : '#aaa',
+                                      border: '3px solid',
+                                      borderColor: isSelected
+                                        ? sectionColor
+                                        : hasDocument
+                                          ? '#0b815a'
+                                          : '#ddd',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      fontSize: '13px',
+                                      fontWeight: hasDocument ? 'bold' : 'normal',
+                                      flexShrink: 0,
+                                      zIndex: 1,
+                                      transition: 'transform 0.2s ease',
+                                      transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                                    }}>
+                                      {isSelected ? (
+                                        <FontAwesomeIcon icon={faEye} style={{ fontSize: '12px' }} />
+                                      ) : (
+                                        startIdx + di + 1
+                                      )}
+                                    </div>
+                                    {/* Label */}
+                                    <span style={{
+                                      marginLeft: '12px',
+                                      fontSize: '13px',
+                                      color: isSelected
+                                        ? sectionColor
+                                        : hasDocument
+                                          ? '#4e4e4e'
+                                          : '#999',
+                                      fontWeight: isSelected ? 'bold' : hasDocument ? '600' : 'normal',
+                                      paddingTop: '7px',
+                                    }}>
+                                      {doc.label}
+                                      {!hasDocument && (
+                                        <span style={{ fontSize: '11px', color: '#bbb', fontWeight: 'normal', marginLeft: '6px' }}>
+                                          (Belum ada)
+                                        </span>
+                                      )}
+                                    </span>
+                                    {/* Colored line segment for completed/has-doc nodes */}
+                                    {hasDocument && !isLastInSection && (
+                                      <div style={{
+                                        position: 'absolute',
+                                        left: '17px',
+                                        top: '34px',
+                                        width: '3px',
+                                        height: '18px',
+                                        background: sectionColor,
+                                        zIndex: 0,
+                                      }} />
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
 

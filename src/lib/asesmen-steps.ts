@@ -6,7 +6,7 @@ export interface StepConfig {
   href: string
 }
 
-// Pra-Asesmen Steps
+// Pra-Asesmen Steps (stops at K3, then perjanjian asesmen)
 export const PRAASESMEN_STEPS: StepConfig[] = [
   { number: 1, label: 'Konfirmasi', href: '/asesi/praasesmen' },
   { number: 2, label: 'APL 01', href: '/asesi/praasesmen/APL01' },
@@ -16,8 +16,12 @@ export const PRAASESMEN_STEPS: StepConfig[] = [
   { number: 6, label: 'AK.07', href: '/asesi/praasesmen/AK07' },
   { number: 7, label: 'AK.04', href: '/asesi/praasesmen/AK04' },
   { number: 8, label: 'K3', href: '/asesi/praasesmen/K3' },
-  { number: 9, label: 'AK.01', href: '/asesi/praasesmen/AK01' },
-  { number: 10, label: 'Selesai', href: '/asesi/praasesmen/selesai' },
+]
+
+// Perjanjian Asesmen Steps (after praasesmen)
+export const PERJANJIAN_ASESMEN_STEPS: StepConfig[] = [
+  { number: 1, label: 'AK.01', href: '/asesi/perjanjian/:idIzin/fr-ak-01' },
+  { number: 2, label: 'Selesai', href: '/asesi/perjanjian/ak01-success' },
 ]
 
 // Asesmen Steps for Asesi (default)

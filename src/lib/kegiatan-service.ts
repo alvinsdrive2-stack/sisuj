@@ -280,10 +280,11 @@ class KegiatanService {
   }
 
   // Get kegiatan asesor (paginated)
-  async getKegiatanAsesor(page: number = 1, search: string = ''): Promise<KegiatanAsesorResponse> {
+  async getKegiatanAsesor(page: number = 1, search: string = '', tahap?: number): Promise<KegiatanAsesorResponse> {
     const token = this.getToken()
     const params = new URLSearchParams({ page: String(page) })
     if (search) params.set('search', search)
+    if (tahap !== undefined) params.set('tahap', String(tahap))
 
     const url = `${this.baseUrl}/kegiatan/asesor?${params}`
 

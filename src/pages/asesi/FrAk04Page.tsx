@@ -216,13 +216,13 @@ export default function FrAk04Page() {
       return
     }
 
-    // Asesi already signed & all asesor signed → navigate
+    // Asesi already signed & all asesor signed → navigate to K3
     if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
       return
     }
 
-    // Asesor already signed → navigate
+    // Asesor already signed → navigate to K3
     if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
       return

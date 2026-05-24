@@ -22,11 +22,14 @@ export default function ProtectedRoute({
   const { isAuthenticated, isLoading, user } = useAuth()
   const location = useLocation()
 
-  if (isLoading) {
+  // Dev bypass: set localStorage dev_bypass_auth = '1' to skip all protection
+  const devBypass = import.meta.env.DEV && localStorage.getItem('dev_bypass_auth') === '1'
+
+  if (isLoading && !devBypass) {
     return <FullPageLoader text="Memuat..." />
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !devBypass) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
@@ -50,6 +53,9 @@ export default function ProtectedRoute({
     }
     return "/dashboard"
   }
+
+  // Skip role/permission checks in dev bypass mode
+  if (devBypass) return <>{children}</>
 
   // Check role-based access
   if (requiredRoles.length > 0 && user?.role?.name) {

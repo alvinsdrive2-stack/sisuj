@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useLocation } from "react-router-dom"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -65,8 +65,11 @@ export default function FrAk01Page() {
   const { showWarning, showSuccess } = useToast()
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
+  const location = useLocation()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const isPerjanjianFlow = location.pathname.includes('/perjanjian/')
+  const successPath = isPerjanjianFlow ? '/asesi/perjanjian/ak01-success' : '/asesi/praasesmen/ak01-success'
 
   const [buktiList, setBuktiList] = useState<BuktiAsesmen[]>([])
   const [barcodes, setBarcodes] = useState<{
@@ -259,7 +262,7 @@ export default function FrAk01Page() {
     if (pendingToSuccessPage) {
       setPendingToSuccessPage(false)
       // Asesor & asesi both go to success page
-      navigate(`/asesi/praasesmen/ak01-success`, { state: { jadwalId } })
+      navigate(successPath, { state: { jadwalId } })
     }
   }
 
@@ -275,7 +278,7 @@ export default function FrAk01Page() {
       if (isAsesor) {
         navigate(`/asesor/asesi/${jadwalId}`)
       } else {
-        navigate(`/asesi/praasesmen/ak01-success`)
+        navigate(successPath)
       }
       return
     }
@@ -289,7 +292,7 @@ export default function FrAk01Page() {
         setShowAkhirModal(true)
         return
       }
-      navigate(`/asesi/praasesmen/ak01-success`, { state: { jadwalId } })
+      navigate(successPath, { state: { jadwalId } })
       return
     }
 
@@ -305,7 +308,7 @@ export default function FrAk01Page() {
       if (isAsesor) {
         navigate(`/asesor/asesi/${jadwalId}`)
       } else {
-        navigate(`/asesi/praasesmen/ak01-success`)
+        navigate(successPath)
       }
       return
     }
@@ -378,14 +381,14 @@ export default function FrAk01Page() {
           <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
             <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
             <span>/</span>
-            <span>Pra-Asesmen</span>
+            <span>{isPerjanjianFlow ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}</span>
             <span>/</span>
             <span>FR.AK.01</span>
           </div>
         </div>
       </div>
 
-      <AsesiLayout currentStep={9} idIzin={actualIdIzin} tahap={tahap}>
+      <AsesiLayout currentStep={isPerjanjianFlow ? 1 : 9} idIzin={actualIdIzin} tahap={tahap} flow={isPerjanjianFlow ? 'perjanjian' : 'praasesmen'}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR.AK.01 - PERSETUJUAN ASESMEN</h2>

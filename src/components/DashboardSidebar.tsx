@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { getFilteredMenus } from "@/lib/rbac-config"
 import { ChevronRight, Menu, X } from "lucide-react"
 import { useState } from "react"
+import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
 
 interface DashboardSidebarProps {
   isCollapsed?: boolean
@@ -17,6 +18,17 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
   // Get user role and menus
   const userRole = user?.role?.name
   const menuItems = userRole ? getFilteredMenus(userRole) : []
+
+  // Fetch absen pending counts for asesor
+  const asesorAbsen = userRole === "Asesor" ? useAsesorAbsenPending() : null
+
+  // Map path to badge count
+  const getBadgeCount = (path: string): number | null => {
+    if (!asesorAbsen || asesorAbsen.isLoading) return null
+    if (path === "/asesor/praasesmen") return asesorAbsen.tahap1Pending || null
+    if (path === "/asesor/asesmen") return asesorAbsen.tahap2Pending || null
+    return null
+  }
 
   return (
     <>
@@ -40,7 +52,7 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
       >
         {/* Sidebar Container */}
         <div className="flex flex-col h-full bg-white/90 border-r border-slate-200/50  backdrop-blur-sm">
-          
+
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-4">
@@ -54,6 +66,7 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + "/")
+                const badgeCount = getBadgeCount(item.path)
 
                 return (
                   <li key={item.path}>
@@ -71,18 +84,28 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
                       <div className={`
-                        w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0
+                        w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 relative
                         ${isActive
                           ? "bg-primary/15"
                           : "bg-slate-100 group-hover:bg-slate-200"
                         }
                       `}>
                         <Icon className={`w-4 h-4 ${isActive ? "text-primary" : "text-slate-600"}`} />
+                        {badgeCount !== null && badgeCount > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold leading-none px-1">
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </span>
+                        )}
                       </div>
                       {!isCollapsed && (
                         <>
                           <span className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>{item.title}</span>
-                          {isActive && <ChevronRight className="w-4 h-4 ml-auto text-primary/60" />}
+                          {badgeCount !== null && badgeCount > 0 && (
+                            <span className="ml-auto mr-1 min-w-[20px] h-5 flex items-center justify-center rounded-full bg-red-500 text-white text-[11px] font-bold px-1.5">
+                              {badgeCount > 99 ? '99+' : badgeCount}
+                            </span>
+                          )}
+                          {isActive && (badgeCount === null || badgeCount === 0) && <ChevronRight className="w-4 h-4 ml-auto text-primary/60" />}
                         </>
                       )}
                     </NavLink>

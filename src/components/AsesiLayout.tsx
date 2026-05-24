@@ -7,9 +7,10 @@ interface AsesiLayoutProps {
   currentStep: number
   idIzin?: string
   tahap?: number
+  flow?: 'praasesmen' | 'perjanjian'
 }
 
-export default function AsesiLayout({ children, currentStep, idIzin, tahap }: AsesiLayoutProps) {
+export default function AsesiLayout({ children, currentStep, idIzin, tahap, flow }: AsesiLayoutProps) {
   const [showSteps, setShowSteps] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
   const [filePanelCollapsed, setFilePanelCollapsed] = useState(false)
@@ -18,7 +19,7 @@ export default function AsesiLayout({ children, currentStep, idIzin, tahap }: As
     <div className="flex flex-col lg:flex-row" style={{ gap: '30px', padding: '20px', maxWidth: '1720px', margin: '0 auto', alignItems: 'flex-start' }}>
       {/* Sidebar - desktop */}
       <div className="hidden lg:block" style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-        <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} tahap={tahap} />
+        <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} tahap={tahap} flow={flow} />
       </div>
 
       {/* Main Content */}
@@ -66,7 +67,7 @@ export default function AsesiLayout({ children, currentStep, idIzin, tahap }: As
         <div className="lg:hidden fixed inset-0 z-[60] flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSteps(false)}>
           <div className="w-full rounded-t-2xl" style={{ background: '#fff', maxHeight: '70vh', overflowY: 'auto', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: '#ddd' }} />
-            <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} tahap={tahap} />
+            <AsesiStepIndicator currentStep={currentStep} idIzin={idIzin} tahap={tahap} flow={flow} />
           </div>
         </div>
       )}

@@ -10,9 +10,10 @@ interface AsesiStepIndicatorProps {
   currentStep: number
   idIzin?: string
   tahap?: number
+  flow?: 'praasesmen' | 'perjanjian'
 }
 
-const steps: Step[] = [
+const PRAASESMEN_STEPS: Step[] = [
   { number: 1, label: 'Konfirmasi' },
   { number: 2, label: 'APL 01' },
   { number: 3, label: 'APL 02' },
@@ -21,14 +22,16 @@ const steps: Step[] = [
   { number: 6, label: 'AK.07' },
   { number: 7, label: 'AK.04' },
   { number: 8, label: 'K3' },
-  { number: 9, label: 'AK.01' },
-  { number: 10, label: 'Selesai' },
+]
+
+const PERJANJIAN_STEPS: Step[] = [
+  { number: 1, label: 'AK.01' },
+  { number: 2, label: 'Selesai' },
 ]
 
 // Step paths relative to idIzin
-const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
+const getPraasesmenPath = (stepNumber: number, idIzin?: string): string | null => {
   if (!idIzin) return null
-
   const paths: Record<number, string | null> = {
     1: `/asesi/praasesmen/${idIzin}`,
     2: `/asesi/praasesmen/${idIzin}/apl01`,
@@ -38,22 +41,30 @@ const getStepPath = (stepNumber: number, idIzin?: string): string | null => {
     6: `/asesi/praasesmen/${idIzin}/fr-ak-07`,
     7: `/asesi/praasesmen/${idIzin}/fr-ak-04`,
     8: `/asesi/praasesmen/${idIzin}/k3-asesmen`,
-    9: `/asesi/praasesmen/${idIzin}/fr-ak-01`,
-    10: null, // Selesai - no navigation
   }
-
   return paths[stepNumber] || null
 }
 
-export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: AsesiStepIndicatorProps) {
+const getPerjanjianPath = (stepNumber: number, idIzin?: string): string | null => {
+  if (!idIzin) return null
+  const paths: Record<number, string | null> = {
+    1: `/asesi/perjanjian/${idIzin}/fr-ak-01`,
+    2: null, // Selesai
+  }
+  return paths[stepNumber] || null
+}
+
+export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 'praasesmen' }: AsesiStepIndicatorProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
-  // For tahap 0: hide Konfirmasi(1), K3(8), AK01(9), Selesai(10)
+  const steps = flow === 'perjanjian' ? PERJANJIAN_STEPS : PRAASESMEN_STEPS
+
+  // For tahap 0: hide Konfirmasi(1) in praasesmen
   const isTahap0 = tahap === 0
-  const visibleSteps = isTahap0
-    ? steps.filter(s => (s.number >= 2 && s.number <= 7) || s.number === 9)
+  const visibleSteps = (flow === 'praasesmen' && isTahap0)
+    ? steps.filter(s => s.number >= 2 && s.number <= 7)
     : steps
 
   // Get the class name for the step circle based on status
@@ -102,7 +113,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
     }}>
       <br/>
       <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
-        Proses Pra-Asesmen
+        {flow === 'perjanjian' ? 'Perjanjian Asesmen' : 'Proses Pra-Asesmen'}
       </div>
       <div style={{ position: 'relative' }}>
         {/* Vertical Line */}
@@ -120,7 +131,9 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap }: Asesi
           const displayNumber = isTahap0 ? index + 1 : step.number
           const status = getStepStatus(step.number)
           const style = getStepStyle(status)
-          const stepPath = getStepPath(step.number, idIzin)
+          const stepPath = flow === 'perjanjian'
+            ? getPerjanjianPath(step.number, idIzin)
+            : getPraasesmenPath(step.number, idIzin)
           const isClickable = isAsesor && stepPath !== null
 
           return (
