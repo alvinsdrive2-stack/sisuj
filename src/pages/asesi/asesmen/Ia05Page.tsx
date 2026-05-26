@@ -149,10 +149,10 @@ export default function Ia05Page() {
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
 
-  // Timer for asesi (1 hour, sessionStorage)
+  // Timer for asesi (1 hour, localStorage - persists across page close)
   const { remainingSeconds, isExpired } = useIa05Timer({
     idIzin: id,
-    onExpired: () => { /* redirect handled by hook */ },
+    onExpired: () => { /* auto-save handled by useEffect below */ },
   })
 
   // Check all steps for missing QR and redirect
@@ -177,80 +177,8 @@ export default function Ia05Page() {
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
   }
 
-  // Handler for asesor to save umpan_balik
-  const handleSaveUmpanBalik = async () => {
-    // If asesor already signed → redirect
-    if (isAsesor && signing.asesorHasSigned) {
-      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
-      const next = asesmenSteps[idx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
-    if (!ia05Data || !id) return
-
-    setIsSaving(true)
-    try {
-      const token = localStorage.getItem('access_token')
-
-      // Build answers array
-      const answersPayload = ia05Data.soal
-        .filter(soal => answers[soal.id])
-        .map(soal => ({
-          soal_id: soal.id,
-          jawaban: answers[soal.id]
-        }))
-
-      const payload = {
-        id_izin: id,
-        dokumen_id: ia05Data.dokumen.id,
-        answers: answersPayload,
-        umpan_balik: umpanBalik
-      }
-
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        showSuccess('Umpan balik berhasil disimpan!')
-        signing.publishUpdate()
-
-        // Generate QR after successful save
-        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
-        try {
-          if (jadwalId) {
-            console.log('Generating QR for IA05...', { id, jadwalId })
-            await kegiatanService.generateQRIa05(id, jadwalId)
-            console.log('✅ QR IA05 successfully generated!')
-          } else {
-            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
-          }
-        } catch (qrError) {
-          console.error('❌ Failed to generate QR IA05:', qrError)
-          // Don't block navigation on QR failure
-        }
-
-        // Navigate to AK02
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
-      } else {
-        const result = await response.json()
-        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
-      }
-    } catch (error) {
-      console.error('Error saving umpan balik:', error)
-      showError('Gagal menyimpan umpan balik. Silakan coba lagi.')
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleSubmit = async () => {
+  // Handler for asesi to submit answers (memoized for timer hook)
+  const handleSubmit = useCallback(async () => {
     // If asesi already signed → redirect (prevent re-generate QR)
     if (isAsesi && signing.asesiHasSigned) {
       const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
@@ -343,7 +271,87 @@ export default function Ia05Page() {
     } finally {
       setIsSaving(false)
     }
+  }, [isAsesi, signing, asesmenSteps, navigate, ia05Data, id, answers, umpanBalik, jadwalId, showSuccess, showWarning, showError])
+
+  // Handler for asesor to save umpan_balik
+  const handleSaveUmpanBalik = async () => {
+    // If asesor already signed → redirect
+    if (isAsesor && signing.asesorHasSigned) {
+      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
+      const next = asesmenSteps[idx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+
+    if (!ia05Data || !id) return
+
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem('access_token')
+
+      // Build answers array
+      const answersPayload = ia05Data.soal
+        .filter(soal => answers[soal.id])
+        .map(soal => ({
+          soal_id: soal.id,
+          jawaban: answers[soal.id]
+        }))
+
+      const payload = {
+        id_izin: id,
+        dokumen_id: ia05Data.dokumen.id,
+        answers: answersPayload,
+        umpan_balik: umpanBalik
+      }
+
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (response.ok) {
+        showSuccess('Umpan balik berhasil disimpan!')
+        signing.publishUpdate()
+
+        // Generate QR after successful save
+        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+        try {
+          if (jadwalId) {
+            console.log('Generating QR for IA05...', { id, jadwalId })
+            await kegiatanService.generateQRIa05(id, jadwalId)
+            console.log('✅ QR IA05 successfully generated!')
+          } else {
+            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+          }
+        } catch (qrError) {
+          console.error('❌ Failed to generate QR IA05:', qrError)
+          // Don't block navigation on QR failure
+        }
+
+        // Navigate to AK02
+        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
+      } else {
+        const result = await response.json()
+        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
+      }
+    } catch (error) {
+      console.error('Error saving umpan balik:', error)
+      showError('Gagal menyimpan umpan balik. Silakan coba lagi.')
+    } finally {
+      setIsSaving(false)
+    }
   }
+
+  // Auto-save when timer expires (must be after handleSubmit definition)
+  useEffect(() => {
+    if (isExpired && isAsesi && ia05Data && !isSaving) {
+      handleSubmit()
+    }
+  }, [isExpired, isAsesi, ia05Data, isSaving, handleSubmit])
 
   const isQuestionAnswered = (soalId: number) => answers[soalId]
 

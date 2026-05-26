@@ -56,7 +56,9 @@
       "Bash(findstr /n \".\")",
       "Bash(findstr /i \"Ã Ì ¶ ð à\")",
       "PowerShell(New-Item *)",
-      "Bash(npx mammoth *)"
+      "Bash(npx mammoth *)",
+      "Bash(python3 -c \"from PIL import Image; img = Image.open\\('docs/veriftuk/images/image5.jpg'\\); print\\(img.size\\)\")",
+      "Bash(magick identify *)"
     ]
   },
   "enableAllProjectMcpServers": true,
