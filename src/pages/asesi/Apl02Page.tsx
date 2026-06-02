@@ -25,13 +25,12 @@ interface Apl02PageLayoutProps {
   _idIzin: string | null
   idIzin: string | undefined
   tahap: number
-  jenisKelasId?: string
 }
 
-const Apl02PageLayout = ({ children, isUuidFlow, _idIzin, idIzin, tahap, jenisKelasId }: Apl02PageLayoutProps) => {
+const Apl02PageLayout = ({ children, isUuidFlow, _idIzin, idIzin, tahap }: Apl02PageLayoutProps) => {
   return isUuidFlow ? (
     <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
-      <UuidStepIndicator currentStep={3} jenisKelasId={jenisKelasId} />
+      <UuidStepIndicator currentStep={3} isVerifikasiPage={false} />
       <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
         {children}
       </div>
@@ -1443,17 +1442,6 @@ export default function Apl02Page() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
-  const [jenisKelasId, setJenisKelasId] = useState<string | undefined>()
-
-  useEffect(() => {
-    if (isUuidFlow) {
-      const uuidData = sessionStorage.getItem('praasesmen_uuid_data')
-      if (uuidData) {
-        const parsed = JSON.parse(uuidData)
-        setJenisKelasId(parsed.jenis_kelas_id)
-      }
-    }
-  }, [isUuidFlow])
 
   const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string; kebenaran?: boolean }>>([])
   const [filePanelRefreshKey, setFilePanelRefreshKey] = useState(0)
@@ -2434,7 +2422,6 @@ export default function Apl02Page() {
         _idIzin={_idIzin}
         idIzin={idIzin}
         tahap={tahap}
-        jenisKelasId={jenisKelasId}
       >
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>

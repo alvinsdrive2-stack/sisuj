@@ -1,34 +1,33 @@
 interface UuidStepIndicatorProps {
   currentStep: number
-  jenisKelasId?: string
+  isVerifikasiPage?: boolean
 }
 
-const getSteps = (jenisKelasId?: string) => {
-  if (jenisKelasId === "3") {
-    return [
-      { number: 0, label: 'Verifikasi\nTUK AJJ' },
-      { number: 1, label: 'Konfirmasi\nData Diri' },
-      { number: 2, label: 'APL 01' },
-      { number: 3, label: 'APL 02' },
-    ]
+const getSteps = () => [
+  { number: 1, label: 'Konfirmasi\nData Diri' },
+  { number: 2, label: 'APL 01' },
+  { number: 3, label: 'APL 02' },
+]
+
+const getHeaderText = (isVerifikasiPage: boolean): string => {
+  return isVerifikasiPage ? "Verifikasi TUK AJJ" : "Persiapan Asesmen"
+}
+
+export default function UuidStepIndicator({ currentStep, isVerifikasiPage }: UuidStepIndicatorProps) {
+  const headerText = getHeaderText(isVerifikasiPage || false)
+
+  // For verifikasi page, show only header (no steps)
+  if (isVerifikasiPage) {
+    return (
+      <div style={{ padding: '20px 0 4px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '12px', textTransform: 'uppercase', textAlign: 'center' }}>
+          {headerText}
+        </div>
+      </div>
+    )
   }
-  return [
-    { number: 1, label: 'Konfirmasi\nData Diri' },
-    { number: 2, label: 'APL 01' },
-    { number: 3, label: 'APL 02' },
-  ]
-}
 
-const getHeaderText = (currentStep: number, jenisKelasId?: string): string => {
-  if (jenisKelasId === "3" && currentStep === 0) {
-    return "Verifikasi TUK AJJ"
-  }
-  return "Persiapan Asesmen"
-}
-
-export default function UuidStepIndicator({ currentStep, jenisKelasId }: UuidStepIndicatorProps) {
-  const steps = getSteps(jenisKelasId)
-  const headerText = getHeaderText(currentStep, jenisKelasId)
+  const steps = getSteps()
 
   return (
     <div>

@@ -100,6 +100,7 @@ const FrAk04Page = lazy(() => import('./pages/asesi/FrAk04Page'))
 const K3AsesmenPage = lazy(() => import('./pages/asesi/K3AsesmenPage'))
 const FrAk01Page = lazy(() => import('./pages/asesi/FrAk01Page'))
 const PraAsesmenByUuidPage = lazy(() => import('./pages/asesi/PraAsesmenByUuidPage'))
+const VerifikasiTukAjjPage = lazy(() => import('./pages/asesi/VerifikasiTukAjjPage'))
 const KonfirmasiDataPage = lazy(() => import('./pages/asesi/KonfirmasiDataPage'))
 
 // Catch chunk load failures (lazy import network errors) and reload
@@ -126,6 +127,7 @@ function App() {
           <Route path="/capture" element={<CapturePage />} />
           <Route path="/attendance" element={<AttendancePage />} />
           <Route path="/persiapan-asesmen/:uuid" element={<PraAsesmenByUuidPage />} />
+          <Route path="/praasesmen/:idIzin/verifikasi-tuk" element={<VerifikasiTukAjjPage />} />
           <Route path="/praasesmen/:idIzin/konfirmasi" element={<KonfirmasiDataPage />} />
           <Route path="/praasesmen/:idIzin/apl01" element={<Apl01Page />} />
           <Route path="/praasesmen/:idIzin/apl02" element={<Apl02Page />} />

@@ -115,10 +115,10 @@ interface ApiResponse {
   }
 }
 
-function Apl01Layout({ isUuidFlow, idIzin, tahap, jenisKelasId, children }: { isUuidFlow: boolean; idIzin?: string; tahap?: number; jenisKelasId?: string; children: React.ReactNode }) {
+function Apl01Layout({ isUuidFlow, idIzin, tahap, children }: { isUuidFlow: boolean; idIzin?: string; tahap?: number; children: React.ReactNode }) {
   return isUuidFlow ? (
     <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
-      <UuidStepIndicator currentStep={2} jenisKelasId={jenisKelasId} />
+      <UuidStepIndicator currentStep={2} isVerifikasiPage={false} />
       <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
         {children}
       </div>
@@ -154,17 +154,6 @@ export default function Apl01Page() {
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
-  const [jenisKelasId, setJenisKelasId] = useState<string | undefined>()
-
-  useEffect(() => {
-    if (isUuidFlow) {
-      const uuidData = sessionStorage.getItem('praasesmen_uuid_data')
-      if (uuidData) {
-        const parsed = JSON.parse(uuidData)
-        setJenisKelasId(parsed.jenis_kelas_id)
-      }
-    }
-  }, [isUuidFlow])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -392,7 +381,7 @@ export default function Apl01Page() {
       </div>
       )}
 
-      <Apl01Layout isUuidFlow={isUuidFlow} idIzin={idIzin} tahap={tahap} jenisKelasId={jenisKelasId}>
+      <Apl01Layout isUuidFlow={isUuidFlow} idIzin={idIzin} tahap={tahap}>
             {/* Title */}
             <div style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR. APL.01 - FORMULIR APL 01</h2>

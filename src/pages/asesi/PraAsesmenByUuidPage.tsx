@@ -27,7 +27,13 @@ export default function PraAsesmenByUuidPage() {
         if (access_token) localStorage.setItem("access_token", access_token)
         sessionStorage.setItem("praasesmen_uuid_data", JSON.stringify({ id_izin, jadwal_id, jenis_kelas_id }))
         sessionStorage.setItem("isUuidFlow", "true")
-        navigate(`/praasesmen/${id_izin}/konfirmasi`, { replace: true })
+
+        // Redirect ke verifikasi TUK AJJ jika jenis kelas 3
+        if (jenis_kelas_id === "3") {
+          navigate(`/praasesmen/${id_izin}/verifikasi-tuk`, { replace: true })
+        } else {
+          navigate(`/praasesmen/${id_izin}/konfirmasi`, { replace: true })
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Terjadi kesalahan")
       }
