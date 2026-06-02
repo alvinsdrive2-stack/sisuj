@@ -1,19 +1,51 @@
 interface UuidStepIndicatorProps {
   currentStep: number
+  jenisKelasId?: string
 }
 
-const steps = [
-  { number: 1, label: 'Konfirmasi\nData Diri' },
-  { number: 2, label: 'APL 01' },
-  { number: 3, label: 'APL 02' },
-]
+const getSteps = (jenisKelasId?: string) => {
+  if (jenisKelasId === "3") {
+    return [
+      { number: 0, label: 'Verifikasi\nTUK AJJ' },
+      { number: 1, label: 'Konfirmasi\nData Diri' },
+      { number: 2, label: 'APL 01' },
+      { number: 3, label: 'APL 02' },
+    ]
+  }
+  return [
+    { number: 1, label: 'Konfirmasi\nData Diri' },
+    { number: 2, label: 'APL 01' },
+    { number: 3, label: 'APL 02' },
+  ]
+}
 
-export default function UuidStepIndicator({ currentStep }: UuidStepIndicatorProps) {
+const getHeaderText = (currentStep: number, jenisKelasId?: string): string => {
+  if (jenisKelasId === "3" && currentStep === 0) {
+    return "Verifikasi TUK AJJ"
+  }
+  return "Persiapan Asesmen"
+}
+
+export default function UuidStepIndicator({ currentStep, jenisKelasId }: UuidStepIndicatorProps) {
+  const steps = getSteps(jenisKelasId)
+  const headerText = getHeaderText(currentStep, jenisKelasId)
+
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '20px 0 4px', gap: '0',
-    }}>
+    <div>
+      <div style={{
+        textAlign: 'center',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: '12px',
+        textTransform: 'uppercase'
+      }}>
+        {headerText}
+      </div>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '20px 0 4px', gap: '0',
+      }}>
       {steps.map((step, idx) => {
         const status = step.number < currentStep ? 'completed'
           : step.number === currentStep ? 'active' : 'pending'
@@ -52,6 +84,7 @@ export default function UuidStepIndicator({ currentStep }: UuidStepIndicatorProp
           </div>
         )
       })}
+    </div>
     </div>
   )
 }

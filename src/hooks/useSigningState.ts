@@ -34,6 +34,8 @@ export interface SigningStateInput {
   nextPageName?: string
   /** Fallback full refetch when Ably data insufficient */
   onRefresh?: () => void | Promise<void>
+  /** Jika true, bypass QR lock untuk testing */
+  testingMode?: boolean
 }
 
 export interface SigningState {
@@ -58,7 +60,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     pageKey, isAsesor, tahap, barcodes, setBarcodes,
     asesorList, userId, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
-    isUuidFlow = false,
+    isUuidFlow = false, testingMode = false,
   } = input
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -219,31 +221,11 @@ export function useSigningState(input: SigningStateInput): SigningState {
       }
     }
 
-    if (order === 'asesor_first') {
-      if (isAsesor) {
-        if (asesorHasSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
-        return {
-          buttonText: 'Simpan & Tanda Tangan',
-          buttonDisabled: isSaving || !agreedChecklist,
-        }
-      }
-      if (!allAsesorSigned) {
-        return {
-          buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
-          buttonDisabled: true,
-        }
-      }
-      if (asesiHasSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
-      return {
-        buttonText: 'Simpan & Tanda Tangan',
-        buttonDisabled: isSaving || !agreedChecklist,
-      }
-    }
 
     if (order === 'asesi_first') {
       if (!isAsesor) {
         if (asesiHasSigned) {
-          if (allAsesorSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+          if (testingMode || allAsesorSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
           return {
             buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
             buttonDisabled: true,
@@ -254,7 +236,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
           buttonDisabled: isSaving || !agreedChecklist,
         }
       }
-      if (!asesiHasSigned) {
+      if (!testingMode && !asesiHasSigned) {
         return {
           buttonText: 'Menunggu TTD: Asesi',
           buttonDisabled: true,

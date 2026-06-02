@@ -11,6 +11,7 @@ interface AsesiStepIndicatorProps {
   idIzin?: string
   tahap?: number
   flow?: 'praasesmen' | 'perjanjian'
+  showVerifikasiTukAjj?: boolean
 }
 
 const PRAASESMEN_STEPS: Step[] = [
@@ -54,7 +55,7 @@ const getPerjanjianPath = (stepNumber: number, idIzin?: string): string | null =
   return paths[stepNumber] || null
 }
 
-export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 'praasesmen' }: AsesiStepIndicatorProps) {
+export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 'praasesmen', showVerifikasiTukAjj }: AsesiStepIndicatorProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -113,7 +114,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 
     }}>
       <br/>
       <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
-        {flow === 'perjanjian' ? 'Perjanjian Asesmen' : 'Proses Pra-Asesmen'}
+        {showVerifikasiTukAjj ? 'Verifikasi TUK AJJ' : flow === 'perjanjian' ? 'Perjanjian Asesmen' : 'Persiapan Asesmen'}
       </div>
       <div style={{ position: 'relative' }}>
         {/* Vertical Line */}

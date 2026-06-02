@@ -54,19 +54,18 @@ export function CustomRadio({
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           position: 'relative',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'background-color 0.15s ease, border-color 0.15s ease',
+          willChange: 'background-color, border-color',
           flexShrink: 0,
         }}
         onMouseEnter={(e) => {
           if (!disabled && !checked) {
             e.currentTarget.style.borderColor = RADIO_COLOR_HOVER
-            e.currentTarget.style.transform = 'scale(1.1)'
           }
         }}
         onMouseLeave={(e) => {
           if (!checked) {
             e.currentTarget.style.borderColor = RADIO_COLOR
-            e.currentTarget.style.transform = 'scale(1)'
           }
         }}
       >
@@ -78,7 +77,6 @@ export function CustomRadio({
               borderRadius: '50%',
               backgroundColor: '#fff',
               position: 'absolute',
-              animation: 'radioPulse 0.3s ease-out',
             }}
           />
         )}

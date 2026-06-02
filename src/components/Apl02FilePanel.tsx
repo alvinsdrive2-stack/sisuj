@@ -12,9 +12,10 @@ interface Apl02File {
 interface Apl02FilePanelProps {
   idIzin?: string
   onCollapse?: (collapsed: boolean) => void
+  refreshKey?: number
 }
 
-export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelProps) {
+export default function Apl02FilePanel({ idIzin, onCollapse, refreshKey }: Apl02FilePanelProps) {
   const [files, setFiles] = useState<Apl02File[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -61,16 +62,16 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
             if ((kebenaranJson.success || kebenaranJson.message === "Success") && kebenaranJson.data) {
               const kebenaranFiles: Apl02File[] = []
               if (kebenaranJson.data.ktp) {
-                kebenaranFiles.push({ id: -3, name: 'KTP (Kebenaran Data)', path: kebenaranJson.data.ktp, kebenaran: true })
+                kebenaranFiles.push({ id: -3, name: 'KTP', path: kebenaranJson.data.ktp, kebenaran: true })
               }
               if (kebenaranJson.data.npwp) {
-                kebenaranFiles.push({ id: -4, name: 'NPWP (Kebenaran Data)', path: kebenaranJson.data.npwp, kebenaran: true })
+                kebenaranFiles.push({ id: -4, name: 'NPWP', path: kebenaranJson.data.npwp, kebenaran: true })
               }
               if (kebenaranJson.data.ijazah) {
-                kebenaranFiles.push({ id: -1, name: 'Ijazah (Kebenaran Data)', path: kebenaranJson.data.ijazah, kebenaran: true })
+                kebenaranFiles.push({ id: -1, name: 'Ijazah', path: kebenaranJson.data.ijazah, kebenaran: true })
               }
               if (kebenaranJson.data.referensi_kerja) {
-                kebenaranFiles.push({ id: -2, name: 'Referensi Kerja (Kebenaran Data)', path: kebenaranJson.data.referensi_kerja, kebenaran: true })
+                kebenaranFiles.push({ id: -2, name: 'Referensi Kerja', path: kebenaranJson.data.referensi_kerja, kebenaran: true })
               }
               allFiles = [...kebenaranFiles, ...allFiles]
             }
@@ -91,7 +92,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
       }
     }
     fetchFiles()
-  }, [idIzin])
+  }, [idIzin, refreshKey])
 
   const getExt = (name: string, path?: string) =>
     (name.includes('.') ? name.split('.').pop() : path?.split('.').pop()?.split('?')[0])?.toLowerCase()
@@ -110,7 +111,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
   const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
   return (
-    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : 'auto', maxHeight: '500px', transition: 'width 0.25s ease' }}>
+    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : 'auto', maxHeight: '800px', transition: 'width 0.25s ease' }}>
       <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         {/* Header - click to collapse */}
         <div style={{ padding: '12px 16px', borderBottom: collapsed ? 'none' : '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={toggleCollapse}>
@@ -148,14 +149,19 @@ export default function Apl02FilePanel({ idIzin, onCollapse }: Apl02FilePanelPro
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px', padding: '8px',
                       borderRadius: '6px', cursor: 'pointer',
-                      background: file.kebenaran ? (isOpen ? '#ede9fe' : '#f5f3ff') : (isOpen ? '#eef2ff' : '#f8f9fa'),
+                      background: file.kebenaran ? (isOpen ? '#fff' : '#fff') : (isOpen ? '#fff' : '#fff'),
                       border: file.kebenaran
-                        ? `1px solid ${isOpen ? '#c4b5fd' : '#ddd6fe'}`
-                        : `1px solid ${isOpen ? '#c7d2fe' : '#e8e8e8'}`,
+                        ? `1px solid ${isOpen ? '#fff' : '#fff'}`
+                        : `1px solid ${isOpen ? '#fff' : '#fff'}`,
+                      boxShadow: isOpen
+                        ? file.kebenaran
+                          ? '0 2px 8px rgba(0,0,0,0.15)'
+                          : '0 1px 4px rgba(0,0,0,0.1)'
+                        : 'none',
                     }}
                     onClick={() => setExpandedFile(isOpen ? null : file.id)}
                   >
-                    <Icon size={16} style={{ color: file.kebenaran ? '#7c3aed' : '#666', flexShrink: 0 }} />
+                    <Icon size={16} style={{ color: file.kebenaran ? '#0d2c74' : '#0d2c74', flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '13px', fontWeight: '600', color: '#222', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stripExt(file.name)}</p>
                     </div>

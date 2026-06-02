@@ -58,7 +58,12 @@
       "PowerShell(New-Item *)",
       "Bash(npx mammoth *)",
       "Bash(python3 -c \"from PIL import Image; img = Image.open\\('docs/veriftuk/images/image5.jpg'\\); print\\(img.size\\)\")",
-      "Bash(magick identify *)"
+      "Bash(magick identify *)",
+      "Bash(Select-Object -First 20)",
+      "Bash(netstat -ano)",
+      "Bash(Select-String \":5173\")",
+      "Bash(Select-Object -First 2)",
+      "Bash(curl -s http://localhost:5173/src/pages/asesi/Apl02Page.tsx)"
     ]
   },
   "enableAllProjectMcpServers": true,

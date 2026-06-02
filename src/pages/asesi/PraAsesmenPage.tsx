@@ -228,7 +228,7 @@ export default function PraAsesmenPage() {
       {/* Step Indicator */}
       
 
-      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl} tahap={tahap}>
+      <AsesiLayout currentStep={1} idIzin={idIzinFromUrl} tahap={tahap} showVerifikasiTukAjj={false}>
 {/* Info Card - Panduan Asesi */}
       <div style={{ width: '100%', margin: '0 auto', padding: '0 16px 16px' }}>
         <div className='shadow-md' style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '16px' }}>
@@ -238,7 +238,7 @@ export default function PraAsesmenPage() {
               <path d="M12 16v-4" />
               <path d="M12 8h.01" />
             </svg>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Panduan Pra-Asesmen</span>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#333' }}>Panduan {tahap === 1 ? 'Pra-Asesmen' : 'Persiapan Asesmen'}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px', fontSize: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
@@ -283,7 +283,7 @@ export default function PraAsesmenPage() {
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px' }}>Konfirmasi Data Diri</h2>
-          <p style={{ fontSize: '13px', color: '#666' }}>Mohon periksa kembali data Anda sebelum memulai pra-asesmen</p>
+          <p style={{ fontSize: '13px', color: '#666' }}>Mohon periksa kembali data Anda sebelum memulai {tahap === 1 ? 'pra-asesmen' : 'persiapan asesmen'}</p>
         </div>
 
         {/* Data Diri Table - 100% mirip HTML contoh */}

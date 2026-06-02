@@ -53,8 +53,17 @@ export default function KonfirmasiDataPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
+  const [jenisKelasId, setJenisKelasId] = useState<string | undefined>()
 
   const { tuk, tanggalUji, jabatanKerja, nomorSkema } = useDataDokumenPraAsesmen(idIzin)
+
+  useEffect(() => {
+    const uuidData = sessionStorage.getItem('praasesmen_uuid_data')
+    if (uuidData) {
+      const parsed = JSON.parse(uuidData)
+      setJenisKelasId(parsed.jenis_kelas_id)
+    }
+  }, [])
 
   useEffect(() => {
     if (!idIzin) { setError("ID tidak valid"); setIsLoading(false); return }
@@ -112,7 +121,7 @@ export default function KonfirmasiDataPage() {
 
       {data && (
         <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
-          <UuidStepIndicator currentStep={1} />
+          <UuidStepIndicator currentStep={1} jenisKelasId={jenisKelasId} />
 
           <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
             {/* Panduan */}

@@ -23,9 +23,9 @@ export default function PraAsesmenByUuidPage() {
         if (!res.ok) throw new Error("Gagal memuat data")
         const result = await res.json()
         if (!result.success || !result.data?.id_izin) throw new Error("Data tidak ditemukan")
-        const { id_izin, jadwal_id, access_token } = result.data
+        const { id_izin, jadwal_id, access_token, jenis_kelas_id } = result.data
         if (access_token) localStorage.setItem("access_token", access_token)
-        sessionStorage.setItem("praasesmen_uuid_data", JSON.stringify({ id_izin, jadwal_id }))
+        sessionStorage.setItem("praasesmen_uuid_data", JSON.stringify({ id_izin, jadwal_id, jenis_kelas_id }))
         sessionStorage.setItem("isUuidFlow", "true")
         navigate(`/praasesmen/${id_izin}/konfirmasi`, { replace: true })
       } catch (err) {

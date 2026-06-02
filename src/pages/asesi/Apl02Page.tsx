@@ -10,7 +10,6 @@ import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
-import { CustomRadio } from "@/components/ui/Radio"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -18,7 +17,394 @@ import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
+// ============== LAYOUT COMPONENT ==============
+
+interface Apl02PageLayoutProps {
+  children: React.ReactNode
+  isUuidFlow: boolean
+  _idIzin: string | null
+  idIzin: string | undefined
+  tahap: number
+  jenisKelasId?: string
+}
+
+const Apl02PageLayout = ({ children, isUuidFlow, _idIzin, idIzin, tahap, jenisKelasId }: Apl02PageLayoutProps) => {
+  return isUuidFlow ? (
+    <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
+      <UuidStepIndicator currentStep={3} jenisKelasId={jenisKelasId} />
+      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
+        {children}
+      </div>
+    </div>
+  ) : (
+    <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin} tahap={tahap} showVerifikasiTukAjj={false}>{children}</AsesiLayout>
+  )
+}
+
 // ============== ANIMATED COMPONENTS ==============
+
+// Rekomendasi Asesi Section - state isolated untuk prevent parent rerender
+interface RekomendasiAsesiSectionProps {
+  initialValue: 'observasi' | 'portofolio' | null
+  isAsesor: boolean
+  jenjang?: string
+  asesorList: Array<{ id: number | string; nama?: string; noreg?: string }>
+  namaAsesi?: string
+  apl02Data: Apl02Data | null
+  user: any
+  subunitBarcodes: Record<string, SubunitBarcodes>
+  onMetodeChange: (metode: 'observasi' | 'portofolio' | null) => void
+}
+
+const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, asesorList, namaAsesi, apl02Data, user, subunitBarcodes, onMetodeChange }: RekomendasiAsesiSectionProps) => {
+  // State di sini - tidak affect parent
+  const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio' | null>(initialValue)
+
+  // Notify parent when value changes (for POST)
+  useEffect(() => {
+    onMetodeChange(metodeAsesmen)
+  }, [metodeAsesmen, onMetodeChange])
+
+  return (
+    <>
+      {/* Rekomendasi Untuk Asesi */}
+      <div style={{ padding: '8px 12px', marginBottom: '10px' }}>
+        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>REKOMENDASI UNTUK ASESI</span>
+      </div>
+
+      <table style={{ width: '100%', maxWidth: '100%', tableLayout: 'fixed', contain: 'content', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
+        <tbody>
+          {/* Rekomendasi & Asesi Row 1 */}
+          <tr>
+            <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
+              <span style={{ fontWeight: 'bold' }}>Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan melalui pendekatan</span><br /><br />
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
+                <CustomCheckbox
+                  checked={metodeAsesmen === 'observasi'}
+                  onChange={() => setMetodeAsesmen('observasi')}
+                  disabled={!isAsesor}
+                />
+                <span>Observasi</span>
+              </label>
+              {parseInt(jenjang || '0') >= 4 && (
+                <>
+                  &nbsp;&nbsp;&nbsp;&nbsp;
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
+                    <CustomCheckbox
+                      checked={metodeAsesmen === 'portofolio'}
+                      onChange={() => setMetodeAsesmen('portofolio')}
+                      disabled={!isAsesor}
+                    />
+                    <span>Portofolio</span>
+                  </label>
+                </>
+              )}
+            </td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
+          </tr>
+          {/* Asesi Row 2 */}
+          <tr>
+            <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
+            <td style={{ width: '25%', border: '1px solid #000', padding: '8px' }}>{namaAsesi?.toUpperCase() || apl02Data?.nama_asesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</td>
+          </tr>
+          {/* Asesi Row 3 - Signature */}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+            <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+              {(() => {
+                const firstAsesiBarcode = Object.values(subunitBarcodes).find(b => b.asesi?.url)?.asesi
+                if (firstAsesiBarcode?.url) {
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <img
+                        src={firstAsesiBarcode.url}
+                        alt="Tanda Tangan Asesi"
+                        style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                      />
+                      {firstAsesiBarcode.tanggal && (
+                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                          {new Date(firstAsesiBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+                return '-'
+              })()}
+            </td>
+          </tr>
+
+          {/* Dynamic Asesor Rows */}
+          {asesorList.length > 0 ? (
+            asesorList.map((asesor, idx) => {
+              const firstSubunitId = Object.keys(subunitBarcodes)[0]
+              const asesorBarcode = firstSubunitId
+                ? (idx === 0 ? subunitBarcodes[firstSubunitId]?.asesor1 : subunitBarcodes[firstSubunitId]?.asesor2)
+                : null
+
+              return (
+                <React.Fragment key={asesor.id}>
+                  {idx === 0 && (
+                    <tr>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+                    </tr>
+                  )}
+                  {idx > 0 && (
+                    <tr>
+                      <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor :</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor {asesorList.length > 1 ? idx + 1 : ''} :</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+                    <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+                    <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                      {asesorBarcode?.url ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <img
+                            src={asesorBarcode.url}
+                            alt={`Tanda Tangan ${asesor.nama}`}
+                            style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                          />
+                          {asesorBarcode.tanggal && (
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                              {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                </React.Fragment>
+              )
+            })
+          ) : (
+            // Fallback static Asesor
+            <>
+              <tr>
+                <td></td>
+                <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor :</td>
+                <td style={{ border: '1px solid #000', padding: '8px' }}>{apl02Data?.nama_asesor?.toUpperCase() || ''}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+                <td style={{ border: '1px solid #000', padding: '8px' }}></td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+                <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
+                  {(() => {
+                    const firstSubunitId = Object.keys(subunitBarcodes)[0]
+                    const asesor1Barcode = firstSubunitId ? subunitBarcodes[firstSubunitId]?.asesor1 : null
+                    if (asesor1Barcode?.url) {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                          <img
+                            src={asesor1Barcode.url}
+                            alt="Tanda Tangan Asesor"
+                            style={{ height: '70px', width: '70px', objectFit: 'contain' }}
+                          />
+                          {asesor1Barcode.tanggal && (
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
+                              {new Date(asesor1Barcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+                    return '-'
+                  })()}
+                </td>
+              </tr>
+            </>
+          )}
+        </tbody>
+      </table>
+    </>
+  )
+})
+
+// Apl02 Content - memoized untuk prevent rerender saat metodeAsesmen berubah
+interface Apl02ContentProps {
+  apl02Data: Apl02Data | null
+  kukChecklist: Record<string, 'K' | 'BK' | null>
+  kukBukti: Record<string, number[]>
+  uploadedFilesInfo: Array<{ id: number; name: string; path: string; kebenaran?: boolean }>
+  excludedApiFileIds: Set<number>
+  isAsesor: boolean
+  isSaving: boolean
+  jenjang: string | number
+  onCheckRadio: (kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => void
+  onToggleExclude: (fileId: number) => void
+  onRemoveBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
+  onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
+  onViewFile: (file: { id: number; name: string; path: string }) => void
+  refreshKey: number
+}
+
+const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, kukBukti, uploadedFilesInfo, excludedApiFileIds, isAsesor, isSaving, onCheckRadio, onToggleExclude, onRemoveBukti, onSelectBukti, onViewFile }) => {
+  if (!apl02Data) return null
+
+  return (
+    <>
+      {/* Header Table */}
+      <table style={{ width: '100%', tableLayout: 'fixed', contain: 'content', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', fontSize: '12px' }}>
+        <tbody>
+          <tr>
+            <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
+              Skema Sertifikasi<br />
+              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙉̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
+            </td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.jabatan_kerja}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nomor</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.no_skema}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>TUK</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.tuk || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesor || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesi</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesi || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Tanggal</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.tanggal || '-'}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Panduan */}
+      <div style={{ background: '#c00000', color: '#fff', padding: '6px 8px', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', marginBottom: '10px' }}>
+        Panduan Asesmen Mandiri
+      </div>
+      <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', fontSize: '11px' }}>
+        <div style={{ padding: '8px' }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}>Instruksi:</div>
+          <ul style={{ margin: '4px 0 4px 20px', padding: 0 }}>
+            <li>Baca setiap pertanyaan di kolom sebelah kiri</li>
+            <li>Beri tanda centang (√) pada kotak jika Anda yakin dapat melakukan tugas yang dijelaskan</li>
+            <li>Isi kolom di sebelah kanan dengan mendaftar bukti yang Anda miliki</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Daftar Unit Kompetensi */}
+      {apl02Data.units.map((unit, unitIndex) => (
+        <table key={unit.id} style={{ width: '100%', tableLayout: 'fixed', contain: 'content', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', fontSize: '11px' }}>
+          <tbody>
+            {/* Unit Title */}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '45%', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                Kode & Judul<br />Kompetensi {unitIndex + 1} :
+              </td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '5%' }}></td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '5%' }}></td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '45%' }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{unit.kode}</div>
+                <div>{unit.judul_kompetensi}</div>
+              </td>
+            </tr>
+
+            {/* Header Row - DAPATKAH SAYA ? */}
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '45%',fontWeight: 'bold', textTransform: 'uppercase' }}>DAPATKAH SAYA ?</td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>K</td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>BK</td>
+              <td style={{ border: '1px solid #000', padding: '4px', width: '45%', fontWeight: 'bold', textTransform: 'uppercase' }}>Bukti</td>
+            </tr>
+
+            {/* Subunits & KUK */}
+            {unit.subunits.map((subunit) => (
+              <React.Fragment key={subunit.id}>
+                {/* Elemen Header */}
+                <tr>
+                  <td style={{ border: '1px solid #000', padding: '4px' }}>
+                    <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Elemen {subunit.no_elemen} :</span><br />
+                    {subunit.judul_elemen}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                  <td style={{ border: '1px solid #000', padding: '4px' }}></td>
+                </tr>
+
+                {/* Kriteria Unjuk Kerja Header */}
+                <tr>
+                  <td colSpan={4} style={{ border: '1px solid #000', padding: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    Kriteria Unjuk Kerja:
+                  </td>
+                </tr>
+
+                {/* KUK Rows */}
+                {subunit.kuk_list.map((kuk) => {
+                  const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+                  return (
+                    <KukRow
+                      key={kukId}
+                      kukId={kukId}
+                      unitId={unit.id}
+                      subunitId={subunit.id}
+                      kukNo={kuk.no_kuk}
+                      kukJudul={kuk.judul_kuk}
+                      isCheckedK={kukChecklist[kukId] === 'K'}
+                      isCheckedBK={kukChecklist[kukId] === 'BK'}
+                      isAsesor={isAsesor}
+                      isSaving={isSaving}
+                      onCheckRadio={onCheckRadio}
+                      apiFiles={subunit.files || []}
+                      excludedApiFileIds={excludedApiFileIds}
+                      onToggleExclude={onToggleExclude}
+                      selectedFileIds={kukBukti[kukId] || []}
+                      uploadedFilesInfo={uploadedFilesInfo}
+                      onRemoveBukti={onRemoveBukti}
+                      onSelectBukti={onSelectBukti}
+                      onViewFile={onViewFile}
+                    />
+                  )
+                })}
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      ))}
+    </>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison - hanya re-render jika data/answers berubah
+  return (
+    prevProps.apl02Data === nextProps.apl02Data &&
+    prevProps.kukChecklist === nextProps.kukChecklist &&
+    prevProps.kukBukti === nextProps.kukBukti &&
+    prevProps.uploadedFilesInfo === nextProps.uploadedFilesInfo &&
+    prevProps.excludedApiFileIds === nextProps.excludedApiFileIds &&
+    prevProps.isAsesor === nextProps.isAsesor &&
+    prevProps.isSaving === nextProps.isSaving &&
+    prevProps.jenjang === nextProps.jenjang
+    // Callbacks tidak perlu dicek (harus stable dengan useCallback)
+  )
+})
 
 // Animated Capsule/Chip with smooth entry and exit
 interface AnimatedCapsuleProps {
@@ -554,7 +940,7 @@ function DocumentPreviewModal({ isOpen, onClose, file }: DocumentPreviewModalPro
     if (ext === 'pdf') {
       return (
         <iframe
-          src={file.path}
+          src={`${file.path}#toolbar=0`}
           title={file.name}
           style={{
             width: '100%',
@@ -927,13 +1313,13 @@ interface KukRowProps {
   isCheckedBK: boolean
   isAsesor: boolean
   isSaving: boolean
-  onCheckRadio: (kukId: string, value: 'K' | 'BK', unitId: string, subunitId: string) => void
+  onCheckRadio: (kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => void
   apiFiles: Array<{ id: number; name: string; path: string }>
   excludedApiFileIds: Set<number>
   onToggleExclude: (fileId: number) => void
   selectedFileIds: number[]
   uploadedFilesInfo: Array<{ id: number; name: string; path: string }>
-  onRemoveBukti: (kukId: string, fileId: number) => void
+  onRemoveBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
   onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
   onViewFile: (file: { id: number; name: string; path: string }) => void
 }
@@ -943,34 +1329,52 @@ const KukRow = React.memo(function KukRow({
   onCheckRadio, apiFiles, excludedApiFileIds, onToggleExclude,
   selectedFileIds, uploadedFilesInfo, onRemoveBukti, onSelectBukti, onViewFile,
 }: KukRowProps) {
+
+
+  const handleCheckK = useCallback(() => {
+    onCheckRadio(kukId, isCheckedK ? null : 'K', unitId, subunitId)
+  }, [kukId, unitId, subunitId, isCheckedK, onCheckRadio])
+
+  const handleCheckBK = useCallback(() => {
+    onCheckRadio(kukId, isCheckedBK ? null : 'BK', unitId, subunitId)
+  }, [kukId, unitId, subunitId, isCheckedBK, onCheckRadio])
+
   const userUploadedFiles = selectedFileIds
     .map(id => uploadedFilesInfo.find(f => f.id === id))
     .filter((f): f is { id: number; name: string; path: string } => f !== undefined)
 
+  const handleToggleExclude = useCallback((fileId: number) => {
+    onToggleExclude(fileId)
+  }, [onToggleExclude])
+
+  const handleRemoveBukti = useCallback((fileId: number) => {
+    onRemoveBukti(kukId, fileId, unitId, subunitId)
+  }, [kukId, unitId, subunitId, onRemoveBukti])
+
+  const handleSelectBukti = useCallback((_kukId: string, fileId: number) => {
+    onSelectBukti(kukId, fileId, unitId, subunitId)
+  }, [kukId, unitId, subunitId, onSelectBukti])
+
   return (
     <tr>
-      <td style={{ border: '1px solid #000', padding: '4px', verticalAlign: 'top' }}>
+      <td style={{ border: '1px solid #000', padding: '4px', width: '45%', verticalAlign: 'top' }}>
         {kukNo} {kukJudul}
       </td>
-      <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-        <CustomRadio
-          name={kukId}
-          value="K"
+      <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'top' }}>
+        <CustomCheckbox
           checked={isCheckedK}
-          onChange={() => onCheckRadio(kukId, 'K', unitId, subunitId)}
+          onChange={handleCheckK}
           disabled={isAsesor || isSaving}
         />
       </td>
-      <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', verticalAlign: 'top' }}>
-        <CustomRadio
-          name={kukId}
-          value="BK"
+      <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'top' }}>
+        <CustomCheckbox
           checked={isCheckedBK}
-          onChange={() => onCheckRadio(kukId, 'BK', unitId, subunitId)}
+          onChange={handleCheckBK}
           disabled={isAsesor || isSaving}
         />
       </td>
-      <td style={{ border: '1px solid #000', padding: '6px 8px', verticalAlign: 'top' }}>
+      <td style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
         {apiFiles.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
             {apiFiles.map((file) => {
@@ -983,7 +1387,7 @@ const KukRow = React.memo(function KukRow({
                   isExcluded={isExcluded}
                   isAsesor={isAsesor}
                   onView={onViewFile}
-                  onRemove={() => onToggleExclude(file.id)}
+                  onRemove={handleToggleExclude.bind(null, file.id)}
                 />
               )
             })}
@@ -998,7 +1402,7 @@ const KukRow = React.memo(function KukRow({
                 file={file}
                 isAsesor={isAsesor}
                 onView={onViewFile}
-                onRemove={() => onRemoveBukti(kukId, file.id)}
+                onRemove={handleRemoveBukti.bind(null, file.id)}
               />
             ))}
           </div>
@@ -1007,7 +1411,7 @@ const KukRow = React.memo(function KukRow({
           kukId={kukId}
           uploadedFiles={uploadedFilesInfo}
           selectedFileIds={selectedFileIds}
-          onSelectFile={(_kukId, fileId) => onSelectBukti(kukId, fileId, unitId, subunitId)}
+          onSelectFile={handleSelectBukti}
           disabled={isAsesor || isSaving}
         />
       </td>
@@ -1035,15 +1439,29 @@ export default function Apl02Page() {
   const { showSuccess, showError, showWarning } = useToast()
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
+  const apl02DataRef = useRef<Apl02Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
+  const [jenisKelasId, setJenisKelasId] = useState<string | undefined>()
+
+  useEffect(() => {
+    if (isUuidFlow) {
+      const uuidData = sessionStorage.getItem('praasesmen_uuid_data')
+      if (uuidData) {
+        const parsed = JSON.parse(uuidData)
+        setJenisKelasId(parsed.jenis_kelas_id)
+      }
+    }
+  }, [isUuidFlow])
 
   const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string; kebenaran?: boolean }>>([])
-  const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK'>>({})
+  const [filePanelRefreshKey, setFilePanelRefreshKey] = useState(0)
+  const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
-  const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio'>('observasi')
+  // metodeAsesmen moved to RekomendasiAsesiSection - use ref for POST value
+  const metodeAsesmenRef = useRef<'observasi' | 'portofolio' | null>(null)
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
   const [showPreview, setShowPreview] = useState(false)
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<{ id: number; name: string; path: string } | null>(null)
@@ -1069,6 +1487,20 @@ export default function Apl02Page() {
     setShowPreview(true)
   }, [])
 
+  const handleClosePreview = useCallback(() => {
+    setShowPreview(false)
+    setSelectedPreviewFile(null)
+  }, [])
+
+  const handleNavigateBack = useCallback(() => {
+    navigate(-1)
+  }, [navigate])
+
+  // Handle metode asesmen change from RekomendasiAsesiSection
+  const handleMetodeChange = useCallback((metode: 'observasi' | 'portofolio' | null) => {
+    metodeAsesmenRef.current = metode
+  }, [])
+
   const handleToggleExclude = useCallback((fileId: number) => {
     setExcludedApiFileIds(prev => {
       const newSet = new Set(prev)
@@ -1089,15 +1521,33 @@ export default function Apl02Page() {
     tahap: tahap
   })
 
-  const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK', unitId?: string, subunitId?: string) => {
+  const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId?: string, subunitId?: string, globalMode?: boolean) => {
     setKukChecklist(prev => {
       const current = prev[kukId]
+
+      // Jika value null (uncheck) dan current sudah null, atau value sama dengan current, skip
+      if (value === null && !current) return prev
+      if (value && current === value) return prev
+
       if (current === value) {
-        // Uncheck if clicking the same value - also uncheck all KUKs in same element
+        // Uncheck if clicking the same value
         const { [kukId]: _, ...rest } = prev
-        // Also uncheck all other KUKs in the same element
-        if (unitId && subunitId && apl02Data) {
-          const unit = apl02Data.units.find(u => u.id === unitId)
+
+        if (globalMode && apl02DataRef.current) {
+          // Global mode: uncheck ALL KUKs in ALL units/subunits
+          apl02DataRef.current.units.forEach(unit => {
+            unit.subunits.forEach(subunit => {
+              subunit.kuk_list.forEach(kuk => {
+                const otherKukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+                if (otherKukId !== kukId) {
+                  delete rest[otherKukId]
+                }
+              })
+            })
+          })
+        } else if (unitId && subunitId && apl02DataRef.current) {
+          // Local mode: uncheck KUKs in same subunit only
+          const unit = apl02DataRef.current.units.find(u => u.id === unitId)
           if (unit) {
             const subunit = unit.subunits.find(s => s.id === subunitId)
             if (subunit) {
@@ -1112,10 +1562,27 @@ export default function Apl02Page() {
         }
         return rest
       }
-      // Set value for this KUK and all KUKs in the same element
+
+      // Set value for this KUK
+      if (value === null) {
+        const { [kukId]: _, ...rest } = prev
+        return rest
+      }
       const updated = { ...prev, [kukId]: value }
-      if (unitId && subunitId && apl02Data) {
-        const unit = apl02Data.units.find(u => u.id === unitId)
+
+      if (globalMode && apl02DataRef.current) {
+        // Global mode: set ALL KUKs in ALL units/subunits
+        apl02DataRef.current.units.forEach(unit => {
+          unit.subunits.forEach(subunit => {
+            subunit.kuk_list.forEach(kuk => {
+              const otherKukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+              updated[otherKukId] = value
+            })
+          })
+        })
+      } else if (unitId && subunitId && apl02DataRef.current) {
+        // Local mode: set KUKs in same subunit only
+        const unit = apl02DataRef.current.units.find(u => u.id === unitId)
         if (unit) {
           const subunit = unit.subunits.find(s => s.id === subunitId)
           if (subunit) {
@@ -1128,7 +1595,7 @@ export default function Apl02Page() {
       }
       return updated
     })
-  }, [apl02Data])
+  }, []) // No dependencies - uses ref instead
 
   const handleBuktiChange = useCallback((kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
     setKukBukti(prev => {
@@ -1149,8 +1616,8 @@ export default function Apl02Page() {
         }
 
         // Auto-assign to all KUKs in the same element
-        if (unitId && subunitId && apl02Data) {
-          const unit = apl02Data.units.find(u => u.id === unitId)
+        if (unitId && subunitId && apl02DataRef.current) {
+          const unit = apl02DataRef.current.units.find(u => u.id === unitId)
           if (unit) {
             const subunit = unit.subunits.find(s => s.id === subunitId)
             if (subunit) {
@@ -1170,18 +1637,38 @@ export default function Apl02Page() {
         return updated
       }
     })
-  }, [apl02Data])
+  }, []) // No dependencies - uses ref instead
 
   // Stable callbacks for KukRow — defined after handleCheckboxChange & handleBuktiChange
-  const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK', unitId: string, subunitId: string) => {
+  const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
 
-  const handleRemoveBukti = useCallback((kukId: string, fileId: number) => {
-    setKukBukti(prev => ({
-      ...prev,
-      [kukId]: (prev[kukId] || []).filter(f => f !== fileId)
-    }))
+  const handleRemoveBukti = useCallback((kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
+    setKukBukti(prev => {
+      const updated = { ...prev }
+
+      // Remove from this KUK first
+      updated[kukId] = (prev[kukId] || []).filter(f => f !== fileId)
+
+      // Also remove from all KUKs in the same element
+      if (unitId && subunitId && apl02DataRef.current) {
+        const unit = apl02DataRef.current.units.find(u => u.id === unitId)
+        if (unit) {
+          const subunit = unit.subunits.find(s => s.id === subunitId)
+          if (subunit) {
+            subunit.kuk_list.forEach(kuk => {
+              const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
+              if (otherKukId !== kukId) {
+                updated[otherKukId] = (prev[otherKukId] || []).filter(f => f !== fileId)
+              }
+            })
+          }
+        }
+      }
+
+      return updated
+    })
   }, [])
 
   const handleSelectBukti = useCallback((kukId: string, fileId: number, unitId: string, subunitId: string) => {
@@ -1297,10 +1784,17 @@ export default function Apl02Page() {
       if (uploadResponse.ok) {
         const uploadResult = await uploadResponse.json()
         if (uploadResult.message === "Files uploaded" && uploadResult.files) {
+          const getFileUrl = (p: string) => {
+            if (p.startsWith('http://') || p.startsWith('https://')) return p
+            const fileBase = import.meta.env.VITE_FILE_BASE_URL || API_BASE_URL.replace('/api', '')
+            return `${fileBase}${p.startsWith('/') ? '' : '/'}${p}`
+          }
           const mappedFiles = uploadResult.files.map((f: any) => ({
-            id: f.id, name: f.original_name || f.name, path: f.path
+            id: f.id, name: f.original_name || f.name, path: getFileUrl(f.path)
           }))
           setUploadedFilesInfo(prev => [...prev, ...mappedFiles])
+          await fetchData()
+          setFilePanelRefreshKey(prev => prev + 1)
           showSuccess(`${stagingFiles.length} file berhasil diupload`)
         }
       } else {
@@ -1397,7 +1891,7 @@ export default function Apl02Page() {
             barcodesFromApi = apl02Result.data.barcodes
 
             // Map subunit.kompeten to kukChecklist
-            const newKukChecklist: Record<string, 'K' | 'BK'> = {}
+            const newKukChecklist: Record<string, 'K' | 'BK' | null> = {}
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
@@ -1432,7 +1926,15 @@ export default function Apl02Page() {
         if (filesResponse.ok) {
           const filesResult = await filesResponse.json()
           if (filesResult.message === "Success" && filesResult.data) {
-            setUploadedFilesInfo(filesResult.data)
+            const getFileUrl = (p: string) => {
+              if (p.startsWith('http://') || p.startsWith('https://')) return p
+              const fileBase = import.meta.env.VITE_FILE_BASE_URL || API_BASE_URL.replace('/api', '')
+              return `${fileBase}${p.startsWith('/') ? '' : '/'}${p}`
+            }
+            const mappedFiles = filesResult.data.map((f: any) => ({
+              id: f.id, name: f.original_name || f.name, path: getFileUrl(f.path)
+            }))
+            setUploadedFilesInfo(mappedFiles)
           }
         }
 
@@ -1460,9 +1962,11 @@ export default function Apl02Page() {
           } catch { /* ignore parse errors */ }
         }
 
-        // Set metode from API
+        // Set metode from API - default to observasi if not set
         if (metodeFromApi) {
-          setMetodeAsesmen(metodeFromApi)
+          metodeAsesmenRef.current = metodeFromApi
+        } else {
+          metodeAsesmenRef.current = null // No selection until asesor chooses
         }
 
         // Set combined data
@@ -1476,6 +1980,16 @@ export default function Apl02Page() {
           metode: metodeFromApi,
           units: units,
         })
+        apl02DataRef.current = {
+          jabatan_kerja: jabatanKerja,
+          no_skema: noSkema,
+          tuk: tuk,
+          nama_asesor: namaAsesor,
+          nama_asesi: namaAsesi || user?.name || '',
+          tanggal: new Date().toLocaleDateString('id-ID'),
+          metode: metodeFromApi,
+          units: units,
+        }
       } catch (error) {
       } finally {
         setIsLoading(false)
@@ -1572,8 +2086,13 @@ export default function Apl02Page() {
     idIzin: _idIzin || idIzin || undefined,
     jadwalId,
     isUuidFlow,
+    testingMode: false,
     onRefresh: fetchData,
   })
+
+  const handleToggleAgreement = useCallback(() => {
+    signing.setAgreedChecklist(!signing.agreedChecklist)
+  }, [signing])
 
   // Check if asesi is tidak kompeten on any subunit based on kukChecklist
   const isAsesiTidakKompeten = () => {
@@ -1624,6 +2143,12 @@ export default function Apl02Page() {
         return
       }
 
+      // Validasi: asesor harus memilih metode asesmen
+      if (!metodeAsesmenRef.current) {
+        showWarning("Silakan pilih metode asesmen (Observasi atau Portofolio)")
+        return
+      }
+
       // Cek apakah QR asesor sudah ada sebelum generate QR
       const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
       const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
@@ -1642,7 +2167,7 @@ export default function Apl02Page() {
           method: 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            metode: metodeAsesmen,
+            metode: metodeAsesmenRef.current,
             is_dilanjutkan: true,
             answers: apl02Data ? apl02Data.units.flatMap(unit =>
               unit.subunits.map(subunit => ({
@@ -1737,6 +2262,7 @@ export default function Apl02Page() {
 
     Object.entries(kukChecklist).forEach(([kukId, status]) => {
       // kukId format: "unitId-subunitId-kukNo"
+      if (status === null) return // Skip null values
       const parts = kukId.split('-')
       const subunitId = parseInt(parts[1])
 
@@ -1744,13 +2270,17 @@ export default function Apl02Page() {
         subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set() })
       }
 
-      const data = subunitDataMap.get(subunitId)!
+      const data = subunitDataMap.get(subunitId)
+      if (!data) {
+        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set() })
+        return
+      }
       data.statuses.push(status)
 
       // Add user-selected file IDs (filter out excluded API files and kebenaran data files)
       const fileIds = kukBukti[kukId] || []
       fileIds.forEach(id => {
-        if (id > 0 && !excludedApiFileIds.has(id)) {
+        if (!excludedApiFileIds.has(id)) {
           data.allFileIds.add(id)
         }
       })
@@ -1761,7 +2291,8 @@ export default function Apl02Page() {
       unit.subunits.forEach(subunit => {
         const subunitId = parseInt(subunit.id)
         if (subunitDataMap.has(subunitId)) {
-          const data = subunitDataMap.get(subunitId)!
+          const data = subunitDataMap.get(subunitId)
+      if (!data) return
           subunit.files.forEach(file => {
             if (!excludedApiFileIds.has(file.id)) {
               data.allFileIds.add(file.id)
@@ -1805,7 +2336,7 @@ export default function Apl02Page() {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          metode: metodeAsesmen,
+          metode: metodeAsesmenRef.current || 'observasi', // Default to observasi if null (asesi submit before asesor chooses)
           is_dilanjutkan: true,
           answers
         }),
@@ -1879,15 +2410,6 @@ export default function Apl02Page() {
     return <FullPageLoader text="Memuat data APL 02..." />
   }
 
-  const Layout = ({ children }: any) =>
-    isUuidFlow ? <div style={{ padding: '30px 16px', maxWidth: '860px', margin: '0 auto' }}>
-      <UuidStepIndicator currentStep={3} />
-      <div style={{ background: '#fff', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', padding: '32px 40px', marginTop: '24px', borderRadius: '2px' }}>
-        {children}
-      </div>
-    </div>
-      : <AsesiLayout currentStep={3} idIzin={_idIzin || idIzin} tahap={tahap}>{children}</AsesiLayout>
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
@@ -1907,12 +2429,21 @@ export default function Apl02Page() {
       </div>
       )}
 
-      <Layout>
+      <Apl02PageLayout
+        isUuidFlow={isUuidFlow}
+        _idIzin={_idIzin}
+        idIzin={idIzin}
+        tahap={tahap}
+        jenisKelasId={jenisKelasId}
+      >
             <div style={{ marginBottom: '20px', marginLeft: '16px' }}>
               <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '10px', textTransform: 'uppercase' }}>
                 APL-02 ASESMEN MANDIRI<br />{apl02Data?.jabatan_kerja || '-'}
               </h1>
             </div>
+
+        {/* Main content wrapper - prevent layout shift */}
+        <div style={{ width: '100%', minWidth: '0' }}>
 
         {/* Upload File Section */}
         {!isAsesor && (
@@ -2095,10 +2626,7 @@ export default function Apl02Page() {
                     onDelete={deleteFile}
                     disabled={isAsesor || isSaving}
                     isAsesor={isAsesor}
-                    onView={(file) => {
-                      setSelectedPreviewFile(file)
-                      setShowPreview(true)
-                    }}
+                    onView={onViewFile}
                   />
                 ))}
               </div>
@@ -2113,320 +2641,42 @@ export default function Apl02Page() {
           </p>
         </div>
 
-        {/* Header Table */}
-        {apl02Data && (
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', fontSize: '12px' }}>
-            <tbody>
-              <tr>
-                <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
-                  Skema Sertifikasi<br />
-                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
-                </td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.jabatan_kerja}</td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nomor</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.no_skema}</td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>TUK</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.tuk || '-'}</td>
-              </tr>
-              {asesorList.length > 1 ? (
-                asesorList.map((asesor, idx) => (
-                  <tr key={asesor.id}>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor {idx + 1}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                    <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{asesor.nama || '-'}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesor</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.nama_asesor || asesorList[0]?.nama || '-'}</td>
-                </tr>
-              )}
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Nama Asesi</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{namaAsesi?.toUpperCase() || apl02Data.nama_asesi || user?.name || '-'}</td>
-              </tr>
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', textTransform: 'uppercase' }}>Tanggal</td>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>:</td>
-                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', textTransform: 'uppercase' }}>{apl02Data.tanggal || '-'}</td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        {/* Header Table, Panduan, dan Unit Kompetensi - memoized */}
+        <Apl02Content
+          apl02Data={apl02Data}
+          kukChecklist={kukChecklist}
+          kukBukti={kukBukti}
+          uploadedFilesInfo={uploadedFilesInfo}
+          excludedApiFileIds={excludedApiFileIds}
+          isAsesor={isAsesor}
+          isSaving={isSaving}
+          jenjang={jenjang}
+          onCheckRadio={handleCheckRadio}
+          onToggleExclude={handleToggleExclude}
+          onRemoveBukti={handleRemoveBukti}
+          onSelectBukti={handleSelectBukti}
+          onViewFile={onViewFile}
+          refreshKey={filePanelRefreshKey}
+        />
 
-        {/* Panduan */}
-        <div style={{ background: '#c00000', color: '#fff', padding: '6px 8px', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', marginBottom: '10px' }}>
-          Panduan Asesmen Mandiri
-        </div>
-        <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', fontSize: '11px' }}>
-          <div style={{ padding: '8px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}>Instruksi:</div>
-            <ul style={{ margin: '4px 0 4px 20px', padding: 0 }}>
-              <li>Baca setiap pertanyaan di kolom sebelah kiri</li>
-              <li>Beri tanda centang (√) pada kotak jika Anda yakin dapat melakukan tugas yang dijelaskan</li>
-              <li>Isi kolom di sebelah kanan dengan mendaftar bukti yang Anda miliki</li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Daftar Unit Kompetensi */}
-        {apl02Data?.units.map((unit, unitIndex) => (
-          <table key={unit.id} style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', fontSize: '11px' }}>
-            <tbody>
-              {/* Unit Title */}
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '4px', width: '22%', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                  Kode & Judul<br />Kompetensi {unitIndex + 1} :
-                </td>
-                <td colSpan={5} style={{ border: '1px solid #000', padding: '4px' }}>
-                  <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{unit.kode}</div>
-                  <div>{unit.judul_kompetensi}</div>
-                </td>
-              </tr>
-
-              {/* Header Row - DAPATKAH SAYA ? */}
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>DAPATKAH SAYA ?</td>
-                <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>K</td>
-                <td style={{ border: '1px solid #000', padding: '4px', width: '4%', textAlign: 'center', fontWeight: 'bold', textTransform: 'uppercase' }}>BK</td>
-                <td style={{ border: '1px solid #000', padding: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>Bukti</td>
-              </tr>
-
-              {/* Subunits & KUK */}
-              {unit.subunits.map((subunit) => (
-                <React.Fragment key={subunit.id}>
-                  {/* Elemen Header */}
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '4px' }}>
-                      <span style={{ fontWeight: 'bold', textTransform: 'uppercase' }}>Elemen {subunit.no_elemen} :</span><br />
-                      {subunit.judul_elemen}
-                    </td>
-                    <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                    <td style={{ border: '1px solid #000', padding: '4px' }}></td>
-                  </tr>
-
-                  {/* Kriteria Unjuk Kerja Header */}
-                  <tr>
-                    <td colSpan={4} style={{ border: '1px solid #000', padding: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                      Kriteria Unjuk Kerja:
-                    </td>
-                  </tr>
-
-                  {/* KUK Rows */}
-                  {subunit.kuk_list.map((kuk) => {
-                    const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                    return (
-                      <KukRow
-                        key={kukId}
-                        kukId={kukId}
-                        unitId={unit.id}
-                        subunitId={subunit.id}
-                        kukNo={kuk.no_kuk}
-                        kukJudul={kuk.judul_kuk}
-                        isCheckedK={kukChecklist[kukId] === 'K'}
-                        isCheckedBK={kukChecklist[kukId] === 'BK'}
-                        isAsesor={isAsesor}
-                        isSaving={isSaving}
-                        onCheckRadio={handleCheckRadio}
-                        apiFiles={subunit.files || []}
-                        excludedApiFileIds={excludedApiFileIds}
-                        onToggleExclude={handleToggleExclude}
-                        selectedFileIds={kukBukti[kukId] || []}
-                        uploadedFilesInfo={uploadedFilesInfo}
-                        onRemoveBukti={handleRemoveBukti}
-                        onSelectBukti={handleSelectBukti}
-                        onViewFile={onViewFile}
-                      />
-                    )
-                  })}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        ))}
-
-        {/* Rekomendasi Untuk Asesi */}
-        <div style={{ padding: '8px 12px', marginBottom: '10px' }}>
-          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', textTransform: 'uppercase' }}>REKOMENDASI UNTUK ASESI</span>
-        </div>
-
-        <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
-          <tbody>
-            {/* Rekomendasi & Asesi Row 1 */}
-            <tr>
-              <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
-                <span style={{ fontWeight: 'bold' }}>Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan melalui pendekatan</span><br /><br />
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
-                  <CustomCheckbox
-                    checked={metodeAsesmen === 'observasi'}
-                    onChange={() => setMetodeAsesmen('observasi')}
-                    disabled={!isAsesor}
-                  />
-                  <span>Observasi</span>
-                </label>
-                {parseInt(jenjang || '0') >= 4 && (
-                  <>
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
-                      <CustomCheckbox
-                        checked={metodeAsesmen === 'portofolio'}
-                        onChange={() => setMetodeAsesmen('portofolio')}
-                        disabled={!isAsesor}
-                      />
-                      <span>Portofolio</span>
-                    </label>
-                  </>
-                )}
-              </td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
-            </tr>
-            {/* Asesi Row 2 */}
-            <tr>
-              <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
-              <td style={{ width: '25%', border: '1px solid #000', padding: '8px' }}>{namaAsesi?.toUpperCase() || apl02Data?.nama_asesi?.toUpperCase() || user?.name?.toUpperCase() || ''}</td>
-            </tr>
-            {/* Asesi Row 3 - Signature */}
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-              <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
-                {(() => {
-                  // Get first available asesi barcode
-                  const firstAsesiBarcode = Object.values(subunitBarcodes).find(b => b.asesi?.url)?.asesi
-                  if (firstAsesiBarcode?.url) {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                        <img
-                          src={firstAsesiBarcode.url}
-                          alt="Tanda Tangan Asesi"
-                          style={{ height: '70px', width: '70px', objectFit: 'contain' }}
-                        />
-                        {firstAsesiBarcode.tanggal && (
-                          <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
-                            {new Date(firstAsesiBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </div>
-                        )}
-                      </div>
-                    )
-                  }
-                  return null
-                })()}
-              </td>
-            </tr>
-
-            {/* Dynamic Asesor Rows */}
-            {asesorList.length > 0 ? (
-              asesorList.map((asesor, idx) => {
-                // Get barcode for this asesor (idx 0 = asesor1, idx 1 = asesor2)
-                const firstSubunitId = Object.keys(subunitBarcodes)[0]
-                const asesorBarcode = firstSubunitId
-                  ? (idx === 0 ? subunitBarcodes[firstSubunitId]?.asesor1 : subunitBarcodes[firstSubunitId]?.asesor2)
-                  : null
-
-                return (
-                  <React.Fragment key={asesor.id}>
-                    {idx === 0 && (
-                      <tr>
-                        <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
-                      </tr>
-                    )}
-                    {idx > 0 && (
-                      <tr>
-                        <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesor :</td>
-                      </tr>
-                    )}
-                    <tr>
-                      <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor {asesorList.length > 1 ? idx + 1 : ''} :</td>
-                      <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.nama?.toUpperCase() || ''}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
-                      <td style={{ border: '1px solid #000', padding: '8px' }}>{asesor.noreg || ''}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-                      <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
-                        {asesorBarcode?.url ? (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <img
-                              src={asesorBarcode.url}
-                              alt={`Tanda Tangan ${asesor.nama}`}
-                              style={{ height: '70px', width: '70px', objectFit: 'contain' }}
-                            />
-                            {asesorBarcode.tanggal && (
-                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
-                                {new Date(asesorBarcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
-                      </td>
-                    </tr>
-                  </React.Fragment>
-                )
-              })
-            ) : (
-              // Fallback static Asesor
-              <>
-                <tr>
-                  <td></td>
-                  <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor :</td>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>{apl02Data?.nama_asesor?.toUpperCase() || ''}</td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
-                  <td style={{ border: '1px solid #000', padding: '8px' }}></td>
-                </tr>
-                <tr>
-                  <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-                  <td style={{ height: '120px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
-                    {(() => {
-                      const firstSubunitId = Object.keys(subunitBarcodes)[0]
-                      const asesor1Barcode = firstSubunitId ? subunitBarcodes[firstSubunitId]?.asesor1 : null
-                      if (asesor1Barcode?.url) {
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                            <img
-                              src={asesor1Barcode.url}
-                              alt="Tanda Tangan Asesor"
-                              style={{ height: '70px', width: '70px', objectFit: 'contain' }}
-                            />
-                            {asesor1Barcode.tanggal && (
-                              <div style={{ fontSize: '12px', fontWeight: '600', color: '#333' }}>
-                                {new Date(asesor1Barcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      }
-                      return null
-                    })()}
-                  </td>
-                </tr>
-              </>
-            )}
-          </tbody>
-        </table>
+        {/* Rekomendasi Untuk Asesi - state isolated */}
+        <RekomendasiAsesiSection
+          initialValue={metodeAsesmenRef.current}
+          isAsesor={isAsesor}
+          jenjang={jenjang}
+          asesorList={asesorList}
+          namaAsesi={namaAsesi}
+          apl02Data={apl02Data}
+          user={user}
+          subunitBarcodes={subunitBarcodes}
+          onMetodeChange={handleMetodeChange}
+        />
 
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
             <CustomCheckbox
               checked={signing.agreedChecklist}
-              onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+              onChange={handleToggleAgreement}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen APL 02 (Asesmen Mandiri) ini dengan sebenar-benarnya.
@@ -2437,7 +2687,7 @@ export default function Apl02Page() {
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           {isAsesor && (
-            <ActionButton variant="secondary" onClick={() => navigate(-1)} disabled={isSaving}>
+            <ActionButton variant="secondary" onClick={handleNavigateBack} disabled={isSaving}>
               Kembali
             </ActionButton>
           )}
@@ -2445,7 +2695,8 @@ export default function Apl02Page() {
             {signing.buttonText}
           </ActionButton>
         </div>
-      </Layout>
+        </div> {/* Close main content wrapper */}
+      </Apl02PageLayout>
 
       {!isUuidFlow && (
         <>
@@ -2460,10 +2711,7 @@ export default function Apl02Page() {
 
       <DocumentPreviewModal
         isOpen={showPreview}
-        onClose={() => {
-          setShowPreview(false)
-          setSelectedPreviewFile(null)
-        }}
+        onClose={handleClosePreview}
         file={selectedPreviewFile}
       />
         </>
