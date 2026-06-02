@@ -17,16 +17,11 @@ export default function ValidatedNavigationRoute({ children }: ValidatedNavigati
   const location = useLocation()
   const [isValid, setIsValid] = useState<boolean | null>(null)
 
-  // Bypass if env var is 0
   useEffect(() => {
     if (!isEnabled) {
       setIsValid(true)
       return
     }
-  }, [])
-
-  useEffect(() => {
-    // Only allow if navigated from within app (fromInternal state)
     if (location.state?.fromInternal) {
       setIsValid(true)
     } else {

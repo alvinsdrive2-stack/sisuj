@@ -424,18 +424,6 @@ export default function Ia05Page() {
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
             </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Waktu</td>
-              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px', color: isExpired || signing.asesiHasSigned ? '#c00' : '#000', fontWeight: isExpired || signing.asesiHasSigned ? 'bold' : 'normal' }}>
-                {isExpired || signing.asesiHasSigned
-                  ? 'Waktu Habis'
-                  : isAsesi
-                    ? `${Math.floor(remainingSeconds / 60)} menit ${remainingSeconds % 60} detik`
-                    : '60 menit'
-                }
-              </td>
-            </tr>
           </tbody>
         </table>
 
@@ -774,6 +762,38 @@ export default function Ia05Page() {
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
       />
+      {/* Floating Timer */}
+      {isAsesi && !signing.asesiHasSigned && (
+        <div style={{
+          position: 'fixed',
+          left: '16px',
+          bottom: '24px',
+          zIndex: 40,
+          background: isExpired ? '#dc2626' : '#1e3a5f',
+          color: '#fff',
+          borderRadius: '12px',
+          padding: '12px 20px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontFamily: 'Arial, sans-serif',
+        }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <div>
+            <div style={{ fontSize: '11px', opacity: 0.8, fontWeight: 500 }}>Sisa Waktu</div>
+            <div style={{ fontSize: '22px', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
+              {isExpired
+                ? '00:00'
+                : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`
+              }
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
