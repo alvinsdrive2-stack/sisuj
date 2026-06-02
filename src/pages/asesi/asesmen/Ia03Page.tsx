@@ -8,6 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -235,6 +236,11 @@ export default function Ia03Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchData,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchData,
   })
 
   const isFormDisabled = isFormDisabledBase || signing.allSigned

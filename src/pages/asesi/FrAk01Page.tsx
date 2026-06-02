@@ -13,6 +13,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface BuktiAsesmen {
   id: number
@@ -234,6 +235,11 @@ export default function FrAk01Page() {
     idIzin: actualIdIzin,
     jadwalId,
     onRefresh: fetchData,
+  })
+
+  useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin}`,
+    onUpdate: fetchData,
   })
 
   // Legacy aliases for hook-managed state

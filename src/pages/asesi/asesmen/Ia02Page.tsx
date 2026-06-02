@@ -8,6 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -229,6 +230,11 @@ export default function Ia02Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchIa02Data,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa02Data,
   })
 
   const handleNext = async () => {

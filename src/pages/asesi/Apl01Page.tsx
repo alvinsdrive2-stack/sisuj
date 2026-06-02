@@ -15,6 +15,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
@@ -261,6 +262,11 @@ export default function Apl01Page() {
     idIzin,
     jadwalId,
     onRefresh: fetchData,
+  })
+
+  useRealtimeSync({
+    channelName: `praasesmen:${idIzin}`,
+    onUpdate: fetchData,
   })
 
   const initialFetchDone = useRef(false)

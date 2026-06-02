@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import AsesiLayout from "@/components/AsesiLayout"
+import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Referensi {
   id: number
@@ -258,6 +259,11 @@ export default function FrAk07Page() {
     onRefresh: fetchData,
   })
 
+  useRealtimeSync({
+    channelName: `praasesmen:${idIzin}`,
+    onUpdate: fetchData,
+  })
+
   const isFormDisabled = tahap !== 0 && (!isAsesor || signing.allSigned)
 
   const handleBack = () => {
@@ -485,7 +491,7 @@ export default function FrAk07Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={6} idIzin={idIzin} tahap={tahap}>
+      <MukLayout currentStep={3} idIzin={idIzin}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>
@@ -889,7 +895,7 @@ export default function FrAk07Page() {
             </ActionButton>
           </div>
         </div>
-      </AsesiLayout>
+      </MukLayout>
 
       {/* Absen Awal Modal */}
       <WebcamModal

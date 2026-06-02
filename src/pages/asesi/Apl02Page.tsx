@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -2078,6 +2079,11 @@ export default function Apl02Page() {
     onRefresh: fetchData,
   })
 
+  useRealtimeSync({
+    channelName: `praasesmen:${_idIzin || idIzin || undefined}`,
+    onUpdate: fetchData,
+  })
+
   const handleToggleAgreement = useCallback(() => {
     signing.setAgreedChecklist(!signing.agreedChecklist)
   }, [signing])
@@ -2096,7 +2102,7 @@ export default function Apl02Page() {
   const getNextRoute = (id: string) => {
     const base = isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'
     if (isAsesiTidakKompeten()) return `${base}/${id}/apl02/failed`
-    return `${base}/${id}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`
+    return `${base}/${id}/${isUuidFlow ? 'apl02/success' : 'muk'}`
   }
 
   const handleSubmit = async () => {
@@ -2118,7 +2124,7 @@ export default function Apl02Page() {
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
-        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`)
+        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`)
       }
       return
     }
@@ -2161,7 +2167,8 @@ export default function Apl02Page() {
               unit.subunits.map(subunit => ({
                 subunit_id: parseInt(subunit.id),
                 kompeten: subunit.kompeten ?? true,
-                file_ids: subunit.files.map(f => f.id)
+                file_ids: subunit.files.map(f => f.id),
+                file_urls: subunit.files.map(f => f.path).filter(Boolean)
               }))
             ) : []
           }),
@@ -2226,7 +2233,7 @@ export default function Apl02Page() {
         showSuccess('Metode asesmen berhasil disimpan!')
         // Untuk tahap 0, langsung navigasi
         if (tahap === 0) {
-          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'mapa01'}`), 500)
+          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`), 500)
         }
       } catch (error) {
         console.error('Error saving metode:', error)
@@ -2246,7 +2253,7 @@ export default function Apl02Page() {
 
     // Convert kukChecklist to answers array (per subunit)
     // First, collect all KUK data grouped by subunit
-    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number> }>()
+    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: Set<string> }>()
 
     Object.entries(kukChecklist).forEach(([kukId, status]) => {
       // kukId format: "unitId-subunitId-kukNo"
@@ -2255,12 +2262,12 @@ export default function Apl02Page() {
       const subunitId = parseInt(parts[1])
 
       if (!subunitDataMap.has(subunitId)) {
-        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set() })
+        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: new Set() })
       }
 
       const data = subunitDataMap.get(subunitId)
       if (!data) {
-        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set() })
+        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: new Set() })
         return
       }
       data.statuses.push(status)
@@ -2284,6 +2291,7 @@ export default function Apl02Page() {
           subunit.files.forEach(file => {
             if (!excludedApiFileIds.has(file.id)) {
               data.allFileIds.add(file.id)
+              if (file.path) data.allFileUrls.add(file.path)
             }
           })
         }
@@ -2302,7 +2310,8 @@ export default function Apl02Page() {
     const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
       subunit_id: subunitId,
       kompeten: data.statuses.every(s => s === 'K'),
-      file_ids: Array.from(data.allFileIds)
+      file_ids: Array.from(data.allFileIds),
+      file_urls: Array.from(data.allFileUrls)
     }))
 
     // Check if all subunits have been answered

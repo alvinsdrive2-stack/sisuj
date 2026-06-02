@@ -8,6 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -203,6 +204,11 @@ export default function Ak06Page() {
     jadwalId,
     nextPageName: nextStepLabel,
     onRefresh: fetchAk06Data,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchAk06Data,
   })
 
   // Map komentar asesor when feedback data and asesorList are available

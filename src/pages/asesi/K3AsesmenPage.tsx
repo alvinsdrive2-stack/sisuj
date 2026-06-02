@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import AsesiLayout from "@/components/AsesiLayout"
+import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -139,7 +139,7 @@ export default function K3AsesmenPage() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={8} idIzin={idIzin} tahap={tahap}>
+      <MukLayout currentStep={5} idIzin={idIzin}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>
@@ -194,7 +194,7 @@ export default function K3AsesmenPage() {
             {signing.buttonText}
           </ActionButton>
         </div>
-      </AsesiLayout>
+      </MukLayout>
 
       {/* Absen Awal Modal */}
       <WebcamModal

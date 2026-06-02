@@ -11,9 +11,10 @@ interface ModularStepIndicatorProps {
   steps: Step[]
   id?: string
   disableClick?: boolean
+  title?: string
 }
 
-export default function ModularStepIndicator({ currentStep, steps, id, disableClick }: ModularStepIndicatorProps) {
+export default function ModularStepIndicator({ currentStep, steps, id, disableClick, title = 'Progress' }: ModularStepIndicatorProps) {
   const navigate = useNavigate()
 
   // Get the class name for the step circle based on status
@@ -82,7 +83,7 @@ export default function ModularStepIndicator({ currentStep, steps, id, disableCl
     }}>
       <br/>
       <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
-        Progress
+        {title}
       </div>
       <div style={{ position: 'relative' }}>
         {/* Vertical Line */}

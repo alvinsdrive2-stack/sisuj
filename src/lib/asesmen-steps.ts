@@ -6,16 +6,20 @@ export interface StepConfig {
   href: string
 }
 
-// Pra-Asesmen Steps (stops at K3, then perjanjian asesmen)
+// Pra-Asesmen Steps (Konfirmasi → APL 01 → APL 02)
 export const PRAASESMEN_STEPS: StepConfig[] = [
   { number: 1, label: 'Konfirmasi', href: '/asesi/praasesmen' },
   { number: 2, label: 'APL 01', href: '/asesi/praasesmen/APL01' },
   { number: 3, label: 'APL 02', href: '/asesi/praasesmen/APL02' },
-  { number: 4, label: 'MAPA 01', href: '/asesi/praasesmen/MAPA01' },
-  { number: 5, label: 'MAPA 02', href: '/asesi/praasesmen/MAPA02' },
-  { number: 6, label: 'AK.07', href: '/asesi/praasesmen/AK07' },
-  { number: 7, label: 'AK.04', href: '/asesi/praasesmen/AK04' },
-  { number: 8, label: 'K3', href: '/asesi/praasesmen/K3' },
+]
+
+// MUK [Observasi/Portofolio] Steps
+export const MUK_STEPS: StepConfig[] = [
+  { number: 1, label: 'MAPA 01', href: '/asesi/praasesmen/:idIzin/mapa01' },
+  { number: 2, label: 'MAPA 02', href: '/asesi/praasesmen/:idIzin/mapa02' },
+  { number: 3, label: 'AK.07', href: '/asesi/praasesmen/:idIzin/fr-ak-07' },
+  { number: 4, label: 'AK.04', href: '/asesi/praasesmen/:idIzin/fr-ak-04' },
+  { number: 5, label: 'K3', href: '/asesi/praasesmen/:idIzin/k3-asesmen' },
 ]
 
 // Perjanjian Asesmen Steps (after praasesmen)

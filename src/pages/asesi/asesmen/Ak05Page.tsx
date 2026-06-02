@@ -8,6 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -207,6 +208,11 @@ export default function Ak05Page() {
     jadwalId,
     onRefresh: fetchAk05Data,
     nextPageName: nextStepLabel,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchAk05Data,
   })
 
   // Keep derived values for display & multi-asesi logic

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import AsesiLayout from "@/components/AsesiLayout"
+import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
@@ -21,6 +21,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Unit {
   id_unit: number
@@ -177,6 +178,11 @@ export default function Mapa01Page() {
     onRefresh: fetchMapa01Data,
   })
 
+  useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin || idIzin}`,
+    onUpdate: fetchMapa01Data,
+  })
+
   const handleBack = () => {
     navigate(-1)
   }
@@ -296,7 +302,7 @@ export default function Mapa01Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={4} idIzin={actualIdIzin} tahap={tahap}>
+      <MukLayout currentStep={1} idIzin={actualIdIzin}>
         {/* A4 Size Indicator */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '20px'}}>
           <div className="mapa01-container">
@@ -372,7 +378,7 @@ export default function Mapa01Page() {
           </div>
         </div>
       </div>
-      </AsesiLayout>
+      </MukLayout>
 
       {/* Absen Awal Modal */}
       <WebcamModal

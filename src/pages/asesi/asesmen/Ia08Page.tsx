@@ -12,6 +12,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -222,6 +223,11 @@ export default function Ia08Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchIa08Data,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa08Data,
   })
 
   const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned

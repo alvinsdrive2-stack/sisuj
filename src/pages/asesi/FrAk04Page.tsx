@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import AsesiLayout from "@/components/AsesiLayout"
+import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Referensi {
   id: number
@@ -165,6 +166,11 @@ export default function FrAk04Page() {
     idIzin: actualIdIzin || idIzin,
     jadwalId,
     onRefresh: fetchAk04Data,
+  })
+
+  useRealtimeSync({
+    channelName: `praasesmen:${actualIdIzin || idIzin}`,
+    onUpdate: fetchAk04Data,
   })
 
   // Only asesi can edit this form
@@ -326,7 +332,7 @@ export default function FrAk04Page() {
         </div>
       </div>
 
-      <AsesiLayout currentStep={7} idIzin={idIzin} tahap={tahap}>
+      <MukLayout currentStep={4} idIzin={idIzin}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px' }}>
@@ -508,7 +514,7 @@ export default function FrAk04Page() {
             </ActionButton>
           </div>
         </div>
-      </AsesiLayout>
+      </MukLayout>
 
       {/* Absen Awal Modal */}
       <WebcamModal

@@ -8,6 +8,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
@@ -172,6 +173,11 @@ export default function Ia05Page() {
     jadwalId,
     nextPageName: nextStepLabel,
     onRefresh: fetchIa05Data,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchIa05Data,
   })
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') => {

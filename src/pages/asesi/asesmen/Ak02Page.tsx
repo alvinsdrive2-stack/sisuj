@@ -12,6 +12,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -187,6 +188,11 @@ export default function Ak02Page() {
     jadwalId,
     onRefresh: fetchAk02Data,
     nextPageName: nextStepLabel,
+  })
+
+  useRealtimeSync({
+    channelName: `asesmen:${id}`,
+    onUpdate: fetchAk02Data,
   })
 
   if (isLoading) {

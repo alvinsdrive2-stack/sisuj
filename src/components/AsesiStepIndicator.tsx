@@ -18,11 +18,6 @@ const PRAASESMEN_STEPS: Step[] = [
   { number: 1, label: 'Konfirmasi' },
   { number: 2, label: 'APL 01' },
   { number: 3, label: 'APL 02' },
-  { number: 4, label: 'MAPA 01' },
-  { number: 5, label: 'MAPA 02' },
-  { number: 6, label: 'AK.07' },
-  { number: 7, label: 'AK.04' },
-  { number: 8, label: 'K3' },
 ]
 
 const PERJANJIAN_STEPS: Step[] = [
@@ -37,11 +32,6 @@ const getPraasesmenPath = (stepNumber: number, idIzin?: string): string | null =
     1: `/asesi/praasesmen/${idIzin}`,
     2: `/asesi/praasesmen/${idIzin}/apl01`,
     3: `/asesi/praasesmen/${idIzin}/apl02`,
-    4: `/asesi/praasesmen/${idIzin}/mapa01`,
-    5: `/asesi/praasesmen/${idIzin}/mapa02`,
-    6: `/asesi/praasesmen/${idIzin}/fr-ak-07`,
-    7: `/asesi/praasesmen/${idIzin}/fr-ak-04`,
-    8: `/asesi/praasesmen/${idIzin}/k3-asesmen`,
   }
   return paths[stepNumber] || null
 }
@@ -62,10 +52,10 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 
 
   const steps = flow === 'perjanjian' ? PERJANJIAN_STEPS : PRAASESMEN_STEPS
 
-  // For tahap 0: hide Konfirmasi(1) in praasesmen
+  // For tahap 0: hide Konfirmasi(1)
   const isTahap0 = tahap === 0
   const visibleSteps = (flow === 'praasesmen' && isTahap0)
-    ? steps.filter(s => s.number >= 2 && s.number <= 7)
+    ? steps.filter(s => s.number >= 2)
     : steps
 
   // Get the class name for the step circle based on status

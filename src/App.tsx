@@ -94,6 +94,7 @@ const Apl02SuccessPage = lazy(() => import('./pages/asesi/Apl02SuccessPage'))
 const Apl02FailedPage = lazy(() => import('./pages/asesi/Apl02FailedPage'))
 const Ak01SuccessPage = lazy(() => import('./pages/asesi/Ak01SuccessPage'))
 const Mapa01Page = lazy(() => import('./pages/asesi/Mapa01Page'))
+const MukPage = lazy(() => import('./pages/asesi/MukPage'))
 const Mapa02Page = lazy(() => import('./pages/asesi/Mapa02Page'))
 const FrAk07Page = lazy(() => import('./pages/asesi/FrAk07Page'))
 const FrAk04Page = lazy(() => import('./pages/asesi/FrAk04Page'))
@@ -283,6 +284,7 @@ function App() {
                   <Route path="praasesmen/:idIzin/apl02" element={<AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/apl02/success" element={<AsesiOrAsesorRoute><Apl02SuccessPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/apl02/failed" element={<AsesiOrAsesorRoute><Apl02FailedPage /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin/muk" element={<AsesiOrAsesorRoute><MukPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa01" element={<AsesiOrAsesorRoute><Mapa01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa02" element={<AsesiOrAsesorRoute><Mapa02Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/fr-ak-07" element={<AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute>} />
