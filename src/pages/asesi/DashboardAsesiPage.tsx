@@ -83,9 +83,9 @@ export default function DashboardAsesiPage() {
       `/praasesmen/${idIzin}/apl02`,
       `/praasesmen/${idIzin}/mapa01`,
       `/praasesmen/${idIzin}/mapa02`,
-      `/praasesmen/${idIzin}/fr-ak-07`,
-      `/praasesmen/${idIzin}/fr-ak-04`,
-      `/praasesmen/${idIzin}/k3`,
+      `/praasesmen/${idIzin}/ak07`,
+      `/praasesmen/${idIzin}/ak04`,
+      `/praasesmen/${idIzin}/file-k3`,
     ]
 
     // Dynamic tahap 2 steps based on jenjang and methode
