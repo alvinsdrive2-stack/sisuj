@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -63,9 +64,9 @@ export default function UploadTugasPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList, jenjang, isLoading: isDataLoading } = useDataDokumenAsesmen(id)
+  const { asesorList, jenjang, isLoading: isDataLoading, jadwalId } = useDataDokumenAsesmen(id)
   const { metode } = useDataDokumenAsesmen(id)
-  const { showSuccess, showError } = useToast()
+  const { showSuccess, showError, showWarning } = useToast()
 
   // Check if user is an asesor (view-only mode)
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -75,14 +76,9 @@ export default function UploadTugasPage() {
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedTugas, setUploadedTugas] = useState<{ url: string; extension: string; fileName: string } | null>(null)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [isNavigating, setIsNavigating] = useState(false)
   const [showModal, setShowModal] = useState(false)
-  const [barcodes, setBarcodes] = useState<{
-    asesi?: { url: string; tanggal: string; nama: string } | null
-    asesor1?: { url: string; tanggal: string; nama: string } | null
-    asesor2?: { url: string; tanggal: string; nama: string } | null
-  } | null>(null)
+  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   // Get dynamic steps
   const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
@@ -130,20 +126,19 @@ export default function UploadTugasPage() {
     onUpdate: fetchTugas
   })
 
-  const asesiHasSigned = !!barcodes?.asesi?.url
-  const asesorHasSigned = (() => {
-    if (!isAsesor) return false
-    const idx = asesorList.findIndex(a => String(a.id) === String(user?.id))
-    return (idx === 0 || idx === -1) ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  })()
-  const hasSigned = isAsesor ? asesorHasSigned : asesiHasSigned
-  const allSigned = asesiHasSigned && (asesorList.length === 0 || (
-    !!barcodes?.asesor1?.url && (asesorList.length < 2 || !!barcodes?.asesor2?.url)
-  ))
-
-  useEffect(() => {
-    if (allSigned) setAgreedChecklist(true)
-  }, [allSigned])
+  const signing = useSigningState({
+    pageKey: 'upload-tugas',
+    isAsesor,
+    tahap: 1,
+    barcodes: barcodes as BarcodeState | null,
+    setBarcodes: setBarcodes as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
+    asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    idIzin: id,
+    jadwalId,
+    onRefresh: fetchTugas,
+  })
 
   // Show loading while fetching jenjang data - MUST be after all hooks
   if (isDataLoading) {
@@ -155,7 +150,7 @@ export default function UploadTugasPage() {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (allSigned) return
+    if (signing.allSigned) return
     const file = e.target.files?.[0]
     if (file && validateFile(file)) {
       setSelectedFile(file)
@@ -163,7 +158,7 @@ export default function UploadTugasPage() {
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || allSigned) return
+    if (!selectedFile || signing.allSigned) return
 
     setIsUploading(true)
     try {
@@ -234,7 +229,7 @@ export default function UploadTugasPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (allSigned) return
+    if (signing.allSigned) return
     const file = e.dataTransfer.files?.[0]
     if (file && validateFile(file)) {
       setSelectedFile(file)
@@ -253,7 +248,7 @@ export default function UploadTugasPage() {
   }
 
   const handleGantiFile = () => {
-    if (allSigned) return
+    if (signing.allSigned) return
     setUploadedTugas(null)
     setSelectedFile(null)
     // Reset file input
@@ -554,13 +549,13 @@ export default function UploadTugasPage() {
         </div>
 
           <div style={{ marginTop: '16px'}}>
-            {!allSigned && (
+            {!signing.allSigned && (
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', padding: '12px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
               <input
                 type="checkbox"
-                checked={agreedChecklist}
-                onChange={(e) => setAgreedChecklist(e.target.checked)}
-                disabled={allSigned}
+                checked={signing.agreedChecklist}
+                onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
+                disabled={signing.allSigned}
                 style={{ marginTop: '4px', width: '16px', height: '16px' }}
               />
               <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
@@ -590,9 +585,9 @@ export default function UploadTugasPage() {
           )}
           <ActionButton
             variant="primary"
-            disabled={isNavigating || (!allSigned && (!uploadedTugas || !agreedChecklist))}
-            onClick={() => {
-              if (hasSigned || allSigned) {
+            disabled={isNavigating || signing.buttonDisabled || !uploadedTugas}
+            onClick={async () => {
+              if (signing.allSigned) {
                 const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
                 const nextStep = asesmenSteps[currentStepIndex + 1]
                 if (nextStep) {
@@ -603,7 +598,17 @@ export default function UploadTugasPage() {
                 }
                 return
               }
-              if (!uploadedTugas || !agreedChecklist) return
+              if (!uploadedTugas || !signing.agreedChecklist) {
+                showWarning("Silakan centang pernyataan bahwa file adalah hasil karya sendiri.")
+                return
+              }
+              if (!signing.asesiHasSigned) {
+                const ok = await signing.generateQR()
+                if (!ok) return
+                showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+                signing.publishUpdate()
+                return
+              }
               setIsNavigating(true)
               const jenjangNum = parseInt(jenjang)
               if (jenjangNum < 4) {
@@ -613,7 +618,7 @@ export default function UploadTugasPage() {
               }
             }}
           >
-            {isNavigating ? 'Memproses...' : allSigned ? 'Lanjut' : 'Lanjut'}
+            {isNavigating ? 'Memproses...' : signing.buttonText}
           </ActionButton>
         </div>
       </ModularAsesiLayout>

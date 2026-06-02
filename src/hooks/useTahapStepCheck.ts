@@ -52,6 +52,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
       { stepKey: 'mapa02', label: 'MAPA 02', href: '/praasesmen/:idIzin/mapa02' },
       { stepKey: 'ak07', label: 'AK.07', href: '/praasesmen/:idIzin/fr-ak-07' },
       { stepKey: 'ak04', label: 'AK.04', href: '/praasesmen/:idIzin/fr-ak-04' },
+      { stepKey: 'k3', label: 'K3', href: '/praasesmen/:idIzin/k3-asesmen' },
     ]
   }
 
@@ -124,9 +125,6 @@ export function useTahapStepCheck({
     const resolvedId = tahap === 1 ? idIzin : (replaceId || idIzin)
 
     for (const step of steps) {
-      // Skip upload-tugas — no QR check needed
-      if (step.stepKey === 'upload-tugas') continue
-
       const apiPath = tahap === 1
         ? `/praasesmen/${idIzin}/${step.stepKey}`
         : `/asesmen/${resolvedId}/${step.stepKey}`

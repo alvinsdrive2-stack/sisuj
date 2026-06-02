@@ -396,7 +396,6 @@ export default function ListAsesiAsesor() {
                         const token = localStorage.getItem("access_token")
                         const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
                         for (const step of tahap2Steps) {
-                          if (step.key === 'upload-tugas') continue
                           try {
                             const apiPath = `/asesmen/${asesi.id_izin}/${step.key}`
                             const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })

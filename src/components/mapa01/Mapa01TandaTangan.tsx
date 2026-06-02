@@ -49,6 +49,8 @@ interface Mapa01TandaTanganProps {
   barcodeValidator?: string | null
   noregPenyusun?: string | null
   noregValidator?: string | null
+  namaManajer?: string | null
+  tanggalManajer?: string | null
   referensiForm?: ReferensiFormItem[]
   isAsesor?: boolean
 }
@@ -94,6 +96,8 @@ export function Mapa01TandaTangan({
   barcodeValidator,
   noregPenyusun,
   noregValidator,
+  namaManajer,
+  tanggalManajer,
   referensiForm,
   isAsesor = false
 }: Mapa01TandaTanganProps) {
@@ -208,7 +212,9 @@ export function Mapa01TandaTangan({
           </tr>
 
           {/* Dynamic rows from API */}
-          {konfirmasiReferences.map((ref) => (
+          {konfirmasiReferences.map((ref) => {
+            const isManajer = ref.nama === "Manajer sertifikasi LSP Gatensi Karya Konstruksi"
+            return (
             <tr key={ref.id} style={{ height: ref.id === 104 ? '46pt' : '54pt' }}>
               <td style={{
                 ...contentCellStyle,
@@ -235,10 +241,15 @@ export function Mapa01TandaTangan({
                   </span>
                 </div>
               </td>
-              <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
-              <td style={{ ...contentCellStyle, padding: '12px 8px' }}></td>
+              <td style={{ ...contentCellStyle, padding: '12px 8px', fontSize: '12px' }}>
+                {isManajer && namaManajer ? namaManajer : ''}
+              </td>
+              <td style={{ ...contentCellStyle, padding: '12px 8px' }}>
+                {isManajer && tanggalManajer ? new Date(tanggalManajer).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+              </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
 

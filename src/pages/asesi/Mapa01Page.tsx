@@ -92,7 +92,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -263,8 +263,8 @@ export default function Mapa01Page() {
 
       showSuccess('MAPA 01 berhasil disimpan!')
       signing.publishUpdate()
-      // Untuk tahap 0, langsung navigasi ke halaman berikutnya
-      if (tahap === 0) {
+      // Navigasi jika asesi sudah tanda tangan (redirect tetap jalan walau asesor belum ttd)
+      if (tahap === 0 || (!isAsesor && signing.asesiHasSigned)) {
         setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/mapa02`), 500)
       }
     } catch (error) {
@@ -333,6 +333,8 @@ export default function Mapa01Page() {
             barcodeValidator={barcodeValidator}
             noregPenyusun={noregPenyusun}
             noregValidator={noregValidator}
+            namaManajer={namaManajer}
+            tanggalManajer={tanggalManajer}
             referensiForm={mapaData?.referensi_form}
             isAsesor={isAsesor}
           />

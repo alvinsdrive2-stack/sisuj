@@ -114,7 +114,7 @@ export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 
     }}>
       <br/>
       <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase' }}>
-        {showVerifikasiTukAjj ? 'Verifikasi TUK AJJ' : flow === 'perjanjian' ? 'Perjanjian Asesmen' : 'Persiapan Asesmen'}
+        {showVerifikasiTukAjj ? 'Verifikasi TUK AJJ' : flow === 'perjanjian' ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}
       </div>
       <div style={{ position: 'relative' }}>
         {/* Vertical Line */}

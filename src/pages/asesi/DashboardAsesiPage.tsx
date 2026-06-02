@@ -85,6 +85,7 @@ export default function DashboardAsesiPage() {
       `/praasesmen/${idIzin}/mapa02`,
       `/praasesmen/${idIzin}/fr-ak-07`,
       `/praasesmen/${idIzin}/fr-ak-04`,
+      `/praasesmen/${idIzin}/k3`,
     ]
 
     // Dynamic tahap 2 steps based on jenjang and methode
@@ -126,7 +127,6 @@ export default function DashboardAsesiPage() {
 
     const checkAll = async () => {
       for (const path of steps) {
-        if (path.includes('upload-tugas')) continue
         try {
           const res = await fetch(`${API_BASE_URL}${path}`, { headers })
           if (!res.ok) continue
@@ -449,6 +449,7 @@ export default function DashboardAsesiPage() {
                         { key: 'mapa02', path: `/praasesmen/${idIzin}/mapa02` },
                         { key: 'ak07', path: `/praasesmen/${idIzin}/fr-ak-07` },
                         { key: 'ak04', path: `/praasesmen/${idIzin}/fr-ak-04` },
+                        { key: 'k3', path: `/praasesmen/${idIzin}/k3` },
                       ]
                       for (const step of tahap1Steps) {
                         try {
@@ -504,7 +505,6 @@ export default function DashboardAsesiPage() {
                         ]
                       }
                       for (const step of tahap2Steps) {
-                        if (step.key === 'upload-tugas') continue
                         try {
                           const res = await fetch(`${API_BASE_URL}${step.path}`, { headers })
                           if (!res.ok) continue

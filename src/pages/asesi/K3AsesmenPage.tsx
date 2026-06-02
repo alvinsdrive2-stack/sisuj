@@ -10,11 +10,13 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 
 interface K3Response {
   message: string
   data: {
     file: string
+    barcodes?: BarcodeState
   }
 }
 
@@ -25,13 +27,54 @@ export default function K3AsesmenPage() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { showWarning } = useToast()
-  const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzin)
+  const { showWarning, showSuccess } = useToast()
+  const { asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [agreedChecklist, setAgreedChecklist] = useState(false)
   const [showPerjanjianModal, setShowPerjanjianModal] = useState(false)
   const [perjanjianAgreed, setPerjanjianAgreed] = useState(false)
+  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
+
+  const fetchK3Data = useCallback(async () => {
+    if (!idIzin) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/file-k3`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result: K3Response = await response.json()
+        if (result.message === "Success" && result.data) {
+          if (result.data.file) setPdfUrl(result.data.file)
+          if (result.data.barcodes) setBarcodes(result.data.barcodes as BarcodeState)
+        }
+      } else {
+        console.warn(`K3 API returned ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error fetching K3:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [idIzin])
+
+  const signing = useSigningState({
+    pageKey: 'k3',
+    isAsesor: isAsesor,
+    tahap: tahap ?? 1,
+    barcodes: barcodes as any,
+    setBarcodes: setBarcodes as any,
+    asesorList: asesorList,
+    userId: user?.id,
+    userName: user?.name,
+    idIzin: idIzin,
+    jadwalId: jadwalId,
+    onRefresh: fetchK3Data,
+  })
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -42,31 +85,6 @@ export default function K3AsesmenPage() {
     asesorList: asesorList,
     tahap: tahap
   })
-
-  const fetchK3Data = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("access_token")
-      const response = await fetch(`${API_BASE_URL}/praasesmen/file-k3`, {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
-
-      if (response.ok) {
-        const result: K3Response = await response.json()
-        if (result.message === "Success" && result.data?.file) {
-          setPdfUrl(result.data.file)
-        }
-      } else {
-        console.warn(`K3 API returned ${response.status}`)
-      }
-    } catch (error) {
-      console.error("Error fetching K3 PDF:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -83,11 +101,20 @@ export default function K3AsesmenPage() {
     navigate(-1)
   }
 
-  const handleLanjut = () => {
-    if (!agreedChecklist) {
+  const handleLanjut = async () => {
+    if (!signing.agreedChecklist && !signing.allSigned) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
       return
     }
+    // Jika belum semua ttd, generate QR (asesi tanda tangan duluan)
+    if (!signing.allSigned && !signing.asesiHasSigned) {
+      const ok = await signing.generateQR()
+      if (!ok) return
+      showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+      signing.publishUpdate()
+      return // Tunggu asesor tanda tangan
+    }
+    // Semua sudah ttd → lanjut ke perjanjian
     setShowPerjanjianModal(true)
   }
 
@@ -139,19 +166,22 @@ export default function K3AsesmenPage() {
         )}
 
         {/* Agreement Checklist */}
+        {!signing.allSigned && (
         <div style={{ background: '#fff', border: '1px solid #000', borderRadius: '4px', marginBottom: '20px', padding: '12px' }}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}>
             <input
               type="checkbox"
-              checked={agreedChecklist}
-              onChange={(e) => setAgreedChecklist(e.target.checked)}
-              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
+              checked={signing.agreedChecklist}
+              onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
+              disabled={signing.allSigned}
+              style={{ marginTop: '2px', width: '16px', height: '16px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
             />
             <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
               <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah membaca, memahami, dan menyetujui dokumen K3 Asesmen ini dengan sebenar-benarnya.
             </span>
           </label>
         </div>
+        )}
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
@@ -160,8 +190,8 @@ export default function K3AsesmenPage() {
               Kembali
             </ActionButton>
           )}
-          <ActionButton variant="primary" disabled={!agreedChecklist} onClick={handleLanjut}>
-            Lanjut ke Perjanjian Asesmen
+          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleLanjut}>
+            {signing.buttonText}
           </ActionButton>
         </div>
       </AsesiLayout>

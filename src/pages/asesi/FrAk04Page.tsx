@@ -382,7 +382,7 @@ export default function FrAk04Page() {
                   <tr key={ref.id}>
                     <td
                       colSpan={2}
-                      style={{ border: '1px solid #000', padding: '6px 8px', cursor: isFormDisabled ? 'default' : 'pointer' }}
+                      style={{ width: '95%', border: '1px solid #000', padding: '6px 8px', cursor: isFormDisabled ? 'default' : 'pointer' }}
                       onClick={() => handleCellClick(ref.id)}
                     >
                       {ref.nama}
@@ -392,7 +392,7 @@ export default function FrAk04Page() {
                         checked={answer === true}
                         onChange={() => handleAnswerChange(ref.id, true)}
                         disabled={isFormDisabled}
-                        style={{ width: '18px', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                        style={{ width: '5%', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px 30px', textAlign: 'center' }}>
@@ -400,7 +400,7 @@ export default function FrAk04Page() {
                         checked={answer === false}
                         onChange={() => handleAnswerChange(ref.id, false)}
                         disabled={isFormDisabled}
-                        style={{ width: '18px', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
+                        style={{ width: '5%', height: '18px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}
                       />
                     </td>
                   </tr>

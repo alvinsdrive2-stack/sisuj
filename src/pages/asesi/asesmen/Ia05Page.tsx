@@ -18,6 +18,7 @@ import { kegiatanService } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { useIa05Timer } from "@/hooks/useIa05Timer"
 import { useMissingStepsRedirect } from "@/hooks/useAsesmenStepQrStatus"
+import { setNavbarTimer } from "@/lib/navbar-timer"
 
 interface Unit {
   id: number
@@ -353,6 +354,23 @@ export default function Ia05Page() {
     }
   }, [isExpired, isAsesi, ia05Data, isSaving, handleSubmit])
 
+  // Sync timer to navbar
+  useEffect(() => {
+    const node = isAsesi && !signing.asesiHasSigned ? (
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ color: '#dc2626', fontWeight: 'bold', fontSize: '18px', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
+          {isExpired
+            ? '00:00'
+            : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`
+          }
+        </div>
+        <div style={{ color: '#000', fontSize: '11px', fontWeight: 500 }}>Sisa Waktu</div>
+      </div>
+    ) : null
+    setNavbarTimer(node)
+    return () => setNavbarTimer(null)
+  }, [remainingSeconds, isExpired, isAsesi, signing.asesiHasSigned])
+
   const isQuestionAnswered = (soalId: number) => answers[soalId]
 
   if (isLoading || isDataLoading || !stepsChecked) {
@@ -361,19 +379,6 @@ export default function Ia05Page() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '14px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.05</span>
-          </div>
-        </div>
-      </div>
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia05'))?.number || 4} steps={asesmenSteps} id={id}>
                 {/* IDENTITAS Table */}
@@ -762,38 +767,6 @@ export default function Ia05Page() {
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
       />
-      {/* Floating Timer */}
-      {isAsesi && !signing.asesiHasSigned && (
-        <div style={{
-          position: 'fixed',
-          left: '16px',
-          bottom: '24px',
-          zIndex: 40,
-          background: isExpired ? '#dc2626' : '#1e3a5f',
-          color: '#fff',
-          borderRadius: '12px',
-          padding: '12px 20px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          fontFamily: 'Arial, sans-serif',
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <div>
-            <div style={{ fontSize: '11px', opacity: 0.8, fontWeight: 500 }}>Sisa Waktu</div>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
-              {isExpired
-                ? '00:00'
-                : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`
-              }
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -43,9 +43,6 @@ export function useMissingStepsRedirect(idIzin: string | undefined, enabled = tr
     const buildNavHref = (href: string) => href.replace(':id', idIzin).replace(':idIzin', idIzin)
 
     for (const step of stepsToCheck) {
-      // Skip upload-tugas — no QR check needed
-      if (step.href.includes('upload-tugas')) continue
-
       const navHref = buildNavHref(step.href)
       if (!navHref || !navHref.startsWith('/')) continue
 

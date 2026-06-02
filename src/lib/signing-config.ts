@@ -14,10 +14,12 @@ export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
   mapa02: { order: 'asesor_first', qrEndpoint: 'mapa02', nextPageName: 'FR AK 07' },
   ak07:   { order: 'asesor_first', qrEndpoint: 'ak07', nextPageName: 'FR AK 04' },
   ak04:   { order: 'asesi_first', qrEndpoint: 'ak04', nextPageName: 'K3 Asesmen' },
+  k3:     { order: 'asesi_first', qrEndpoint: 'k3', nextPageName: 'Perjanjian Asesmen' },
   ak01:   { order: 'asesor_first', qrEndpoint: 'ak01', nextPageName: 'AK01 Success' },
 
   // Asesmen — no static next page, determined by step config
   ia01:  { order: 'asesor_first', qrEndpoint: 'ia01' },
+  'upload-tugas': { order: 'asesi_first', qrEndpoint: 'upload-tugas' },
   ia02:  { order: 'asesor_first', qrEndpoint: 'ia02' },
   ia03:  { order: 'asesor_first', qrEndpoint: 'ia03' },
   ia04a: { order: 'asesor_first', qrEndpoint: 'ia04a' },

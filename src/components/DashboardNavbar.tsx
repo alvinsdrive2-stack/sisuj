@@ -13,9 +13,10 @@ const PAS_FOTO_CACHE_KEY = "pas_foto_cache"
 
 interface DashboardNavbarProps {
   userName?: string
+  timerNode?: React.ReactNode
 }
 
-export default function DashboardNavbar({ userName = "User" }: DashboardNavbarProps) {
+export default function DashboardNavbar({ userName = "User", timerNode }: DashboardNavbarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { showSuccess } = useToast()
@@ -135,6 +136,11 @@ export default function DashboardNavbar({ userName = "User" }: DashboardNavbarPr
             >
               <img src={logo} alt="LSP Gatensi Logo" className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
             </button>
+          </div>
+
+          {/* Center: Timer slot */}
+          <div className="flex-1 flex justify-center">
+            {timerNode}
           </div>
 
           {/* Desktop: Right section */}

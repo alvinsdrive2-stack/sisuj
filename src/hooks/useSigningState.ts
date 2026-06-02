@@ -249,6 +249,33 @@ export function useSigningState(input: SigningStateInput): SigningState {
       }
     }
 
+    if (order === 'asesor_first') {
+      if (isAsesor) {
+        if (asesorHasSigned) {
+          if (testingMode || allSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+          return {
+            buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
+            buttonDisabled: true,
+          }
+        }
+        return {
+          buttonText: 'Simpan & Tanda Tangan',
+          buttonDisabled: isSaving || !agreedChecklist,
+        }
+      }
+      if (!testingMode && !allAsesorSigned) {
+        return {
+          buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
+          buttonDisabled: true,
+        }
+      }
+      if (asesiHasSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+      return {
+        buttonText: 'Simpan & Tanda Tangan',
+        buttonDisabled: isSaving || !agreedChecklist,
+      }
+    }
+
     return { buttonText: lanjutText, buttonDisabled: false }
   }, [config.order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText])
 
