@@ -77,7 +77,7 @@ export default function FrAk07Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
@@ -332,13 +332,13 @@ export default function FrAk07Page() {
 
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`)
       return
     }
 
     // If already signed, navigate to FR AK 04 (skip untuk tahap 0)
     if (tahap !== 0 && (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`)
+      navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`)
       return
     }
 
@@ -455,7 +455,7 @@ export default function FrAk07Page() {
       signing.publishUpdate()
       // Untuk tahap 0, langsung navigasi ke halaman berikutnya
       if (tahap === 0) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/fr-ak-04`), 500)
+        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`), 500)
       }
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
@@ -491,7 +491,7 @@ export default function FrAk07Page() {
         </div>
       </div>
 
-      <MukLayout currentStep={3} idIzin={idIzin}>
+      <MukLayout currentStep={3} idIzin={idIzin} metode={metode}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>

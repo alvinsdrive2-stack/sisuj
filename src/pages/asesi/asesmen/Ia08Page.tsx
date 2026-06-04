@@ -354,7 +354,7 @@ export default function Ia08Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia08'))?.number || 1} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia08'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
             FR.IA.08. CEKLIS VERIFIKASI PORTOFOLIO

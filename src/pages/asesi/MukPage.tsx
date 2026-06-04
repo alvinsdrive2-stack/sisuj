@@ -10,8 +10,10 @@ export default function MukPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { idIzin } = useParams<{ idIzin: string }>()
-  const { tahap } = useDataDokumenPraAsesmen(idIzin)
+  const { tahap, metode } = useDataDokumenPraAsesmen(idIzin)
   const isAsesi = user?.role?.name?.toLowerCase() !== 'asesor'
+
+  const mukTitle = metode?.toLowerCase() === 'portofolio' ? 'MUK Portofolio' : 'MUK Observasi'
 
   if (!idIzin) return <FullPageLoader text="Memuat data..." />
 
@@ -35,12 +37,12 @@ export default function MukPage() {
           {/* Title */}
           <div style={{ marginBottom: '24px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '8px', textTransform: 'uppercase' }}>
-              MUK [Observasi/Portofolio]
+              {mukTitle}
             </h2>
             <p style={{ fontSize: '13px', color: '#666', lineHeight: '1.6' }}>
               {isAsesi
-                ? "Sesi MUK (Musyawarah Uji Kompetensi) merupakan tahap penetapan pemenuhan kompetensi melalui observasi/portofolio. Silakan selesaikan setiap langkah di bawah ini secara berurutan."
-                : "Sesi MUK (Musyawarah Uji Kompetensi) merupakan tahap penetapan pemenuhan kompetensi. Anda dapat memantau dan memverifikasi setiap langkah."}
+                ? "Sesi MUK (Materi Uji Kompetensi) merupakan tahap penetapan pemenuhan kompetensi melalui observasi/portofolio. Silakan selesaikan setiap langkah di bawah ini secara berurutan."
+                : "Sesi MUK (Materi Uji Kompetensi) merupakan tahap penetapan pemenuhan kompetensi. Anda dapat memantau dan memverifikasi setiap langkah."}
             </p>
           </div>
 

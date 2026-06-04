@@ -17,35 +17,17 @@ export const PRAASESMEN_STEPS: StepConfig[] = [
 export const MUK_STEPS: StepConfig[] = [
   { number: 1, label: 'MAPA 01', href: '/asesi/praasesmen/:idIzin/mapa01' },
   { number: 2, label: 'MAPA 02', href: '/asesi/praasesmen/:idIzin/mapa02' },
-  { number: 3, label: 'AK.07', href: '/asesi/praasesmen/:idIzin/fr-ak-07' },
-  { number: 4, label: 'AK.04', href: '/asesi/praasesmen/:idIzin/fr-ak-04' },
-  { number: 5, label: 'K3', href: '/asesi/praasesmen/:idIzin/k3-asesmen' },
-]
-
-// Perjanjian Asesmen Steps (after praasesmen)
-export const PERJANJIAN_ASESMEN_STEPS: StepConfig[] = [
-  { number: 1, label: 'AK.01', href: '/asesi/perjanjian/:idIzin/fr-ak-01' },
-  { number: 2, label: 'Selesai', href: '/asesi/perjanjian/ak01-success' },
+  { number: 3, label: 'AK.07', href: '/asesi/praasesmen/:idIzin/ak07' },
+  { number: 4, label: 'AK.04', href: '/asesi/praasesmen/:idIzin/ak04' },
+  { number: 5, label: 'Tata Tertib dan K3', href: '/asesi/praasesmen/:idIzin/k3-asesmen' },
 ]
 
 // Asesmen Steps for Asesi (default)
 export const ASESMEN_STEPS_ASESI: StepConfig[] = [
-  { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
-  { number: 2, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
-  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'Survei', href: '/asesi/asesmen/survei' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
-]
-
-// Asesmen Steps for Asesi (jenjang < 4) - IA01, IA02, IA03 instead of IA04A, IA04B
-export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
-  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
-  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
-  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
-  { number: 4, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
+  { number: 3, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 4, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
   { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
@@ -53,26 +35,56 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
   { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
+// Asesmen Steps for Asesi (jenjang < 4) - IA01, IA02, IA03 instead of IA04A, IA04B
+export const ASESMEN_STEPS_LOW_JENJAH_ASESI: StepConfig[] = [
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 3, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 4, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 5, label: 'Upload Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 6, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 7, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 8, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 9, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
 // Asesmen Steps for Asesor 1 (jenjang < 4)
 export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_1: StepConfig[] = [
-  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
-  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
-  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
-  { number: 4, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
-  { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 8, label: 'AK.05', href: '/asesi/asesmen/ak05' },
-  { number: 9, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 3, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 4, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 5, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 6, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 7, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 8, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 9, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 10, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 11, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Asesmen Steps for Asesor 2 (jenjang < 4)
 export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_2: StepConfig[] = [
-  { number: 1, label: 'IA.01', href: '/asesi/asesmen/ia01' },
-  { number: 2, label: 'IA.02', href: '/asesi/asesmen/ia02' },
-  { number: 3, label: 'IA.03', href: '/asesi/asesmen/ia03' },
-  { number: 4, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 3, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 4, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+  { number: 5, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 6, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 7, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 8, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 9, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 10, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 11, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+// Asesmen Steps for Asesor 1 (full flow)
+export const ASESMEN_STEPS_ASESOR_1: StepConfig[] = [
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
+  { number: 3, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 4, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
   { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
   { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
@@ -81,63 +93,54 @@ export const ASESMEN_STEPS_LOW_JENJAH_ASESOR_2: StepConfig[] = [
   { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
-// Asesmen Steps for Asesor 1 (full flow)
-export const ASESMEN_STEPS_ASESOR_1: StepConfig[] = [
-  { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
-  { number: 2, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
-  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
-  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
-]
-
 // Asesmen Steps for Asesor 2 (full flow)
 export const ASESMEN_STEPS_ASESOR_2: StepConfig[] = [
-  { number: 1, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
-  { number: 2, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
-  { number: 3, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
-  { number: 4, label: 'IA.05', href: '/asesi/asesmen/ia05' },
-  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
-  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
+  { number: 3, label: 'Review Tugas', href: '/asesi/asesmen/upload-tugas' },
+  { number: 4, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
+  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 6, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 7, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 8, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 9, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 10, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Portofolio Method Steps (jenjang >= 4, metode = portofolio)
 export const ASESMEN_STEPS_PORTOFOLIO_ASESI: StepConfig[] = [
-  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
-  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
-  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
-  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'Survei', href: '/asesi/asesmen/survei' },
-  { number: 7, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 3, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 4, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 7, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_1: StepConfig[] = [
-  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
-  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
-  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
-  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'AK.05', href: '/asesi/asesmen/ak05' },
-  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 3, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 4, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_2: StepConfig[] = [
-  { number: 1, label: 'IA.08', href: '/asesi/asesmen/ia08' },
-  { number: 2, label: 'IA.09', href: '/asesi/asesmen/ia09' },
-  { number: 3, label: 'IA.10', href: '/asesi/asesmen/ia10' },
-  { number: 4, label: 'AK.02', href: '/asesi/asesmen/ak02' },
-  { number: 5, label: 'AK.03', href: '/asesi/asesmen/ak03' },
-  { number: 6, label: 'AK.05', href: '/asesi/asesmen/ak05' },
-  { number: 7, label: 'AK.06', href: '/asesi/asesmen/ak06' },
-  { number: 8, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 1, label: 'AK.01', href: '/asesi/asesmen/ak01' },
+  { number: 2, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 3, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 4, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+  { number: 5, label: 'AK.02', href: '/asesi/asesmen/ak02' },
+  { number: 6, label: 'AK.03', href: '/asesi/asesmen/ak03' },
+  { number: 7, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 8, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 9, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 // Default asesmen steps (backward compatibility)

@@ -364,7 +364,7 @@ export default function Ia04aPage() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', letterSpacing: '1px' }}>

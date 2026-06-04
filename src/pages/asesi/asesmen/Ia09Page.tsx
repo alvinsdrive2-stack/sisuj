@@ -278,6 +278,7 @@ export default function Ia09Page() {
         currentStep={asesmenSteps.find((s) => s.href.includes("ia09"))?.number || 1}
         steps={asesmenSteps}
         id={id}
+        metode={metode}
       >
         {/* Title */}
         <div style={{ marginBottom: "20px" }}>

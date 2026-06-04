@@ -61,7 +61,7 @@ export default function Mapa02Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -181,19 +181,19 @@ export default function Mapa02Page() {
 
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
       return
     }
 
     // Jika semua sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
       return
     }
 
     // Jika asesor sudah ttd → redirect (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
       return
     }
 
@@ -234,7 +234,7 @@ export default function Mapa02Page() {
       signing.publishUpdate()
       // Untuk tahap 0, langsung navigasi ke halaman berikutnya
       if (tahap === 0) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-07`), 500)
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`), 500)
       }
     } catch (error) {
       console.error('Error saving MAPA 02:', error)
@@ -268,7 +268,7 @@ export default function Mapa02Page() {
         </div>
       </div>
 
-      <MukLayout currentStep={2} idIzin={idIzin}>
+      <MukLayout currentStep={2} idIzin={idIzin} metode={metode}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>

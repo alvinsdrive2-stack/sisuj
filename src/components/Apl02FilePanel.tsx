@@ -111,7 +111,7 @@ export default function Apl02FilePanel({ idIzin, onCollapse, refreshKey }: Apl02
   const stripExt = (name: string) => name.replace(/\.[^.]+$/, '')
 
   return (
-    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[600px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : 'auto', maxHeight: '800px', transition: 'width 0.25s ease' }}>
+    <div className={`w-full ${collapsed ? 'lg:w-[200px]' : 'lg:w-[500px]'}`} style={{ flexShrink: 0, overflow: collapsed ? 'hidden' : 'auto', maxHeight: '800px', transition: 'width 0.25s ease' }}>
       <div style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         {/* Header - click to collapse */}
         <div style={{ padding: '12px 16px', borderBottom: collapsed ? 'none' : '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={toggleCollapse}>

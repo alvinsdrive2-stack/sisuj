@@ -8,9 +8,16 @@ interface MukLayoutProps {
   children: ReactNode
   currentStep: number
   idIzin?: string
+  metode?: string
 }
 
-export default function MukLayout({ children, currentStep, idIzin }: MukLayoutProps) {
+function getMukTitle(metode?: string): string {
+  const lower = metode?.toLowerCase()
+  if (lower === 'portofolio') return 'MUK Portofolio'
+  return 'MUK Observasi'
+}
+
+export default function MukLayout({ children, currentStep, idIzin, metode }: MukLayoutProps) {
   const { user } = useAuth()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [showSteps, setShowSteps] = useState(false)
@@ -27,7 +34,7 @@ export default function MukLayout({ children, currentStep, idIzin }: MukLayoutPr
     <div className="flex flex-col lg:flex-row" style={{ gap: '30px', padding: '20px', maxWidth: '1720px', margin: '0 auto', alignItems: 'flex-start' }}>
       {/* Sidebar - desktop */}
       <div className="hidden lg:block" style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-        <ModularStepIndicator currentStep={currentStep} steps={resolvedSteps} disableClick={!isAsesor} title="MUK [Observasi/Portofolio]" />
+        <ModularStepIndicator currentStep={currentStep} steps={resolvedSteps} disableClick={!isAsesor} title={getMukTitle(metode)} />
       </div>
 
       {/* Main Content */}
@@ -75,7 +82,7 @@ export default function MukLayout({ children, currentStep, idIzin }: MukLayoutPr
         <div className="lg:hidden fixed inset-0 z-[60] flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSteps(false)}>
           <div className="w-full rounded-t-2xl" style={{ background: '#fff', maxHeight: '70vh', overflowY: 'auto', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: '#ddd' }} />
-            <ModularStepIndicator currentStep={currentStep} steps={resolvedSteps} disableClick={!isAsesor} title="MUK [Observasi/Portofolio]" />
+            <ModularStepIndicator currentStep={currentStep} steps={resolvedSteps} disableClick={!isAsesor} title={getMukTitle(metode)} />
           </div>
         </div>
       )}

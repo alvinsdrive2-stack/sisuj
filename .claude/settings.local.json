@@ -64,7 +64,8 @@
       "Bash(Select-String \":5173\")",
       "Bash(Select-Object -First 2)",
       "Bash(curl -s http://localhost:5173/src/pages/asesi/Apl02Page.tsx)",
-      "Bash(git filter-branch *)"
+      "Bash(git filter-branch *)",
+      "Bash(Select-Object Name)"
     ]
   },
   "enableAllProjectMcpServers": true,

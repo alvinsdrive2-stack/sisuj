@@ -86,12 +86,12 @@ export default function Ia01Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId, metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabledBase = !isAsesor
@@ -307,7 +307,7 @@ export default function Ia01Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia01'))?.number || 1} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia01'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>

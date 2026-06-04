@@ -350,7 +350,7 @@ export default function Ak05Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={currentStep || 7} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={currentStep || 7} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000' }}>

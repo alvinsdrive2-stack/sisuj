@@ -246,7 +246,7 @@ Body: { id_jadwal: string }
 
 ### B1. FrAk01Page — FR.AK.01
 
-**Route:** `/asesi/perjanjian/:idIzin/fr-ak-01`
+**Route:** `/asesi/perjanjian/:idIzin/ak01`
 **Filled By:** Asesor
 
 **POST 1:** Save verification + waktu

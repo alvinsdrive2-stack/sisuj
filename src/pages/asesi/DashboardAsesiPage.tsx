@@ -96,6 +96,7 @@ export default function DashboardAsesiPage() {
     let tahap2Steps: string[] = []
     if (isPortofolio) {
       tahap2Steps = [
+        `/asesmen/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia08`,
         `/asesmen/${idIzin}/ia09`,
         `/asesmen/${idIzin}/ia10`,
@@ -104,6 +105,7 @@ export default function DashboardAsesiPage() {
       ]
     } else if (isLowJenjang) {
       tahap2Steps = [
+        `/asesmen/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia01`,
         `/asesmen/${idIzin}/ia02`,
         `/asesmen/${idIzin}/ia03`,
@@ -114,6 +116,7 @@ export default function DashboardAsesiPage() {
       ]
     } else {
       tahap2Steps = [
+        `/asesmen/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia04a`,
         `/asesmen/${idIzin}/upload-tugas`,
         `/asesmen/${idIzin}/ia04b`,
@@ -447,9 +450,9 @@ export default function DashboardAsesiPage() {
                         { key: 'apl02', path: `/praasesmen/${idIzin}/apl02` },
                         { key: 'mapa01', path: `/praasesmen/${idIzin}/mapa01` },
                         { key: 'mapa02', path: `/praasesmen/${idIzin}/mapa02` },
-                        { key: 'ak07', path: `/praasesmen/${idIzin}/fr-ak-07` },
-                        { key: 'ak04', path: `/praasesmen/${idIzin}/fr-ak-04` },
-                        { key: 'k3', path: `/praasesmen/${idIzin}/k3` },
+                        { key: 'ak07', path: `/praasesmen/${idIzin}/ak07` },
+                        { key: 'ak04', path: `/praasesmen/${idIzin}/ak04` },
+                        { key: 'k3', path: `/praasesmen/${idIzin}/file-k3` },
                       ]
                       for (const step of tahap1Steps) {
                         try {
@@ -478,6 +481,7 @@ export default function DashboardAsesiPage() {
                       let tahap2Steps: { key: string; path: string }[] = []
                       if (isPortofolio) {
                         tahap2Steps = [
+                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
                           { key: 'ia08', path: `/asesmen/${idIzin}/ia08` },
                           { key: 'ia09', path: `/asesmen/${idIzin}/ia09` },
                           { key: 'ia10', path: `/asesmen/${idIzin}/ia10` },
@@ -486,6 +490,7 @@ export default function DashboardAsesiPage() {
                         ]
                       } else if (isLowJenjang) {
                         tahap2Steps = [
+                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
                           { key: 'ia01', path: `/asesmen/${idIzin}/ia01` },
                           { key: 'ia02', path: `/asesmen/${idIzin}/ia02` },
                           { key: 'ia03', path: `/asesmen/${idIzin}/ia03` },
@@ -496,6 +501,7 @@ export default function DashboardAsesiPage() {
                         ]
                       } else {
                         tahap2Steps = [
+                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
                           { key: 'ia04a', path: `/asesmen/${idIzin}/ia04a` },
                           { key: 'upload-tugas', path: `/asesmen/${idIzin}/upload-tugas` },
                           { key: 'ia04b', path: `/asesmen/${idIzin}/ia04b` },

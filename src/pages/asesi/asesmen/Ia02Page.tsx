@@ -140,12 +140,12 @@ export default function Ia02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId, metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showWarning } = useToast()
   const { isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
 
   // Absen check
   const {
@@ -291,7 +291,7 @@ export default function Ia02Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={2} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={2} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>

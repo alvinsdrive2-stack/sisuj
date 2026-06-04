@@ -50,7 +50,7 @@ export default function FrAk04Page() {
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -218,7 +218,7 @@ export default function FrAk04Page() {
 
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-01`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/ak01`)
       return
     }
 
@@ -301,7 +301,7 @@ export default function FrAk04Page() {
       showSuccess('FR AK 04 berhasil disimpan!')
       signing.publishUpdate()
       if (tahap === 0) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/fr-ak-01`), 500)
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak01`), 500)
       }
     } catch (error) {
       console.error("Error saving AK04:", error)
@@ -332,7 +332,7 @@ export default function FrAk04Page() {
         </div>
       </div>
 
-      <MukLayout currentStep={4} idIzin={idIzin}>
+      <MukLayout currentStep={4} idIzin={idIzin} metode={metode}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px' }}>

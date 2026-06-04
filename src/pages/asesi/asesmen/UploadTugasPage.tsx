@@ -273,7 +273,7 @@ export default function UploadTugasPage() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('upload-tugas'))?.number || 2} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('upload-tugas'))?.number || 2} steps={asesmenSteps} id={id} metode={metode}>
         {/* Main Container */}
         <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '4px', padding: '24px' }}>
           {/* Header */}

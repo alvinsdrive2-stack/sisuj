@@ -386,7 +386,7 @@ export default function Ia05Page() {
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
 
-      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia05'))?.number || 4} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia05'))?.number || 4} steps={asesmenSteps} id={id} metode={metode}>
                 {/* IDENTITAS Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
           <tbody>

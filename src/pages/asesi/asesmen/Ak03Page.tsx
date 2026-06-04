@@ -329,7 +329,7 @@ export default function Ak03Page() {
         </div>
       </div>
 
-      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ak03'))?.number || 6} steps={asesmenSteps} id={id}>
+      <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ak03'))?.number || 6} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000' }}>

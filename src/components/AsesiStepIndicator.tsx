@@ -39,7 +39,7 @@ const getPraasesmenPath = (stepNumber: number, idIzin?: string): string | null =
 const getPerjanjianPath = (stepNumber: number, idIzin?: string): string | null => {
   if (!idIzin) return null
   const paths: Record<number, string | null> = {
-    1: `/asesi/perjanjian/${idIzin}/fr-ak-01`,
+    1: `/asesi/perjanjian/${idIzin}/ak01`,
     2: null, // Selesai
   }
   return paths[stepNumber] || null

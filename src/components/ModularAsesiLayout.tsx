@@ -8,9 +8,18 @@ interface ModularAsesiLayoutProps {
   currentStep: number
   steps: { number: number; label: string; href?: string }[]
   id?: string
+  title?: string
+  metode?: string
 }
 
-export default function ModularAsesiLayout({ children, currentStep, steps, id }: ModularAsesiLayoutProps) {
+function getAsesmenTitle(metode?: string): string {
+  const lower = metode?.toLowerCase()
+  const muk = lower === 'portofolio' ? 'MUK Portofolio' : 'MUK Observasi'
+  return `Asesmen - ${muk}`
+}
+
+export default function ModularAsesiLayout({ children, currentStep, steps, id, title, metode }: ModularAsesiLayoutProps) {
+  const sidebarTitle = title || (metode ? getAsesmenTitle(metode) : undefined)
   const { user } = useAuth()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [showSteps, setShowSteps] = useState(false)
@@ -21,7 +30,7 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id }:
     <div className="flex flex-col lg:flex-row" style={{ gap: '30px', padding: '20px', maxWidth: '1720px', margin: '0 auto', alignItems: 'flex-start' }}>
       {/* Sidebar - desktop */}
       <div className="hidden lg:block" style={{ position: 'sticky', top: '80px', alignSelf: 'flex-start' }}>
-        <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} disableClick={!isAsesor} />
+        <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} disableClick={!isAsesor} title={sidebarTitle} />
       </div>
 
       {/* Main Content */}
@@ -69,7 +78,7 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id }:
         <div className="lg:hidden fixed inset-0 z-[60] flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowSteps(false)}>
           <div className="w-full rounded-t-2xl" style={{ background: '#fff', maxHeight: '70vh', overflowY: 'auto', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: '#ddd' }} />
-            <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} disableClick={!isAsesor} />
+            <ModularStepIndicator currentStep={currentStep} steps={steps} id={id} disableClick={!isAsesor} title={sidebarTitle} />
           </div>
         </div>
       )}

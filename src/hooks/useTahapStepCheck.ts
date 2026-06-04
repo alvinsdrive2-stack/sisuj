@@ -50,9 +50,9 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
       { stepKey: 'apl02', label: 'APL 02', href: '/praasesmen/:idIzin/apl02' },
       { stepKey: 'mapa01', label: 'MAPA 01', href: '/praasesmen/:idIzin/mapa01' },
       { stepKey: 'mapa02', label: 'MAPA 02', href: '/praasesmen/:idIzin/mapa02' },
-      { stepKey: 'ak07', label: 'AK.07', href: '/praasesmen/:idIzin/fr-ak-07' },
-      { stepKey: 'ak04', label: 'AK.04', href: '/praasesmen/:idIzin/fr-ak-04' },
-      { stepKey: 'k3', label: 'K3', href: '/praasesmen/:idIzin/k3-asesmen' },
+      { stepKey: 'ak07', label: 'AK.07', href: '/praasesmen/:idIzin/ak07' },
+      { stepKey: 'ak04', label: 'AK.04', href: '/praasesmen/:idIzin/ak04' },
+      { stepKey: 'k3', label: 'Tata Tertib dan K3', href: '/praasesmen/:idIzin/k3-asesmen' },
     ]
   }
 
@@ -63,6 +63,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
 
   if (isPortofolio) {
     return [
+      { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
       { stepKey: 'ia08', label: 'IA.08', href: '/asesmen/:id/ia08' },
       { stepKey: 'ia09', label: 'IA.09', href: '/asesmen/:id/ia09' },
       { stepKey: 'ia10', label: 'IA.10', href: '/asesmen/:id/ia10' },
@@ -73,6 +74,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
 
   if (isLowJenjang) {
     return [
+      { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
       { stepKey: 'ia01', label: 'IA.01', href: '/asesmen/:id/ia01' },
       { stepKey: 'ia02', label: 'IA.02', href: '/asesmen/:id/ia02' },
       { stepKey: 'ia03', label: 'IA.03', href: '/asesmen/:id/ia03' },
@@ -85,6 +87,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
 
   // Default: full jenjang
   return [
+    { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
     { stepKey: 'ia04a', label: 'IA.04.A', href: '/asesmen/:id/ia04a' },
     { stepKey: 'upload-tugas', label: 'Upload Tugas', href: '/asesmen/:id/upload-tugas' },
     { stepKey: 'ia04b', label: 'IA.04.B', href: '/asesmen/:id/ia04b' },

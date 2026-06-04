@@ -41,6 +41,7 @@ interface DataDokumenPraAsesmenData {
   noreg_validator: string | null
   nama_manajer: string | null
   tanggal_manajer: string | null
+  barcode_manajer: string | null
   jadwal_id?: string | null
 }
 
@@ -72,6 +73,7 @@ interface UseDataDokumenPraAsesmenResult {
   noregValidator: string | null
   namaManajer: string | null
   tanggalManajer: string | null
+  barcodeManajer: string | null
   jadwalId: string | null
   isLoading: boolean
   error: string | null
@@ -101,6 +103,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
     noregValidator: string | null
     namaManajer: string | null
     tanggalManajer: string | null
+    barcodeManajer: string | null
     jadwalId: string | null
   }>({
     jabatanKerja: '',
@@ -125,6 +128,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
     noregValidator: null,
     namaManajer: null,
     tanggalManajer: null,
+    barcodeManajer: null,
     jadwalId: null,
   })
   const [isLoading, setIsLoading] = useState(true)
@@ -190,6 +194,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
               noregValidator: result.data.noreg_validator || null,
               namaManajer: result.data.nama_manajer || null,
               tanggalManajer: result.data.tanggal_manajer || null,
+              barcodeManajer: result.data.barcode_manajer || null,
               jadwalId: result.data.jadwal_id || null,
             })
           }

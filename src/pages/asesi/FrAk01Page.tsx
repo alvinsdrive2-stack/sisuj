@@ -1,9 +1,10 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom"
 import AsesiLayout from "@/components/AsesiLayout"
+import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -14,6 +15,7 @@ import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { getAsesmenSteps } from "@/lib/asesmen-steps"
 
 interface BuktiAsesmen {
   id: number
@@ -69,6 +71,7 @@ export default function FrAk01Page() {
   const location = useLocation()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+  const isAsesmenFlow = location.pathname.includes('/asesmen/')
   const isPerjanjianFlow = location.pathname.includes('/perjanjian/')
   const successPath = isPerjanjianFlow ? '/asesi/perjanjian/ak01-success' : '/asesi/praasesmen/ak01-success'
 
@@ -100,7 +103,8 @@ export default function FrAk01Page() {
   })
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId } = useDataDokumenPraAsesmen(actualIdIzin)
+  const [showMasukAsesmenModal, setShowMasukAsesmenModal] = useState(false)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode } = useDataDokumenPraAsesmen(actualIdIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {
@@ -242,6 +246,11 @@ export default function FrAk01Page() {
     onUpdate: fetchData,
   })
 
+  const asesmenSteps = useMemo(() => {
+    if (!isAsesmenFlow || !jenjang) return []
+    return getAsesmenSteps(jenjang, isAsesor, undefined, 0, metode)
+  }, [isAsesmenFlow, jenjang, isAsesor, metode])
+
   // Legacy aliases for hook-managed state
   const allSigned = signing.allSigned
   const allAsesorSigned = signing.allAsesorSigned
@@ -291,6 +300,10 @@ export default function FrAk01Page() {
 
     // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
+      if (isAsesmenFlow) {
+        setShowMasukAsesmenModal(true)
+        return
+      }
       // Check if absen akhir needed
       const needsAbsenAkhir = await _shouldShowAkhirModal()
       if (needsAbsenAkhir) {
@@ -304,6 +317,10 @@ export default function FrAk01Page() {
 
     // If asesi already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && !isAsesor && asesiHasSigned) {
+      if (isAsesmenFlow) {
+        setShowMasukAsesmenModal(true)
+        return
+      }
       // Check if absen akhir needed
       const needsAbsenAkhir = await _shouldShowAkhirModal()
       if (needsAbsenAkhir) {
@@ -357,6 +374,12 @@ export default function FrAk01Page() {
         // Notify other users viewing this page
         signing.publishUpdate()
 
+        // Untuk asesmen flow, show floating modal
+        if (isAsesmenFlow) {
+          setShowMasukAsesmenModal(true)
+          return
+        }
+
         // Untuk tahap 0, langsung navigasi ke halaman berikutnya
         if (tahap === 0) {
           setTimeout(() => {
@@ -377,304 +400,220 @@ export default function FrAk01Page() {
     return <FullPageLoader text="Memuat data..." />
   }
 
-  return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '13px', color: '#000', padding: '20px' }}>
-      {/* Header */}
-      
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>{isPerjanjianFlow ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}</span>
-            <span>/</span>
-            <span>FR.AK.01</span>
-          </div>
-        </div>
+  const pageContent = (
+    <>
+      {/* Title */}
+      <div style={{ marginBottom: '20px' }}>
+        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR.AK.01 - PERSETUJUAN ASESMEN</h2>
+        <p style={{ fontSize: '13px', color: '#666' }}>Isi atau lengkapi data formulir AK 01 di bawah ini</p>
+
       </div>
 
-      <AsesiLayout currentStep={isPerjanjianFlow ? 1 : 9} idIzin={actualIdIzin} tahap={tahap} flow={isPerjanjianFlow ? 'perjanjian' : 'praasesmen'}>
-        {/* Title */}
-        <div style={{ marginBottom: '20px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>FR.AK.01 - PERSETUJUAN ASESMEN</h2>
-          <p style={{ fontSize: '13px', color: '#666' }}>Isi atau lengkapi data formulir AK 01 di bawah ini</p>
-         
-        </div>
+      {/* Form Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff' }}>
+        <tbody>
+          {/* Penjelasan */}
+          <tr>
+            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              Persetujuan Asesmen ini untuk menjamin bahwa Asesi telah diberi arahan
+              secara rinci tentang perencanaan dan proses asesmen
+            </td>
+          </tr>
 
-        {/* Form Table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff' }}>
-          <tbody>
-            {/* Penjelasan */}
-            <tr>
-              <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                Persetujuan Asesmen ini untuk menjamin bahwa Asesi telah diberi arahan
-                secara rinci tentang perencanaan dan proses asesmen
-              </td>
-            </tr>
+          {/* Skema Sertifikasi */}
+          <tr>
+            <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
+              Skema Sertifikasi<br />(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
+            </td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{jabatanKerja?.toUpperCase() || formData.skemaJudul || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nomor</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{nomorSkema?.toUpperCase() || formData.skemaNomor || '-'}</td>
+          </tr>
 
-            {/* Skema Sertifikasi */}
-            <tr>
-              <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
-                Skema Sertifikasi<br />(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
-              </td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{jabatanKerja?.toUpperCase() || formData.skemaJudul || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nomor</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{nomorSkema?.toUpperCase() || formData.skemaNomor || '-'}</td>
-            </tr>
-
-            {/* Identitas */}
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tuk || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
-            </tr>
-            {asesorList.length > 1 ? (
-              asesorList.map((asesor, idx) => (
-                <tr key={asesor.id}>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor {idx + 1}</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                    {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
+          {/* Identitas */}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tuk || 'Sewaktu/Tempat Kerja/Mandiri*'}</td>
+          </tr>
+          {asesorList.length > 1 ? (
+            asesorList.map((asesor, idx) => (
+              <tr key={asesor.id}>
+                <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor {idx + 1}</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                  {asesorList.length > 0
-                    ? `${asesorList[0].nama?.toUpperCase() || ''}${asesorList[0].noreg ? ` (${asesorList[0].noreg})` : ''}`
-                    : namaAsesor?.toUpperCase() || formData.namaAsesor || '-'}
+                  {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
                 </td>
               </tr>
-            )}
+            ))
+          ) : (
             <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesor</td>
               <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || formData.namaAsesi || '-'}</td>
-            </tr>
-
-            {/* Bukti yang akan dikumpulkan */}
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>
-                Bukti yang akan dikumpulkan :
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                {asesorList.length > 0
+                  ? `${asesorList[0].nama?.toUpperCase() || ''}${asesorList[0].noreg ? ` (${asesorList[0].noreg})` : ''}`
+                  : namaAsesor?.toUpperCase() || formData.namaAsesor || '-'}
               </td>
-              <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <tbody>
-                    {buktiList.map((bukti, index) => {
-                      const isFirstInRow = index % 2 === 0
-                      return (
-                        <tr key={bukti.id}>
-                          {isFirstInRow && (
-                            <>
+            </tr>
+          )}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Nama Asesi</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px' }}>{namaAsesi?.toUpperCase() || user?.name?.toUpperCase() || formData.namaAsesi || '-'}</td>
+          </tr>
+
+          {/* Bukti yang akan dikumpulkan */}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>
+              Bukti yang akan dikumpulkan :
+            </td>
+            <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {buktiList.map((bukti, index) => {
+                    const isFirstInRow = index % 2 === 0
+                    return (
+                      <tr key={bukti.id}>
+                        {isFirstInRow && (
+                          <>
+                            <td style={{ padding: '2px 4px', border: 'none' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: '0.7' }}>
+                                <CustomCheckbox
+                                  checked={formData.buktiYangDikumpulkan?.includes(bukti.id) || false}
+                                  onChange={() => {}}
+                                  disabled
+                                />
+                                {bukti.nama}
+                              </label>
+                            </td>
+                            {buktiList[index + 1] ? (
                               <td style={{ padding: '2px 4px', border: 'none' }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: '0.7' }}>
                                   <CustomCheckbox
-                                    checked={formData.buktiYangDikumpulkan?.includes(bukti.id) || false}
+                                    checked={formData.buktiYangDikumpulkan?.includes(buktiList[index + 1].id) || false}
                                     onChange={() => {}}
                                     disabled
                                   />
-                                  {bukti.nama}
+                                  {buktiList[index + 1].nama}
                                 </label>
                               </td>
-                              {buktiList[index + 1] ? (
-                                <td style={{ padding: '2px 4px', border: 'none' }}>
-                                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'not-allowed', opacity: '0.7' }}>
-                                    <CustomCheckbox
-                                      checked={formData.buktiYangDikumpulkan?.includes(buktiList[index + 1].id) || false}
-                                      onChange={() => {}}
-                                      disabled
-                                    />
-                                    {buktiList[index + 1].nama}
-                                  </label>
-                                </td>
-                              ) : (
-                                <td style={{ padding: '2px 4px', border: 'none' }}></td>
-                              )}
-                            </>
-                          )}
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </td>
-            </tr>
+                            ) : (
+                              <td style={{ padding: '2px 4px', border: 'none' }}></td>
+                            )}
+                          </>
+                        )}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </td>
+          </tr>
 
-            {/* Jadwal Pelaksanaan */}
-            <tr>
-              <td rowSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>
-                Pelaksanaan asesmen disepakati pada:
-              </td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Hari / Tanggal</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{hariTanggal || formData.hariTanggal || ''}</td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Waktu</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '14px' }}>{waktuAk01 || `${jam}:${menit} - Selesai`}</span>
-                  <button
-                    type="button"
-                    onClick={() => isAsesor && setShowTimePicker(true)}
-                    disabled={allSigned || !isAsesor}
-                    style={{
-                      padding: '6px 12px',
-                      border: '1px solid #e2e8f0',
-                      backgroundColor: (allSigned || !isAsesor) ? '#cbd5e1' : '#fff',
-                      color: (allSigned || !isAsesor) ? '#fff' : '#64748b',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      borderRadius: '6px',
-                      cursor: (allSigned || !isAsesor) ? 'not-allowed' : 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      opacity: (allSigned || !isAsesor) ? 0.5 : 1,
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (allSigned || !isAsesor) return
-                      e.currentTarget.style.backgroundColor = '#f8fafc'
-                      e.currentTarget.style.borderColor = '#cbd5e1'
-                    }}
-                    onMouseLeave={(e) => {
-                      if (allSigned || !isAsesor) return
-                      e.currentTarget.style.backgroundColor = '#fff'
-                      e.currentTarget.style.borderColor = '#e2e8f0'
-                    }}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"></circle>
-                      <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    Pilih Jam
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tukPelaksanaan || ''}</td>
-            </tr>
-                  
-                  <tr>
-              <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <span style={{ fontWeight: 'bold' }}>Asesi :</span><br /><br />
-                Bahwa saya telah mendapatkan penjelasan terkait hak dan prosedur banding asesmen dari asesor.
-              </td>
-            </tr>
-            {/* Pernyataan Asesor */}
-            <tr>
-              <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <span style={{ fontWeight: 'bold' }}>Asesor :</span><br /><br />
-                Menyatakan tidak akan membuka hasil pekerjaan yang saya peroleh karena
-                penugasan saya sebagai Asesor dalam pekerjaan Asesmen kepada siapapun
-                atau organisasi apapun selain kepada pihak yang berwenang sehubungan
-                dengan kewajiban saya sebagai Asesor yang ditugaskan oleh LSP.
-              </td>
-            </tr>
+          {/* Jadwal Pelaksanaan */}
+          <tr>
+            <td rowSpan={3} style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold', verticalAlign: 'top' }}>
+              Pelaksanaan asesmen disepakati pada:
+            </td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Hari / Tanggal</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{hariTanggal || formData.hariTanggal || ''}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>Waktu</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '14px' }}>{waktuAk01 || `${jam}:${menit} - Selesai`}</span>
+                <button
+                  type="button"
+                  onClick={() => isAsesor && setShowTimePicker(true)}
+                  disabled={allSigned || !isAsesor}
+                  style={{
+                    padding: '6px 12px',
+                    border: '1px solid #e2e8f0',
+                    backgroundColor: (allSigned || !isAsesor) ? '#cbd5e1' : '#fff',
+                    color: (allSigned || !isAsesor) ? '#fff' : '#64748b',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    cursor: (allSigned || !isAsesor) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    opacity: (allSigned || !isAsesor) ? 0.5 : 1,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (allSigned || !isAsesor) return
+                    e.currentTarget.style.backgroundColor = '#f8fafc'
+                    e.currentTarget.style.borderColor = '#cbd5e1'
+                  }}
+                  onMouseLeave={(e) => {
+                    if (allSigned || !isAsesor) return
+                    e.currentTarget.style.backgroundColor = '#fff'
+                    e.currentTarget.style.borderColor = '#e2e8f0'
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  Pilih Jam
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>TUK</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{tuk?.toUpperCase() || formData.tukPelaksanaan || ''}</td>
+          </tr>
 
-            {/* Pernyataan Asesi */}
-            <tr>
-              <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
-                <span style={{ fontWeight: 'bold' }}>Asesi :</span><br /><br />
-                Saya setuju mengikuti asesmen dengan pemahaman bahwa informasi yang
-                dikumpulkan hanya digunakan untuk pengembangan profesional dan hanya
-                dapat diakses oleh orang tertentu saja.
-              </td>
-            </tr>
-
-            {/* Tanda Tangan */}
-            {barcodes?.asesor2?.url ? (
-              // Jika ada 2 asesor, tampilkan 2 baris terpisah
-              <>
                 <tr>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                      Tanda tangan Asesor 1 :<br />
-                      {barcodes?.asesor1?.url ? (
-                        <>
-                          <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor 1" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
-                          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesor1?.nama?.toUpperCase()}
-                          </div>
-                          {barcodes?.asesor1?.tanggal && (
-                            <span style={{ fontSize: '10px', color: '#666' }}>
-                              {new Date(barcodes.asesor1?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span>{formData.tandaTanganAsesor || '.............................................'}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                      Tanda tangan Asesor 2 :<br />
-                      {barcodes?.asesor2?.url ? (
-                        <>
-                          <img src={barcodes.asesor2?.url} alt="Tanda Tangan Asesor 2" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
-                          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesor2?.nama?.toUpperCase()}
-                          </div>
-                          {barcodes?.asesor2?.tanggal && (
-                            <span style={{ fontSize: '10px', color: '#666' }}>
-                              {new Date(barcodes.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span>{formData.tandaTanganAsesor || '.............................................'}</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-                {/* Asesi tetap ditampilkan di baris terpisah */}
-                <tr>
-                  <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                      Tanda tangan Asesi :<br />
-                      {barcodes?.asesi?.url ? (
-                        <>
-                          <img src={barcodes.asesi?.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
-                          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                            {barcodes.asesi?.nama?.toUpperCase()}
-                          </div>
-                          {barcodes?.asesi?.tanggal && (
-                            <span style={{ fontSize: '10px', color: '#666' }}>
-                              {new Date(barcodes.asesi?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span>{formData.tandaTanganAsesi || '..............................................'}</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              </>
-            ) : (
-              // Jika hanya 1 asesor atau belum ada QR, tampilkan 1 baris
+            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              <span style={{ fontWeight: 'bold' }}>Asesi :</span><br /><br />
+              Bahwa saya telah mendapatkan penjelasan terkait hak dan prosedur banding asesmen dari asesor.
+            </td>
+          </tr>
+          {/* Pernyataan Asesor */}
+          <tr>
+            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              <span style={{ fontWeight: 'bold' }}>Asesor :</span><br /><br />
+              Menyatakan tidak akan membuka hasil pekerjaan yang saya peroleh karena
+              penugasan saya sebagai Asesor dalam pekerjaan Asesmen kepada siapapun
+              atau organisasi apapun selain kepada pihak yang berwenang sehubungan
+              dengan kewajiban saya sebagai Asesor yang ditugaskan oleh LSP.
+            </td>
+          </tr>
+
+          {/* Pernyataan Asesi */}
+          <tr>
+            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px' }}>
+              <span style={{ fontWeight: 'bold' }}>Asesi :</span><br /><br />
+              Saya setuju mengikuti asesmen dengan pemahaman bahwa informasi yang
+              dikumpulkan hanya digunakan untuk pengembangan profesional dan hanya
+              dapat diakses oleh orang tertentu saja.
+            </td>
+          </tr>
+
+          {/* Tanda Tangan */}
+          {barcodes?.asesor2?.url ? (
+            // Jika ada 2 asesor, tampilkan 2 baris terpisah
+            <>
               <tr>
                 <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    Tanda tangan Asesor :<br />
+                    Tanda tangan Asesor 1 :<br />
                     {barcodes?.asesor1?.url ? (
                       <>
-                        <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                        <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor 1" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                         <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
                           {barcodes.asesor1?.nama?.toUpperCase()}
                         </div>
@@ -689,63 +628,159 @@ export default function FrAk01Page() {
                     )}
                   </div>
                 </td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    Tanda tangan Asesor 2 :<br />
+                    {barcodes?.asesor2?.url ? (
+                      <>
+                        <img src={barcodes.asesor2?.url} alt="Tanda Tangan Asesor 2" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
+                          {barcodes.asesor2?.nama?.toUpperCase()}
+                        </div>
+                        {barcodes?.asesor2?.tanggal && (
+                          <span style={{ fontSize: '10px', color: '#666' }}>
+                            {new Date(barcodes.asesor2.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span>{formData.tandaTanganAsesor || '.............................................'}</span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+              {/* Asesi tetap ditampilkan di baris terpisah */}
+              <tr>
+                <td colSpan={4} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    Tanda tangan Asesi :<br />
+                    {barcodes?.asesi?.url ? (
+                      <>
+                        <img src={barcodes.asesi?.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
+                          {barcodes.asesi?.nama?.toUpperCase()}
+                        </div>
+                        {barcodes?.asesi?.tanggal && (
+                          <span style={{ fontSize: '10px', color: '#666' }}>
+                            {new Date(barcodes.asesi?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span>{formData.tandaTanganAsesi || '..............................................'}</span>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            </>
+          ) : (
+            // Jika hanya 1 asesor atau belum ada QR, tampilkan 1 baris
+            <tr>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                  Tanda tangan Asesi :<br />
-                  {barcodes?.asesi?.url ? (
+                  Tanda tangan Asesor :<br />
+                  {barcodes?.asesor1?.url ? (
                     <>
-                      <img src={barcodes.asesi.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                      <img src={barcodes.asesor1?.url} alt="Tanda Tangan Asesor" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
                       <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
-                        {barcodes.asesi.nama?.toUpperCase()}
+                        {barcodes.asesor1?.nama?.toUpperCase()}
                       </div>
-                      {barcodes?.asesi?.tanggal && (
+                      {barcodes?.asesor1?.tanggal && (
                         <span style={{ fontSize: '10px', color: '#666' }}>
-                          {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          {new Date(barcodes.asesor1?.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </span>
                       )}
                     </>
                   ) : (
-                    <span>{formData.tandaTanganAsesi || '..............................................'}</span>
+                    <span>{formData.tandaTanganAsesor || '.............................................'}</span>
                   )}
                 </div>
               </td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', height: '70px', verticalAlign: 'bottom' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                Tanda tangan Asesi :<br />
+                {barcodes?.asesi?.url ? (
+                  <>
+                    <img src={barcodes.asesi.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#333' }}>
+                      {barcodes.asesi.nama?.toUpperCase()}
+                    </div>
+                    {barcodes?.asesi?.tanggal && (
+                      <span style={{ fontSize: '10px', color: '#666' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <span>{formData.tandaTanganAsesi || '..............................................'}</span>
+                )}
+              </div>
+            </td>
 
-            </tr>
-            )}
-          </tbody>
-        </table>
-
-        <p style={{ fontSize: '12px' }}>* Coret yang tidak perlu</p>
-
-        {/* Pernyataan */}
-        {!allSigned && (
-        <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', padding: '12px' }}>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
-            <CustomCheckbox
-              checked={signing.agreedChecklist}
-              onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
-              disabled={allSigned}
-              style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
-            />
-            <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
-              <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan menyetujui isi FR.AK.01 (Persetujuan Asesmen) ini dengan sebenar-benarnya.
-            </span>
-          </label>
-        </div>
-        )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
-          {isAsesor && (
-            <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
-              Kembali
-            </ActionButton>
+          </tr>
           )}
-          <ActionButton variant="primary" onClick={handleSave} disabled={signing.buttonDisabled}>
-            {isSaving ? 'Menyimpan...' : signing.buttonText}
+        </tbody>
+      </table>
+
+      <p style={{ fontSize: '12px' }}>* Coret yang tidak perlu</p>
+
+      {/* Pernyataan */}
+      {!allSigned && (
+      <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', padding: '12px' }}>
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: allSigned ? 'not-allowed' : 'pointer' }}>
+          <CustomCheckbox
+            checked={signing.agreedChecklist}
+            onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+            disabled={allSigned}
+            style={{ marginTop: '2px', cursor: allSigned ? 'not-allowed' : 'pointer' }}
+          />
+          <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
+            <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan menyetujui isi FR.AK.01 (Persetujuan Asesmen) ini dengan sebenar-benarnya.
+          </span>
+        </label>
+      </div>
+      )}
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px' }}>
+        {isAsesor && (
+          <ActionButton variant="secondary" onClick={handleBack} disabled={isSaving}>
+            Kembali
           </ActionButton>
+        )}
+        <ActionButton variant="primary" onClick={handleSave} disabled={signing.buttonDisabled}>
+          {isSaving ? 'Menyimpan...' : signing.buttonText}
+        </ActionButton>
+      </div>
+    </>
+  )
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      {/* Header */}
+
+      {/* Breadcrumb */}
+      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
+        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
+            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
+            <span>/</span>
+            <span>{(isAsesmenFlow || isPerjanjianFlow) ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}</span>
+            <span>/</span>
+            <span>FR.AK.01</span>
+          </div>
         </div>
-      </AsesiLayout>
+      </div>
+
+      {isAsesmenFlow ? (
+        <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={actualIdIzin} title="Perjanjian Asesmen">
+          {pageContent}
+        </ModularAsesiLayout>
+      ) : (
+        <AsesiLayout currentStep={isPerjanjianFlow ? 1 : 9} idIzin={actualIdIzin} tahap={tahap} flow={isPerjanjianFlow ? 'perjanjian' : 'praasesmen'}>
+          {pageContent}
+        </AsesiLayout>
+      )}
 
       {/* Absen Awal Modal */}
       <WebcamModal
@@ -779,6 +814,82 @@ export default function FrAk01Page() {
         }}
         onClose={() => setShowTimePicker(false)}
       />
+
+      {/* Masuk ke Proses Asesmen Modal */}
+      {showMasukAsesmenModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px',
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '420px',
+            width: '100%',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            animation: 'modalSlideIn 0.3s ease-out',
+            textAlign: 'center',
+          }}>
+            <style>{`
+              @keyframes modalSlideIn {
+                from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+              }
+            `}</style>
+
+            {/* Success icon */}
+            <svg style={{ width: '56px', height: '56px', margin: '0 auto 16px' }} viewBox="0 0 52 52">
+              <circle cx="26" cy="26" r="25" fill="#10b981" opacity="0.15"/>
+              <path d="M14 27l7 7 16-16" fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
+              Perjanjian Asesmen Selesai
+            </h3>
+            <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px', lineHeight: '1.5' }}>
+              Seluruh proses perjanjian asesmen telah selesai. Silakan masuk ke proses asesmen untuk melanjutkan.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowMasukAsesmenModal(false)
+                const targetHref = asesmenSteps.length > 1
+                  ? asesmenSteps[1].href
+                  : '/asesi/dashboard'
+                navigate(targetHref)
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 28px',
+                background: '#0066cc',
+                color: '#fff',
+                fontSize: '14px',
+                fontWeight: '600',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#0052a3'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#0066cc'}
+            >
+              Masuk ke Proses Asesmen
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

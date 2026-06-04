@@ -287,15 +287,16 @@ function App() {
                   <Route path="praasesmen/:idIzin/muk" element={<AsesiOrAsesorRoute><MukPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa01" element={<AsesiOrAsesorRoute><Mapa01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/mapa02" element={<AsesiOrAsesorRoute><Mapa02Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/fr-ak-07" element={<AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/fr-ak-04" element={<AsesiOrAsesorRoute><FrAk04Page /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin/ak07" element={<AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin/ak04" element={<AsesiOrAsesorRoute><FrAk04Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin/k3-asesmen" element={<AsesiOrAsesorRoute><K3AsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/fr-ak-01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
                   {/* Perjanjian Asesmen */}
-                  <Route path="perjanjian/:idIzin/fr-ak-01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
+                  <Route path="perjanjian/:idIzin/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
                   <Route path="perjanjian/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
                   <Route path="asesmen" element={<AsesiOrAsesorRoute><AsesmenPage /></AsesiOrAsesorRoute>} />
+                  <Route path="asesmen/:id/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
                   <Route path="asesmen/:id/ia01" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ia02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ia03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />

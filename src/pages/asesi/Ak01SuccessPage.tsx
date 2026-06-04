@@ -6,7 +6,7 @@ import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
 
 const PERJANJIAN_STEPS = [
-  { number: 1, label: 'AK.01', href: '/asesi/perjanjian/:idIzin/fr-ak-01' },
+  { number: 1, label: 'AK.01', href: '/asesi/perjanjian/:idIzin/ak01' },
   { number: 2, label: 'Selesai', href: '/asesi/perjanjian/ak01-success' },
 ]
 

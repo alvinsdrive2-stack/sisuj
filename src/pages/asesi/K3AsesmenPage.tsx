@@ -28,11 +28,9 @@ export default function K3AsesmenPage() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { showWarning, showSuccess } = useToast()
-  const { asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showPerjanjianModal, setShowPerjanjianModal] = useState(false)
-  const [perjanjianAgreed, setPerjanjianAgreed] = useState(false)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const fetchK3Data = useCallback(async () => {
@@ -77,7 +75,7 @@ export default function K3AsesmenPage() {
   })
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
-  const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
+  const { showAwalModal, submitAbsenAwal, handleAwalModalClose, showAkhirModal, setShowAkhirModal, submitAbsenAkhir, handleAkhirModalClose, shouldShowAkhirModal: _shouldShowAkhirModal } = useAbsenCheck({
     phase: 'praasesmen',
     role: 'auto',
     checkOnMount: true, // Enable for both asesi and asesor
@@ -114,8 +112,19 @@ export default function K3AsesmenPage() {
       signing.publishUpdate()
       return // Tunggu asesor tanda tangan
     }
-    // Semua sudah ttd → lanjut ke perjanjian
-    setShowPerjanjianModal(true)
+    // Semua sudah ttd → absen akhir praasesmen
+    const needsAbsenAkhir = await _shouldShowAkhirModal()
+    if (needsAbsenAkhir) {
+      setShowAkhirModal(true)
+      return
+    }
+    // Absen akhir sudah ada → langsung dashboard
+    navigate('/asesi/dashboard')
+  }
+
+  const handleAbsenAkhirSubmit = async (blob: Blob) => {
+    await submitAbsenAkhir(blob)
+    navigate('/asesi/dashboard')
   }
 
   if (isLoading) {
@@ -134,12 +143,12 @@ export default function K3AsesmenPage() {
             <span>/</span>
             <span>Pra-Asesmen</span>
             <span>/</span>
-            <span>K3 Asesmen</span>
+            <span>Tata Tertib dan K3 Asesmen</span>
           </div>
         </div>
       </div>
 
-      <MukLayout currentStep={5} idIzin={idIzin}>
+      <MukLayout currentStep={5} idIzin={idIzin} metode={metode}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>
@@ -206,131 +215,15 @@ export default function K3AsesmenPage() {
         canClose={false}
       />
 
-      {/* Perjanjian Asesmen Confirm Modal */}
-      {showPerjanjianModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '16px',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              backgroundColor: '#fff',
-              borderRadius: '16px',
-              maxWidth: '480px',
-              width: '100%',
-              padding: '32px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              animation: 'modalSlideIn 0.3s ease-out',
-            }}
-          >
-            <style>{`
-              @keyframes modalSlideIn {
-                from { opacity: 0; transform: translateY(-20px) scale(0.95); }
-                to { opacity: 1; transform: translateY(0) scale(1); }
-              }
-            `}</style>
-            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                background: '#f0f9ff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px',
-              }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-              </div>
-              <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-                Perjanjian Asesmen
-              </h3>
-              <p style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.5' }}>
-                Anda akan masuk ke tahap Perjanjian Asesmen. Pastikan Anda telah membaca dan memahami dokumen perjanjian dengan cermat dan teliti.
-              </p>
-            </div>
-
-            <div style={{
-              background: '#f0f9ff',
-              border: '1px solid #bfdbfe',
-              borderRadius: '8px',
-              marginBottom: '24px',
-              padding: '12px',
-            }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={perjanjianAgreed}
-                  onChange={(e) => setPerjanjianAgreed(e.target.checked)}
-                  style={{ marginTop: '2px', width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <span style={{ fontSize: '13px', color: '#1e40af', lineHeight: '1.5' }}>
-                  Saya telah membaca perjanjian asesmen dengan cermat dan teliti
-                </span>
-              </label>
-            </div>
-
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button
-                onClick={() => {
-                  setShowPerjanjianModal(false)
-                  setPerjanjianAgreed(false)
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px',
-                  background: '#f3f4f6',
-                  color: '#374151',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  borderRadius: '12px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#e5e7eb' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#f3f4f6' }}
-              >
-                Kembali
-              </button>
-              <button
-                onClick={() => navigate(`/asesi/perjanjian/${idIzin}/fr-ak-01`)}
-                disabled={!perjanjianAgreed}
-                style={{
-                  flex: 2,
-                  padding: '10px',
-                  background: perjanjianAgreed ? '#3b82f6' : '#cbd5e1',
-                  color: '#fff',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  borderRadius: '12px',
-                  border: 'none',
-                  cursor: perjanjianAgreed ? 'pointer' : 'not-allowed',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => { if (perjanjianAgreed) e.currentTarget.style.background = '#2563eb' }}
-                onMouseLeave={(e) => { if (perjanjianAgreed) e.currentTarget.style.background = '#3b82f6' }}
-              >
-                Lanjut ke Perjanjian Asesmen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Absen Akhir Pra-Asesmen Modal */}
+      <WebcamModal
+        isOpen={showAkhirModal}
+        onClose={handleAkhirModalClose}
+        onSubmit={handleAbsenAkhirSubmit}
+        title="Absen Akhir Pra-Asesmen"
+        description="Silakan ambil foto wajah Anda untuk absen akhir pra-asesmen"
+        canClose={false}
+      />
     </div>
   )
 }

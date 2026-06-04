@@ -302,7 +302,7 @@ export default function Mapa01Page() {
         </div>
       </div>
 
-      <MukLayout currentStep={1} idIzin={actualIdIzin}>
+      <MukLayout currentStep={1} idIzin={actualIdIzin} metode={metode}>
         {/* A4 Size Indicator */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '20px'}}>
           <div className="mapa01-container">
