@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
 import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
+import { jenisKelasLabel } from "@/lib/utils"
 
 const TAHAP_CONFIG: Record<number, { title: string; badge: string; badgeClass: string }> = {
   0: { title: "Persiapan Asesmen", badge: "Belum Mulai", badgeClass: "bg-slate-100 text-slate-700 hover:bg-slate-200" },
@@ -100,7 +101,7 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        {kegiatan.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
+                        {jenisKelasLabel(kegiatan.jenis_kelas)}
                       </span>
                       {tahap > 0 && absenPending.perKegiatan[kegiatan.jadwal_id] > 0 && (
                         <span className="flex items-center gap-1 text-red-600 font-medium">

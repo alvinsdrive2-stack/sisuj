@@ -5,6 +5,7 @@ import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useNavigate } from "react-router-dom"
 import { useMemo } from "react"
+import { jenisKelasLabel } from "@/lib/utils"
 
 const TAHAP_CARDS = [
   { tahap: 0, title: "Persiapan Asesmen", icon: ClipboardList, color: "bg-slate-100 text-slate-700", hoverColor: "hover:bg-slate-200", path: "/asesor/persiapan" },
@@ -94,7 +95,7 @@ export default function DashboardAsesor() {
                       <div className="flex items-center gap-4 text-sm text-slate-600">
                         <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{new Date(kegiatan.tanggal_uji || '').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                         <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{new Date(kegiatan.tanggal_uji || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-                        <span className="flex items-center gap-1"><Users className="w-4 h-4" />{kegiatan.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}</span>
+                        <span className="flex items-center gap-1"><Users className="w-4 h-4" />{jenisKelasLabel(kegiatan.jenis_kelas)}</span>
                       </div>
                     </div>
                   ))}

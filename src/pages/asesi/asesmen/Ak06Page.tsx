@@ -57,6 +57,7 @@ interface Ak06Response {
     }
     dimensi_kompetensi: DimensiKompetensiAPI[]
     barcodes: Barcodes
+    video_ajj?: string
   }
 }
 
@@ -74,7 +75,7 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId, jenisKelas, namaAsesi } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
@@ -123,6 +124,9 @@ export default function Ak06Page() {
     asesor2: null
   })
   const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
+  const [showVideoLinkModal, setShowVideoLinkModal] = useState(false)
+  const [videoLink, setVideoLink] = useState('')
+  const [videoAjj, setVideoAjj] = useState('')
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak06')) + 1]?.label
 
@@ -176,6 +180,9 @@ export default function Ak06Page() {
             asesor1: null,
             asesor2: null
           })
+
+          // Set video AJJ link
+          setVideoAjj(result.data.video_ajj || '')
         }
       } else {
         console.warn(`AK06 API returned ${response.status}`)
@@ -252,6 +259,12 @@ export default function Ak06Page() {
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
+        // If luring and video link not yet provided, show video link modal first
+        if (jenisKelas === '3' && !videoAjj) {
+          setPendingAfterAbsen(true)
+          setShowVideoLinkModal(true)
+          return
+        }
         setPendingAfterAbsen(true)
         setShowAkhirModal(true)
         return
@@ -354,6 +367,53 @@ export default function Ak06Page() {
   // Handle absen akhir submit - navigate after success
   const handleAbsenAkhirSubmit = async (imageBlob: Blob) => {
     await submitAbsenAkhir(imageBlob)
+  }
+
+  // Handle video AJJ link submit
+  const handleVideoLinkSubmit = async () => {
+    if (!videoLink.trim()) {
+      showWarning('Silakan masukkan link Google Drive terlebih dahulu')
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/video-ajj`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ video_ajj: videoLink.trim() }),
+      })
+
+      if (response.ok) {
+        setVideoAjj(videoLink.trim())
+        setShowVideoLinkModal(false)
+        showSuccess('Link video berhasil disimpan')
+        // Proceed to absen akhir
+        const needsAbsenAkhir = await shouldShowAkhirModal()
+        if (needsAbsenAkhir) {
+          setShowAkhirModal(true)
+        } else {
+          setPendingAfterAbsen(false)
+          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+          const nextStep = asesmenSteps[currentIdx + 1]
+          if (nextStep) {
+            const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+            navigate(nextPath)
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        }
+      } else {
+        showError('Gagal menyimpan link video. Silakan coba lagi.')
+      }
+    } catch (err) {
+      console.error('Error saving video link:', err)
+      showError('Terjadi kesalahan. Silakan coba lagi.')
+    }
   }
 
   const handleAkhirModalClose = () => {
@@ -721,6 +781,49 @@ export default function Ak06Page() {
           </div>
         </div>
       </ModularAsesiLayout>
+
+      {/* Video AJJ Link Modal */}
+      {showVideoLinkModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '8px', padding: '24px',
+            width: '90%', maxWidth: '480px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 'bold' }}>
+              Upload Video AJJ
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#666' }}>
+              Silakan masukkan link Google Drive untuk Video AJJ asesi {namaAsesi || ''}
+            </p>
+            <input
+              type="text"
+              value={videoLink}
+              onChange={(e) => setVideoLink(e.target.value)}
+              placeholder="https://drive.google.com/..."
+              style={{
+                width: '100%', padding: '8px 12px', border: '1px solid #ccc',
+                borderRadius: '4px', fontSize: '14px', marginBottom: '16px',
+                boxSizing: 'border-box'
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <ActionButton variant="secondary" onClick={() => {
+                setShowVideoLinkModal(false)
+                setPendingAfterAbsen(false)
+              }}>
+                Batal
+              </ActionButton>
+              <ActionButton variant="primary" onClick={handleVideoLinkSubmit}>
+                Simpan & Lanjutkan
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Absen Awal Modal */}
       <WebcamModal

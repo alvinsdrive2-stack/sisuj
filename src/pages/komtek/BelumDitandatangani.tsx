@@ -8,6 +8,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { useKegiatanKomtek, useBaKomtekProgress } from "@/hooks/useKegiatan"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
+import { jenisKelasLabel } from "@/lib/utils"
 
 export default function BelumDitandatangani() {
   const navigate = useNavigate()
@@ -87,7 +88,7 @@ export default function BelumDitandatangani() {
                 key={doc.jadwal_id}
                 nomorKegiatan={doc.nama_kegiatan}
                 skemaSertifikasi={getUniqueSkemaNames(doc)}
-                jenisAsesmen={doc.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
+                jenisAsesmen={jenisKelasLabel(doc.jenis_kelas)}
                 documentInfo={[
                   { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
                   { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '-' },

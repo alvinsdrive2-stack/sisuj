@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useState } from "react"
+import { jenisKelasLabel } from "@/lib/utils"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
@@ -182,7 +183,7 @@ export default function DashboardAdminTUK() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="w-4 h-4" />
-                      {kegiatan.jenis_kelas === 'luring' ? 'Luring' : 'Daring'}
+                      {jenisKelasLabel(kegiatan.jenis_kelas)}
                     </span>
                   </div>
                 </div>
