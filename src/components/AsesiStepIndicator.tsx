@@ -22,7 +22,6 @@ const PRAASESMEN_STEPS: Step[] = [
 
 const PERJANJIAN_STEPS: Step[] = [
   { number: 1, label: 'AK.01' },
-  { number: 2, label: 'Selesai' },
 ]
 
 // Step paths relative to idIzin

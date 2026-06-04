@@ -15,6 +15,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
@@ -153,6 +154,7 @@ export default function Apl01Page() {
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -237,10 +239,12 @@ export default function Apl01Page() {
           if (result.data.barcodes) {
             setBarcodes(result.data.barcodes)
           }
+          setIsDataLoading(false)
         }
       }
     } catch (error) {
       // Continue with empty form
+      setIsDataLoading(false)
     }
   }, [idIzin])
 
@@ -351,6 +355,8 @@ export default function Apl01Page() {
       setIsSaving(false)
     }
   }
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>

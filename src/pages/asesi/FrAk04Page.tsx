@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface Referensi {
   id: number
@@ -57,6 +58,7 @@ export default function FrAk04Page() {
   const [alasanBanding, setAlasanBanding] = useState('')
   const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   const hasTrueAnswer = Object.values(answers).some(a => a === true)
 
@@ -92,6 +94,7 @@ export default function FrAk04Page() {
       }
 
       if (!resolvedIdIzin) {
+        setIsDataLoading(false)
         return
       }
 
@@ -136,6 +139,8 @@ export default function FrAk04Page() {
         console.warn(`AK04 API returned ${ak04Response.status}`)
       }
     } catch (error) {
+    } finally {
+      setIsDataLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -300,6 +305,8 @@ export default function FrAk04Page() {
       setIsSaving(false)
     }
   }
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

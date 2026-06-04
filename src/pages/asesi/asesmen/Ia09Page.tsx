@@ -11,6 +11,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -218,6 +219,8 @@ export default function Ia09Page() {
     }
   }
 
+  if (!pertanyaanList.length) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div
       style={{
@@ -226,7 +229,7 @@ export default function Ia09Page() {
         fontFamily: "Arial, Helvetica, sans-serif",
       }}
     >
-      
+
       <AsesmenBreadcrumb currentPage="IA.09" />
 
       <ModularAsesiLayout

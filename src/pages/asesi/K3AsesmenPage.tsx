@@ -10,6 +10,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface K3Response {
   message: string
@@ -29,6 +30,7 @@ export default function K3AsesmenPage() {
   const { showWarning, showSuccess } = useToast()
   const { asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const fetchK3Data = useCallback(async () => {
@@ -48,11 +50,14 @@ export default function K3AsesmenPage() {
           if (result.data.file) setPdfUrl(result.data.file)
           if (result.data.barcodes) setBarcodes(result.data.barcodes as BarcodeState)
         }
+        setIsDataLoading(false)
       } else {
         console.warn(`K3 API returned ${response.status}`)
+        setIsDataLoading(false)
       }
     } catch (error) {
       console.error("Error fetching K3:", error)
+      setIsDataLoading(false)
     }
   }, [idIzin])
 
@@ -129,6 +134,8 @@ export default function K3AsesmenPage() {
     await submitAbsenAkhir(blob)
     navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
   }
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

@@ -14,6 +14,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface Soal {
@@ -365,9 +366,11 @@ export default function Ia04bPage() {
     }
   }, [initializedFromApi, jawabanAnswers])
 
+  if (!ia04bData) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
+
       <AsesmenBreadcrumb currentPage="IA.04.B" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia04b'))?.number || 2} steps={asesmenSteps} id={id} metode={metode}>

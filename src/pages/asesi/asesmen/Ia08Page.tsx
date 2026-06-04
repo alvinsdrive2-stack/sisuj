@@ -12,6 +12,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -102,6 +103,7 @@ export default function Ia08Page() {
   const [_ia08Referensi, setIa08Referensi] = useState<Ia08Referensi[]>([])
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   // Extractable fetch function — called on mount and by SSE events
   const fetchIa08Data = useCallback(async () => {
@@ -195,6 +197,8 @@ export default function Ia08Page() {
       }
     } catch (err) {
       console.error("Error fetching IA08:", err)
+    } finally {
+      setIsDataLoading(false)
     }
   }, [id, authLoading])
 
@@ -323,9 +327,11 @@ export default function Ia08Page() {
     }
   }
 
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
+
       <AsesmenBreadcrumb currentPage="IA.08" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia08'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>

@@ -13,6 +13,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface Kuk {
@@ -274,9 +275,11 @@ export default function Ia01Page() {
     setUmpanBalik(value)
   }
 
+  if (!kelompokKerjaData.length) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
+
       <AsesmenBreadcrumb currentPage="IA.01" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia01'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>

@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface Unit {
   id_unit: number
@@ -63,6 +64,7 @@ export default function Mapa02Page() {
   const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<{
@@ -128,9 +130,11 @@ export default function Mapa02Page() {
             }
           })
           setSelectedPotensi(initialSelected)
+          setIsDataLoading(false)
         }
       }
     } catch (error) {
+      setIsDataLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -238,6 +242,8 @@ export default function Mapa02Page() {
 
   const referensiMAPA02 = mapaData?.referensi_form.find(r => r.kategori === "MAPA02_1")
   const keteranganReferensi = mapaData?.referensi_form.find(r => r.kategori === "MAPA02-1")
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle } from "lucide-react"
+import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle, FileText } from "lucide-react"
 import { useKegiatanAsesorList, useListAsesi, KegiatanAsesor } from "@/hooks/useKegiatan"
 import { useBatchAbsenData, AbsenData } from "@/hooks/useAbsenData"
 import { kegiatanService } from "@/lib/kegiatan-service"
@@ -137,6 +137,40 @@ export default function AsesiPage() {
   const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
   const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
   const [tahapMap, setTahapMap] = useState<Record<string, number>>({})
+
+  // Document data for asesi (spt_asesor, verifikasi_tuk)
+  interface DokumenAsesiData {
+    ktp: string | null
+    npwp: string | null
+    ijazah: string | null
+    referensi_kerja: string | null
+    spt_asesor: string | null
+    verifikasi_tuk: string | null
+  }
+  const [dokumenAsesi, setDokumenAsesi] = useState<DokumenAsesiData | null>(null)
+
+  // Fetch dokumen-asesi for the first asesi (to show spt_asesor & verifikasi_tuk)
+  useEffect(() => {
+    const fetchDokumen = async () => {
+      if (!jadwalId || asesiList.length === 0) return
+      const firstIdIzin = asesiList[0].id_izin
+      try {
+        const token = localStorage.getItem("access_token")
+        const response = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/dokumen-asesi?id_izin=${firstIdIzin}`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.message === "Success" && result.data) {
+            setDokumenAsesi(result.data)
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching dokumen asesi:", err)
+      }
+    }
+    fetchDokumen()
+  }, [jadwalId, asesiList])
 
   // Fetch asesor IDs, jenjang, and metode from data-dokumen endpoint (per-asesi)
   useEffect(() => {
@@ -607,100 +641,166 @@ export default function AsesiPage() {
         </div>
       </div>
 
-      {/* Asesi List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-primary" />
-            Daftar Asesi
-            {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {asesiError && (
-            <div className="text-center py-8 text-red-500">
-              Gagal memuat daftar asesi: {asesiError}
-            </div>
-          )}
+      {/* Side by Side: Daftar Asesi (70%) + Dokumen Asesi (30%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+        {/* Left: Daftar Asesi - 70% */}
+        <Card className="lg:col-span-7">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Daftar Asesi
+              {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {asesiError && (
+              <div className="text-center py-8 text-red-500">
+                Gagal memuat daftar asesi: {asesiError}
+              </div>
+            )}
 
-          {!asesiLoading && !asesiError && asesiList.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              Tidak ada asesi untuk jadwal ini
-            </div>
-          )}
+            {!asesiLoading && !asesiError && asesiList.length === 0 && (
+              <div className="text-center py-8 text-slate-500">
+                Tidak ada asesi untuk jadwal ini
+              </div>
+            )}
 
+            <div className="space-y-4">
+              {groupedAsesi.map((group) => (
+                <div key={group.skema}>
+                  <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
+                    {group.skema}
+                  </h5>
+                  <div className="space-y-2">
+                    {group.asesi.map((asesi, idx) => {
+                      const absen = absenData[asesi.id_izin]
 
+                      const asesiStatus = currentKegiatan?.tahap === 2
+                        ? getAsesiAbsenStatus(absen, 'asesmen')
+                        : getAsesiAbsenStatus(absen, 'praasesmen')
 
-          <div className="space-y-4">
-            {groupedAsesi.map((group) => (
-              <div key={group.skema}>
-                <h5 className="text-sm font-bold text-primary mb-2 px-1 uppercase tracking-wider">
-                  {group.skema}
-                </h5>
-                <div className="space-y-2">
-                  {group.asesi.map((asesi, idx) => {
-              const absen = absenData[asesi.id_izin]
+                      const reviewStatus = asesorRole
+                        ? (currentKegiatan?.tahap === 2
+                            ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
+                            : currentKegiatan?.tahap === 1
+                              ? getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2)
+                              : 'Butuh ditinjau')
+                        : 'Butuh ditinjau'
 
-              const asesiStatus = currentKegiatan?.tahap === 2
-                ? getAsesiAbsenStatus(absen, 'asesmen')
-                : getAsesiAbsenStatus(absen, 'praasesmen')
+                      return (
+                        <div
+                          key={asesi.id_izin}
+                          onClick={() => handleViewAsesi(asesi.id_izin)}
+                          className="p-4 border border-slate-200 rounded-lg bg-white transition-all hover:shadow-md hover:border-primary/30 cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                                <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-slate-800">{asesi.nama}</h4>
+                                <p className="text-xs text-slate-500">ID: {asesi.id_izin}</p>
+                              </div>
+                            </div>
 
-              const reviewStatus = asesorRole
-                ? (currentKegiatan?.tahap === 2
-                    ? getAsesorReviewStatus(absen, 'asesmen', asesorRole as 1 | 2)
-                    : currentKegiatan?.tahap === 1
-                      ? getAsesorReviewStatus(absen, 'praasesmen', asesorRole as 1 | 2)
-                      : 'Butuh ditinjau')
-                : 'Butuh ditinjau'
-
-              // Asesi selalu bisa diklik untuk masuk ke praasesi/asesmen
-              return (
-                <div
-                  key={asesi.id_izin}
-                  onClick={() => handleViewAsesi(asesi.id_izin)}
-                  className={`p-4 border border-slate-200 rounded-lg bg-white transition-all hover:shadow-md hover:border-primary/30 cursor-pointer`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">{idx + 1}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-slate-800">{asesi.nama}</h4>
-                        <p className="text-xs text-slate-500">ID: {asesi.id_izin}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      {/* Review Status Badge */}
-                      <Badge className={getStatusBadgeStyle(reviewStatus)}>
-                        {reviewStatus}
-                      </Badge>
-
-                      {/* Asesi Absen Status Indicator */}
-                      <div
-                        className={`relative w-4 h-4 rounded-full ${
-                          asesiStatus === 'green'
-                            ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
-                            : 'bg-yellow-500 shadow-lg shadow-yellow-500/50'
-                        }`}
-                        title={asesiStatus === 'green' ? 'Absen selesai' : 'Absen belum selesai'}
-                      >
-                        {asesiStatus === 'green' && (
-                          <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
-                        )}
-                      </div>
-                    </div>
+                            <div className="flex items-center gap-3">
+                              <Badge className={getStatusBadgeStyle(reviewStatus)}>
+                                {reviewStatus}
+                              </Badge>
+                              <div
+                                className={`relative w-4 h-4 rounded-full ${
+                                  asesiStatus === 'green'
+                                    ? 'bg-emerald-500 shadow-lg shadow-emerald-500/50'
+                                    : 'bg-yellow-500 shadow-lg shadow-yellow-500/50'
+                                }`}
+                                title={asesiStatus === 'green' ? 'Absen selesai' : 'Absen belum selesai'}
+                              >
+                                {asesiStatus === 'green' && (
+                                  <div className="absolute inset-0 rounded-full bg-emerald-400 blur-md opacity-50 animate-pulse" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              )
-            })}
+              ))}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Right: Dokumen Asesi - 30% */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Dokumen Asesi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* SPT Asesor */}
+            <div className={`p-4 rounded-lg border ${
+              dokumenAsesi?.spt_asesor
+                ? 'border-emerald-300 bg-emerald-50'
+                : 'border-slate-200 bg-slate-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className={`w-5 h-5 ${dokumenAsesi?.spt_asesor ? 'text-emerald-500' : 'text-slate-400'}`} />
+                  <div>
+                    <span className="text-sm font-semibold block">SPT Asesor</span>
+                    <span className="text-xs text-muted-foreground">
+                      {dokumenAsesi?.spt_asesor ? 'Sudah dibuat' : 'Belum dibuat'}
+                    </span>
+                  </div>
+                </div>
+                {dokumenAsesi?.spt_asesor && (
+                  <a
+                    href={dokumenAsesi.spt_asesor}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200"
+                  >
+                    Lihat
+                  </a>
+                )}
+              </div>
             </div>
-          ))}
-          </div>
-        </CardContent>
-      </Card>
+
+            {/* Verifikasi TUK */}
+            <div className={`p-4 rounded-lg border ${
+              dokumenAsesi?.verifikasi_tuk
+                ? 'border-emerald-300 bg-emerald-50'
+                : 'border-slate-200 bg-slate-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className={`w-5 h-5 ${dokumenAsesi?.verifikasi_tuk ? 'text-emerald-500' : 'text-slate-400'}`} />
+                  <div>
+                    <span className="text-sm font-semibold block">Verifikasi TUK</span>
+                    <span className="text-xs text-muted-foreground">
+                      {dokumenAsesi?.verifikasi_tuk ? 'Sudah dibuat' : 'Belum dibuat'}
+                    </span>
+                  </div>
+                </div>
+                {dokumenAsesi?.verifikasi_tuk && (
+                  <a
+                    href={dokumenAsesi.verifikasi_tuk}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200"
+                  >
+                    Lihat
+                  </a>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface UnitKompetensiAPI {
   id: number
@@ -108,11 +109,13 @@ export default function Ak02Page() {
 
   // Unit kompetensi state
   const [unitKompetensi, setUnitKompetensi] = useState<UnitKompetensi[]>([])
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   // Fetch unit kompetensi data
   const fetchAk02Data = useCallback(async () => {
     if (authLoading) return
     if (!id) {
+      setIsDataLoading(false)
       return
     }
 
@@ -161,6 +164,8 @@ export default function Ak02Page() {
       }
     } catch (err) {
       console.error("Error fetching AK02:", err)
+    } finally {
+      setIsDataLoading(false)
     }
   }, [id, authLoading])
 
@@ -195,9 +200,11 @@ export default function Ak02Page() {
     }))
   }
 
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
+
       {/* Breadcrumb */}
       <AsesmenBreadcrumb currentPage="AK.02" />
 

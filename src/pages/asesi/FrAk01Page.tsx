@@ -15,6 +15,7 @@ import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface BuktiAsesmen {
   id: number
@@ -102,6 +103,7 @@ export default function FrAk01Page() {
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
   const [showMasukAsesmenModal, setShowMasukAsesmenModal] = useState(false)
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode } = useDataDokumenPraAsesmen(actualIdIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -167,6 +169,7 @@ export default function FrAk01Page() {
       }
 
       if (!fetchedIdIzin) {
+        setIsDataLoading(false)
         return
       }
 
@@ -206,6 +209,7 @@ export default function FrAk01Page() {
           }
         }
       }
+      setIsDataLoading(false)
   }, [idIzin, kegiatan, isAsesor, jadwalId])
 
   useEffect(() => {
@@ -743,6 +747,8 @@ export default function FrAk01Page() {
       </div>
     </>
   )
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

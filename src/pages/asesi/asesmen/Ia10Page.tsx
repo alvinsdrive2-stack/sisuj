@@ -11,6 +11,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface ReferensiItem {
@@ -294,6 +295,8 @@ export default function Ia10Page() {
     }
   }
 
+  if (!pertanyaanYaTidakList.length) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div
       style={{
@@ -302,7 +305,7 @@ export default function Ia10Page() {
         fontFamily: "Arial, Helvetica, sans-serif",
       }}
     >
-      
+
       <AsesmenBreadcrumb currentPage="IA.10" />
 
       <ModularAsesiLayout

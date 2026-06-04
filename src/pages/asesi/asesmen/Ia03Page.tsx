@@ -13,6 +13,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -114,6 +115,7 @@ export default function Ia03Page() {
   const [umpanBalik, setUmpanBalik] = useState('')
   const [tanggapanAnswers, setTanggapanAnswers] = useState<Record<number, string>>({})
   const [pencapaianAnswers, setPencapaianAnswers] = useState<Record<number, boolean | null>>({})
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
   const umpanBalikRef = useRef<HTMLTextAreaElement>(null)
@@ -206,6 +208,8 @@ export default function Ia03Page() {
         }
       } catch (err) {
         console.error("Error fetching IA03:", err)
+      } finally {
+        setIsDataLoading(false)
       }
   }, [id, authLoading])
 
@@ -337,9 +341,11 @@ export default function Ia03Page() {
     navigate(`/asesi/asesmen/${id}/ia02`)
   }
 
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      
+
       <AsesmenBreadcrumb currentPage="IA.03" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia03'))?.number || 3} steps={asesmenSteps} id={id} metode={metode}>

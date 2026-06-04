@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
@@ -16,6 +16,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 // ============== LAYOUT COMPONENT ==============
 
@@ -266,7 +267,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
           <tr>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
               Skema Sertifikasi<br />
-              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙉̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
+              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(?????????????/Okupasi/??????????????????????)?</span>
             </td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
@@ -309,7 +310,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
           <div style={{ fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase' }}>Instruksi:</div>
           <ul style={{ margin: '4px 0 4px 20px', padding: 0 }}>
             <li>Baca setiap pertanyaan di kolom sebelah kiri</li>
-            <li>Beri tanda centang (√) pada kotak jika Anda yakin dapat melakukan tugas yang dijelaskan</li>
+            <li>Beri tanda centang (v) pada kotak jika Anda yakin dapat melakukan tugas yang dijelaskan</li>
             <li>Isi kolom di sebelah kanan dengan mendaftar bukti yang Anda miliki</li>
           </ul>
         </div>
@@ -793,7 +794,7 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
           display: 'inline-block',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
         }}>
-          ▼
+          ?
         </span>
       </button>
 
@@ -1306,7 +1307,7 @@ function FileTypeModal({
   )
 }
 
-// Memoized KUK row — only re-renders when its own state changes
+// Memoized KUK row � only re-renders when its own state changes
 interface KukRowProps {
   kukId: string
   unitId: string
@@ -1443,6 +1444,7 @@ export default function Apl02Page() {
   const { showSuccess, showError, showWarning } = useToast()
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const apl02DataRef = useRef<Apl02Data | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
@@ -1467,7 +1469,7 @@ export default function Apl02Page() {
     document.body.style.overflowY = 'scroll'
     return () => { document.body.style.overflowY = prev }
   }, [])
-  // stagingFiles holds raw File objects from client — no upload until user confirms
+  // stagingFiles holds raw File objects from client � no upload until user confirms
   const [stagingFiles, setStagingFiles] = useState<ServerFile[]>([])
   const [fileDocTypes, setFileDocTypes] = useState<Record<string, string>>({}) // client index -> doc type
   const [fileCustomTypes, setFileCustomTypes] = useState<Record<string, string>>({}) // client index -> custom text for "Lainnya"
@@ -1631,7 +1633,7 @@ export default function Apl02Page() {
     })
   }, []) // No dependencies - uses ref instead
 
-  // Stable callbacks for KukRow — defined after handleCheckboxChange & handleBuktiChange
+  // Stable callbacks for KukRow � defined after handleCheckboxChange & handleBuktiChange
   const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
@@ -1971,6 +1973,7 @@ export default function Apl02Page() {
           metode: metodeFromApi,
           units: units,
         })
+        setIsDataLoading(false)
         apl02DataRef.current = {
           jabatan_kerja: jabatanKerja,
           no_skema: noSkema,
@@ -1982,6 +1985,7 @@ export default function Apl02Page() {
           units: units,
         }
       } catch (error) {
+        setIsDataLoading(false)
       }
   }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi, jadwalId])
 
@@ -2061,7 +2065,7 @@ export default function Apl02Page() {
     })
   }, [])
 
-  // Signing state hook — provides realtime sync (publishUpdate) and agreedChecklist state
+  // Signing state hook � provides realtime sync (publishUpdate) and agreedChecklist state
   const signing = useSigningState({
     pageKey: 'apl02',
     isAsesor,
@@ -2106,7 +2110,7 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesi sudah ttd & semua asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
@@ -2115,7 +2119,7 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
@@ -2397,6 +2401,8 @@ export default function Apl02Page() {
       setIsSaving(false)
     }
   }
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>

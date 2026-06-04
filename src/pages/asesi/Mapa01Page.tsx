@@ -21,6 +21,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface Unit {
   id_unit: number
@@ -95,6 +96,7 @@ export default function Mapa01Page() {
   const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
+  const [isDataLoading, setIsDataLoading] = useState(true)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<{
@@ -146,10 +148,12 @@ export default function Mapa01Page() {
           if ((result.data as any).barcodes) {
             setBarcodes((result.data as any).barcodes)
           }
+          setIsDataLoading(false)
         }
       }
     } catch (error) {
       console.error("Error fetching MAPA 01:", error)
+      setIsDataLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -272,6 +276,8 @@ export default function Mapa01Page() {
       setIsSaving(false)
     }
   }
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh'}}>

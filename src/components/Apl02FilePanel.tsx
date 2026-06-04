@@ -82,6 +82,12 @@ export default function Apl02FilePanel({ idIzin, onCollapse, refreshKey }: Apl02
               if (kebenaranJson.data.referensi_kerja) {
                 kebenaranFiles.push({ id: -2, name: 'Referensi Kerja', path: kebenaranJson.data.referensi_kerja, kebenaran: true })
               }
+              if (kebenaranJson.data.spt_asesor) {
+                kebenaranFiles.push({ id: -5, name: 'SPT Asesor', path: kebenaranJson.data.spt_asesor, kebenaran: true })
+              }
+              if (kebenaranJson.data.verifikasi_tuk) {
+                kebenaranFiles.push({ id: -6, name: 'Verifikasi TUK', path: kebenaranJson.data.verifikasi_tuk, kebenaran: true })
+              }
               allFiles = [...kebenaranFiles, ...allFiles]
             }
           } catch { /* ignore */ }

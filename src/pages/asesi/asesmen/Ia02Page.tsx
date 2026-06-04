@@ -13,6 +13,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -258,9 +259,11 @@ export default function Ia02Page() {
     navigate(`/asesi/asesmen/${id}/ia01`)
   }
 
+  if (!questions) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'Arial, sans-serif' }}>
-      
+
       <AsesmenBreadcrumb currentPage="IA.02" />
 
       <ModularAsesiLayout currentStep={2} steps={asesmenSteps} id={id} metode={metode}>

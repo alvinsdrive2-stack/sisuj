@@ -13,6 +13,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
 interface Unit {
@@ -330,10 +331,12 @@ export default function Ia04aPage() {
   const kelompokKerja = ia04aData?.kelompok_kerja?.kelompok_kerja?.[0]
   const units = kelompokKerja?.units || []
 
+  if (!ia04aData) return <FullPageLoader text="Memuat data..." />
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
-      
+
       <AsesmenBreadcrumb currentPage="IA.04.A" />
 
       <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={id} metode={metode}>

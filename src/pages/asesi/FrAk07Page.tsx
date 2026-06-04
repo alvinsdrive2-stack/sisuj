@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface Referensi {
   id: number
@@ -89,6 +90,7 @@ export default function FrAk07Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
+  const [isDataLoading, setIsDataLoading] = useState(true)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -166,6 +168,7 @@ export default function FrAk07Page() {
       }
 
       if (!actualIdIzin) {
+        setIsDataLoading(false)
         return
       }
 
@@ -227,6 +230,8 @@ export default function FrAk07Page() {
         console.warn(`AK07 API returned ${ak07Response.status}`)
       }
     } catch (error) {
+    } finally {
+      setIsDataLoading(false)
     }
   }, [idIzin, kegiatan, isAsesor, jadwalId])
 
@@ -460,6 +465,8 @@ export default function FrAk07Page() {
   const modifikasiData = ak07Data?.find(d => d.urut === 2)
   const rencanaAsesmenData = ak07Data?.find(d => d.urut === 3)
   const hasilPenyesuaianData = ak07Data?.find(d => d.urut === 4)
+
+  if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
