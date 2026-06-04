@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { XCircle, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { API_BASE_URL } from "@/config/api"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
@@ -49,7 +49,6 @@ export default function KonfirmasiDataPage() {
   const { idIzin } = useParams<{ idIzin: string }>()
   const navigate = useNavigate()
   const [data, setData] = useState<PersonalData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
@@ -57,7 +56,7 @@ export default function KonfirmasiDataPage() {
   const { tuk, tanggalUji, jabatanKerja, nomorSkema } = useDataDokumenPraAsesmen(idIzin)
 
   useEffect(() => {
-    if (!idIzin) { setError("ID tidak valid"); setIsLoading(false); return }
+    if (!idIzin) { setError("ID tidak valid"); return }
     ;(async () => {
       try {
         const res = await fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers: authHeaders() })
@@ -70,8 +69,6 @@ export default function KonfirmasiDataPage() {
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Terjadi kesalahan")
-      } finally {
-        setIsLoading(false)
       }
     })()
   }, [idIzin])
@@ -91,11 +88,11 @@ export default function KonfirmasiDataPage() {
     setZoom(1)
   }
 
-  if (isLoading) return <FullPageLoader text="Memuat data..." />
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, sans-serif' }}>
       <DashboardNavbar userName={data?.nama || 'Asesi'} />
+
+      <AsesmenBreadcrumb currentPage="Konfirmasi Data" />
 
       {error && (
         <div style={{ padding: '20px', maxWidth: '860px', margin: '0 auto' }}>

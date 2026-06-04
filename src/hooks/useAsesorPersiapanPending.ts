@@ -10,9 +10,9 @@ interface PersiapanPendingCounts {
   isLoading: boolean
 }
 
-export function useAsesorPersiapanPending(): PersiapanPendingCounts {
+export function useAsesorPersiapanPending(enabled = true): PersiapanPendingCounts {
   const { user } = useAuth()
-  const { kegiatans, isLoading: kegiatanLoading } = useKegiatanAsesorList(true)
+  const { kegiatans, isLoading: kegiatanLoading } = useKegiatanAsesorList(enabled)
   const [counts, setCounts] = useState<PersiapanPendingCounts>({
     pending: 0,
     perKegiatan: {},
@@ -22,6 +22,10 @@ export function useAsesorPersiapanPending(): PersiapanPendingCounts {
   const hasFetched = useRef(false)
 
   useEffect(() => {
+    if (!enabled) {
+      setCounts(prev => ({ ...prev, isLoading: false }))
+      return
+    }
     if (kegiatanLoading || kegiatans.length === 0 || hasFetched.current) return
 
     // Only process tahap 0 kegiatan
@@ -77,7 +81,7 @@ export function useAsesorPersiapanPending(): PersiapanPendingCounts {
     }
 
     fetchPendingCounts()
-  }, [kegiatanLoading, kegiatans, user?.id])
+  }, [enabled, kegiatanLoading, kegiatans, user?.id])
 
   return counts
 }

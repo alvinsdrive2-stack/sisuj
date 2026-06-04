@@ -68,6 +68,14 @@
       "Bash(Select-Object Name)"
     ]
   },
+  "transformer": {
+  "use": [
+    "deepseek",
+    "tool-limiter",
+    ["reasoning", { "enable": false }],
+    "thinking-budget-clamp"
+  ]
+},
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "shadcn"

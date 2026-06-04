@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,9 +9,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -91,7 +90,7 @@ export default function Ia01Page() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabledBase = !isAsesor
@@ -121,7 +120,6 @@ export default function Ia01Page() {
   const [expandedKelompok, setExpandedKelompok] = useState<Set<number>>(new Set())
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [kelompokKerjaData, setKelompokKerjaData] = useState<KelompokKerjaItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
   // Toggle kelompok expansion
   const toggleKelompok = (kelompokId: number) => {
@@ -142,7 +140,6 @@ export default function Ia01Page() {
 
     if (!id) {
       console.error("No id_izin found")
-      setIsLoading(false)
       return
     }
 
@@ -227,8 +224,6 @@ export default function Ia01Page() {
       }
     } catch (err) {
       console.error("Error fetching IA01:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [id, authLoading])
 
@@ -252,20 +247,8 @@ export default function Ia01Page() {
     onRefresh: fetchIa01Data,
   })
 
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchIa01Data,
-  })
 
   const isFormDisabled = isFormDisabledBase || signing.allSigned
-
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data IA.01..." />
-      </div>
-    )
-  }
 
   const handlePencapaianChange = (soalId: number, value: boolean) => {
     setSoalAnswers(prev => ({
@@ -294,18 +277,7 @@ export default function Ia01Page() {
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.01</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="IA.01" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia01'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

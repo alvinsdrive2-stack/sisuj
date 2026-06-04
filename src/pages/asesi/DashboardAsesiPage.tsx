@@ -34,11 +34,9 @@ export default function DashboardAsesiPage() {
   const [showPage, setShowPage] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
-  const [isStepsAllFilled, setIsStepsAllFilled] = useState(false)
 
   // Fetch jenjang from data-dokumen API
-  const { jenjang } = useDataDokumenAsesmen(idIzin)
-  const { metode } = useDataDokumenAsesmen(idIzin)
+  const { jenjang, metode } = useDataDokumenAsesmen(idIzin)
 
   // Fetch id_izin from list-asesi
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function DashboardAsesiPage() {
           const result = await response.json()
           const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
           if (matchedAsesi?.id_izin) {
-
             setIdIzin(matchedAsesi.id_izin)
           }
         }
@@ -70,84 +67,6 @@ export default function DashboardAsesiPage() {
     fetchIdIzin()
   }, [kegiatan?.jadwal_id, user?.name])
 
-  // Check if all steps in current tahap are filled → disable button
-  useEffect(() => {
-    if (!idIzin || !kegiatan?.tahap) return
-    if (kegiatan.tahap === 2 && !jenjang) return  // Wait for jenjang/methode to load
-
-    const token = localStorage.getItem("access_token")
-    const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
-
-    const tahap1Steps = [
-      `/praasesmen/${idIzin}/apl01`,
-      `/praasesmen/${idIzin}/apl02`,
-      `/praasesmen/${idIzin}/mapa01`,
-      `/praasesmen/${idIzin}/mapa02`,
-      `/praasesmen/${idIzin}/ak07`,
-      `/praasesmen/${idIzin}/ak04`,
-      `/praasesmen/${idIzin}/file-k3`,
-    ]
-
-    // Dynamic tahap 2 steps based on jenjang and methode
-    const jenjangId = parseInt(jenjang || "0")
-    const isLowJenjang = jenjangId < 4
-    const isPortofolio = metode?.toLowerCase() === 'portofolio'
-
-    let tahap2Steps: string[] = []
-    if (isPortofolio) {
-      tahap2Steps = [
-        `/perjanjian/${idIzin}/ak01`,
-        `/asesmen/${idIzin}/ia08`,
-        `/asesmen/${idIzin}/ia09`,
-        `/asesmen/${idIzin}/ia10`,
-        `/asesmen/${idIzin}/ak02`,
-        `/asesmen/${idIzin}/ak03`,
-      ]
-    } else if (isLowJenjang) {
-      tahap2Steps = [
-        `/perjanjian/${idIzin}/ak01`,
-        `/asesmen/${idIzin}/ia01`,
-        `/asesmen/${idIzin}/ia02`,
-        `/asesmen/${idIzin}/ia03`,
-        `/asesmen/${idIzin}/upload-tugas`,
-        `/asesmen/${idIzin}/ia05`,
-        `/asesmen/${idIzin}/ak02`,
-        `/asesmen/${idIzin}/ak03`,
-      ]
-    } else {
-      tahap2Steps = [
-        `/perjanjian/${idIzin}/ak01`,
-        `/asesmen/${idIzin}/ia04a`,
-        `/asesmen/${idIzin}/upload-tugas`,
-        `/asesmen/${idIzin}/ia04b`,
-        `/asesmen/${idIzin}/ia05`,
-        `/asesmen/${idIzin}/ak02`,
-        `/asesmen/${idIzin}/ak03`,
-      ]
-    }
-
-    const steps = kegiatan.tahap === 1 ? tahap1Steps : tahap2Steps
-
-    const checkAll = async () => {
-      for (const path of steps) {
-        try {
-          // AK.01 API di /praasesmen/ bukan /perjanjian/
-          const apiPath = path.includes('/perjanjian/')
-            ? path.replace('/perjanjian/', '/praasesmen/')
-            : path
-          const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
-          if (!res.ok) continue
-          const json = await res.json()
-          const filled = json.data?.barcodes?.asesi?.url ||
-            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
-          if (!filled) { setIsStepsAllFilled(false); return }
-        } catch { /* continue */ }
-      }
-      setIsStepsAllFilled(true)
-    }
-    checkAll()
-  }, [idIzin, kegiatan?.tahap, jenjang, metode])
-
   // Page entrance animation
 
 
@@ -155,21 +74,16 @@ export default function DashboardAsesiPage() {
 
 
 
-  // Page entrance animation
+  // Page entrance — CSS animation handles delay, no artificial loading
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsPageLoading(false)
-      setShowPage(true)
-    }, 2000)
-
-    return () => clearTimeout(timer)
+    setIsPageLoading(false)
+    setShowPage(true)
   }, [])
 
   // Debug logging
 
 
 
-  const [, _setCurrentTime] = useState(new Date()) // Clock state reserved for future use
   const [countdown, setCountdown] = useState({
     days: 0,
     hours: 0,
@@ -432,7 +346,7 @@ export default function DashboardAsesiPage() {
                 </div>
                 <Button
                   size="lg"
-                  disabled={isStepsAllFilled || !idIzin || !kegiatan?.tahap}
+                  disabled={!idIzin || !kegiatan?.tahap}
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg disabled:opacity-50"
                   onClick={async () => {
                     console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap)

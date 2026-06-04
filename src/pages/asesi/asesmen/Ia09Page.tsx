@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -6,12 +7,10 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { API_BASE_URL } from "@/config/api"
 
 interface BarcodeData {
@@ -70,7 +69,7 @@ export default function Ia09Page() {
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap])
 
   const {
     showAwalModal,
@@ -85,7 +84,6 @@ export default function Ia09Page() {
   })
 
   const [dokumenId, setDokumenId] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [buktiList, setBuktiList] = useState<BuktiItem[]>([])
@@ -134,8 +132,6 @@ export default function Ia09Page() {
       }
     } catch (err) {
       console.error("Error fetching IA09:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [id, authLoading])
 
@@ -159,10 +155,6 @@ export default function Ia09Page() {
     onRefresh: fetchIa09Data,
   })
 
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchIa09Data,
-  })
 
   const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
@@ -226,20 +218,6 @@ export default function Ia09Page() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "#fff",
-          fontFamily: "Arial, Helvetica, sans-serif",
-        }}
-      >
-                <FullPageLoader text="Memuat data IA.09..." />
-      </div>
-    )
-  }
-
   return (
     <div
       style={{
@@ -249,24 +227,7 @@ export default function Ia09Page() {
       }}
     >
       
-      <div style={{ borderBottom: "1px solid #999", background: "#fff" }}>
-        <div style={{ padding: "12px 16px", width: "100%", margin: "0 auto" }}>
-          <div style={{ display: "flex", gap: "8px", fontSize: "13px", color: "#666" }}>
-            <span
-              style={{ cursor: "pointer", textDecoration: "underline" }}
-              onClick={() =>
-                navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")
-              }
-            >
-              Dashboard
-            </span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.09</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="IA.09" />
 
       <ModularAsesiLayout
         currentStep={asesmenSteps.find((s) => s.href.includes("ia09"))?.number || 1}

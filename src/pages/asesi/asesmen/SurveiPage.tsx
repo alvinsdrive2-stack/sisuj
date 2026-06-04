@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import * as XLSX from "xlsx"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -9,7 +10,6 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -51,11 +51,10 @@ export default function SurveiPage() {
   const { isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji } = useDataDokumenAsesmen(id)
-  const { metode } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji, metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {
@@ -80,7 +79,6 @@ export default function SurveiPage() {
   const [saran, setSaran] = useState('')
   const [pernyataan, setPernyataan] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
 
@@ -88,7 +86,7 @@ export default function SurveiPage() {
 
   const fetchSurveiData = useCallback(async () => {
     if (authLoading) return
-    if (!id) { setIsLoading(false); return }
+    if (!id) { return }
 
     try {
       const token = localStorage.getItem("access_token")
@@ -123,20 +121,10 @@ export default function SurveiPage() {
       }
     } catch (err) {
       console.error("Error fetching survei:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [id, authLoading])
 
   useEffect(() => { fetchSurveiData() }, [fetchSurveiData])
-
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat Survei..." />
-      </div>
-    )
-  }
 
   const handleSkorChange = (id: number, value: number) => {
     setSurveyItems(prev => prev.map(item => {
@@ -287,17 +275,7 @@ export default function SurveiPage() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
       {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>Survei</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="Survei" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('survei'))?.number || 7} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,13 +9,11 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { API_BASE_URL } from "@/config/api"
 
 interface Soal {
@@ -71,7 +70,6 @@ export default function Ia04bPage() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   const [ia04bData, setIa04bData] = useState<ApiResponse["data"] | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'ya' | 'tidak'>>({})
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
@@ -97,7 +95,6 @@ export default function Ia04bPage() {
       if (authLoading) return
       if (!id) {
         console.error("No id_izin found in user data")
-        setIsLoading(false)
         return
       }
 
@@ -164,8 +161,6 @@ export default function Ia04bPage() {
         }
       } catch (error) {
         console.error("Error fetching IA04B:", error)
-      } finally {
-        setIsLoading(false)
       }
   }, [id, authLoading, user, asesorList])
 
@@ -173,12 +168,7 @@ export default function Ia04bPage() {
     fetchData()
   }, [fetchData])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchData
-  })
-
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04b',
@@ -195,6 +185,7 @@ export default function Ia04bPage() {
     nextPageName: nextStepLabel,
     onRefresh: fetchData,
   })
+  const publishUpdate = signing.publishUpdate
 
   const canEdit = isAsesor && !signing.asesorHasSigned
 
@@ -374,29 +365,10 @@ export default function Ia04bPage() {
     }
   }, [initializedFromApi, jawabanAnswers])
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data IA.04.B..." />
-      </div>
-    )
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.04.B</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="IA.04.B" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia04b'))?.number || 2} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

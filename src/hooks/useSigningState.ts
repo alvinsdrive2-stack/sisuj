@@ -277,7 +277,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     }
 
     return { buttonText: lanjutText, buttonDisabled: false }
-  }, [config.order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText])
+  }, [config.order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode])
 
   return {
     asesiHasSigned,

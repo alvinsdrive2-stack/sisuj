@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import * as Ably from 'ably'
 
 let ablyInstance: Ably.Realtime | null = null
@@ -22,13 +22,18 @@ interface UseRealtimeSyncOptions {
 export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-updated' }: UseRealtimeSyncOptions) {
   const channelRef = useRef<Ably.RealtimeChannel | null>(null)
   const onUpdateRef = useRef(onUpdate)
+  const mountedRef = useRef(false)
   onUpdateRef.current = onUpdate
 
   useEffect(() => {
     const ablyKey = getAblyKey()
     if (!channelName || !ablyKey) return
 
-    refCount++
+    // Prevent double-increment in Strict Mode
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      refCount++
+    }
 
     if (!ablyInstance) {
       ablyInstance = new Ably.Realtime({ key: ablyKey })
@@ -44,7 +49,10 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
     return () => {
       try { channel.unsubscribe() } catch {}
 
-      refCount--
+      if (mountedRef.current) {
+        mountedRef.current = false
+        refCount--
+      }
       if (refCount <= 0 && ablyInstance) {
         try { ablyInstance.connection.close() } catch {}
         ablyInstance = null
@@ -52,11 +60,11 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
     }
   }, [channelName, eventName])
 
-  const publishUpdate = (data?: any) => {
+  const publishUpdate = useCallback((data?: any) => {
     if (channelRef.current && getAblyKey()) {
       channelRef.current.publish(eventName, data ?? { timestamp: Date.now() })
     }
-  }
+  }, [eventName])
 
   return { publishUpdate }
 }

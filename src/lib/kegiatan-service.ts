@@ -123,6 +123,8 @@ export interface PaginatedKegiatanResponse {
 
 class KegiatanService {
   private baseUrl: string
+  private kegiatanCache: { data: KegiatanResponse | null; expiry: number } = { data: null, expiry: 0 }
+  private cacheTTL = 10_000 // 10 seconds
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl
@@ -132,7 +134,15 @@ class KegiatanService {
     return localStorage.getItem("access_token")
   }
 
-  async getAllKegiatan(): Promise<KegiatanResponse> {
+  private isCacheValid(): boolean {
+    return this.kegiatanCache.data !== null && Date.now() < this.kegiatanCache.expiry
+  }
+
+  async getAllKegiatan(force = false): Promise<KegiatanResponse> {
+    if (!force && this.isCacheValid()) {
+      return this.kegiatanCache.data!
+    }
+
     const token = this.getToken()
 
     const response = await fetch(`${this.baseUrl}/kegiatan`, {
@@ -148,7 +158,14 @@ class KegiatanService {
       throw new Error(error.message || "Failed to fetch kegiatan")
     }
 
-    return response.json()
+    const data = await response.json()
+    this.kegiatanCache = { data, expiry: Date.now() + this.cacheTTL }
+    return data
+  }
+
+  // Bypass cache when data might have changed
+  invalidateKegiatanCache() {
+    this.kegiatanCache = { data: null, expiry: 0 }
   }
 
   // Get kegiatan by status (started/not started)

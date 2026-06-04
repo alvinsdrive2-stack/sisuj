@@ -6,7 +6,8 @@ import { CheckCircle2, FileText, Calendar, User, Clock, Search } from "lucide-re
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
-import { useKegiatanKomtek, useBaKomtekProgress } from "@/hooks/useKegiatan"
+import { useKegiatanKomtek } from "@/hooks/useKegiatan"
+import { useBaKomtekProgress } from "@/hooks/useBaKomtekProgress"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 import { jenisKelasLabel } from "@/lib/utils"
 

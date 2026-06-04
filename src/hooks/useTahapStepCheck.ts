@@ -127,26 +127,36 @@ export function useTahapStepCheck({
     const steps = getTahapSteps(tahap, jenjang, metode)
     const resolvedId = tahap === 1 ? idIzin : (replaceId || idIzin)
 
-    for (const step of steps) {
-      const apiPath = tahap === 1
-        ? `/praasesmen/${idIzin}/${step.stepKey}`
-        : `/asesmen/${resolvedId}/${step.stepKey}`
+    let cancelled = false
 
-      try {
+    // Fire all step checks in parallel
+    const results = await Promise.allSettled(
+      steps.map(async (step) => {
+        const apiPath = tahap === 1
+          ? `/praasesmen/${idIzin}/${step.stepKey}`
+          : `/asesmen/${resolvedId}/${step.stepKey}`
+
         const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
-        if (!res.ok) continue
+        if (!res.ok) return { step, filled: false }
         const json = await res.json()
-        const filled = hasBarcode(json.data)
+        return { step, filled: hasBarcode(json.data) }
+      })
+    )
 
-        if (!filled) {
-          const finalHref = step.href.replace(':id', resolvedId).replace(':idIzin', idIzin)
-          setRedirectStep({ ...step, href: finalHref, filled: false })
-          setIsLoading(false)
-          setChecked(true)
-          navigate(`/asesi${finalHref}`)
-          return
-        }
-      } catch { /* continue */ }
+    if (cancelled) return
+
+    // Find first unfilled step (in step order)
+    for (const result of results) {
+      if (result.status !== 'fulfilled') continue
+      const { step, filled } = result.value
+      if (!filled) {
+        const finalHref = step.href.replace(':id', resolvedId).replace(':idIzin', idIzin)
+        setRedirectStep({ ...step, href: finalHref, filled: false })
+        setIsLoading(false)
+        setChecked(true)
+        navigate(`/asesi${finalHref}`)
+        return
+      }
     }
 
     setRedirectStep(null)

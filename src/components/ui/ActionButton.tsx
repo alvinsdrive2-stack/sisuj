@@ -1,3 +1,5 @@
+import React from 'react'
+
 interface ActionButtonProps {
   children: React.ReactNode
   variant?: 'primary' | 'secondary'
@@ -7,7 +9,7 @@ interface ActionButtonProps {
   style?: React.CSSProperties
 }
 
-export function ActionButton({
+export const ActionButton = React.memo(function ActionButton({
   children,
   variant = 'primary',
   disabled = false,
@@ -65,4 +67,4 @@ export function ActionButton({
       {children}
     </button>
   )
-}
+})

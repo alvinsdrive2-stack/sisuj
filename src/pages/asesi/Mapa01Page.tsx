@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -21,7 +21,6 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Unit {
   id_unit: number
@@ -93,11 +92,10 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
@@ -133,7 +131,7 @@ export default function Mapa01Page() {
         }
       }
 
-      if (!fetchedIdIzin) { setIsLoading(false); return }
+      if (!fetchedIdIzin) { return }
 
       setActualIdIzin(fetchedIdIzin)
 
@@ -152,8 +150,6 @@ export default function Mapa01Page() {
       }
     } catch (error) {
       console.error("Error fetching MAPA 01:", error)
-    } finally {
-      setIsLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -178,10 +174,6 @@ export default function Mapa01Page() {
     onRefresh: fetchMapa01Data,
   })
 
-  useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin || idIzin}`,
-    onUpdate: fetchMapa01Data,
-  })
 
   const handleBack = () => {
     navigate(-1)
@@ -281,26 +273,11 @@ export default function Mapa01Page() {
     }
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data MAPA 01..." />
-  }
-
   return (
     <div style={{ minHeight: '100vh'}}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>FR MAPA 01</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="MAPA 01" />
 
       <MukLayout currentStep={1} idIzin={actualIdIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         {/* A4 Size Indicator */}
@@ -341,6 +318,7 @@ export default function Mapa01Page() {
             noregValidator={noregValidator}
             namaManajer={namaManajer}
             tanggalManajer={tanggalManajer}
+            barcodeManajer={barcodeManajer}
             referensiForm={mapaData?.referensi_form}
             isAsesor={isAsesor}
           />

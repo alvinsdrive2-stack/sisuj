@@ -72,12 +72,7 @@ export function useIa05Timer({ idIzin, onExpired, onSaveAndRedirect }: UseIa05Ti
     timerRef.current = setInterval(() => {
       setRemainingMs(prev => {
         const next = prev - 1000
-        if (next <= 0) {
-          if (timerRef.current) clearInterval(timerRef.current)
-          handleExpire()
-          return 0
-        }
-        return next
+        return next <= 0 ? 0 : next
       })
     }, 1000)
 
@@ -85,6 +80,14 @@ export function useIa05Timer({ idIzin, onExpired, onSaveAndRedirect }: UseIa05Ti
       if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [isAsesi, idIzin, handleExpire])
+
+  // Trigger expire when remainingMs hits 0
+  useEffect(() => {
+    if (remainingMs <= 0 && !isExpired) {
+      if (timerRef.current) clearInterval(timerRef.current)
+      handleExpire()
+    }
+  }, [remainingMs, isExpired, handleExpire])
 
   useEffect(() => {
     const handleVisibility = () => {
@@ -96,12 +99,7 @@ export function useIa05Timer({ idIzin, onExpired, onSaveAndRedirect }: UseIa05Ti
         timerRef.current = setInterval(() => {
           setRemainingMs(prev => {
             const next = prev - 1000
-            if (next <= 0) {
-              if (timerRef.current) clearInterval(timerRef.current)
-              handleExpire()
-              return 0
-            }
-            return next
+            return next <= 0 ? 0 : next
           })
         }, 1000)
       }

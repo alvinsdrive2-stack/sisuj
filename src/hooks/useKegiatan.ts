@@ -329,8 +329,6 @@ export function useListAsesi(jadwalId: string) {
 
   return { asesiList, isLoading, error, refetch }
 }
-
-// Absen data interface
 export interface AbsenData {
   id_izin: string
   url_absen_asesi_awal: string | null

@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom"
+import React from 'react'
 
 interface Step {
   number: number
@@ -14,7 +15,7 @@ interface ModularStepIndicatorProps {
   title?: string
 }
 
-export default function ModularStepIndicator({ currentStep, steps, id, disableClick, title = 'Progress' }: ModularStepIndicatorProps) {
+const ModularStepIndicator = React.memo(function ModularStepIndicator({ currentStep, steps, id, disableClick, title = 'Progress' }: ModularStepIndicatorProps) {
   const navigate = useNavigate()
 
   // Get the class name for the step circle based on status
@@ -179,4 +180,6 @@ export default function ModularStepIndicator({ currentStep, steps, id, disableCl
       </div>
     </div>
   )
-}
+})
+
+export default ModularStepIndicator

@@ -17,24 +17,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [isPageLoading, setIsPageLoading] = useState(false)
   const [showContent, setShowContent] = useState(true)
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
 
-  // Page transition on route change
+  // Page transition on route change — CSS-only, no extra renders
   useEffect(() => {
-    setIsPageLoading(true)
     setShowContent(false)
-
-    // Instant page transitions — no artificial delay
-    const delay = isInitialLoad ? 0 : 0
-    const timer = setTimeout(() => {
-      setIsPageLoading(false)
+    const timer = requestAnimationFrame(() => {
       setShowContent(true)
-      if (isInitialLoad) setIsInitialLoad(false)
-    }, delay)
-
-    return () => clearTimeout(timer)
+    })
+    return () => cancelAnimationFrame(timer)
   }, [location.pathname])
 
   useEffect(() => {
@@ -70,11 +61,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="min-h-screen flex flex-col">
       {/* DashboardNavbar - Fixed at top */}
       <DashboardNavbar userName={user?.name || "User"} />
-
-      {/* Page Loading Overlay */}
-      {isPageLoading && (
-        <FullPageLoader text="Memuat..." />
-      )}
 
       {/* Main Content Area */}
       <div className="flex flex-1">

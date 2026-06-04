@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,11 +9,9 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -76,7 +75,7 @@ export default function Ak02Page() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabled = !isAsesor
@@ -109,13 +108,11 @@ export default function Ak02Page() {
 
   // Unit kompetensi state
   const [unitKompetensi, setUnitKompetensi] = useState<UnitKompetensi[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
   // Fetch unit kompetensi data
   const fetchAk02Data = useCallback(async () => {
     if (authLoading) return
     if (!id) {
-      setIsLoading(false)
       return
     }
 
@@ -164,8 +161,6 @@ export default function Ak02Page() {
       }
     } catch (err) {
       console.error("Error fetching AK02:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [id, authLoading])
 
@@ -190,19 +185,6 @@ export default function Ak02Page() {
     nextPageName: nextStepLabel,
   })
 
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk02Data,
-  })
-
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data AK.02..." />
-      </div>
-    )
-  }
-
   const handleEvidenceChange = (unitId: number, field: keyof EvidenceCheck) => {
     setEvidenceChecks(prev => ({
       ...prev,
@@ -217,17 +199,7 @@ export default function Ak02Page() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
       {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>AK.02</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="AK.02" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ak02'))?.number || 5} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}
@@ -327,6 +299,13 @@ export default function Ak02Page() {
               ))}
             </tr>
 
+            {unitKompetensi.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>
+                  Memuat data unit kompetensi...
+                </td>
+              </tr>
+            )}
             {unitKompetensi.map((unit) => (
               <tr key={unit.id}>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>

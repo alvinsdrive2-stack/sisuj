@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle } from "lucide-react"
-import { useKegiatanAsesorList, useListAsesi, useAbsenData, AbsenData, KegiatanAsesor } from "@/hooks/useKegiatan"
+import { useKegiatanAsesorList, useListAsesi, KegiatanAsesor } from "@/hooks/useKegiatan"
+import { useBatchAbsenData, AbsenData } from "@/hooks/useAbsenData"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
@@ -126,7 +127,7 @@ export default function AsesiPage() {
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
-  const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
+  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
 
   // State for asesor IDs and jenjang per-asesi
   const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({

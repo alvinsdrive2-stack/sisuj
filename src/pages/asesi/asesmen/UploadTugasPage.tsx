@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCloudUploadAlt, faEye, faCheck, faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons"
@@ -11,8 +12,6 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
@@ -65,8 +64,7 @@ export default function UploadTugasPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList, jenjang, isLoading: isDataLoading, jadwalId } = useDataDokumenAsesmen(id)
-  const { metode } = useDataDokumenAsesmen(id)
+  const { asesorList, jenjang, jadwalId, metode } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Check if user is an asesor (view-only mode)
@@ -84,7 +82,7 @@ export default function UploadTugasPage() {
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -124,11 +122,6 @@ export default function UploadTugasPage() {
 
   useEffect(() => { fetchTugas() }, [fetchTugas])
 
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchTugas
-  })
-
   const signing = useSigningState({
     pageKey: 'upload-tugas',
     isAsesor,
@@ -142,15 +135,7 @@ export default function UploadTugasPage() {
     jadwalId,
     onRefresh: fetchTugas,
   })
-
-  // Show loading while fetching jenjang data - MUST be after all hooks
-  if (isDataLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data..." />
-      </div>
-    )
-  }
+  const publishUpdate = signing.publishUpdate
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (signing.allSigned) return
@@ -264,17 +249,7 @@ export default function UploadTugasPage() {
       {/* Header */}
       
       {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => user?.role?.name === 'asesor' ? navigate("/asesor/dashboard") : navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>{isReadOnly ? 'Review Tugas' : 'Upload Tugas'}</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="Upload Tugas" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('upload-tugas'))?.number || 2} steps={asesmenSteps} id={id} metode={metode}>
         {/* Main Container */}

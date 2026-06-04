@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -124,7 +124,7 @@ export default function UjianPage() {
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap])
   const canEdit = !isAsesor
   // Note: Ujian page doesn't have kegiatan data, so we use "0" as default jenjang_id
   // This page is part of the asesmen flow but the jenjang_id is not critical for ujian steps
@@ -165,6 +165,7 @@ export default function UjianPage() {
   } | null>(null)
   const prevIndexRef = useRef(currentIndex)
   const violationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const saveAnswerRef = useRef<() => Promise<void>>(async () => {})
 
   const fetchUjianData = useCallback(async () => {
     if (!id) return
@@ -249,7 +250,7 @@ export default function UjianPage() {
         // Auto-save then redirect
         const doRedirect = async () => {
           try {
-            await saveAnswer()
+            await saveAnswerRef.current()
           } catch (e) {
             console.error('Error saving before redirect:', e)
           }
@@ -386,6 +387,9 @@ export default function UjianPage() {
       throw error
     }
   }
+
+  // Keep ref in sync for stale closure prevention
+  saveAnswerRef.current = saveAnswer
 
   const handleNext = async () => {
     if (!canEdit) {

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,9 +9,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -81,7 +80,7 @@ export default function Ak06Page() {
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // All asesor can fill (removed restriction to specific asesor)
   const isFormDisabled = !isAsesor
@@ -116,7 +115,6 @@ export default function Ak06Page() {
     catatan_asesor1: string
     catatan_asesor2: string
   } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<Barcodes>({
     asesi: null,
@@ -133,10 +131,8 @@ export default function Ak06Page() {
   // Fetch data
   const fetchAk06Data = useCallback(async () => {
     if (authLoading) return
-
     if (!id) {
       console.error("No id_izin found")
-      setIsLoading(false)
       return
     }
 
@@ -189,8 +185,6 @@ export default function Ak06Page() {
       }
     } catch (err) {
       console.error("Error fetching AK06:", err)
-    } finally {
-      setIsLoading(false)
     }
   }, [id, authLoading])
 
@@ -213,10 +207,6 @@ export default function Ak06Page() {
     onRefresh: fetchAk06Data,
   })
 
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk06Data,
-  })
 
   // Map komentar asesor when feedback data and asesorList are available
   useEffect(() => {
@@ -235,14 +225,6 @@ export default function Ak06Page() {
   // Keep hasSigned derived from hook
   const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data AK.06..." />
-      </div>
-    )
-  }
 
   const handleAspekChange = (id: string, field: keyof Pick<AspekItem, 'validitas' | 'reliabel' | 'fleksibel' | 'adil'>) => {
     if (isFormDisabled || signing.allSigned) return
@@ -435,17 +417,7 @@ export default function Ak06Page() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
       {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>AK.06</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="AK.06" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ak06'))?.number || 7} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

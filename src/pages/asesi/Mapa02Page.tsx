@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -12,7 +12,6 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Unit {
   id_unit: number
@@ -65,7 +64,6 @@ export default function Mapa02Page() {
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [barcodes, setBarcodes] = useState<{
     asesi?: { url: string; tanggal: string; nama: string }
@@ -101,7 +99,7 @@ export default function Mapa02Page() {
         }
       }
 
-      if (!resolvedIdIzin) { setIsLoading(false); return }
+      if (!resolvedIdIzin) { return }
 
       setActualIdIzin(resolvedIdIzin)
 
@@ -133,8 +131,6 @@ export default function Mapa02Page() {
         }
       }
     } catch (error) {
-    } finally {
-      setIsLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -159,10 +155,6 @@ export default function Mapa02Page() {
     onRefresh: fetchMapa02Data,
   })
 
-  useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin || idIzin}`,
-    onUpdate: fetchMapa02Data,
-  })
 
   const handleBack = () => {
     navigate(-1)
@@ -244,10 +236,6 @@ export default function Mapa02Page() {
     }
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data MAPA 02..." />
-  }
-
   const referensiMAPA02 = mapaData?.referensi_form.find(r => r.kategori === "MAPA02_1")
   const keteranganReferensi = mapaData?.referensi_form.find(r => r.kategori === "MAPA02-1")
 
@@ -255,18 +243,7 @@ export default function Mapa02Page() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>FR MAPA 02</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="MAPA 02" />
 
       <MukLayout currentStep={2} idIzin={idIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         <div style={{ padding: '20px' }}>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,11 +9,9 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -85,7 +84,6 @@ export default function Ia04aPage() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
   const [barcodes, setBarcodes] = useState<{
@@ -104,7 +102,7 @@ export default function Ia04aPage() {
   })
 
   // Get dynamic steps based on asesor role
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   const initialFetchDone = useRef(false)
 
@@ -116,8 +114,7 @@ export default function Ia04aPage() {
 
       if (!id) {
         console.error("No id_izin found in user data")
-        
-        setIsLoading(false)
+
         return
       }
 
@@ -170,8 +167,6 @@ export default function Ia04aPage() {
         }
       } catch (error) {
         console.error("Error fetching IA04A:", error)
-      } finally {
-        setIsLoading(false)
       }
   }, [id, authLoading, user, asesorList])
 
@@ -180,11 +175,6 @@ export default function Ia04aPage() {
     initialFetchDone.current = true
     fetchData()
   }, [fetchData])
-
-  const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchData
-  })
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04a')) + 1]?.label
   const signing = useSigningState({
@@ -202,6 +192,7 @@ export default function Ia04aPage() {
     nextPageName: nextStepLabel,
     onRefresh: fetchData,
   })
+  const publishUpdate = signing.publishUpdate
 
   const handleNext = async () => {
     // If all signed → redirect
@@ -336,14 +327,6 @@ export default function Ia04aPage() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data IA.04.A..." />
-      </div>
-    )
-  }
-
   const kelompokKerja = ia04aData?.kelompok_kerja?.kelompok_kerja?.[0]
   const units = kelompokKerja?.units || []
 
@@ -351,18 +334,7 @@ export default function Ia04aPage() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.04.A</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="IA.04.A" />
 
       <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

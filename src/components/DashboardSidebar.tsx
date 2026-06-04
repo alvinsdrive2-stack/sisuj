@@ -20,9 +20,10 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
   const userRole = user?.role?.name
   const menuItems = userRole ? getFilteredMenus(userRole) : []
 
-  // Fetch absen pending counts for asesor
-  const asesorAbsen = userRole === "Asesor" ? useAsesorAbsenPending() : null
-  const asesorPersiapan = userRole === "Asesor" ? useAsesorPersiapanPending() : null
+  // Always call hooks (Rules of Hooks), skip via enabled param for non-asesors
+  const isAsesor = userRole === "Asesor"
+  const asesorAbsen = useAsesorAbsenPending(isAsesor)
+  const asesorPersiapan = useAsesorPersiapanPending(isAsesor)
 
   // Map path to badge count
   const getBadgeCount = (path: string): number | null => {

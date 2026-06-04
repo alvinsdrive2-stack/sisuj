@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import AsesiLayout from "@/components/AsesiLayout"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { getMukSteps } from "@/lib/asesmen-steps"
@@ -19,18 +20,7 @@ export default function MukPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>MUK</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="MUK" />
 
       <AsesiLayout currentStep={3} idIzin={idIzin} tahap={tahap}>
         <div style={{ padding: '20px' }}>

@@ -11,9 +11,9 @@ interface AbsenKeluarCounts {
   isLoading: boolean
 }
 
-export function useAsesorAbsenPending(): AbsenKeluarCounts {
+export function useAsesorAbsenPending(enabled = true): AbsenKeluarCounts {
   const { user } = useAuth()
-  const { kegiatans, isLoading: kegiatanLoading } = useKegiatanAsesorList(true)
+  const { kegiatans, isLoading: kegiatanLoading } = useKegiatanAsesorList(enabled)
   const [counts, setCounts] = useState<AbsenKeluarCounts>({
     tahap1Pending: 0,
     tahap2Pending: 0,
@@ -24,6 +24,10 @@ export function useAsesorAbsenPending(): AbsenKeluarCounts {
   const hasFetched = useRef(false)
 
   useEffect(() => {
+    if (!enabled) {
+      setCounts(prev => ({ ...prev, isLoading: false }))
+      return
+    }
     if (kegiatanLoading || kegiatans.length === 0 || hasFetched.current) return
     hasFetched.current = true
 
@@ -89,7 +93,7 @@ export function useAsesorAbsenPending(): AbsenKeluarCounts {
     }
 
     fetchPendingCounts()
-  }, [kegiatanLoading, kegiatans, user?.id])
+  }, [enabled, kegiatanLoading, kegiatans, user?.id])
 
   return counts
 }

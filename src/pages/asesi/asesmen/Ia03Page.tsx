@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment, useCallback, useMemo, useRef } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,8 +9,6 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -87,7 +86,7 @@ export default function Ia03Page() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // Asesor-only editable (asesi read-only)
   const isFormDisabledBase = !isAsesor1 && !isAsesor2
@@ -116,7 +115,6 @@ export default function Ia03Page() {
   const [tanggapanAnswers, setTanggapanAnswers] = useState<Record<number, string>>({})
   const [pencapaianAnswers, setPencapaianAnswers] = useState<Record<number, boolean | null>>({})
   const [dokumenId, setDokumenId] = useState<number | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const textareaRefs = useRef<Record<number, HTMLTextAreaElement>>({})
   const umpanBalikRef = useRef<HTMLTextAreaElement>(null)
 
@@ -154,7 +152,6 @@ export default function Ia03Page() {
 
       if (!id) {
         console.error("No id_izin found")
-        setIsLoading(false)
         return
       }
 
@@ -209,8 +206,6 @@ export default function Ia03Page() {
         }
       } catch (err) {
         console.error("Error fetching IA03:", err)
-      } finally {
-        setIsLoading(false)
       }
   }, [id, authLoading])
 
@@ -238,16 +233,12 @@ export default function Ia03Page() {
     onRefresh: fetchData,
   })
 
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchData,
-  })
 
   const isFormDisabled = isFormDisabledBase || signing.allSigned
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
-    if (!isLoading && tanggapanAnswers) {
+    if (tanggapanAnswers) {
       // Resize tanggapan textareas
       Object.keys(tanggapanAnswers).forEach((soalId) => {
         const textarea = textareaRefs.current[parseInt(soalId)]
@@ -257,7 +248,7 @@ export default function Ia03Page() {
         }
       })
     }
-  }, [isLoading, tanggapanAnswers])
+  }, [tanggapanAnswers])
 
   const handleNext = async () => {
     if (signing.allSigned) {
@@ -346,29 +337,10 @@ export default function Ia03Page() {
     navigate(`/asesi/asesmen/${id}/ia02`)
   }
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data IA.03..." />
-      </div>
-    )
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate(isAsesor ? "/asesor/dashboard" : "/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>IA.03</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="IA.03" />
 
       <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia03'))?.number || 3} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

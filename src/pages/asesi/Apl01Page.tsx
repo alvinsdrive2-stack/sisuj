@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import AsesiLayout from "@/components/AsesiLayout"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
@@ -15,7 +15,6 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
@@ -149,7 +148,6 @@ export default function Apl01Page() {
   const [dataUnitKompetensi, setDataUnitKompetensi] = useState<UnitKompetensi[]>([])
   const [buktiPersyaratan, setBuktiPersyaratan] = useState<BuktiPersyaratan[]>([])
   const [buktiAdministratif, setBuktiAdministratif] = useState<BuktiAdministratif[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [skkni, setSkkni] = useState<string>("")
   const [catatan, setCatatan] = useState<string | null>(null)
@@ -198,7 +196,6 @@ export default function Apl01Page() {
       const token = localStorage.getItem("access_token")
 
       if (!idIzin) {
-        setIsLoading(false)
         return
       }
 
@@ -244,8 +241,6 @@ export default function Apl01Page() {
       }
     } catch (error) {
       // Continue with empty form
-    } finally {
-      setIsLoading(false)
     }
   }, [idIzin])
 
@@ -264,11 +259,6 @@ export default function Apl01Page() {
     onRefresh: fetchData,
   })
 
-  useRealtimeSync({
-    channelName: `praasesmen:${idIzin}`,
-    onUpdate: fetchData,
-  })
-
   const initialFetchDone = useRef(false)
 
   useEffect(() => {
@@ -277,8 +267,6 @@ export default function Apl01Page() {
     window.scrollTo(0, 0)
     if (idIzin) {
       fetchData()
-    } else {
-      setIsLoading(false)
     }
   }, [idIzin, fetchData])
 
@@ -364,28 +352,11 @@ export default function Apl01Page() {
     }
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data APL 01..." />
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif'}}>
       {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
 
-      {/* Breadcrumb */}
-      {!isUuidFlow && (
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>FR APL 01</span>
-          </div>
-        </div>
-      </div>
-      )}
+      {!isUuidFlow && <AsesmenBreadcrumb currentPage="APL 01" />}
 
       <Apl01Layout isUuidFlow={isUuidFlow} idIzin={idIzin} tahap={tahap}>
             {/* Title */}

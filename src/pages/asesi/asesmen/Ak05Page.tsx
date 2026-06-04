@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
+import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -8,9 +9,7 @@ import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -64,7 +63,7 @@ export default function Ak05Page() {
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, _kegiatan?.tahap)
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, _kegiatan?.tahap])
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check
@@ -97,7 +96,6 @@ export default function Ak05Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   }>({ asesi: null, asesor1: null, asesor2: null })
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
   // Multi-asesi state
@@ -186,7 +184,6 @@ export default function Ak05Page() {
     } catch (err) {
       console.error("Error fetching AK05:", err)
     }
-    setIsLoading(false)
   }, [id, authLoading, jadwalId])
 
   useEffect(() => { fetchAk05Data() }, [fetchAk05Data])
@@ -208,11 +205,6 @@ export default function Ak05Page() {
     jadwalId,
     onRefresh: fetchAk05Data,
     nextPageName: nextStepLabel,
-  })
-
-  useRealtimeSync({
-    channelName: `asesmen:${id}`,
-    onUpdate: fetchAk05Data,
   })
 
   // Keep derived values for display & multi-asesi logic
@@ -324,31 +316,13 @@ export default function Ak05Page() {
     await submitAbsenAkhir(imageBlob)
   }
 
-  if (isLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
-                <FullPageLoader text="Memuat data AK.05..." />
-      </div>
-    )
-  }
-
   const formDisabled = !canEdit || signing.allSigned
 
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       
       {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesor/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Asesmen</span>
-            <span>/</span>
-            <span>AK.05</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="AK.05" isAsesorOverride={true} />
 
       <ModularAsesiLayout currentStep={currentStep || 7} steps={asesmenSteps} id={id} metode={metode}>
         {/* Title */}

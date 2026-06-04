@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import AsesiLayout from "@/components/AsesiLayout"
 import DashboardNavbar from "@/components/DashboardNavbar"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
@@ -14,7 +14,6 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
@@ -59,6 +58,11 @@ interface RekomendasiAsesiSectionProps {
 const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, asesorList, namaAsesi, apl02Data, user, subunitBarcodes, onMetodeChange }: RekomendasiAsesiSectionProps) => {
   // State di sini - tidak affect parent
   const [metodeAsesmen, setMetodeAsesmen] = useState<'observasi' | 'portofolio' | null>(initialValue)
+
+  // Sync state when prop changes (API data loads after first render)
+  useEffect(() => {
+    setMetodeAsesmen(initialValue)
+  }, [initialValue])
 
   // Notify parent when value changes (for POST)
   useEffect(() => {
@@ -1440,7 +1444,6 @@ export default function Apl02Page() {
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const apl02DataRef = useRef<Apl02Data | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [_idIzin, setIdIzin] = useState<string | null>(null) // Will be used for POST request
 
@@ -1833,7 +1836,6 @@ export default function Apl02Page() {
         }
 
         if (!fetchedIdIzin) {
-          setIsLoading(false)
           return
         }
 
@@ -1980,8 +1982,6 @@ export default function Apl02Page() {
           units: units,
         }
       } catch (error) {
-      } finally {
-        setIsLoading(false)
       }
   }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi, jadwalId])
 
@@ -2077,11 +2077,6 @@ export default function Apl02Page() {
     isUuidFlow,
     testingMode: false,
     onRefresh: fetchData,
-  })
-
-  useRealtimeSync({
-    channelName: `praasesmen:${_idIzin || idIzin || undefined}`,
-    onUpdate: fetchData,
   })
 
   const handleToggleAgreement = useCallback(() => {
@@ -2333,7 +2328,7 @@ export default function Apl02Page() {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          metode: metodeAsesmenRef.current || 'observasi', // Default to observasi if null (asesi submit before asesor chooses)
+          metode: metodeAsesmenRef.current || '', // Default to observasi if null (asesi submit before asesor chooses)
           is_dilanjutkan: true,
           answers
         }),
@@ -2403,28 +2398,11 @@ export default function Apl02Page() {
     }
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data APL 02..." />
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {isUuidFlow && <DashboardNavbar userName={namaAsesi || 'Asesi'} />}
 
-      {/* Breadcrumb */}
-      {!isUuidFlow && (
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>FR APL 02</span>
-          </div>
-        </div>
-      </div>
-      )}
+      {!isUuidFlow && <AsesmenBreadcrumb currentPage="APL 02" />}
 
       <Apl02PageLayout
         isUuidFlow={isUuidFlow}

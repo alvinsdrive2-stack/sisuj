@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -57,7 +57,6 @@ export default function PraAsesmenPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [data, setData] = useState<PersonalData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isConfirming, setIsConfirming] = useState(false)
   const { kegiatan } = useKegiatanAsesi()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
@@ -107,8 +106,6 @@ export default function PraAsesmenPage() {
       }
     } catch (error) {
       toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
-    } finally {
-      setIsLoading(false)
     }
   }, [])
 
@@ -183,10 +180,6 @@ export default function PraAsesmenPage() {
     setZoom(prev => Math.max(prev - 0.25, 0.5))
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data..." />
-  }
-
   if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f5f5f5' }}>
@@ -210,18 +203,7 @@ export default function PraAsesmenPage() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span style={{ fontWeight: 'normal' }}>Konfirmasi</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="Pra Asesmen" />
 
       
 

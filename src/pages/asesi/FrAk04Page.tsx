@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -12,7 +12,6 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface Referensi {
   id: number
@@ -53,7 +52,6 @@ export default function FrAk04Page() {
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
@@ -94,7 +92,6 @@ export default function FrAk04Page() {
       }
 
       if (!resolvedIdIzin) {
-        setIsLoading(false)
         return
       }
 
@@ -139,8 +136,6 @@ export default function FrAk04Page() {
         console.warn(`AK04 API returned ${ak04Response.status}`)
       }
     } catch (error) {
-    } finally {
-      setIsLoading(false)
     }
   }, [idIzin, isAsesor, kegiatan, jadwalId])
 
@@ -166,11 +161,6 @@ export default function FrAk04Page() {
     idIzin: actualIdIzin || idIzin,
     jadwalId,
     onRefresh: fetchAk04Data,
-  })
-
-  useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin || idIzin}`,
-    onUpdate: fetchAk04Data,
   })
 
   // Only asesi can edit this form
@@ -311,26 +301,11 @@ export default function FrAk04Page() {
     }
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat data AK 04..." />
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>FR.AK.04</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="FR.AK.04" />
 
       <MukLayout currentStep={4} idIzin={idIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         <div style={{ padding: '20px' }}>

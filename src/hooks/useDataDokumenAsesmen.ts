@@ -118,6 +118,8 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    const controller = new AbortController()
+
     const fetchData = async () => {
       if (!idIzin) {
         setIsLoading(false)
@@ -131,6 +133,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
             "Accept": "application/json",
             "Authorization": `Bearer ${token}`,
           },
+          signal: controller.signal,
         })
 
         if (response.ok) {
@@ -187,6 +190,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
           console.warn(`Data Dokumen Asesmen API returned ${response.status}`)
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return
         console.error("Error fetching data dokumen asesmen:", err)
         setError(err instanceof Error ? err.message : "Unknown error")
       } finally {
@@ -195,6 +199,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     }
 
     fetchData()
+    return () => controller.abort()
   }, [idIzin])
 
   return {

@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback } from "react"
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
@@ -30,7 +29,6 @@ export default function K3AsesmenPage() {
   const { showWarning, showSuccess } = useToast()
   const { asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const fetchK3Data = useCallback(async () => {
@@ -55,8 +53,6 @@ export default function K3AsesmenPage() {
       }
     } catch (error) {
       console.error("Error fetching K3:", error)
-    } finally {
-      setIsLoading(false)
     }
   }, [idIzin])
 
@@ -90,10 +86,6 @@ export default function K3AsesmenPage() {
   }, [idIzin, fetchK3Data])
 
   // SSE: auto-refresh when another user saves
-  useRealtimeSync({
-    channelName: `praasesmen:${idIzin}`,
-    onUpdate: fetchK3Data
-  })
 
   const handleBack = () => {
     navigate(-1)
@@ -138,26 +130,11 @@ export default function K3AsesmenPage() {
     navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
   }
 
-  if (isLoading) {
-    return <FullPageLoader text="Memuat dokumen K3 Asesmen..." />
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
       
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>Pra-Asesmen</span>
-            <span>/</span>
-            <span>Tata Tertib dan K3 Asesmen</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="K3" />
 
       <MukLayout currentStep={5} idIzin={idIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         {/* Title */}

@@ -1,3 +1,4 @@
+import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams, useLocation } from "react-router-dom"
 import AsesiLayout from "@/components/AsesiLayout"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -6,7 +7,6 @@ import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
-import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -14,7 +14,6 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
-import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 
 interface BuktiAsesmen {
@@ -84,7 +83,6 @@ export default function FrAk01Page() {
   const [formData, setFormData] = useState<Ak01Data>({
     buktiYangDikumpulkan: []
   })
-  const [loading, setLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [waktuAk01, setWaktuAk01] = useState('')
@@ -146,7 +144,6 @@ export default function FrAk01Page() {
   const initialFetchDone = useRef(false)
 
   const fetchData = useCallback(async () => {
-    try {
       const token = localStorage.getItem("access_token")
 
       // Use idIzin from URL params or fetch from list-asesi
@@ -170,7 +167,6 @@ export default function FrAk01Page() {
       }
 
       if (!fetchedIdIzin) {
-        setLoading(false)
         return
       }
 
@@ -210,11 +206,6 @@ export default function FrAk01Page() {
           }
         }
       }
-
-      setLoading(false)
-    } catch (error) {
-      setLoading(false)
-    }
   }, [idIzin, kegiatan, isAsesor, jadwalId])
 
   useEffect(() => {
@@ -240,11 +231,6 @@ export default function FrAk01Page() {
     jadwalId,
     onRefresh: fetchData,
     nextPageName: 'Proses Asesmen',
-  })
-
-  useRealtimeSync({
-    channelName: `praasesmen:${actualIdIzin}`,
-    onUpdate: fetchData,
   })
 
   const asesmenSteps = useMemo(() => {
@@ -401,10 +387,6 @@ export default function FrAk01Page() {
     } finally {
       setIsSaving(false)
     }
-  }
-
-  if (loading) {
-    return <FullPageLoader text="Memuat data..." />
   }
 
   const pageContent = (
@@ -766,18 +748,7 @@ export default function FrAk01Page() {
     <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
       {/* Header */}
 
-      {/* Breadcrumb */}
-      <div style={{ borderBottom: '1px solid #000', background: '#fff' }}>
-        <div style={{ padding: '12px 16px', width: '100%', margin: '0 auto' }}>
-          <div style={{ display: 'flex', gap: '8px', fontSize: '13px', color: '#666' }}>
-            <span style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => navigate("/asesi/dashboard")}>Dashboard</span>
-            <span>/</span>
-            <span>{(isAsesmenFlow || isPerjanjianFlow) ? 'Perjanjian Asesmen' : 'Pra-Asesmen'}</span>
-            <span>/</span>
-            <span>FR.AK.01</span>
-          </div>
-        </div>
-      </div>
+      <AsesmenBreadcrumb currentPage="FR.AK.01" />
 
       {isAsesmenFlow ? (
         <ModularAsesiLayout currentStep={1} steps={asesmenSteps} id={actualIdIzin} title="Perjanjian Asesmen">

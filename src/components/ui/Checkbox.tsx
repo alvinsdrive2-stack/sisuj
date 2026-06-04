@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 
 interface CheckboxProps {
   checked: boolean
@@ -9,7 +9,7 @@ interface CheckboxProps {
   style?: React.CSSProperties
 }
 
-export function CustomCheckbox({
+export const CustomCheckbox = React.memo(function CustomCheckbox({
   checked,
   onChange,
   disabled = false,
@@ -17,7 +17,8 @@ export function CustomCheckbox({
   className = '',
   style,
 }: CheckboxProps) {
-  const uniqueId = id || `checkbox-${Math.random().toString(36).substring(7)}`
+  const generatedId = useRef(`checkbox-${Math.random().toString(36).substring(7)}`)
+  const uniqueId = id || generatedId.current
 
   return (
     <div className={`checkbox-wrapper ${className}`} style={{...style, cursor: disabled ? 'not-allowed' : 'auto'}}>
@@ -38,4 +39,4 @@ export function CustomCheckbox({
       </label>
     </div>
   )
-}
+})

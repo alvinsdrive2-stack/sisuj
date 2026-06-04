@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/toast"
@@ -110,16 +110,24 @@ export function useAbsenCheck({
     return `${phase}/${finalIdIzin}/absen`
   }, [phase, finalIdIzin])
 
+  // Module-level cache: skip API call if data already fetched within 30s
+  const absenCacheRef = useRef<{ idIzin: string; data: AbsenData | null; expiry: number } | null>(null)
+
   // Fetch absen data
-  const fetchAbsenData = useCallback(async () => {
+  const fetchAbsenData = useCallback(async (force = false) => {
     if (!finalIdIzin) {
-      
       return null
+    }
+
+    // Return cached data if valid and not forced
+    if (!force && absenCacheRef.current && absenCacheRef.current.idIzin === finalIdIzin && Date.now() < absenCacheRef.current.expiry) {
+      const cached = absenCacheRef.current.data
+      if (cached) setAbsenData(cached)
+      return cached
     }
 
     try {
       const token = localStorage.getItem("access_token")
-      
 
       const response = await fetch(`${API_BASE_URL}/dokumen/absen/${finalIdIzin}`, {
         headers: {
@@ -131,11 +139,9 @@ export function useAbsenCheck({
       if (response.ok) {
         const result = await response.json()
         const absen = result.data || result
-        
+        absenCacheRef.current = { idIzin: finalIdIzin, data: absen, expiry: Date.now() + 30_000 }
         setAbsenData(absen)
         return absen
-      } else {
-        
       }
     } catch (error) {
       console.error("[fetchAbsenData] Error fetching absen data:", error)
@@ -264,21 +270,15 @@ export function useAbsenCheck({
 
   // Check if should show absen akhir modal (with fresh data)
   const shouldShowAkhirModal = useCallback(async () => {
-    
-
-    // Re-fetch to get fresh data
-    const freshData = await fetchAbsenData()
-    
+    // Force fresh fetch — need newest absen status
+    const freshData = await fetchAbsenData(true)
 
     if (!freshData) {
-      
       return false
     }
 
     const akhirField = getAkhirField()
     const fieldValue = freshData[akhirField]
-    
-    
 
     return !fieldValue
   }, [fetchAbsenData, getAkhirField, actualRole])

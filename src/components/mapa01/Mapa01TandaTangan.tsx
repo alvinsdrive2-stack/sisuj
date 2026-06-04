@@ -51,6 +51,7 @@ interface Mapa01TandaTanganProps {
   noregValidator?: string | null
   namaManajer?: string | null
   tanggalManajer?: string | null
+  barcodeManajer?: string | null
   referensiForm?: ReferensiFormItem[]
   isAsesor?: boolean
 }
@@ -98,6 +99,7 @@ export function Mapa01TandaTangan({
   noregValidator,
   namaManajer,
   tanggalManajer,
+  barcodeManajer,
   referensiForm,
   isAsesor = false
 }: Mapa01TandaTanganProps) {
@@ -244,8 +246,13 @@ export function Mapa01TandaTangan({
               <td style={{ ...contentCellStyle, padding: '12px 8px', fontSize: '12px' }}>
                 {isManajer && namaManajer ? namaManajer : ''}
               </td>
-              <td style={{ ...contentCellStyle, padding: '12px 8px' }}>
-                {isManajer && tanggalManajer ? new Date(tanggalManajer).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}
+              <td style={{ ...contentCellStyle, padding: '8px', textAlign: 'center' }}>
+                {isManajer && barcodeManajer ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                    <img src={barcodeManajer} alt="QR Manajer" style={{ width: '50px', height: '50px', objectFit: 'contain' }} />
+                    {tanggalManajer && <span style={{ fontSize: '10px' }}>{new Date(tanggalManajer).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+                  </div>
+                ) : (isManajer && tanggalManajer ? new Date(tanggalManajer).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '')}
               </td>
             </tr>
             )
