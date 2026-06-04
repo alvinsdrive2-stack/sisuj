@@ -87,7 +87,7 @@ export default function Ia03Page() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   // Asesor-only editable (asesi read-only)
   const isFormDisabledBase = !isAsesor1 && !isAsesor2
@@ -261,6 +261,11 @@ export default function Ia03Page() {
 
   const handleNext = async () => {
     if (signing.allSigned) {
+      // Tahap 0 → dashboard
+      if (_kegiatan?.tahap === 0) {
+        navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
+        return
+      }
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia03'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {

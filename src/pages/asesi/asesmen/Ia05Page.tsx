@@ -86,7 +86,7 @@ export default function Ia05Page() {
   // Check if current user is asesor
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor // All asesor can edit umpan_balik
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -251,6 +251,12 @@ export default function Ia05Page() {
           // Don't block navigation on QR failure
         }
 
+        // Tahap 0 → dashboard instead of continuing asesmen
+        if (_kegiatan?.tahap === 0) {
+          setTimeout(() => navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard'), 500)
+          return
+        }
+
         // Navigate to next step based on asesmenSteps
         const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
         const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -337,6 +343,12 @@ export default function Ia05Page() {
         } catch (qrError) {
           console.error('❌ Failed to generate QR IA05:', qrError)
           // Don't block navigation on QR failure
+        }
+
+        // Tahap 0 → dashboard
+        if (_kegiatan?.tahap === 0) {
+          setTimeout(() => navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard'), 500)
+          return
         }
 
         // Navigate to AK02

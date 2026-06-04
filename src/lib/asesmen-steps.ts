@@ -146,26 +146,78 @@ export const ASESMEN_STEPS_PORTOFOLIO_ASESOR_2: StepConfig[] = [
 // Default asesmen steps (backward compatibility)
 export const ASESMEN_STEPS: StepConfig[] = ASESMEN_STEPS_ASESI
 
-// Get asesmen steps based on jenjang_id, metode, and asesor role
+// MUK Steps for Tahap 0 (combined MUK + asesmen flow, no AK.01)
+export const MUK_STEPS_TAHAP_0_OBSERVASI: StepConfig[] = [
+  { number: 1, label: 'MAPA 01', href: '/asesi/praasesmen/:idIzin/mapa01' },
+  { number: 2, label: 'MAPA 02', href: '/asesi/praasesmen/:idIzin/mapa02' },
+  { number: 3, label: 'IA.04.A', href: '/asesi/asesmen/ia04a' },
+  { number: 4, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
+  { number: 5, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+]
+
+export const MUK_STEPS_TAHAP_0_LOW_JENJANG: StepConfig[] = [
+  { number: 1, label: 'MAPA 01', href: '/asesi/praasesmen/:idIzin/mapa01' },
+  { number: 2, label: 'MAPA 02', href: '/asesi/praasesmen/:idIzin/mapa02' },
+  { number: 3, label: 'IA.01', href: '/asesi/asesmen/ia01' },
+  { number: 4, label: 'IA.02', href: '/asesi/asesmen/ia02' },
+  { number: 5, label: 'IA.03', href: '/asesi/asesmen/ia03' },
+]
+
+export const MUK_STEPS_TAHAP_0_PORTOFOLIO: StepConfig[] = [
+  { number: 1, label: 'MAPA 01', href: '/asesi/praasesmen/:idIzin/mapa01' },
+  { number: 2, label: 'MAPA 02', href: '/asesi/praasesmen/:idIzin/mapa02' },
+  { number: 3, label: 'IA.08', href: '/asesi/asesmen/ia08' },
+  { number: 4, label: 'IA.09', href: '/asesi/asesmen/ia09' },
+  { number: 5, label: 'IA.10', href: '/asesi/asesmen/ia10' },
+]
+
+// Get MUK steps based on tahap, jenjang, and metode
+export function getMukSteps(tahap: number, jenjang: string, metode?: string): StepConfig[] {
+  if (tahap === 0) {
+    const isLowJenjang = jenjang && parseInt(jenjang) < 4
+    const isPortofolio = metode?.toLowerCase() === 'portofolio'
+
+    if (isPortofolio && !isLowJenjang) return [...MUK_STEPS_TAHAP_0_PORTOFOLIO]
+    if (isLowJenjang) return [...MUK_STEPS_TAHAP_0_LOW_JENJANG]
+    return [...MUK_STEPS_TAHAP_0_OBSERVASI]
+  }
+  return [...MUK_STEPS]
+}
+
+// Get asesmen steps based on jenjang_id, metode, asesor role, and tahap
 export function getAsesmenSteps(
   jenjangId: string,
   isAsesor: boolean,
   asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none' | undefined,
   _asesorCount: number,
-  metode?: string
+  metode?: string,
+  tahap?: number
 ): StepConfig[] {
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
   const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
+  let steps: StepConfig[]
   if (isPortofolio && !isLowJenjang) {
-    if (!isAsesor) return [...ASESMEN_STEPS_PORTOFOLIO_ASESI]
-    if (asesorRole === 'asesor_1') return [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
-    return [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
+    if (!isAsesor) steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESI]
+    else if (asesorRole === 'asesor_1') steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
+    else steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
+  } else if (!isAsesor) {
+    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)]
+  } else if (asesorRole === 'asesor_1') {
+    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)]
+  } else {
+    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
   }
 
-  if (!isAsesor) return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)]
-  if (asesorRole === 'asesor_1') return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)]
-  return [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
+  // Filter out AK.01 when tahap is 0 (MUK+IA combined) or 2 (asesmen, AK.01 is separate pre-step)
+  // Renumber steps starting from 1 when AK.01 is removed
+  if (tahap === 0 || tahap === 2) {
+    steps = steps
+      .filter(s => !s.href.includes('ak01'))
+      .map((s, i) => ({ ...s, number: i + 1 }))
+  }
+
+  return steps
 }
 
 // Helper function to get current step number from href

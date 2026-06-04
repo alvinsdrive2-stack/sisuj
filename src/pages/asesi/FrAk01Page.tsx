@@ -239,6 +239,7 @@ export default function FrAk01Page() {
     idIzin: actualIdIzin,
     jadwalId,
     onRefresh: fetchData,
+    nextPageName: 'Proses Asesmen',
   })
 
   useRealtimeSync({
@@ -247,9 +248,9 @@ export default function FrAk01Page() {
   })
 
   const asesmenSteps = useMemo(() => {
-    if (!isAsesmenFlow || !jenjang) return []
+    if (!jenjang) return []
     return getAsesmenSteps(jenjang, isAsesor, undefined, 0, metode)
-  }, [isAsesmenFlow, jenjang, isAsesor, metode])
+  }, [jenjang, isAsesor, metode])
 
   // Legacy aliases for hook-managed state
   const allSigned = signing.allSigned
@@ -300,7 +301,7 @@ export default function FrAk01Page() {
 
     // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
-      if (isAsesmenFlow) {
+      if (isAsesmenFlow || tahap === 2) {
         setShowMasukAsesmenModal(true)
         return
       }
@@ -317,7 +318,7 @@ export default function FrAk01Page() {
 
     // If asesi already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && !isAsesor && asesiHasSigned) {
-      if (isAsesmenFlow) {
+      if (isAsesmenFlow || tahap === 2) {
         setShowMasukAsesmenModal(true)
         return
       }
@@ -376,6 +377,12 @@ export default function FrAk01Page() {
 
         // Untuk asesmen flow, show floating modal
         if (isAsesmenFlow) {
+          setShowMasukAsesmenModal(true)
+          return
+        }
+
+        // Perjanjian flow (tahap 2): show floating modal to proceed to asesmen
+        if (tahap === 2) {
           setShowMasukAsesmenModal(true)
           return
         }
@@ -860,10 +867,13 @@ export default function FrAk01Page() {
             <button
               onClick={() => {
                 setShowMasukAsesmenModal(false)
-                const targetHref = asesmenSteps.length > 1
-                  ? asesmenSteps[1].href
-                  : '/asesi/dashboard'
-                navigate(targetHref)
+                const firstStep = asesmenSteps.length > 1 ? asesmenSteps[1] : null
+                if (firstStep) {
+                  const targetHref = firstStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${actualIdIzin}/`)
+                  navigate(targetHref)
+                } else {
+                  navigate('/asesi/dashboard')
+                }
               }}
               style={{
                 display: 'inline-flex',
@@ -882,7 +892,7 @@ export default function FrAk01Page() {
               onMouseEnter={(e) => e.currentTarget.style.background = '#0052a3'}
               onMouseLeave={(e) => e.currentTarget.style.background = '#0066cc'}
             >
-              Masuk ke Proses Asesmen
+              Lanjut ke Proses Asesmen
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>

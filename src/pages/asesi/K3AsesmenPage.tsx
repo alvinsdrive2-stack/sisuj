@@ -28,7 +28,7 @@ export default function K3AsesmenPage() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { showWarning, showSuccess } = useToast()
-  const { asesorList, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
@@ -104,27 +104,38 @@ export default function K3AsesmenPage() {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen K3 Asesmen.")
       return
     }
-    // Jika belum semua ttd, generate QR (asesi tanda tangan duluan)
-    if (!signing.allSigned && !signing.asesiHasSigned) {
-      const ok = await signing.generateQR()
-      if (!ok) return
-      showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
-      signing.publishUpdate()
-      return // Tunggu asesor tanda tangan
+    // Jika belum semua ttd, generate QR
+    if (!signing.allSigned) {
+      // Asesi tanda tangan duluan
+      if (!signing.asesiHasSigned) {
+        const ok = await signing.generateQR()
+        if (!ok) return
+        showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+        signing.publishUpdate()
+        return
+      }
+      // Asesor tanda tangan
+      if (!signing.asesorHasSigned) {
+        const ok = await signing.generateQR()
+        if (!ok) return
+        showSuccess("QR Code berhasil dibuat.")
+        signing.publishUpdate()
+        return
+      }
     }
-    // Semua sudah ttd → absen akhir praasesmen
+    // Semua sudah ttd → absen akhir sebelum redirect
     const needsAbsenAkhir = await _shouldShowAkhirModal()
     if (needsAbsenAkhir) {
       setShowAkhirModal(true)
       return
     }
     // Absen akhir sudah ada → langsung dashboard
-    navigate('/asesi/dashboard')
+    navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
   }
 
   const handleAbsenAkhirSubmit = async (blob: Blob) => {
     await submitAbsenAkhir(blob)
-    navigate('/asesi/dashboard')
+    navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
   }
 
   if (isLoading) {
@@ -148,7 +159,7 @@ export default function K3AsesmenPage() {
         </div>
       </div>
 
-      <MukLayout currentStep={5} idIzin={idIzin} metode={metode}>
+      <MukLayout currentStep={5} idIzin={idIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         {/* Title */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>K3 ASESMEN</h2>

@@ -124,7 +124,7 @@ export default function UjianPage() {
 
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap)
   const canEdit = !isAsesor
   // Note: Ujian page doesn't have kegiatan data, so we use "0" as default jenjang_id
   // This page is part of the asesmen flow but the jenjang_id is not critical for ujian steps

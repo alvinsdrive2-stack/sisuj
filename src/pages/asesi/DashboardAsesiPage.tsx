@@ -96,7 +96,7 @@ export default function DashboardAsesiPage() {
     let tahap2Steps: string[] = []
     if (isPortofolio) {
       tahap2Steps = [
-        `/asesmen/${idIzin}/ak01`,
+        `/perjanjian/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia08`,
         `/asesmen/${idIzin}/ia09`,
         `/asesmen/${idIzin}/ia10`,
@@ -105,7 +105,7 @@ export default function DashboardAsesiPage() {
       ]
     } else if (isLowJenjang) {
       tahap2Steps = [
-        `/asesmen/${idIzin}/ak01`,
+        `/perjanjian/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia01`,
         `/asesmen/${idIzin}/ia02`,
         `/asesmen/${idIzin}/ia03`,
@@ -116,7 +116,7 @@ export default function DashboardAsesiPage() {
       ]
     } else {
       tahap2Steps = [
-        `/asesmen/${idIzin}/ak01`,
+        `/perjanjian/${idIzin}/ak01`,
         `/asesmen/${idIzin}/ia04a`,
         `/asesmen/${idIzin}/upload-tugas`,
         `/asesmen/${idIzin}/ia04b`,
@@ -131,7 +131,11 @@ export default function DashboardAsesiPage() {
     const checkAll = async () => {
       for (const path of steps) {
         try {
-          const res = await fetch(`${API_BASE_URL}${path}`, { headers })
+          // AK.01 API di /praasesmen/ bukan /perjanjian/
+          const apiPath = path.includes('/perjanjian/')
+            ? path.replace('/perjanjian/', '/praasesmen/')
+            : path
+          const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
           if (!res.ok) continue
           const json = await res.json()
           const filled = json.data?.barcodes?.asesi?.url ||
@@ -481,7 +485,7 @@ export default function DashboardAsesiPage() {
                       let tahap2Steps: { key: string; path: string }[] = []
                       if (isPortofolio) {
                         tahap2Steps = [
-                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
+                          { key: 'ak01', path: `/perjanjian/${idIzin}/ak01` },
                           { key: 'ia08', path: `/asesmen/${idIzin}/ia08` },
                           { key: 'ia09', path: `/asesmen/${idIzin}/ia09` },
                           { key: 'ia10', path: `/asesmen/${idIzin}/ia10` },
@@ -490,7 +494,7 @@ export default function DashboardAsesiPage() {
                         ]
                       } else if (isLowJenjang) {
                         tahap2Steps = [
-                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
+                          { key: 'ak01', path: `/perjanjian/${idIzin}/ak01` },
                           { key: 'ia01', path: `/asesmen/${idIzin}/ia01` },
                           { key: 'ia02', path: `/asesmen/${idIzin}/ia02` },
                           { key: 'ia03', path: `/asesmen/${idIzin}/ia03` },
@@ -501,7 +505,7 @@ export default function DashboardAsesiPage() {
                         ]
                       } else {
                         tahap2Steps = [
-                          { key: 'ak01', path: `/asesmen/${idIzin}/ak01` },
+                          { key: 'ak01', path: `/perjanjian/${idIzin}/ak01` },
                           { key: 'ia04a', path: `/asesmen/${idIzin}/ia04a` },
                           { key: 'upload-tugas', path: `/asesmen/${idIzin}/upload-tugas` },
                           { key: 'ia04b', path: `/asesmen/${idIzin}/ia04b` },
@@ -512,7 +516,29 @@ export default function DashboardAsesiPage() {
                       }
                       for (const step of tahap2Steps) {
                         try {
-                          const res = await fetch(`${API_BASE_URL}${step.path}`, { headers })
+                          // AK.01 API endpoint is under /praasesmen/, not /perjanjian/
+                          const apiPath = step.key === 'ak01'
+                            ? `/praasesmen/${idIzin}/ak01`
+                            : step.path
+                          const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
+
+                          // AK.01 returns 404 when no data yet — treat as unfilled
+                          if (step.key === 'ak01') {
+                            if (!res.ok) {
+                              sessionStorage.setItem('validNavigationEntry', 'true')
+                              navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+                              return
+                            }
+                            const json = await res.json()
+                            const filled = json.data?.barcodes?.asesi?.url
+                            if (!filled) {
+                              sessionStorage.setItem('validNavigationEntry', 'true')
+                              navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+                              return
+                            }
+                            continue
+                          }
+
                           if (!res.ok) continue
                           const json = await res.json()
                           const filled = json.data?.barcodes?.asesi?.url ||

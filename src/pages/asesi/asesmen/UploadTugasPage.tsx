@@ -9,6 +9,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
@@ -80,8 +81,10 @@ export default function UploadTugasPage() {
   const [showModal, setShowModal] = useState(false)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
+
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

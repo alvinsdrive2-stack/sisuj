@@ -266,22 +266,70 @@ export default function AsesiPage() {
     }
   }
 
-  const handleViewAsesi = (idIzin: string) => {
-    const jenjangId = parseInt(jenjangMap[idIzin] || "0")
-    const metode = metodeMap[idIzin] || ''
+  const handleViewAsesi = async (idIzin: string) => {
     const tahap = tahapMap[idIzin] ?? currentKegiatan?.tahap ?? 0
 
     // Mark valid navigation entry for asesmen routes
     sessionStorage.setItem('validNavigationEntry', 'true')
 
     if (tahap === 2) {
-      if (jenjangId >= 4 && metode === 'observasi') {
-        navigate(`/asesi/asesmen/${idIzin}/ia04a`, { state: { fromInternal: true } })
-      } else if (jenjangId >= 4 && metode === 'portofolio') {
-        navigate(`/asesi/asesmen/${idIzin}/ia08`, { state: { fromInternal: true } })
+      // Check steps in order, navigate to first unfilled
+      const token = localStorage.getItem("access_token")
+      const jenjangId = parseInt(jenjangMap[idIzin] || "0")
+      const metode = (metodeMap[idIzin] || '').toLowerCase()
+      const isLowJenjang = jenjangId < 4
+      const isPortofolio = metode === 'portofolio'
+
+      const baseSteps: { key: string; path: string; apiPath: string }[] = []
+      if (isPortofolio) {
+        baseSteps.push({ key: 'ak01', path: `/perjanjian/${idIzin}/ak01`, apiPath: `/praasesmen/${idIzin}/ak01` })
+        baseSteps.push({ key: 'ia08', path: `/asesmen/${idIzin}/ia08`, apiPath: `/asesmen/${idIzin}/ia08` })
+        baseSteps.push({ key: 'ia09', path: `/asesmen/${idIzin}/ia09`, apiPath: `/asesmen/${idIzin}/ia09` })
+        baseSteps.push({ key: 'ia10', path: `/asesmen/${idIzin}/ia10`, apiPath: `/asesmen/${idIzin}/ia10` })
+      } else if (isLowJenjang) {
+        baseSteps.push({ key: 'ak01', path: `/perjanjian/${idIzin}/ak01`, apiPath: `/praasesmen/${idIzin}/ak01` })
+        baseSteps.push({ key: 'ia01', path: `/asesmen/${idIzin}/ia01`, apiPath: `/asesmen/${idIzin}/ia01` })
+        baseSteps.push({ key: 'ia02', path: `/asesmen/${idIzin}/ia02`, apiPath: `/asesmen/${idIzin}/ia02` })
+        baseSteps.push({ key: 'ia03', path: `/asesmen/${idIzin}/ia03`, apiPath: `/asesmen/${idIzin}/ia03` })
       } else {
-        navigate(`/asesi/asesmen/${idIzin}/ia01`, { state: { fromInternal: true } })
+        baseSteps.push({ key: 'ak01', path: `/perjanjian/${idIzin}/ak01`, apiPath: `/praasesmen/${idIzin}/ak01` })
+        baseSteps.push({ key: 'ia04a', path: `/asesmen/${idIzin}/ia04a`, apiPath: `/asesmen/${idIzin}/ia04a` })
+        baseSteps.push({ key: 'ia04b', path: `/asesmen/${idIzin}/ia04b`, apiPath: `/asesmen/${idIzin}/ia04b` })
+        baseSteps.push({ key: 'ia05', path: `/asesmen/${idIzin}/ia05`, apiPath: `/asesmen/${idIzin}/ia05` })
       }
+
+      for (const step of baseSteps) {
+        try {
+          const res = await fetch(`${API_BASE_URL}${step.apiPath}`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          })
+
+          if (step.key === 'ak01') {
+            if (!res.ok) {
+              navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+              return
+            }
+            const json = await res.json()
+            if (!json.data?.barcodes?.asesi?.url) {
+              navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+              return
+            }
+            continue
+          }
+
+          if (!res.ok) continue
+          const json = await res.json()
+          const filled = json.data?.barcodes?.asesi?.url ||
+            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+          if (!filled) {
+            navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
+            return
+          }
+        } catch { /* continue */ }
+      }
+
+      // All filled → fallback to AK.01
+      navigate(`/asesi/perjanjian/${idIzin}/ak01`, { state: { fromInternal: true } })
     } else {
       navigate(`/asesi/praasesmen/${idIzin}/apl01`, { state: { fromInternal: true } })
     }

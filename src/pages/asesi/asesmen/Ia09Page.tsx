@@ -70,13 +70,7 @@ export default function Ia09Page() {
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
-  const asesmenSteps = getAsesmenSteps(
-    jenjang,
-    isAsesor,
-    undefined,
-    asesorList.length,
-    metode
-  )
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap)
 
   const {
     showAwalModal,

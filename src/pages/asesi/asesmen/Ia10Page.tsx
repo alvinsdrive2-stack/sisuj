@@ -84,13 +84,7 @@ export default function Ia10Page() {
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
-  const asesmenSteps = getAsesmenSteps(
-    jenjang,
-    isAsesor,
-    undefined,
-    asesorList.length,
-    metode
-  )
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap)
 
   const {
     showAwalModal,
@@ -228,6 +222,10 @@ export default function Ia10Page() {
   const handleSave = async () => {
     // Only asesor can save IA10
     if (!isAsesor) {
+      if (_kegiatan?.tahap === 0) {
+        navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
+        return
+      }
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {
@@ -240,6 +238,10 @@ export default function Ia10Page() {
     }
 
     if (hasSigned) {
+      if (_kegiatan?.tahap === 0) {
+        navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
+        return
+      }
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {

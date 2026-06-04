@@ -104,7 +104,7 @@ export default function Ia04aPage() {
   })
 
   // Get dynamic steps based on asesor role
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   const initialFetchDone = useRef(false)
 

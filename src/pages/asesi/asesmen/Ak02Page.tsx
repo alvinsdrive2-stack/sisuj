@@ -76,7 +76,7 @@ export default function Ak02Page() {
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabled = !isAsesor

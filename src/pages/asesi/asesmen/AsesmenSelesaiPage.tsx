@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -18,9 +19,11 @@ export default function AsesmenSelesaiPage() {
   const { metode } = useDataDokumenAsesmen(id)
   const [countdown, setCountdown] = useState(3)
 
+  const { kegiatan: _kegiatan } = useKegiatanByRole()
+
   // Get dynamic steps based on role
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({

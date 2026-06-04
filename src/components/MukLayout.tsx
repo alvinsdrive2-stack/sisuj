@@ -1,14 +1,16 @@
-import { ReactNode, useState } from "react"
+import { ReactNode, useState, useMemo } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import ModularStepIndicator from "./ModularStepIndicator"
 import Apl02FilePanel from "./Apl02FilePanel"
-import { MUK_STEPS } from "@/lib/asesmen-steps"
+import { getMukSteps } from "@/lib/asesmen-steps"
 
 interface MukLayoutProps {
   children: ReactNode
   currentStep: number
   idIzin?: string
   metode?: string
+  tahap?: number
+  jenjang?: string
 }
 
 function getMukTitle(metode?: string): string {
@@ -17,18 +19,21 @@ function getMukTitle(metode?: string): string {
   return 'MUK Observasi'
 }
 
-export default function MukLayout({ children, currentStep, idIzin, metode }: MukLayoutProps) {
+export default function MukLayout({ children, currentStep, idIzin, metode, tahap = 1, jenjang = '0' }: MukLayoutProps) {
   const { user } = useAuth()
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
   const [showSteps, setShowSteps] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
   const [filePanelCollapsed, setFilePanelCollapsed] = useState(false)
 
-  // Resolve :idIzin in MUK_STEPS hrefs
-  const resolvedSteps = MUK_STEPS.map(s => ({
-    ...s,
-    href: idIzin ? s.href.replace(':idIzin', idIzin) : s.href,
-  }))
+  // Resolve :idIzin in step hrefs
+  const resolvedSteps = useMemo(() =>
+    getMukSteps(tahap, jenjang, metode).map(s => ({
+      ...s,
+      href: idIzin ? s.href.replace(':idIzin', idIzin) : s.href,
+    })),
+    [tahap, jenjang, metode, idIzin]
+  )
 
   return (
     <div className="flex flex-col lg:flex-row" style={{ gap: '30px', padding: '20px', maxWidth: '1720px', margin: '0 auto', alignItems: 'flex-start' }}>

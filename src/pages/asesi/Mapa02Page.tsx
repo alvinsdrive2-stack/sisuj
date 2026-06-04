@@ -61,7 +61,7 @@ export default function Mapa02Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId, metode } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showWarning } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -268,7 +268,7 @@ export default function Mapa02Page() {
         </div>
       </div>
 
-      <MukLayout currentStep={2} idIzin={idIzin} metode={metode}>
+      <MukLayout currentStep={2} idIzin={idIzin} metode={metode} tahap={tahap} jenjang={jenjang}>
         <div style={{ padding: '20px' }}>
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>

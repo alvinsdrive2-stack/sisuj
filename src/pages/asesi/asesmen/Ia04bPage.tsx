@@ -178,7 +178,7 @@ export default function Ia04bPage() {
     onUpdate: fetchData
   })
 
-  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode)
+  const asesmenSteps = getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap)
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04b',
