@@ -11,6 +11,7 @@ import { useDokumenModal } from "@/contexts/DokumenModalContext"
 import { DokumenViewerModal } from "@/components/direktur"
 import { API_BASE_URL } from "@/config/api"
 import { useToast } from "@/contexts/ToastContext"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 
 interface KomtekFiles {
   ba_komtek?: string
@@ -32,10 +33,11 @@ export default function DaftarAsesiSudahPage() {
   const [selectedDokumen, setSelectedDokumen] = useState<{ url: string; title: string; onSign?: () => void } | null>(null)
   const [signedAsesiIds, setSignedAsesiIds] = useState<Set<string>>(new Set())
   const [isSigning, setIsSigning] = useState(false)
+  const [showRapatConfirm, setShowRapatConfirm] = useState(false)
 
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
-  const { showError, showSuccess } = useToast()
+  const { showError, showSuccess, showWarning } = useToast()
 
   // Fetch rekomendasi status for all asesi to mark signed ones
   useEffect(() => {
@@ -400,50 +402,6 @@ export default function DaftarAsesiSudahPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {/* BA Komtek */}
-            {(() => {
-              const hasDoc = !!komtekFiles.ba_komtek
-              const mySigned = komtekFiles.my_ttd_signed ?? false
-              const progress = komtekFiles.ba_komtek_ttd_progress
-              const allSigned = progress ? progress.komtek1 && progress.komtek2 && progress.komtek3 : false
-              const isGreen = mySigned || allSigned
-              const colorClass = isGreen ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100' : hasDoc ? 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400' : ''
-              return (
-                <Button
-                  variant="outline"
-                  className={`w-full h-auto min-h-16 flex items-center justify-between px-4 ${colorClass}`}
-                  disabled={!hasDoc}
-                  onClick={() => {
-                    if (!hasDoc) return
-                    setSelectedDokumen({
-                      url: komtekFiles.ba_komtek!,
-                      title: 'BA Komtek',
-                      onSign: mySigned ? undefined : handleSignBaKomtek,
-                    })
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className={`w-5 h-5 ${isGreen ? 'text-emerald-500' : hasDoc ? 'text-red-500' : 'text-slate-400'}`} />
-                    <div className="text-left">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold block">BA Komtek</span>
-                        {isGreen && <Check className="w-4 h-4 text-emerald-500" />}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {!hasDoc ? 'Belum tersedia' : mySigned ? 'Sudah Anda tandatangani' : 'Anda belum tanda tangan'}
-                      </span>
-                    </div>
-                  </div>
-                  {hasDoc && !isGreen && (
-                    <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
-                      Perlu TTD
-                    </span>
-                  )}
-                  {hasDoc && isGreen && <ExternalLink className="w-5 h-5 text-emerald-500" />}
-                </Button>
-              )
-            })()}
-
             {/* SK Komtek */}
             <Button
               variant="outline"
@@ -482,6 +440,63 @@ export default function DaftarAsesiSudahPage() {
               {komtekFiles.spt_komtek && <ExternalLink className="w-5 h-5 text-primary" />}
             </Button>
 
+            {/* BA Komtek */}
+            {(() => {
+              const hasDoc = !!komtekFiles.ba_komtek
+              const mySigned = komtekFiles.my_ttd_signed ?? false
+              const progress = komtekFiles.ba_komtek_ttd_progress
+              const allSigned = progress ? progress.komtek1 && progress.komtek2 && progress.komtek3 : false
+              const isGreen = mySigned || allSigned
+              const colorClass = isGreen ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100' : hasDoc ? 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400' : ''
+              return (
+                <Button
+                  variant="outline"
+                  className={`w-full h-auto min-h-16 flex items-center justify-between px-4 ${colorClass}`}
+                  disabled={!hasDoc}
+                  onClick={() => {
+                    if (!hasDoc) return
+                    const pos = komtekFiles.my_position
+                    const progress = komtekFiles.ba_komtek_ttd_progress
+                    const isKetua = pos === 1
+                    const rapatSudahMulai = progress?.komtek1
+
+                    if (isKetua) {
+                      if (!mySigned) {
+                        setShowRapatConfirm(true)
+                        return
+                      }
+                    } else if (!rapatSudahMulai) {
+                      showWarning('Rapat belum dimulai oleh ketua komtek')
+                      return
+                    }
+                    setSelectedDokumen({
+                      url: komtekFiles.ba_komtek!,
+                      title: 'BA Komtek',
+                      onSign: mySigned ? undefined : handleSignBaKomtek,
+                    })
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className={`w-5 h-5 ${isGreen ? 'text-emerald-500' : hasDoc ? 'text-red-500' : 'text-slate-400'}`} />
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold block">BA Komtek</span>
+                        {isGreen && <Check className="w-4 h-4 text-emerald-500" />}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {!hasDoc ? 'Belum tersedia' : mySigned ? 'Sudah Anda tandatangani' : 'Anda belum tanda tangan'}
+                      </span>
+                    </div>
+                  </div>
+                  {hasDoc && !isGreen && (
+                    <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                      Perlu TTD
+                    </span>
+                  )}
+                  {hasDoc && isGreen && <ExternalLink className="w-5 h-5 text-emerald-500" />}
+                </Button>
+              )
+            })()}
           </CardContent>
         </Card>
       </div>
@@ -497,6 +512,24 @@ export default function DaftarAsesiSudahPage() {
       title={selectedDokumen?.title || ''}
       onSign={selectedDokumen?.onSign}
       isSigning={isSigning}
+    />
+
+    {/* Rapat Confirmation Dialog */}
+    <ConfirmDialog
+      isOpen={showRapatConfirm}
+      title="Konfirmasi Rapat"
+      message="Apakah hari ini Anda akan mengadakan rapat?"
+      confirmText="Ya, adakan rapat"
+      cancelText="Tidak"
+      onConfirm={() => {
+        setShowRapatConfirm(false)
+        setSelectedDokumen({
+          url: komtekFiles.ba_komtek!,
+          title: 'BA Komtek',
+          onSign: handleSignBaKomtek,
+        })
+      }}
+      onCancel={() => setShowRapatConfirm(false)}
     />
   </>
   )
