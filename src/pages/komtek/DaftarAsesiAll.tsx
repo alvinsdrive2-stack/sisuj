@@ -250,82 +250,66 @@ export default function DaftarAsesiAll() {
                 {data.map((item, idx) => {
                   const rowNum = (pagination.current_page - 1) * pagination.per_page + idx + 1
                   const isExpanded = expandedId === item.id_izin
-
-                  return (
-                    <tr key={item.id_izin} className="border-b border-slate-100">
-                      <td className="py-3 px-3">
-                        <button
-                          onClick={() => toggleExpand(item.id_izin)}
-                          className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </button>
-                      </td>
-                      <td className="py-3 px-3 text-slate-500">{rowNum}</td>
-                      <td className="py-3 px-3 font-medium text-slate-800">{item.nama}</td>
-                      <td className="py-3 px-3">
-                        <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700">{item.id_izin}</code>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600">{item.jadwal_id}</td>
-                      <td className="py-3 px-3 text-slate-600">
-                        <span className="block">{formatDate(item.tanggal_uji)}</span>
-                        <span className="block text-xs text-slate-400">{formatTime(item.tanggal_uji)}</span>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {/* Expanded rows (render inside tbody for proper table layout) */}
-                {data.map((item) => {
-                  if (expandedId !== item.id_izin) return null
-                  const docs = dokumenCache[item.id_izin]
+                  const docs = isExpanded ? dokumenCache[item.id_izin] : null
                   const isLoadingThis = loadingDocs === item.id_izin
                   const hasDocs = docs && Object.values(docs).some((v) => v !== null)
 
                   return (
-                    <tr key={`${item.id_izin}-docs`}>
-                      <td colSpan={6} className="px-3 pb-3">
-                        <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 ml-6">
-                          {isLoadingThis && (
-                            <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
-                              <SimpleSpinner size="sm" />
-                              Memuat dokumen...
-                            </div>
-                          )}
+                    <tr key={item.id_izin} className="border-b border-slate-100">
+                      <td colSpan={6} className="py-2 px-3">
+                        <div className="flex flex-col">
+                          {/* Main row data */}
+                          <div className="flex items-center gap-3 min-h-[40px]">
+                            <button
+                              onClick={() => toggleExpand(item.id_izin)}
+                              className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
+                            >
+                              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                            </button>
+                            <span className="w-8 text-slate-500 flex-shrink-0">{rowNum}</span>
+                            <span className="flex-1 font-medium text-slate-800 min-w-0 truncate">{item.nama}</span>
+                            <code className="flex-shrink-0 text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 hidden lg:inline">{item.id_izin}</code>
+                            <span className="w-20 text-slate-600 flex-shrink-0">{item.jadwal_id}</span>
+                            <span className="w-36 text-slate-600 flex-shrink-0 text-right">
+                              <span className="block text-xs leading-tight">{formatDate(item.tanggal_uji)}</span>
+                              <span className="block text-[11px] text-slate-400 leading-tight">{formatTime(item.tanggal_uji)}</span>
+                            </span>
+                          </div>
 
-                          {!isLoadingThis && docs && !hasDocs && (
-                            <p className="text-sm text-slate-400 py-2">Tidak ada dokumen</p>
-                          )}
-
-                          {!isLoadingThis && docs && hasDocs && (
-                            <div className="space-y-3">
-                              {DOC_GROUPS.map((group) => {
-                                const groupDocs = group.keys
-                                  .map((key) => ({ key, label: DOC_LABELS[key] || key.toUpperCase(), url: docs[key] }))
-                                  .filter((d) => d.url !== null)
-
-                                if (groupDocs.length === 0) return null
-
-                                return (
-                                  <div key={group.title}>
-                                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{group.title}</p>
-                                    <div className="flex flex-wrap gap-2">
-                                      {groupDocs.map((doc) => (
+                          {/* Expanded docs inline */}
+                          {isExpanded && (
+                            <div className="ml-9 mt-1 mb-1">
+                              {isLoadingThis && (
+                                <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+                                  <SimpleSpinner size="sm" />
+                                  Memuat dokumen...
+                                </div>
+                              )}
+                              {!isLoadingThis && docs && !hasDocs && (
+                                <p className="text-sm text-slate-400 py-1">Tidak ada dokumen</p>
+                              )}
+                              {!isLoadingThis && docs && hasDocs && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {DOC_GROUPS.map((group) =>
+                                    group.keys
+                                      .map((key) => ({ key, label: DOC_LABELS[key] || key.toUpperCase(), url: docs[key] }))
+                                      .filter((d) => d.url !== null)
+                                      .map((doc) => (
                                         <a
                                           key={doc.key}
                                           href={doc.url!}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 rounded-md text-sm text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-blue-200 rounded-md text-xs text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                                         >
-                                          <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                                          <FileText className="w-3 h-3 flex-shrink-0" />
                                           {doc.label}
-                                          <ExternalLink className="w-3 h-3 flex-shrink-0 text-blue-400" />
+                                          <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 text-blue-400" />
                                         </a>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              })}
+                                      ))
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
