@@ -75,18 +75,13 @@ export default function DaftarAsesiAll() {
     setError(null)
 
     try {
-      const body: Record<string, string> = {
-        page: String(page),
-        per_page: "20",
-      }
-      if (search) body.nama = search
-      if (linkVideo) body.link_video = linkVideo
+      const params = new URLSearchParams()
+      params.set("page", String(page))
+      params.set("per_page", "20")
+      if (search) params.set("nama", search)
+      if (linkVideo) params.set("link_video", linkVideo)
 
-      const res = await fetch(`${API_BASE_URL}/asesi-jadwal/id-izins`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      })
+      const res = await fetch(`${API_BASE_URL}/asesi-jadwal/id-izins?${params}`)
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
