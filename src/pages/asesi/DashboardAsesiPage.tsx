@@ -360,33 +360,10 @@ export default function DashboardAsesiPage() {
                     sessionStorage.setItem('validNavigationEntry', 'true')
 
                     if (kegiatan?.tahap === 1) {
-                      // Check steps before K3 (apl01-apl02-mapa01-mapa02-ak07-ak04)
-                      const token = localStorage.getItem("access_token")
-                      const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
-                      const tahap1Steps = [
-                        { key: 'apl01', path: `/praasesmen/${idIzin}/apl01` },
-                        { key: 'apl02', path: `/praasesmen/${idIzin}/apl02` },
-                        { key: 'mapa01', path: `/praasesmen/${idIzin}/mapa01` },
-                        { key: 'mapa02', path: `/praasesmen/${idIzin}/mapa02` },
-                        { key: 'ak07', path: `/praasesmen/${idIzin}/ak07` },
-                        { key: 'ak04', path: `/praasesmen/${idIzin}/ak04` },
-                        { key: 'k3', path: `/praasesmen/${idIzin}/file-k3` },
-                      ]
-                      for (const step of tahap1Steps) {
-                        try {
-                          const res = await fetch(`${API_BASE_URL}${step.path}`, { headers })
-                          if (!res.ok) continue
-                          const json = await res.json()
-                          const filled = json.data?.barcodes?.asesi?.url ||
-                            json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
-                          if (!filled) {
-                            sessionStorage.setItem('validNavigationEntry', 'true')
-                            navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
-                            return
-                          }
-                        } catch { /* continue */ }
-                      }
-                      // All filled → button already disabled, do nothing
+                      // Tahap 1: always go to APL-01
+                      sessionStorage.setItem('validNavigationEntry', 'true')
+                      navigate(`/asesi/praasesmen/${idIzin}/apl01`, { state: { fromInternal: true } })
+                      return
                     }
                     if (kegiatan?.tahap === 2) {
                       // Dynamic tahap 2 steps based on jenjang and methode

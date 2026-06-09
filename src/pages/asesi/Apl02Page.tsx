@@ -1369,11 +1369,14 @@ export default function Apl02Page() {
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  const isUuidFlow = !!sessionStorage.getItem("praasesmen_uuid_data")
+  const isUuidSession = !!sessionStorage.getItem("praasesmen_uuid_data")
   // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
-  const idIzin = isUuidFlow ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
+  const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
   const { asesorList, namaAsesi, jenjang, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
+
+  // UUID flow only valid at tahap 0
+  const isUuidFlow = isUuidSession && (tahap === 0 || tahap === undefined)
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)

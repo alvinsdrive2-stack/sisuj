@@ -131,15 +131,18 @@ function Apl01Layout({ isUuidFlow, idIzin, tahap, children }: { isUuidFlow: bool
 
 export default function Apl01Page() {
   const navigate = useNavigate()
-  const isUuidFlow = sessionStorage.getItem("isUuidFlow") === "true"
+  const isUuidSession = sessionStorage.getItem("isUuidFlow") === "true"
   const { user } = useAuth()
   const { isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  const idIzin = isUuidFlow ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
+  const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
 
   // Get asesor data for absen check
   const { asesorList, tahap, jadwalId, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+
+  // UUID flow only valid at tahap 0
+  const isUuidFlow = isUuidSession && (tahap === 0 || tahap === undefined)
 
   const { showSuccess, showError, showWarning } = useToast()
 
