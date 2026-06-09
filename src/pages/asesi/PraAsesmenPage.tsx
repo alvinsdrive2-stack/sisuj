@@ -12,6 +12,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { formatTimeWIB } from "@/lib/date-utils"
 
 interface PersonalData {
   nama: string
@@ -87,7 +88,7 @@ export default function PraAsesmenPage() {
   const fetchPraAsesmenData = useCallback(async () => {
     try {
       const token = localStorage.getItem("access_token")
-      const response = await fetch("" + API_BASE_URL + "/praasesmen/kebenaran-data", {
+      const response = await fetch("" + API_BASE_URL + "/praasesmen/kebenaran-data/" + idIzinFromUrl, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -351,7 +352,7 @@ export default function PraAsesmenPage() {
                   <td style={{ width: '180px', background: '#fff', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderRight: 'none' }}>Waktu</td>
                   <td style={{ width: '10px', textAlign: 'center', border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }}>:</td>
                   <td style={{ border: '1px solid #999', padding: '6px 8px', verticalAlign: 'middle', borderLeft: 'none' }} colSpan={8}>
-                    {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    {formatTimeWIB(kegiatan.tanggal_uji)}
                   </td>
                 </tr>
               </tbody>

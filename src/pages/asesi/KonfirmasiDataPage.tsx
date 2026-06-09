@@ -59,7 +59,7 @@ export default function KonfirmasiDataPage() {
     if (!idIzin) { setError("ID tidak valid"); return }
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/praasesmen/kebenaran-data`, { headers: authHeaders() })
+        const res = await fetch(`${API_BASE_URL}/praasesmen/kebenaran-data/${idIzin}`, { headers: authHeaders() })
         if (!res.ok) throw new Error("Gagal memuat data")
         const json = await res.json()
         if (json.success && json.data) {

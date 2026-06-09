@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK } from "@/hooks/useKegiatan"
+import { formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useState } from "react"
 import { jenisKelasLabel } from "@/lib/utils"
@@ -82,23 +83,9 @@ export default function DashboardAdminTUK() {
     )
   }
 
-  const formatDateTime = (dateTime: string) => {
-    const date = new Date(dateTime)
-    const hours = date.getHours().toString().padStart(2, '0')
-    const minutes = date.getMinutes().toString().padStart(2, '0')
-    return `${hours}:${minutes}`
-  }
+  const formatDateTime = (dateTime: string) => formatTimeWIB(dateTime)
 
-  const formatDateString = (dateTime: string) => {
-    const date = new Date(dateTime)
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }
-    return date.toLocaleDateString('id-ID', options)
-  }
+  const formatDateString = (dateTime: string) => formatDateWIB(dateTime)
 
   return (
     <div className="space-y-6">

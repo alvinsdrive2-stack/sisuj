@@ -342,7 +342,24 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
             </tr>
 
             {/* Subunits & KUK */}
-            {unit.subunits.map((subunit) => (
+            {unit.subunits.map((subunit) => {
+              const kukCount = subunit.kuk_list.length
+              const firstKukId = kukCount > 0 ? `${unit.id}-${subunit.id}-${subunit.kuk_list[0].no_kuk}` : ''
+              const allKukIds = subunit.kuk_list.map(k => `${unit.id}-${subunit.id}-${k.no_kuk}`)
+              const isSubunitK = allKukIds.some(id => kukChecklist[id] === 'K')
+              const isSubunitBK = allKukIds.some(id => kukChecklist[id] === 'BK')
+              const subunitFileIds = kukBukti[firstKukId] || []
+
+              const handleSubunitK = () => {
+                const v = isSubunitK ? null : 'K'
+                allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+              }
+              const handleSubunitBK = () => {
+                const v = isSubunitBK ? null : 'BK'
+                allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+              }
+
+              return (
               <React.Fragment key={subunit.id}>
                 {/* Elemen Header */}
                 <tr>
@@ -355,42 +372,72 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                   <td style={{ border: '1px solid #000', padding: '4px' }}></td>
                 </tr>
 
-                {/* Kriteria Unjuk Kerja Header */}
-                <tr>
-                  <td colSpan={4} style={{ border: '1px solid #000', padding: '4px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    Kriteria Unjuk Kerja:
-                  </td>
-                </tr>
-
-                {/* KUK Rows */}
-                {subunit.kuk_list.map((kuk) => {
+                {/* KUK Rows with rowspan for K/BK + Bukti */}
+                {subunit.kuk_list.map((kuk, idx) => {
                   const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
                   return (
-                    <KukRow
-                      key={kukId}
-                      kukId={kukId}
-                      unitId={unit.id}
-                      subunitId={subunit.id}
-                      kukNo={kuk.no_kuk}
-                      kukJudul={kuk.judul_kuk}
-                      isCheckedK={kukChecklist[kukId] === 'K'}
-                      isCheckedBK={kukChecklist[kukId] === 'BK'}
-                      isAsesor={isAsesor}
-                      isSaving={isSaving}
-                      onCheckRadio={onCheckRadio}
-                      apiFiles={subunit.files || []}
-                      excludedApiFileIds={excludedApiFileIds}
-                      onToggleExclude={onToggleExclude}
-                      selectedFileIds={kukBukti[kukId] || []}
-                      uploadedFilesInfo={uploadedFilesInfo}
-                      onRemoveBukti={onRemoveBukti}
-                      onSelectBukti={onSelectBukti}
-                      onViewFile={onViewFile}
-                    />
+                    <tr key={kukId}>
+                      <td style={{ border: '1px solid #000', padding: '4px', width: '45%', verticalAlign: 'top' }}>
+                        {kuk.no_kuk} {kuk.judul_kuk}
+                      </td>
+                      {idx === 0 && (
+                        <>
+                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
+                            <CustomCheckbox checked={isSubunitK} onChange={handleSubunitK} disabled={isAsesor || isSaving} />
+                          </td>
+                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
+                            <CustomCheckbox checked={isSubunitBK} onChange={handleSubunitBK} disabled={isAsesor || isSaving} />
+                          </td>
+                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
+                            {(subunit.files || []).length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                                {(subunit.files || []).map((file) => (
+                                  <AnimatedCapsule
+                                    key={file.id}
+                                    fileName={file.name}
+                                    file={file}
+                                    isExcluded={excludedApiFileIds.has(file.id)}
+                                    isAsesor={isAsesor}
+                                    onView={onViewFile}
+                                    onRemove={onToggleExclude.bind(null, file.id)}
+                                  />
+                                ))}
+                              </div>
+                            )}
+                            {subunitFileIds.length > 0 && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                                {subunitFileIds.map(id => {
+                                  const fInfo = uploadedFilesInfo.find(f => f.id === id)
+                                  if (!fInfo) return null
+                                  return (
+                                    <AnimatedCapsule
+                                      key={id}
+                                      fileName={fInfo.name}
+                                      file={fInfo}
+                                      isAsesor={isAsesor}
+                                      onView={onViewFile}
+                                      onRemove={() => onRemoveBukti(firstKukId, id, unit.id, subunit.id)}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            )}
+                            <BuktiDropdown
+                              kukId={firstKukId}
+                              uploadedFiles={uploadedFilesInfo}
+                              selectedFileIds={subunitFileIds}
+                              onSelectFile={(_: string, fileId: number) => onSelectBukti(firstKukId, fileId, unit.id, subunit.id)}
+                              disabled={isAsesor || isSaving}
+                            />
+                          </td>
+                        </>
+                      )}
+                    </tr>
                   )
                 })}
               </React.Fragment>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       ))}
@@ -794,7 +841,7 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
           display: 'inline-block',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
         }}>
-          ?
+          ▼
         </span>
       </button>
 
@@ -1309,122 +1356,6 @@ function FileTypeModal({
 }
 
 // Memoized KUK row � only re-renders when its own state changes
-interface KukRowProps {
-  kukId: string
-  unitId: string
-  subunitId: string
-  kukNo: string
-  kukJudul: string
-  isCheckedK: boolean
-  isCheckedBK: boolean
-  isAsesor: boolean
-  isSaving: boolean
-  onCheckRadio: (kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => void
-  apiFiles: Array<{ id: number; name: string; path: string }>
-  excludedApiFileIds: Set<number>
-  onToggleExclude: (fileId: number) => void
-  selectedFileIds: number[]
-  uploadedFilesInfo: Array<{ id: number; name: string; path: string }>
-  onRemoveBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
-  onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
-  onViewFile: (file: { id: number; name: string; path: string }) => void
-}
-
-const KukRow = React.memo(function KukRow({
-  kukId, unitId, subunitId, kukNo, kukJudul, isCheckedK, isCheckedBK, isAsesor, isSaving,
-  onCheckRadio, apiFiles, excludedApiFileIds, onToggleExclude,
-  selectedFileIds, uploadedFilesInfo, onRemoveBukti, onSelectBukti, onViewFile,
-}: KukRowProps) {
-
-
-  const handleCheckK = useCallback(() => {
-    onCheckRadio(kukId, isCheckedK ? null : 'K', unitId, subunitId)
-  }, [kukId, unitId, subunitId, isCheckedK, onCheckRadio])
-
-  const handleCheckBK = useCallback(() => {
-    onCheckRadio(kukId, isCheckedBK ? null : 'BK', unitId, subunitId)
-  }, [kukId, unitId, subunitId, isCheckedBK, onCheckRadio])
-
-  const userUploadedFiles = selectedFileIds
-    .map(id => uploadedFilesInfo.find(f => f.id === id))
-    .filter((f): f is { id: number; name: string; path: string } => f !== undefined)
-
-  const handleToggleExclude = useCallback((fileId: number) => {
-    onToggleExclude(fileId)
-  }, [onToggleExclude])
-
-  const handleRemoveBukti = useCallback((fileId: number) => {
-    onRemoveBukti(kukId, fileId, unitId, subunitId)
-  }, [kukId, unitId, subunitId, onRemoveBukti])
-
-  const handleSelectBukti = useCallback((_kukId: string, fileId: number) => {
-    onSelectBukti(kukId, fileId, unitId, subunitId)
-  }, [kukId, unitId, subunitId, onSelectBukti])
-
-  return (
-    <tr>
-      <td style={{ border: '1px solid #000', padding: '4px', width: '45%', verticalAlign: 'top' }}>
-        {kukNo} {kukJudul}
-      </td>
-      <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'top' }}>
-        <CustomCheckbox
-          checked={isCheckedK}
-          onChange={handleCheckK}
-          disabled={isAsesor || isSaving}
-        />
-      </td>
-      <td style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'top' }}>
-        <CustomCheckbox
-          checked={isCheckedBK}
-          onChange={handleCheckBK}
-          disabled={isAsesor || isSaving}
-        />
-      </td>
-      <td style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
-        {apiFiles.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-            {apiFiles.map((file) => {
-              const isExcluded = excludedApiFileIds.has(file.id)
-              return (
-                <AnimatedCapsule
-                  key={file.id}
-                  fileName={file.name}
-                  file={file}
-                  isExcluded={isExcluded}
-                  isAsesor={isAsesor}
-                  onView={onViewFile}
-                  onRemove={handleToggleExclude.bind(null, file.id)}
-                />
-              )
-            })}
-          </div>
-        )}
-        {userUploadedFiles.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-            {userUploadedFiles.map((file) => (
-              <AnimatedCapsule
-                key={file.id}
-                fileName={file.name}
-                file={file}
-                isAsesor={isAsesor}
-                onView={onViewFile}
-                onRemove={handleRemoveBukti.bind(null, file.id)}
-              />
-            ))}
-          </div>
-        )}
-        <BuktiDropdown
-          kukId={kukId}
-          uploadedFiles={uploadedFilesInfo}
-          selectedFileIds={selectedFileIds}
-          onSelectFile={handleSelectBukti}
-          disabled={isAsesor || isSaving}
-        />
-      </td>
-    </tr>
-  )
-})
-
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
   const h: Record<string, string> = { "Accept": "application/json" }
@@ -1818,8 +1749,8 @@ export default function Apl02Page() {
 
   const fetchData = useCallback(async () => {
       try {
-        // Use idIzin from URL when accessed by asesor, otherwise use from user context
-        const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
+        // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
+        const idIzin = (isAsesor || isUuidFlow) ? idIzinFromUrl : user?.id_izin
 
         // Fetch id_izin dari list-asesi endpoint (skip for asesor)
         let fetchedIdIzin: string | null = idIzin || null
@@ -1994,7 +1925,7 @@ export default function Apl02Page() {
 
   useEffect(() => {
     if (initialFetchDone.current) return
-    if ((isAsesor && idIzin) || kegiatan || jadwalId) {
+    if ((isAsesor && idIzin) || isUuidFlow || kegiatan || jadwalId) {
       initialFetchDone.current = true
       window.scrollTo(0, 0)
       fetchData()

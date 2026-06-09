@@ -293,16 +293,14 @@ export default function Apl01Page() {
         if (!res.ok) throw new Error("Gagal menyimpan")
 
         // Generate QR for UUID flow
-        if (jadwalId) {
-          try {
-            await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
-              method: 'POST',
-              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-              body: JSON.stringify({ id_jadwal: jadwalId }),
-            })
-          } catch (qrErr) {
-            console.error('Error generating QR APL01:', qrErr)
-          }
+        try {
+          await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_jadwal: jadwalId ?? "" }),
+          })
+        } catch (qrErr) {
+          console.error('Error generating QR APL01:', qrErr)
         }
 
         showSuccess('APL 01 berhasil ditandatangani!')
