@@ -210,12 +210,15 @@ export function useKegiatanAdminTUK() {
       setIsLoading(true)
       setError(null)
       try {
-        // Get today's date in YYYY-MM-DD format
-        const today = new Date()
-        const year = today.getFullYear()
-        const month = String(today.getMonth() + 1).padStart(2, '0')
-        const day = String(today.getDate()).padStart(2, '0')
-        const tanggalUji = `${year}-${month}-${day}`
+        // Get today's date in WIB (YYYY-MM-DD format)
+        const now = new Date()
+        const wibParts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(now)
+        const tanggalUji = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
 
         const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji)
         setKegiatansRef.current?.(response.data.data)
