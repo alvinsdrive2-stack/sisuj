@@ -224,6 +224,11 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         title: "Belum Ditandatangani",
         path: "/komtek/belum-ditandatangani",
         icon: FileText
+      },
+      {
+        title: "Daftar Asesi",
+        path: "/komtek/daftar-asesi",
+        icon: Users
       }
     ]
   }

@@ -361,14 +361,14 @@ export default function Ak06Page() {
 
     try {
       const token = localStorage.getItem('access_token')
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/video-ajj`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
+        method: 'PUT',
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ video_ajj: videoLink.trim() }),
+        body: JSON.stringify({ link_video: videoLink.trim() }),
       })
 
       if (response.ok) {
@@ -771,14 +771,38 @@ export default function Ak06Page() {
             <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 'bold' }}>
               Upload Video AJJ
             </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#666' }}>
-              Silakan masukkan link Google Drive untuk Video AJJ asesi {namaAsesi || ''}
+            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#666' }}>
+              Upload video AJJ asesi <strong>{namaAsesi || ''}</strong> ke folder berikut:
             </p>
+            <a
+              href="https://drive.google.com/drive/folders/REPLACE_ME"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block', padding: '10px 12px', background: '#eff6ff',
+                border: '1px solid #93c5fd', borderRadius: '6px', fontSize: '13px',
+                color: '#1d4ed8', textDecoration: 'none', marginBottom: '12px',
+                wordBreak: 'break-all'
+              }}
+            >
+              📂 Buka Folder Google Drive
+            </a>
+            <div style={{
+              background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '6px',
+              padding: '10px 12px', marginBottom: '16px', fontSize: '12px', color: '#92400e'
+            }}>
+              <strong>Langkah:</strong><br />
+              1. Buka folder link di atas<br />
+              2. Buat folder baru dengan nama: <strong>{idIzin} - {namaAsesi || ''}</strong><br />
+              3. Upload video ke dalam folder tersebut<br />
+              4. Klik kanan folder → Bagikan → Salin link publik<br />
+              5. Tempelkan link hasil share di bawah ini
+            </div>
             <input
               type="text"
               value={videoLink}
               onChange={(e) => setVideoLink(e.target.value)}
-              placeholder="https://drive.google.com/..."
+              placeholder="https://drive.google.com/drive/folders/1aBc...xYz?usp=sharing"
               style={{
                 width: '100%', padding: '8px 12px', border: '1px solid #ccc',
                 borderRadius: '4px', fontSize: '14px', marginBottom: '16px',
