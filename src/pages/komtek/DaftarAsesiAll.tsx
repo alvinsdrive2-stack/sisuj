@@ -249,8 +249,6 @@ export default function DaftarAsesiAll() {
                 {data.map((item, idx) => {
                   const rowNum = (pagination.current_page - 1) * pagination.per_page + idx + 1
                   const isExpanded = expandedId === item.id_izin
-                  const docs = dokumenCache[item.id_izin]
-                  const hasDocs = docs && Object.values(docs).some((v) => v !== null)
 
                   return (
                     <tr key={item.id_izin} className="border-b border-slate-100">
@@ -280,6 +278,7 @@ export default function DaftarAsesiAll() {
                   if (expandedId !== item.id_izin) return null
                   const docs = dokumenCache[item.id_izin]
                   const isLoadingThis = loadingDocs === item.id_izin
+                  const hasDocs = docs && Object.values(docs).some((v) => v !== null)
 
                   return (
                     <tr key={`${item.id_izin}-docs`}>

@@ -793,7 +793,7 @@ export default function Ak06Page() {
             }}>
               <strong>Langkah:</strong><br />
               1. Buka folder link di atas<br />
-              2. Buat folder baru dengan nama: <strong>{idIzin} - {namaAsesi || ''}</strong><br />
+              2. Buat folder baru dengan nama: <strong>{id} - {namaAsesi || ''}</strong><br />
               3. Upload video ke dalam folder tersebut<br />
               4. Klik kanan folder → Bagikan → Salin link publik<br />
               5. Tempelkan link hasil share di bawah ini
