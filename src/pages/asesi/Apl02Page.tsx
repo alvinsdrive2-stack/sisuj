@@ -267,7 +267,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
           <tr>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
               Skema Sertifikasi<br />
-              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(?????????????/Okupasi/??????????????????????)?</span>
+              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
             </td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
@@ -1172,6 +1172,7 @@ interface DataDokumenResponse {
     tanggal_uji: string
     tanggal_selesai: string | null
     jenis_kelas: string
+    nama_asesi?: string
   }
 }
 
@@ -1307,7 +1308,7 @@ function FileTypeModal({
   )
 }
 
-// Memoized KUK row � only re-renders when its own state changes
+// Memoized KUK row � only re-renders when its own state changes
 interface KukRowProps {
   kukId: string
   unitId: string
@@ -1469,7 +1470,7 @@ export default function Apl02Page() {
     document.body.style.overflowY = 'scroll'
     return () => { document.body.style.overflowY = prev }
   }, [])
-  // stagingFiles holds raw File objects from client � no upload until user confirms
+  // stagingFiles holds raw File objects from client � no upload until user confirms
   const [stagingFiles, setStagingFiles] = useState<ServerFile[]>([])
   const [fileDocTypes, setFileDocTypes] = useState<Record<string, string>>({}) // client index -> doc type
   const [fileCustomTypes, setFileCustomTypes] = useState<Record<string, string>>({}) // client index -> custom text for "Lainnya"
@@ -1633,7 +1634,7 @@ export default function Apl02Page() {
     })
   }, []) // No dependencies - uses ref instead
 
-  // Stable callbacks for KukRow � defined after handleCheckboxChange & handleBuktiChange
+  // Stable callbacks for KukRow � defined after handleCheckboxChange & handleBuktiChange
   const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
@@ -1855,6 +1856,7 @@ export default function Apl02Page() {
         let noSkema = ''
         let tuk = 'Sewaktu / Tempat Kerja / Mandiri'
         let namaAsesor = ''
+        let namaAsesiFromApi = ''
 
         if (dataDokumenResponse.ok) {
           const dataDokumenResult: DataDokumenResponse = await dataDokumenResponse.json()
@@ -1868,6 +1870,7 @@ export default function Apl02Page() {
                 ? `${dataDokumenResult.data.asesor_1}, ${dataDokumenResult.data.asesor_2}`
                 : dataDokumenResult.data.asesor_1
               : ''
+            namaAsesiFromApi = dataDokumenResult.data.nama_asesi || ''
           }
         }
 
@@ -1968,7 +1971,7 @@ export default function Apl02Page() {
           no_skema: noSkema,
           tuk: tuk,
           nama_asesor: namaAsesor,
-          nama_asesi: namaAsesi || user?.name || '',
+          nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
           tanggal: new Date().toLocaleDateString('id-ID'),
           metode: metodeFromApi,
           units: units,
@@ -1979,7 +1982,7 @@ export default function Apl02Page() {
           no_skema: noSkema,
           tuk: tuk,
           nama_asesor: namaAsesor,
-          nama_asesi: namaAsesi || user?.name || '',
+          nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
           tanggal: new Date().toLocaleDateString('id-ID'),
           metode: metodeFromApi,
           units: units,
@@ -1987,7 +1990,7 @@ export default function Apl02Page() {
       } catch (error) {
         setIsDataLoading(false)
       }
-  }, [kegiatan, user, isAsesor, idIzinFromUrl, namaAsesi, jadwalId])
+  }, [kegiatan, user, isAsesor, idIzinFromUrl, jadwalId])
 
   useEffect(() => {
     if (initialFetchDone.current) return
@@ -2000,7 +2003,7 @@ export default function Apl02Page() {
 
   // Check if asesi has signed (skip untuk tahap 0)
   const asesiHasSigned = (() => {
-    if (tahap === 0) return true
+    if (tahap === 0 || isUuidFlow) return true
     if (isAsesor) return true
     const subunits = Object.values(subunitBarcodes)
     if (subunits.length === 0) return false
@@ -2021,7 +2024,7 @@ export default function Apl02Page() {
 
   // Check if all asesor signatures exist across all subunits (skip untuk tahap 0)
   const allAsesorSigned = (() => {
-    if (tahap === 0) return true
+    if (tahap === 0 || isUuidFlow) return true
     if (isAsesor) return true
     if (asesorList.length === 0) return false // Asesi: need asesor data first
     const subunits = Object.values(subunitBarcodes)
@@ -2048,7 +2051,17 @@ export default function Apl02Page() {
 
   const handleSetSyntheticBarcodes = useCallback((value: React.SetStateAction<SubunitBarcodes | null>) => {
     setSubunitBarcodes(prev => {
-      const resolved = typeof value === 'function' ? value(null) : value
+      // Build synthetic prev for the hook's state updater
+      const syntheticPrev: SubunitBarcodes | null = (() => {
+        const items = Object.values(prev)
+        if (items.length === 0) return null
+        return {
+          asesi: items.find(b => b.asesi?.url)?.asesi || { url: null, tanggal: null, nama: null },
+          asesor1: items.find(b => b.asesor1?.url)?.asesor1 || null,
+          asesor2: items.find(b => b.asesor2?.url)?.asesor2 || null,
+        }
+      })()
+      const resolved = typeof value === 'function' ? value(syntheticPrev) : value
       if (!resolved) return prev
       const subunitIds = Object.keys(prev)
       if (subunitIds.length === 0) return prev
@@ -2065,7 +2078,7 @@ export default function Apl02Page() {
     })
   }, [])
 
-  // Signing state hook � provides realtime sync (publishUpdate) and agreedChecklist state
+  // Signing state hook � provides realtime sync (publishUpdate) and agreedChecklist state
   const signing = useSigningState({
     pageKey: 'apl02',
     isAsesor,
@@ -2111,7 +2124,7 @@ export default function Apl02Page() {
     }
 
     // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && !isAsesor && asesiHasSigned && allAsesorSigned) {
+    if (tahap !== 0 && !isUuidFlow && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
         navigate(getNextRoute(finalIdIzin))
@@ -2142,20 +2155,9 @@ export default function Apl02Page() {
         return
       }
 
-      // Cek apakah QR asesor sudah ada sebelum generate QR
-      const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-      const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-
-      // Ambil salah satu subunit untuk cek barcode
-      const firstSubunitId = apl02Data?.units?.[0]?.subunits?.[0]?.id
-      const existingBarcode = firstSubunitId ? subunitBarcodes[firstSubunitId] : null
-      const hasExistingAsesorQR = isAsesor1 ? existingBarcode?.asesor1?.url : existingBarcode?.asesor2?.url
-
       setIsSaving(true)
       try {
         // POST metode ke apl02 endpoint
-
-
         const metodeResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
           method: 'POST',
           headers: { ...authHeaders(), 'Content-Type': 'application/json' },
@@ -2165,9 +2167,7 @@ export default function Apl02Page() {
             answers: apl02Data ? apl02Data.units.flatMap(unit =>
               unit.subunits.map(subunit => ({
                 subunit_id: parseInt(subunit.id),
-                kompeten: subunit.kompeten ?? true,
-                file_ids: subunit.files.map(f => f.id),
-                file_urls: subunit.files.map(f => f.path).filter(Boolean)
+                kompeten: subunit.kompeten ?? true
               }))
             ) : []
           }),
@@ -2175,63 +2175,21 @@ export default function Apl02Page() {
 
         if (!metodeResponse.ok) {
           showError('Gagal menyimpan metode asesmen')
+          return
         }
 
-        // Generate QR untuk asesor hanya jika belum ada (skip untuk tahap 0)
-        if (tahap !== 0 && jadwalId && !hasExistingAsesorQR) {
-          try {
-            const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
-              method: 'POST',
-              headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                id_jadwal: jadwalId
-              })
-            })
-
-            if (qrResponse.ok) {
-              const qrResult = await qrResponse.json()
-
-              if (qrResult.message === "Success" && qrResult.data?.url_image) {
-                const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
-                const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
-                const isAsesor2 = asesorIndex === 1
-
-                const subunitIds: string[] = []
-                apl02Data?.units.forEach(unit => {
-                  unit.subunits.forEach(subunit => {
-                    subunitIds.push(subunit.id)
-                  })
-                })
-
-                setSubunitBarcodes(prev => {
-                  const updated = { ...prev }
-                  subunitIds.forEach(subunitId => {
-                    const existing = updated[subunitId]
-                    updated[subunitId] = {
-                      asesi: existing?.asesi || { url: null, tanggal: null, nama: null },
-                      asesor1: isAsesor1
-                        ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
-                        : existing?.asesor1 || null,
-                      asesor2: isAsesor2
-                        ? { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || null }
-                        : existing?.asesor2 || null
-                    }
-                  })
-                  return updated
-                })
-
-                showSuccess('Dokumen berhasil ditandatangani!')
-                return
-              }
-            }
-          } catch (qrError) {
-            console.error('Error generating QR:', qrError)
+        // Generate QR via signing hook (handles API call, state update, Ably publish)
+        if (tahap !== 0) {
+          const qrOk = await signing.generateQR()
+          if (qrOk) {
+            showSuccess('Dokumen berhasil ditandatangani!')
+          } else {
+            showSuccess('Metode asesmen berhasil disimpan!')
           }
-        }
-
-        showSuccess('Metode asesmen berhasil disimpan!')
-        // Untuk tahap 0, langsung navigasi
-        if (tahap === 0) {
+          // Navigate after save + QR attempt
+          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`), 500)
+        } else {
+          showSuccess('Metode asesmen berhasil disimpan!')
           setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`), 500)
         }
       } catch (error) {
@@ -2271,11 +2229,17 @@ export default function Apl02Page() {
       }
       data.statuses.push(status)
 
-      // Add user-selected file IDs (filter out excluded API files and kebenaran data files)
+      // Add user-selected file IDs (filter out excluded API files)
       const fileIds = kukBukti[kukId] || []
       fileIds.forEach(id => {
-        if (!excludedApiFileIds.has(id)) {
+        if (excludedApiFileIds.has(id)) return
+        const fInfo = uploadedFilesInfo.find(f => f.id === id)
+        if (fInfo?.kebenaran || id < 0) {
+          // Dokumen asesi: only push URL, skip fake negative ID
+          if (fInfo?.path) data.allFileUrls.add(fInfo.path)
+        } else {
           data.allFileIds.add(id)
+          if (fInfo?.path) data.allFileUrls.add(fInfo.path)
         }
       })
     })
@@ -2346,7 +2310,7 @@ export default function Apl02Page() {
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
           )
 
-          if (tahap !== 0 && hasMissingBarcode) {
+          if (tahap !== 0 && !isUuidFlow && hasMissingBarcode) {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',

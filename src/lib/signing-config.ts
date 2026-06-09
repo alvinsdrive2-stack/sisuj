@@ -19,7 +19,7 @@ export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
 
   // Asesmen — no static next page, determined by step config
   ia01:  { order: 'asesor_first', qrEndpoint: 'ia01' },
-  'upload-tugas': { order: 'asesi_first', qrEndpoint: 'upload-tugas' },
+  'upload-tugas': { order: 'asesi_first', qrEndpoint: 'tugas' },
   ia02:  { order: 'asesor_first', qrEndpoint: 'ia02' },
   ia03:  { order: 'asesor_first', qrEndpoint: 'ia03' },
   ia04a: { order: 'asesor_first', qrEndpoint: 'ia04a' },

@@ -9,6 +9,7 @@ import { kegiatanService } from "@/lib/kegiatan-service"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
 
 interface CountdownTime {
@@ -64,6 +65,7 @@ export default function AsesiPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { jadwalId } = useParams<{ jadwalId: string }>()
+  const { openModal: openDokumenAsesiModal } = useDokumenAsesiModal()
 
   // Debug logging
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
@@ -137,40 +139,6 @@ export default function AsesiPage() {
   const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
   const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
   const [tahapMap, setTahapMap] = useState<Record<string, number>>({})
-
-  // Document data for asesi (spt_asesor, verifikasi_tuk)
-  interface DokumenAsesiData {
-    ktp: string | null
-    npwp: string | null
-    ijazah: string | null
-    referensi_kerja: string | null
-    spt_asesor: string | null
-    verifikasi_tuk: string | null
-  }
-  const [dokumenAsesi, setDokumenAsesi] = useState<DokumenAsesiData | null>(null)
-
-  // Fetch dokumen-asesi for the first asesi (to show spt_asesor & verifikasi_tuk)
-  useEffect(() => {
-    const fetchDokumen = async () => {
-      if (!jadwalId || asesiList.length === 0) return
-      const firstIdIzin = asesiList[0].id_izin
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/dokumen-asesi?id_izin=${firstIdIzin}`, {
-          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-        })
-        if (response.ok) {
-          const result = await response.json()
-          if (result.message === "Success" && result.data) {
-            setDokumenAsesi(result.data)
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching dokumen asesi:", err)
-      }
-    }
-    fetchDokumen()
-  }, [jadwalId, asesiList])
 
   // Fetch asesor IDs, jenjang, and metode from data-dokumen endpoint (per-asesi)
   useEffect(() => {
@@ -366,6 +334,7 @@ export default function AsesiPage() {
       // All filled → fallback to AK.01
       navigate(`/asesi/perjanjian/${idIzin}/ak01`, { state: { fromInternal: true } })
     } else {
+      // Asesor route — DashboardLayout (asesor navbar + sidebar)
       navigate(`/asesi/praasesmen/${idIzin}/apl01`, { state: { fromInternal: true } })
     }
   }
@@ -733,73 +702,34 @@ export default function AsesiPage() {
         </Card>
 
         {/* Right: Dokumen Asesi - 30% */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Dokumen Asesi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* SPT Asesor */}
-            <div className={`p-4 rounded-lg border ${
-              dokumenAsesi?.spt_asesor
-                ? 'border-emerald-300 bg-emerald-50'
-                : 'border-slate-200 bg-slate-50'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className={`w-5 h-5 ${dokumenAsesi?.spt_asesor ? 'text-emerald-500' : 'text-slate-400'}`} />
-                  <div>
-                    <span className="text-sm font-semibold block">SPT Asesor</span>
-                    <span className="text-xs text-muted-foreground">
-                      {dokumenAsesi?.spt_asesor ? 'Sudah dibuat' : 'Belum dibuat'}
-                    </span>
-                  </div>
-                </div>
-                {dokumenAsesi?.spt_asesor && (
-                  <a
-                    href={dokumenAsesi.spt_asesor}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200"
-                  >
-                    Lihat
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Verifikasi TUK */}
-            <div className={`p-4 rounded-lg border ${
-              dokumenAsesi?.verifikasi_tuk
-                ? 'border-emerald-300 bg-emerald-50'
-                : 'border-slate-200 bg-slate-50'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <FileText className={`w-5 h-5 ${dokumenAsesi?.verifikasi_tuk ? 'text-emerald-500' : 'text-slate-400'}`} />
-                  <div>
-                    <span className="text-sm font-semibold block">Verifikasi TUK</span>
-                    <span className="text-xs text-muted-foreground">
-                      {dokumenAsesi?.verifikasi_tuk ? 'Sudah dibuat' : 'Belum dibuat'}
-                    </span>
-                  </div>
-                </div>
-                {dokumenAsesi?.verifikasi_tuk && (
-                  <a
-                    href={dokumenAsesi.verifikasi_tuk}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full hover:bg-emerald-200"
-                  >
-                    Lihat
-                  </a>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-3 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                Dokumen Asesi
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {asesiList.length > 0 ? (
+                <button
+                  onClick={() => openDokumenAsesiModal(asesiList[0].id_izin)}
+                  className="w-full p-6 rounded-xl border-2 border-dashed border-slate-300 hover:border-primary/50 hover:bg-primary/5 transition-all text-center cursor-pointer group"
+                >
+                  <FileText className="w-10 h-10 mx-auto mb-3 text-slate-300 group-hover:text-primary/60 transition-colors" />
+                  <p className="font-semibold text-slate-700 group-hover:text-primary transition-colors">
+                    Lihat Dokumen Asesi
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    SPT Asesor & Verifikasi TUK
+                  </p>
+                </button>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-8">Tidak ada asesi</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

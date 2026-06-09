@@ -313,13 +313,13 @@ export default function Apl01Page() {
       return
     }
 
-    // Tahap 0: langsung navigasi tanpa save/ttd
+    // Tahap 0: langsung navigasi tanpa save/ttd (asesor route, asesor navbar)
     if (tahap === 0) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
       return
     }
 
-    // Jika asesor, langsung navigate tanpa save
+    // Asesor — asesor route, asesor navbar
     if (isAsesor) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
       return

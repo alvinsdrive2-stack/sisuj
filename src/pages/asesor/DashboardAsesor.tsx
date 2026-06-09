@@ -8,9 +8,9 @@ import { useMemo } from "react"
 import { jenisKelasLabel } from "@/lib/utils"
 
 const TAHAP_CARDS = [
-  { tahap: 0, title: "Persiapan Asesmen", icon: ClipboardList, color: "bg-slate-100 text-slate-700", hoverColor: "hover:bg-slate-200", path: "/asesor/persiapan" },
-  { tahap: 1, title: "Praasesmen", icon: FileCheck, color: "bg-purple-100 text-purple-700", hoverColor: "hover:bg-purple-200", path: "/asesor/praasesmen" },
-  { tahap: 2, title: "Asesmen", icon: Award, color: "bg-emerald-100 text-emerald-700", hoverColor: "hover:bg-emerald-200", path: "/asesor/asesmen" },
+  { tahap: 0, title: "Persiapan Asesmen", icon: ClipboardList, color: "bg-slate-100 text-slate-700", hoverColor: "hover:bg-slate-200", path: "/asesi/persiapan" },
+  { tahap: 1, title: "Praasesmen", icon: FileCheck, color: "bg-purple-100 text-purple-700", hoverColor: "hover:bg-purple-200", path: "/asesi/praasesmen" },
+  { tahap: 2, title: "Asesmen", icon: Award, color: "bg-emerald-100 text-emerald-700", hoverColor: "hover:bg-emerald-200", path: "/asesi/asesmen" },
 ] as const
 
 export default function DashboardAsesor() {

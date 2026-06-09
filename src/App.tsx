@@ -5,6 +5,8 @@ import { ThemeProvider } from './contexts/theme-context'
 import { ToastProvider } from './contexts/ToastContext'
 import { DokumenModalProvider, useDokumenModal } from './contexts/DokumenModalContext'
 import { DaftarHadirModalProvider, useDaftarHadirModal } from './contexts/DaftarHadirModalContext'
+import { DokumenAsesiProvider } from './contexts/DokumenAsesiContext'
+import DokumenAsesiModal from './components/asesor/DokumenAsesiModal'
 import ProtectedRoute from './components/ProtectedRoute'
 import ValidatedNavigationRoute from './components/ValidatedNavigationRoute'
 import {
@@ -120,6 +122,7 @@ function App() {
         <ToastProvider>
         <DokumenModalProvider>
         <DaftarHadirModalProvider>
+        <DokumenAsesiProvider>
         <Toaster />
         <Router>
         <ErrorBoundary>
@@ -343,6 +346,8 @@ function App() {
       </Router>
       <GlobalDokumenFullscreenModal />
       <GlobalDaftarHadirModal />
+      <DokumenAsesiModal />
+      </DokumenAsesiProvider>
       </DaftarHadirModalProvider>
       </DokumenModalProvider>
       </ToastProvider>

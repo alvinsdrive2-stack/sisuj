@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -74,7 +74,7 @@ export default function Ia04bPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'ya' | 'tidak'>>({})
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
-  const [initializedFromApi, setInitializedFromApi] = useState(false)
+  const initializedRef = useRef(false)
   const [jawabanAnswers, setJawabanAnswers] = useState<Record<number, string>>({})
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [barcodes, setBarcodes] = useState<{
@@ -82,6 +82,7 @@ export default function Ia04bPage() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+  const fetchingRef = useRef(false)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -98,6 +99,8 @@ export default function Ia04bPage() {
         console.error("No id_izin found in user data")
         return
       }
+      if (fetchingRef.current) return
+      fetchingRef.current = true
 
       try {
         const token = localStorage.getItem("access_token")
@@ -110,11 +113,9 @@ export default function Ia04bPage() {
 
         if (response.ok) {
           const result: ApiResponse = await response.json()
-          
+
           if (result.message === "Success") {
             setIa04bData(result.data)
-
-            
 
             // Set barcodes - use asesor1/asesor2 format directly
             if (result.data.barcodes) {
@@ -131,8 +132,8 @@ export default function Ia04bPage() {
               })
             }
 
-            // Initialize checkbox states from API response (only on first load)
-            if (!initializedFromApi) {
+            // Initialize checkbox states from API response (only on first load, synchronous guard)
+            if (!initializedRef.current) {
               const newAnswers: Record<number, 'ya' | 'tidak'> = {}
               const newJawabanAnswers: Record<number, string> = {}
               result.data.soal.forEach((soal) => {
@@ -153,17 +154,19 @@ export default function Ia04bPage() {
               } else if (result.data.rekomendasi?.rekomendasi === false) {
                 setRekomendasi('belum_kompeten')
               }
-            }
 
-            setInitializedFromApi(true)
+              initializedRef.current = true
+            }
           }
         } else {
           console.warn(`IA04B API returned ${response.status}`)
         }
       } catch (error) {
         console.error("Error fetching IA04B:", error)
+      } finally {
+        fetchingRef.current = false
       }
-  }, [id, authLoading, user, asesorList])
+  }, [id, authLoading, asesorList])
 
   useEffect(() => {
     fetchData()
@@ -356,7 +359,7 @@ export default function Ia04bPage() {
 
   // Auto-resize textareas when data is loaded
   useEffect(() => {
-    if (initializedFromApi) {
+    if (initializedRef.current) {
       const textareas = document.querySelectorAll('textarea[data-auto-resize]')
       textareas.forEach((textarea) => {
         const ta = textarea as HTMLTextAreaElement
@@ -364,7 +367,7 @@ export default function Ia04bPage() {
         ta.style.height = `${ta.scrollHeight}px`
       })
     }
-  }, [initializedFromApi, jawabanAnswers])
+  }, [ia04bData, jawabanAnswers])
 
   if (!ia04bData) return <FullPageLoader text="Memuat data..." />
 
