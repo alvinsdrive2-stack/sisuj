@@ -72,7 +72,7 @@ export default function VerifikasiTukAjjPage() {
     try {
       const formData = new FormData()
       formData.append("jadwal_id", jadwalId ?? "")
-      formData.append("id_izin", idIzin)
+      formData.append("id_izin", idIzin ?? "")
 
       ruanganUjiImages.forEach(file => formData.append("ruangan_uji_images[]", file))
       laptopImages.forEach(file => formData.append("laptop_images[]", file))
