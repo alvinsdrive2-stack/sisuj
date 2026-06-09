@@ -66,21 +66,12 @@ export default function VerifikasiTukAjjPage() {
   }
 
   const handleSubmit = async () => {
-    if (!idIzin || !jadwalId) {
-      toast("Data tidak lengkap", "error")
-      return
-    }
-
-    if (ruanganUjiImages.length === 0 || laptopImages.length === 0 || jaringanImages.length === 0) {
-      toast("Harap upload semua gambar yang diperlukan", "error")
-      return
-    }
 
     setIsLoading(true)
 
     try {
       const formData = new FormData()
-      formData.append("jadwal_id", jadwalId)
+      formData.append("jadwal_id", jadwalId ?? "")
       formData.append("id_izin", idIzin)
 
       ruanganUjiImages.forEach(file => formData.append("ruangan_uji_images[]", file))
