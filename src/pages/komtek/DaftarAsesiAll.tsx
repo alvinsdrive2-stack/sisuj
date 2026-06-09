@@ -81,7 +81,13 @@ export default function DaftarAsesiAll() {
       if (search) params.set("nama", search)
       if (linkVideo) params.set("link_video", linkVideo)
 
-      const res = await fetch(`${API_BASE_URL}/asesi-jadwal/id-izins?${params}`)
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/asesi-jadwal/id-izins?${params}`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
@@ -120,11 +126,11 @@ export default function DaftarAsesiAll() {
 
     setLoadingDocs(idIzin)
     try {
-      const token = localStorage.getItem("access_token")
+      const t = localStorage.getItem("access_token")
       const res = await fetch(`${API_BASE_URL}/dokumen/asesi/${idIzin}`, {
         headers: {
-          Accept: "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          "Accept": "application/json",
+          "Authorization": `Bearer ${t}`,
         },
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
