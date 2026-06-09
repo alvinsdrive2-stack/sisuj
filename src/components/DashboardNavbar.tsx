@@ -7,6 +7,8 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { ThemeToggle } from "@/components/ThemeToggle"
+import { isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
+import { VideoOff, Video } from "lucide-react"
 import logo from "@/assets/logo.png"
 
 const PAS_FOTO_CACHE_KEY = "pas_foto_cache"
@@ -22,6 +24,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
   const { showSuccess } = useToast()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [videoOff, setVideoOff] = useState(() => isVideoBgOff())
   const [pasFoto, setPasFoto] = useState<string | null>(() => {
     // Initialize from cache only if it matches current user
     try {
@@ -166,6 +169,17 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
               <p className="text-xs text-slate-500">{user?.role?.name || 'Guest'}</p>
             </div>
 
+            {/* Video BG Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { const next = !videoOff; setVideoOff(next); setVideoBgOff(next) }}
+              title={videoOff ? "Hidupkan background video" : "Matikan background video"}
+              className="text-slate-600 hover:bg-slate-100"
+            >
+              {videoOff ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            </Button>
+
             {/* Divider */}
             <div className="h-8 w-px bg-slate-300 mx-2"></div>
 
@@ -218,6 +232,15 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
               {/* Actions */}
               <div className="flex gap-2 px-4 py-2 items-center">
                 <ThemeToggle />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { const next = !videoOff; setVideoOff(next); setVideoBgOff(next) }}
+                  title={videoOff ? "Hidupkan background video" : "Matikan background video"}
+                >
+                  {videoOff ? <Video className="w-4 h-4 mr-2" /> : <VideoOff className="w-4 h-4 mr-2" />}
+                  {videoOff ? "Video On" : "Video Off"}
+                </Button>
                 <Button variant="outline" size="sm" className="flex-1 relative">
                   <Bell className="w-4 h-4 mr-2" />
                   Notifikasi

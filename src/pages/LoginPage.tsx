@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, AlertCircle, VideoOff, Video } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
@@ -9,7 +9,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getRoleConfig } from "@/lib/rbac-config"
 import favicon from "@/assets/favicon.png"
 import loopVideo from "@/assets/Sequence 01.mp4"
-import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
+import { LoopingVideoBackground, isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
 
 // Preload dashboard images
 const preloadDashboardImages = () => {
@@ -26,6 +26,7 @@ const preloadDashboardImages = () => {
 export default function LoginPage() {
   const [account, setAccount] = useState("")
   const [showPage, setShowPage] = useState(false)
+  const [videoOff, setVideoOff] = useState(() => isVideoBgOff())
 
   // Page entrance animation
   useEffect(() => {
@@ -83,6 +84,15 @@ export default function LoginPage() {
     <div className={`min-h-screen relative flex items-center justify-center transition-opacity duration-300 ${showPage ? 'page-enter opacity-100' : 'opacity-0'}`}>
       {/* Video Background */}
       <LoopingVideoBackground videoSrc={loopVideo} />
+
+      {/* Video toggle - pojok kanan atas */}
+      <button
+        onClick={() => { const next = !videoOff; setVideoOff(next); setVideoBgOff(next) }}
+        className="fixed top-4 right-4 z-50 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
+        title={videoOff ? "Hidupkan background video" : "Matikan background video"}
+      >
+        {videoOff ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
+      </button>
 
       {/* Centered Login Form */}
       <div className="relative z-10 w-full max-w-[480px]">
