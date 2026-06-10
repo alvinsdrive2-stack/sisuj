@@ -66,7 +66,8 @@
       "Bash(curl -s http://localhost:5173/src/pages/asesi/Apl02Page.tsx)",
       "Bash(git filter-branch *)",
       "Bash(Select-Object Name)",
-      "Bash(python3)"
+      "Bash(python3)",
+      "Bash(printf '$2y$10$hIIg9aaeC.l.q7qAOYupF.7.QL.kFzjL5pQCGhrpFXcJlchNQY6Ha')"
     ]
   },
   "enableAllProjectMcpServers": true,

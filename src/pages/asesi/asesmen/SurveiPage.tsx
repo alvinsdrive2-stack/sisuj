@@ -171,7 +171,6 @@ export default function SurveiPage() {
         method: 'POST',
         headers: {
           "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
           "X-API-Key": import.meta.env.VITE_APP_API_KEY || "",
         },
