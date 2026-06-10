@@ -1,1 +1,0 @@
-import{x as t,y as r}from"./index-IscA6C4j.js";import{u as g}from"./asesi-shared-CjB_nGTQ.js";function L(){const{user:a}=g(),s=a?.role?.name?.toLowerCase()==="asesor",{kegiatan:e,isLoading:i}=t(!s),{kegiatan:o,isLoading:n}=r(s);return{kegiatan:s?o:e,isLoading:s?n:i,isAsesor:s}}export{L as u};
