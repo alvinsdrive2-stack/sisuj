@@ -274,6 +274,21 @@ export default function FrAk07Page() {
     }))
   }
 
+  const handleBulkToggle = (kelompokId: number, kategoris: Kategori[], value: boolean) => {
+    const updates: SelectedReferences = {}
+    kategoris.forEach(kategori => {
+      if (!kategori.nama) return
+      const refs = kategori.referensis
+      refs.forEach((ref, idx) => {
+        if (!ref.nama) return
+        if (idx === refs.length - 1) return // skip last (nullable)
+        const key = `${ref.id}_${kategori.id}_${kelompokId}`
+        updates[key] = value
+      })
+    })
+    setSelectedReferences(prev => ({ ...prev, ...updates }))
+  }
+
   const getReferenceState = (kategoriId: number | null, kelompokId: number, refId: number): boolean | null => {
     // Cek dari selectedReferences dulu (user input) — per-ref key
     const key = `${refId}_${kategoriId}_${kelompokId}`
@@ -357,7 +372,7 @@ export default function FrAk07Page() {
     setIsSaving(true)
     try {
       // Build answers array
-      const answers: Array<{ referensi_id: number; kelompok_id: number; value: boolean | string | { bool: boolean; text: string } }> = []
+      const answers: Array<{ referensi_id: number; kelompok_id: number; value: boolean | string | { bool: boolean; text: string } | null; custom_name?: string }> = []
 
       if (!ak07Data) {
         throw new Error("Data AK07 tidak tersedia")
@@ -378,17 +393,24 @@ export default function FrAk07Page() {
         })
       }
 
-      // Kelompok 5 (Modifikasi) - boolean per item
+      // Kelompok 5 (Modifikasi) - boolean, custom_name for empty nama
       const modifikasiData = ak07Data.find(d => d.urut === 2)
       if (modifikasiData) {
         modifikasiData.kategoris.forEach(kategori => {
-          kategori.referensis.forEach(ref => {
-            const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
-            answers.push({
-              referensi_id: ref.id,
-              kelompok_id: modifikasiData.id,
-              value: isChecked
-            })
+          kategori.referensis.forEach((ref, refIdx) => {
+            const isLast = refIdx === kategori.referensis.length - 1
+            if (isLast) {
+              const state = getReferenceState(kategori.id, modifikasiData.id, ref.id)
+              if (state !== null) {
+                const customName = textAnswers[ref.id] || ''
+                answers.push({ referensi_id: ref.id, kelompok_id: modifikasiData.id, value: state, custom_name: customName })
+              }
+            } else {
+              const state = getReferenceState(kategori.id, modifikasiData.id, ref.id)
+              if (state !== null) {
+                answers.push({ referensi_id: ref.id, kelompok_id: modifikasiData.id, value: state })
+              }
+            }
           })
         })
       }
@@ -577,8 +599,8 @@ export default function FrAk07Page() {
                           <div style={{ marginRight: '10px' }}>
                             <CustomCheckbox
                               checked={isChecked}
-                              disabled={true}
-                              onChange={() => {}}
+                              disabled={isFormDisabled || isSaving}
+                              onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(potensiAsesiData.kategoris[0]?.id || null, potensiAsesiData.id, ref.id, true)}
                             />
                           </div>
                           <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
@@ -611,7 +633,7 @@ export default function FrAk07Page() {
                   return allReferensis.map((ref, refIdx) => {
                     const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
                     const isFirstRow = refIdx === 0
-                    const isDisabled = !ref.nama || isFormDisabled || isSaving
+                    const isDisabled = isFormDisabled || isSaving
 
                     return (
                       <tr key={`${kategori.id || kategoriIndex}-${ref.id}`}>
@@ -628,19 +650,37 @@ export default function FrAk07Page() {
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={isChecked}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, true)}
+                            onChange={(shiftKey) => {
+                              if (isFormDisabled || isSaving) return
+                              if (shiftKey) handleBulkToggle(modifikasiData.id, modifikasiData.kategoris, true)
+                              else handleReferenceChange(kategori.id, modifikasiData.id, ref.id, true)
+                            }}
                             disabled={isDisabled}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000' }}>
                           <CustomCheckbox
                             checked={getReferenceState(kategori.id, modifikasiData.id, ref.id) === false}
-                            onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategori.id, modifikasiData.id, ref.id, false)}
+                            onChange={(shiftKey) => {
+                              if (isFormDisabled || isSaving) return
+                              if (shiftKey) handleBulkToggle(modifikasiData.id, modifikasiData.kategoris, false)
+                              else handleReferenceChange(kategori.id, modifikasiData.id, ref.id, false)
+                            }}
                             disabled={isDisabled}
                           />
                         </td>
                         <td style={{ border: '1px solid #000', padding: '8px', borderBottom: refIdx < allReferensis.length - 1 ? '1px solid #ccc' : '1px solid #000', fontSize: '14px' }}>
-                          {ref.nama}
+                          {refIdx !== allReferensis.length - 1 && ref.nama}
+                          {refIdx === allReferensis.length - 1 && (
+                            <textarea
+                              value={textAnswers[ref.id] ?? ref.nama ?? ''}
+                              onChange={(e) => setTextAnswers(prev => ({ ...prev, [ref.id]: e.target.value }))}
+                              disabled={isDisabled}
+                              rows={1}
+                              style={{ width: '100%', padding: '4px', border: '1px solid #ccc', fontSize: '12px', minHeight: '24px', overflow: 'hidden', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', cursor: isDisabled ? 'not-allowed' : 'text', background: isDisabled ? '#f5f5f5' : '#fff', boxSizing: 'border-box', marginTop: '4px', display: 'block' }}
+                              placeholder="Isi keterangan..."
+                            />
+                          )}
                         </td>
                       </tr>
                     )
@@ -664,7 +704,7 @@ export default function FrAk07Page() {
                 {rencanaAsesmenData.kategoris[0].referensis.map((ref, refIdx) => {
                   const kategoriId = rencanaAsesmenData.kategoris[0]?.id || null
                   const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
-                  const isDisabled = !ref.nama || isFormDisabled || isSaving
+                  const isDisabled = isFormDisabled || isSaving
 
                   return (
                     <tr key={ref.id}>
@@ -677,14 +717,22 @@ export default function FrAk07Page() {
                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
                         <CustomCheckbox
                           checked={isChecked}
-                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, true)}
+                          onChange={(shiftKey) => {
+                            if (isFormDisabled || isSaving) return
+                            if (shiftKey) handleBulkToggle(rencanaAsesmenData.id, rencanaAsesmenData.kategoris, true)
+                            else handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, true)
+                          }}
                           disabled={isDisabled}
                         />
                       </td>
                       <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
                         <CustomCheckbox
                           checked={getReferenceState(kategoriId, rencanaAsesmenData.id, ref.id) === false}
-                          onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, false)}
+                          onChange={(shiftKey) => {
+                            if (isFormDisabled || isSaving) return
+                            if (shiftKey) handleBulkToggle(rencanaAsesmenData.id, rencanaAsesmenData.kategoris, false)
+                            else handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, false)
+                          }}
                           disabled={isDisabled}
                         />
                       </td>
@@ -726,7 +774,7 @@ export default function FrAk07Page() {
                 </tr>
 
                 {hasilPenyesuaianData.kategoris[0].referensis.map((ref, refIdx) => {
-                  const isDisabled = !ref.nama || isFormDisabled || isSaving
+                  const isDisabled = isFormDisabled || isSaving
                   return (
                     <tr key={ref.id}>
                       <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'left', verticalAlign: 'top',borderRight:'none' }}>

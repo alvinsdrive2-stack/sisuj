@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
+import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
 interface Asesor {
   jadwal_id: string
@@ -195,11 +196,11 @@ export default function DetailDokumenAsesiPage() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', fontSize: '13px', color: '#6b7280' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FontAwesomeIcon icon={faCalendar} style={{ color: '#10b981', fontSize: '14px' }} />
-                    {new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {formatShortDateWIB(kegiatan.tanggal_uji)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FontAwesomeIcon icon={faClock} style={{ color: '#10b981', fontSize: '14px' }} />
-                    {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                    {formatTimeWIB(kegiatan.tanggal_uji)}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <FontAwesomeIcon icon={faMapMarkerAlt} style={{ color: '#10b981', fontSize: '14px' }} />

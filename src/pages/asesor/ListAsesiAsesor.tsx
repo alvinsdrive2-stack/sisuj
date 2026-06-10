@@ -8,6 +8,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
+import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
 interface CountdownTime {
   days: number
@@ -234,11 +235,11 @@ export default function ListAsesiAsesor() {
               <div className="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-primary" />
-                  {new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {formatShortDateWIB(kegiatan.tanggal_uji)}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-primary" />
-                  {new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                  {formatTimeWIB(kegiatan.tanggal_uji)}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-primary" />

@@ -126,6 +126,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     const labels: string[] = []
     if (!barcodes?.asesor1?.url) labels.push('Asesor 1')
     if (asesorList.length >= 2 && !barcodes?.asesor2?.url) labels.push('Asesor 2')
+    if (!asesiHasSigned) labels.push('Asesi')
     return labels
   }, [tahap, isUuidFlow, barcodes, asesorList])
 

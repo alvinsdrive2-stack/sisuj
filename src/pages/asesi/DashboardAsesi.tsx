@@ -6,6 +6,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
+import { formatShortDateWIB, formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
 export default function DashboardAsesi() {
   const navigate = useNavigate()
@@ -52,7 +53,7 @@ export default function DashboardAsesi() {
     {
       title: "Jadwal Asesmen",
       value: kegiatan
-        ? new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+        ? formatShortDateWIB(kegiatan.tanggal_uji)
         : "-",
       icon: Calendar,
       color: "text-purple-600",
@@ -86,8 +87,8 @@ export default function DashboardAsesi() {
     unitCode: kegiatan.skema_id,
     status: kegiatan.is_started === "1" ? "in-progress" : "scheduled",
     schedule: {
-      date: new Date(kegiatan.tanggal_uji).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-      time: `${new Date(kegiatan.tanggal_uji).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB`,
+      date: formatDateWIB(kegiatan.tanggal_uji),
+      time: `${formatTimeWIB(kegiatan.tanggal_uji)} WIB`,
       venue: `${kegiatan.tuk.nama} - ${kegiatan.tuk.alamat}`
     }
   } : null

@@ -213,8 +213,7 @@ export default function Ia10Page() {
 
 
   const handleSave = async () => {
-    // Only asesor can save IA10
-    if (!isAsesor) {
+    const navigateNext = () => {
       if (_kegiatan?.tahap === 0) {
         navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
         return
@@ -227,37 +226,26 @@ export default function Ia10Page() {
       } else {
         navigate(`/asesi/asesmen/${id}/selesai`)
       }
-      return
     }
 
     if (hasSigned) {
-      if (_kegiatan?.tahap === 0) {
-        navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
-        return
-      }
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
+      navigateNext()
       return
     }
 
     if (!signing.agreedChecklist) return
 
+    // Asesi must wait for all asesor to sign
+    if (!isAsesor && !signing.allAsesorSigned) {
+      return
+    }
+
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
 
-      const payload = {
+      const payload: Record<string, any> = {
         dokumen_id: dokumenId,
-        nama_pengawas: formData.nama_pengawas,
-        tempat_kerja: formData.tempat_kerja,
-        alamat: formData.alamat,
-        telepon: formData.telepon,
         answers: pertanyaanYaTidakList.map(p => ({
           referensi_id: p.id,
           answer: p.ya,
@@ -272,6 +260,13 @@ export default function Ia10Page() {
             essay_answer: a.jawaban || "",
           })),
         ],
+      }
+
+      if (isAsesor) {
+        payload.nama_pengawas = formData.nama_pengawas
+        payload.tempat_kerja = formData.tempat_kerja
+        payload.alamat = formData.alamat
+        payload.telepon = formData.telepon
       }
 
       const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia10`, {
@@ -544,6 +539,16 @@ export default function Ia10Page() {
                 </td>
               </tr>
             )}
+            <tr>
+              <td style={{ border: "1px solid #000", padding: "6px" }}>
+                <b>Tanda Tangan Asesi:</b> {barcodes?.asesi?.url ? (
+                  <span style={{ float: "right" }}>
+                    <img src={barcodes.asesi.url} alt="TTD" style={{ height: "40px" }} />
+                    {barcodes.asesi.tanggal && <span> {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+                  </span>
+                ) : <span style={{ float: "right" }}>Tanggal: </span>}
+              </td>
+            </tr>
           </tbody>
         </table>
 
@@ -571,7 +576,6 @@ export default function Ia10Page() {
               <CustomCheckbox
                 checked={signing.agreedChecklist}
                 onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
-                disabled={!isAsesor || signing.allSigned}
                 style={{ marginTop: "2px" }}
               />
               <span style={{ fontSize: "13px", color: "#333" }}>

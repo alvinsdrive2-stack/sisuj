@@ -9,6 +9,7 @@ import { useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
 import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
 import { jenisKelasLabel } from "@/lib/utils"
+import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
 const TAHAP_CONFIG: Record<number, { title: string; badge: string; badgeClass: string }> = {
   0: { title: "Persiapan Asesmen", badge: "Belum Mulai", badgeClass: "bg-slate-100 text-slate-700 hover:bg-slate-200" },
@@ -93,11 +94,11 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
                     <div className="flex items-center gap-4 text-sm text-slate-600">
                       <span className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        {new Date(kegiatan.tanggal_uji || '').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {formatShortDateWIB(kegiatan.tanggal_uji || '')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        {new Date(kegiatan.tanggal_uji || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                        {formatTimeWIB(kegiatan.tanggal_uji || '')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-4 h-4" />

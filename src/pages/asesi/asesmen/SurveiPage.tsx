@@ -173,6 +173,7 @@ export default function SurveiPage() {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-API-Key": process.env.VITE_APP_API_KEY || "",
         },
         body: JSON.stringify({
           LSP: lspAnswers,
