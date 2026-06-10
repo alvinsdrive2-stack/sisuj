@@ -259,6 +259,18 @@ interface Apl02ContentProps {
 const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, kukBukti, uploadedFilesInfo, excludedApiFileIds, isAsesor, isSaving, onCheckRadio, onToggleExclude, onRemoveBukti, onSelectBukti, onViewFile }) => {
   if (!apl02Data) return null
 
+  // All KUK IDs across all units for shift-click global toggle
+  const allKukIdsGlobal: string[] = []
+  apl02Data.units.forEach(unit => {
+    unit.subunits.forEach(subunit => {
+      subunit.kuk_list.forEach(kuk => {
+        allKukIdsGlobal.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+      })
+    })
+  })
+  const globalAllK = allKukIdsGlobal.every(id => kukChecklist[id] === 'K')
+  const globalAllBK = allKukIdsGlobal.every(id => kukChecklist[id] === 'BK')
+
   return (
     <>
       {/* Header Table */}
@@ -350,13 +362,29 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
               const isSubunitBK = allKukIds.some(id => kukChecklist[id] === 'BK')
               const subunitFileIds = kukBukti[firstKukId] || []
 
-              const handleSubunitK = () => {
-                const v = isSubunitK ? null : 'K'
-                allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+              const handleSubunitK = (shiftKey?: boolean) => {
+                if (shiftKey) {
+                  const v = globalAllK ? 'BK' : 'K'
+                  allKukIdsGlobal.forEach(kid => {
+                    const p = kid.split('-')
+                    onCheckRadio(kid, v, p[0], `${p[0]}-${p[1]}`)
+                  })
+                } else {
+                  const v = isSubunitK ? null : 'K'
+                  allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+                }
               }
-              const handleSubunitBK = () => {
-                const v = isSubunitBK ? null : 'BK'
-                allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+              const handleSubunitBK = (shiftKey?: boolean) => {
+                if (shiftKey) {
+                  const v = globalAllBK ? 'K' : 'BK'
+                  allKukIdsGlobal.forEach(kid => {
+                    const p = kid.split('-')
+                    onCheckRadio(kid, v, p[0], `${p[0]}-${p[1]}`)
+                  })
+                } else {
+                  const v = isSubunitBK ? null : 'BK'
+                  allKukIds.forEach(kid => onCheckRadio(kid, v, unit.id, subunit.id))
+                }
               }
 
               return (
@@ -1869,17 +1897,19 @@ export default function Apl02Page() {
         }
 
         // Parse dokumen-asesi response and inject ijazah + referensi_kerja
-        if (dokumenAsesiResponse.ok) {
+        // Skip if asesi QR already exists (prevents re-selection creating duplicates)
+        const sudahDitandatangani = barcodesFromApi?.asesi?.url != null
+        if (dokumenAsesiResponse.ok && !sudahDitandatangani) {
           try {
             const dokumenAsesiResult = await dokumenAsesiResponse.json()
             const data = dokumenAsesiResult.data || dokumenAsesiResult
             if (data) {
               const dokumenFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
               if (data.ijazah) {
-                dokumenFiles.push({ id: -1, name: 'Ijazah (Dokumen Asesi)', path: data.ijazah, kebenaran: true })
+                dokumenFiles.push({ id: -1, name: 'Ijazah', path: data.ijazah, kebenaran: true })
               }
               if (data.referensi_kerja) {
-                dokumenFiles.push({ id: -2, name: 'Referensi Kerja (Dokumen Asesi)', path: data.referensi_kerja, kebenaran: true })
+                dokumenFiles.push({ id: -2, name: 'Referensi Kerja', path: data.referensi_kerja, kebenaran: true })
               }
               if (dokumenFiles.length > 0) {
                 setUploadedFilesInfo(prev => {
@@ -2144,7 +2174,7 @@ export default function Apl02Page() {
 
     // Convert kukChecklist to answers array (per subunit)
     // First, collect all KUK data grouped by subunit
-    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: Set<string> }>()
+    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: { url: string; name: string }[] }>()
 
     Object.entries(kukChecklist).forEach(([kukId, status]) => {
       // kukId format: "unitId-subunitId-kukNo"
@@ -2153,12 +2183,12 @@ export default function Apl02Page() {
       const subunitId = parseInt(parts[1])
 
       if (!subunitDataMap.has(subunitId)) {
-        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: new Set() })
+        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: [] })
       }
 
       const data = subunitDataMap.get(subunitId)
       if (!data) {
-        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: new Set() })
+        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: [] })
         return
       }
       data.statuses.push(status)
@@ -2168,12 +2198,13 @@ export default function Apl02Page() {
       fileIds.forEach(id => {
         if (excludedApiFileIds.has(id)) return
         const fInfo = uploadedFilesInfo.find(f => f.id === id)
-        if (fInfo?.kebenaran || id < 0) {
-          // Dokumen asesi: only push URL, skip fake negative ID
-          if (fInfo?.path) data.allFileUrls.add(fInfo.path)
+        if (!fInfo) return
+        if (fInfo.kebenaran || id < 0) {
+          // Dokumen asesi: only file_urls, no file_ids (fake negative IDs)
+          if (fInfo.path) data.allFileUrls.push({ url: fInfo.path, name: fInfo.name })
         } else {
+          // Regular files: only file_ids (already on server, no re-send URL)
           data.allFileIds.add(id)
-          if (fInfo?.path) data.allFileUrls.add(fInfo.path)
         }
       })
     })
@@ -2187,28 +2218,30 @@ export default function Apl02Page() {
       if (!data) return
           subunit.files.forEach(file => {
             if (!excludedApiFileIds.has(file.id)) {
+              // Regular files from subunit: only file_ids (already on server)
               data.allFileIds.add(file.id)
-              if (file.path) data.allFileUrls.add(file.path)
             }
           })
         }
       })
     })
 
-    // Validate at least 1 bukti uploaded
-    const totalFileIds = Array.from(subunitDataMap.values()).reduce((sum, d) => sum + d.allFileIds.size, 0)
-    if (totalFileIds === 0) {
-      showWarning("Wajib upload minimal 1 bukti sebelum menyimpan")
-      return
+    // Dedup file_urls by URL (same file can be selected for multiple KUKs)
+    const dedupByUrl = (arr: { url: string; name: string }[]) => {
+      const seen = new Set<string>()
+      return arr.filter(item => {
+        if (seen.has(item.url)) return false
+        seen.add(item.url)
+        return true
+      })
     }
-
     // Convert to answers array format
     // asesi sends kompeten: null, asesor sends kompeten: true/false
     const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
       subunit_id: subunitId,
       kompeten: data.statuses.every(s => s === 'K'),
       file_ids: Array.from(data.allFileIds),
-      file_urls: Array.from(data.allFileUrls)
+      file_urls: dedupByUrl(data.allFileUrls)
     }))
 
     // Check if all subunits have been answered

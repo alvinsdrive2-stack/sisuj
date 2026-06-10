@@ -69,23 +69,24 @@ export default function Apl02FilePanel({ idIzin, onCollapse, refreshKey }: Apl02
           try {
             const kebenaranJson = await kebenaranRes.json()
             if ((kebenaranJson.success || kebenaranJson.message === "Success") && kebenaranJson.data) {
+              const uploadNames = new Set(allFiles.map(f => f.name))
               const kebenaranFiles: Apl02File[] = []
-              if (kebenaranJson.data.ktp) {
+              if (kebenaranJson.data.ktp && !uploadNames.has('KTP')) {
                 kebenaranFiles.push({ id: -3, name: 'KTP', path: kebenaranJson.data.ktp, kebenaran: true })
               }
-              if (kebenaranJson.data.npwp) {
+              if (kebenaranJson.data.npwp && !uploadNames.has('NPWP')) {
                 kebenaranFiles.push({ id: -4, name: 'NPWP', path: kebenaranJson.data.npwp, kebenaran: true })
               }
-              if (kebenaranJson.data.ijazah) {
+              if (kebenaranJson.data.ijazah && !uploadNames.has('Ijazah')) {
                 kebenaranFiles.push({ id: -1, name: 'Ijazah', path: kebenaranJson.data.ijazah, kebenaran: true })
               }
-              if (kebenaranJson.data.referensi_kerja) {
+              if (kebenaranJson.data.referensi_kerja && !uploadNames.has('Referensi Kerja')) {
                 kebenaranFiles.push({ id: -2, name: 'Referensi Kerja', path: kebenaranJson.data.referensi_kerja, kebenaran: true })
               }
-              if (kebenaranJson.data.spt_asesor) {
+              if (kebenaranJson.data.spt_asesor && !uploadNames.has('SPT Asesor')) {
                 kebenaranFiles.push({ id: -5, name: 'SPT Asesor', path: kebenaranJson.data.spt_asesor, kebenaran: true })
               }
-              if (kebenaranJson.data.verifikasi_tuk) {
+              if (kebenaranJson.data.verifikasi_tuk && !uploadNames.has('Verifikasi TUK')) {
                 kebenaranFiles.push({ id: -6, name: 'Verifikasi TUK', path: kebenaranJson.data.verifikasi_tuk, kebenaran: true })
               }
               allFiles = [...kebenaranFiles, ...allFiles]
