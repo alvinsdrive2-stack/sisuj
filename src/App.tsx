@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/auth-context'
 import { ThemeProvider } from './contexts/theme-context'
@@ -50,7 +50,6 @@ const TandatanganKomtek = lazy(() => import('./pages/komtek/TandatanganKomtek'))
 const SudahDitandatanganiKomtek = lazy(() => import('./pages/komtek/SudahDitandatangani'))
 const BelumDitandatanganiKomtek = lazy(() => import('./pages/komtek/BelumDitandatangani'))
 const DaftarAsesiPage = lazy(() => import('./pages/komtek/DaftarAsesiPage'))
-const DaftarAsesiSudahPage = lazy(() => import('./pages/komtek/DaftarAsesiSudahPage'))
 const EditJadwalPage = lazy(() => import('./pages/komtek/EditJadwalPage'))
 const DaftarAsesiAll = lazy(() => import('./pages/komtek/DaftarAsesiAll'))
 
@@ -125,6 +124,7 @@ function App() {
         <DokumenAsesiProvider>
         <Toaster />
         <Router>
+        <NavigationTracker />
         <ErrorBoundary>
         <Suspense fallback={<FullPageLoader text="Memuat..." />}>
         <Routes>
@@ -152,15 +152,17 @@ function App() {
             path="/admin-lsp/*"
             element={
               <AdminLSPRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<DashboardAdminLSP />} />
-                    <Route path="reports" element={<div className="p-4"><h2 className="text-xl font-bold">Laporan Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="users" element={<div className="p-4"><h2 className="text-xl font-bold">Manajemen User</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="settings" element={<div className="p-4"><h2 className="text-xl font-bold">Pengaturan</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="" element={<Navigate to="dashboard" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<DashboardAdminLSP />} />
+                      <Route path="reports" element={<div className="p-4"><h2 className="text-xl font-bold">Laporan Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="users" element={<div className="p-4"><h2 className="text-xl font-bold">Manajemen User</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="settings" element={<div className="p-4"><h2 className="text-xl font-bold">Pengaturan</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="" element={<Navigate to="dashboard" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </AdminLSPRoute>
             }
           />
@@ -170,16 +172,18 @@ function App() {
             path="/direktur/*"
             element={
               <DirekturLSPRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="tandatangan" element={<TandatanganDirektur />} />
-                    <Route path="sudah-ditandatangani" element={<SudahDitandatangani />} />
-                    <Route path="sudah-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
-                    <Route path="belum-ditandatangani" element={<BelumDitandatangani />} />
-                    <Route path="belum-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
-                    <Route path="" element={<Navigate to="tandatangan" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="tandatangan" element={<TandatanganDirektur />} />
+                      <Route path="sudah-ditandatangani" element={<SudahDitandatangani />} />
+                      <Route path="sudah-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
+                      <Route path="belum-ditandatangani" element={<BelumDitandatangani />} />
+                      <Route path="belum-ditandatangani/:id" element={<DetailDokumenDirekturPage />} />
+                      <Route path="" element={<Navigate to="tandatangan" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </DirekturLSPRoute>
             }
           />
@@ -189,18 +193,20 @@ function App() {
             path="/komtek/*"
             element={
               <KomtekRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="tandatangan" element={<TandatanganKomtek />} />
-                    <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
-                    <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiSudahPage />} />
-                    <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
-                    <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
-                    <Route path="edit-jadwal/:jadwalId" element={<EditJadwalPage />} />
-                    <Route path="daftar-asesi" element={<DaftarAsesiAll />} />
-                    <Route path="" element={<Navigate to="tandatangan" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="tandatangan" element={<TandatanganKomtek />} />
+                      <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
+                      <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                      <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />
+                      <Route path="belum-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
+                      <Route path="edit-jadwal/:jadwalId" element={<EditJadwalPage />} />
+                      <Route path="daftar-asesi" element={<DaftarAsesiAll />} />
+                      <Route path="" element={<Navigate to="tandatangan" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </KomtekRoute>
             }
           />
@@ -210,14 +216,16 @@ function App() {
             path="/manajer/*"
             element={
               <ManajerSertifikasiRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<DashboardManajer />} />
-                    <Route path="monitoring" element={<div className="p-4"><h2 className="text-xl font-bold">Monitoring Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="asesi" element={<div className="p-4"><h2 className="text-xl font-bold">Daftar Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="" element={<Navigate to="dashboard" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<DashboardManajer />} />
+                      <Route path="monitoring" element={<div className="p-4"><h2 className="text-xl font-bold">Monitoring Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="asesi" element={<div className="p-4"><h2 className="text-xl font-bold">Daftar Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="" element={<Navigate to="dashboard" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </ManajerSertifikasiRoute>
             }
           />
@@ -227,16 +235,18 @@ function App() {
             path="/admin-tuk/*"
             element={
               <AdminTUKRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<DashboardAdminTUK />} />
-                    <Route path="list-asesi/:jadwalId" element={<ListAsesiAdminTUK />} />
-                    <Route path="verification" element={<div className="p-4"><h2 className="text-xl font-bold">Verifikasi Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="activity" element={<div className="p-4"><h2 className="text-xl font-bold">Kegiatan</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
-                    <Route path="" element={<Navigate to="dashboard" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<DashboardAdminTUK />} />
+                      <Route path="list-asesi/:jadwalId" element={<ListAsesiAdminTUK />} />
+                      <Route path="verification" element={<div className="p-4"><h2 className="text-xl font-bold">Verifikasi Asesi</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="activity" element={<div className="p-4"><h2 className="text-xl font-bold">Kegiatan</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="schedule" element={<div className="p-4"><h2 className="text-xl font-bold">Jadwal Asesmen</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="" element={<Navigate to="dashboard" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </AdminTUKRoute>
             }
           />
@@ -246,17 +256,19 @@ function App() {
             path="/asesor/*"
             element={
               <AsesorRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="dashboard" element={<DashboardAsesor />} />
-                    <Route path="persiapan" element={<TahapListPage tahap={0} />} />
-                    <Route path="praasesmen" element={<TahapListPage tahap={1} />} />
-                    <Route path="asesmen" element={<TahapListPage tahap={2} />} />
-                    <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
-                    <Route path="asesi/:jadwalId" element={<AsesiPage />} />
-                    <Route path="" element={<Navigate to="dashboard" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<DashboardAsesor />} />
+                      <Route path="persiapan" element={<TahapListPage tahap={0} />} />
+                      <Route path="praasesmen" element={<TahapListPage tahap={1} />} />
+                      <Route path="asesmen" element={<TahapListPage tahap={2} />} />
+                      <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
+                      <Route path="asesi/:jadwalId" element={<AsesiPage />} />
+                      <Route path="" element={<Navigate to="dashboard" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </AsesorRoute>
             }
           />
@@ -266,12 +278,14 @@ function App() {
             path="/qontak/*"
             element={
               <DirekturLSPRoute>
-                <DashboardLayout>
-                  <Routes>
-                    <Route path="whatsapp" element={<QontakWhatsAppPage />} />
-                    <Route path="" element={<Navigate to="whatsapp" replace />} />
-                  </Routes>
-                </DashboardLayout>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="whatsapp" element={<QontakWhatsAppPage />} />
+                      <Route path="" element={<Navigate to="whatsapp" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
               </DirekturLSPRoute>
             }
           />
@@ -281,7 +295,8 @@ function App() {
             path="/asesi/*"
             element={
               <AsesiMainLayout>
-                <Routes>
+                <ValidatedNavigationRoute>
+                  <Routes>
                   <Route path="dashboard" element={<AsesiRoute><DashboardAsesiPage /></AsesiRoute>} />
                   <Route path="praasesmen" element={<AsesiOrAsesorRoute><PraAsesmenPage /></AsesiOrAsesorRoute>} />
                   <Route path="praasesmen/:idIzin" element={<AsesiOrAsesorRoute><PraAsesmenPage /></AsesiOrAsesorRoute>} />
@@ -324,6 +339,7 @@ function App() {
                   <Route path="documents" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Dokumen</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />
                   <Route path="" element={<Navigate to="dashboard" replace />} />
                 </Routes>
+                </ValidatedNavigationRoute>
               </AsesiMainLayout>
             }
           />
@@ -333,7 +349,9 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <DashboardPage />
+                <ValidatedNavigationRoute>
+                  <DashboardPage />
+                </ValidatedNavigationRoute>
               </ProtectedRoute>
             }
           />
@@ -354,6 +372,51 @@ function App() {
     </ThemeProvider>
     </AuthProvider>
   )
+}
+
+// Intercept all react-router navigations via History API + click listener
+function NavigationTracker() {
+  useEffect(() => {
+    // Patch History API used by react-router for navigate() and Link clicks
+    const origPushState = history.pushState
+    const origReplaceState = history.replaceState
+
+    history.pushState = function (...args) {
+      sessionStorage.setItem('validated_nav_internal', '1')
+      return origPushState.apply(this, args)
+    }
+
+    history.replaceState = function (...args) {
+      sessionStorage.setItem('validated_nav_internal', '1')
+      return origReplaceState.apply(this, args)
+    }
+
+    // Also catch link clicks (backup for any that bypass pushState)
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const link = target.closest('a')
+      if (link && link.getAttribute('href')?.startsWith('/')) {
+        sessionStorage.setItem('validated_nav_internal', '1')
+      }
+    }
+    document.addEventListener('click', handleClick)
+
+    // Clear flag on back/forward — popstate fires before React Router processes it,
+    // so ValidatedNavigationRoute sees no flag and redirects to dashboard
+    const handlePopState = () => {
+      sessionStorage.removeItem('validated_nav_internal')
+    }
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      history.pushState = origPushState
+      history.replaceState = origReplaceState
+      document.removeEventListener('click', handleClick)
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  return null
 }
 
 function GlobalDokumenFullscreenModal() {
