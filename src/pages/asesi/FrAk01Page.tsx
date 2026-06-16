@@ -105,6 +105,7 @@ export default function FrAk01Page() {
   const [showMasukAsesmenModal, setShowMasukAsesmenModal] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
   const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode } = useDataDokumenPraAsesmen(actualIdIzin)
+  const isLowJenjangAsesor = jenjang && parseInt(jenjang) < 4 && isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {
@@ -291,7 +292,7 @@ export default function FrAk01Page() {
 
     // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
-      if (isAsesmenFlow || tahap === 2) {
+      if (isAsesmenFlow || tahap === 2 || isLowJenjangAsesor) {
         setShowMasukAsesmenModal(true)
         return
       }
@@ -371,8 +372,8 @@ export default function FrAk01Page() {
           return
         }
 
-        // Perjanjian flow (tahap 2): show floating modal to proceed to asesmen
-        if (tahap === 2) {
+        // Perjanjian flow (tahap 2) or jenjang 1 asesor: show floating modal to proceed to asesmen
+        if (tahap === 2 || isLowJenjangAsesor) {
           setShowMasukAsesmenModal(true)
           return
         }

@@ -105,6 +105,7 @@ const FrAk01Page = lazy(() => import('./pages/asesi/FrAk01Page'))
 const PraAsesmenByUuidPage = lazy(() => import('./pages/asesi/PraAsesmenByUuidPage'))
 const VerifikasiTukAjjPage = lazy(() => import('./pages/asesi/VerifikasiTukAjjPage'))
 const KonfirmasiDataPage = lazy(() => import('./pages/asesi/KonfirmasiDataPage'))
+const DevSchedulePage = lazy(() => import('./pages/DevSchedulePage'))
 
 // Catch chunk load failures (lazy import network errors) and reload
 window.addEventListener('unhandledrejection', (event) => {
@@ -355,6 +356,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Dev Routes */}
+          <Route path="/dev/schedule" element={<DevSchedulePage />} />
 
           {/* Default Route */}
           <Route path="/" element={<DefaultRoute />} />
