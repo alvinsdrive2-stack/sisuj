@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { UserRole } from "@/lib/rbac-config"
 
@@ -8,6 +9,7 @@ interface ForbiddenPageProps {
 
 export default function ForbiddenPage({ redirectPath }: ForbiddenPageProps) {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [countdown, setCountdown] = useState(3)
 
   const userRoleName = user?.role?.name as UserRole | undefined
@@ -63,7 +65,7 @@ export default function ForbiddenPage({ redirectPath }: ForbiddenPageProps) {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer)
-          window.location.href = defaultRedirect
+          navigate(defaultRedirect, { replace: true })
           return 0
         }
         return prev - 1
@@ -71,10 +73,10 @@ export default function ForbiddenPage({ redirectPath }: ForbiddenPageProps) {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [defaultRedirect])
+  }, [defaultRedirect, navigate])
 
   const handleGoBack = () => {
-    window.history.back()
+    navigate(defaultRedirect, { replace: true })
   }
 
   return (
@@ -95,7 +97,7 @@ export default function ForbiddenPage({ redirectPath }: ForbiddenPageProps) {
           Anda tidak memiliki izin untuk mengakses halaman ini. Hubungi administrator Anda untuk membuka fitur ini.
           Anda dapat kembali ke{" "}
           <button onClick={handleGoBack} style={linkStyle}>
-            halaman sebelumnya
+            dashboard
           </button>{" "}
           atau tunggu{" "}
           <span style={{ fontWeight: 700, color: "#1177bd" }}>{countdown} detik</span> untuk dialihkan ke dashboard.

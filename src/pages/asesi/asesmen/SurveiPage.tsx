@@ -23,6 +23,16 @@ interface SurveyItem {
   skor: number | null
 }
 
+const REFERRAL_SOURCES = [
+  'Rekomendasi Teman/ Organisasi Profesi',
+  'Mitra TUK LSP Gatensi Karya Konstruksi',
+  'Website Resmi LSP',
+  'LinkedIn',
+  'Tiktok',
+  'Facebook',
+  'Instagram',
+] as const
+
 const DEFAULT_SURVEY_ITEMS: SurveyItem[] = [
   { id: 1, no: '1', aspek: 'Informasi dan Transparansi', deskripsi: 'Informasi diterima dengan jelas meliputi persyaratan peserta dan biaya sertifikasi', skor: null },
   { id: 2, no: '2', aspek: 'Ketidakberpihakan (Impartiality)', deskripsi: 'Proses uji kompetensi dilakukan secara adil tanpa diskriminasi dan sikap objektif asesor saat asesmen', skor: null },
@@ -81,6 +91,8 @@ export default function SurveiPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
+  const [referralSources, setReferralSources] = useState<string[]>([])
+  const [referralLainnya, setReferralLainnya] = useState('')
 
   const isFormDisabled = isAsesor || isSubmitted
 
@@ -133,6 +145,11 @@ export default function SurveiPage() {
       }
       return item
     }))
+  }
+
+  const handleReferralToggle = (src: string) => {
+    if (isFormDisabled) return
+    setReferralSources(prev => prev.includes(src) ? prev.filter(s => s !== src) : [...prev, src])
   }
 
   const getBackPath = () => {
@@ -323,7 +340,11 @@ export default function SurveiPage() {
             B. Petunjuk Pengisian
           </h2>
           <p style={{ fontSize: '13px', marginBottom: '10px' }}>
-            Beri penilaian sesuai pengalaman Anda selama proses sertifikasi.
+            Beri penilaian sesuai pengalaman Anda selama proses sertifikasi. <br></br>
+            <div style={{ marginLeft: '20px', marginTop: '8px' }}>
+            1.	Berikan () pada kotak penilaian yang telah disediakan<br></br>
+            2.	Penilaian Sesuai Pengalaman Anda Selama Proses Sertifikasi. 
+            </div>
           </p>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
             <thead>
@@ -382,6 +403,49 @@ export default function SurveiPage() {
                   ))}
                 </tr>
               ))}
+              <tr>
+                <td colSpan={7} style={{ border: '1px solid #000', padding: '10px', background: '#fafafa' }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '13px' }}>
+                    Darimana Anda mengetahui LSP ini? (dapat memilih lebih dari satu)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 24px', fontSize: '13px' }}>
+                    {REFERRAL_SOURCES.map((src) => (
+                      <label key={src} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
+                        <CustomCheckbox
+                          checked={referralSources.includes(src)}
+                          onChange={() => handleReferralToggle(src)}
+                          disabled={isFormDisabled}
+                        />
+                        <span>{src}</span>
+                      </label>
+                    ))}
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
+                      <CustomCheckbox
+                        checked={referralSources.includes('Lainnya')}
+                        onChange={() => handleReferralToggle('Lainnya')}
+                        disabled={isFormDisabled}
+                      />
+                      <span>Lainnya:</span>
+                      <input
+                        type="text"
+                        value={referralLainnya}
+                        onChange={(e) => setReferralLainnya(e.target.value)}
+                        disabled={isFormDisabled || !referralSources.includes('Lainnya')}
+                        style={{
+                          flex: 1,
+                          border: 'none',
+                          borderBottom: '1px dotted #000',
+                          outline: 'none',
+                          padding: '2px 4px',
+                          fontSize: '13px',
+                          fontFamily: 'Arial, Helvetica, sans-serif',
+                          background: 'transparent',
+                        }}
+                      />
+                    </label>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

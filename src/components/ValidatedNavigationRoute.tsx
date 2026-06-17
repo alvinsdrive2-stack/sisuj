@@ -7,7 +7,10 @@ interface ValidatedNavigationRouteProps {
   children: React.ReactNode
 }
 
-const STORAGE_KEY = 'validated_nav_internal'
+const STORAGE_KEY = 'validated_nav_path'
+
+// Master switch: "1" = block manual URL/back-forward, anything else = off
+const NAV_GUARD_ENABLED = import.meta.env.VITE_VALIDATED_NAVIGATION === '1'
 
 // Dashboard paths per role
 const DASHBOARD_PATHS: Record<string, string> = {
@@ -27,8 +30,14 @@ export default function ValidatedNavigationRoute({ children }: ValidatedNavigati
   const [isValid, setIsValid] = useState<boolean | null>(null)
 
   useEffect(() => {
-    const isInternal = sessionStorage.getItem(STORAGE_KEY) === '1'
-    setIsValid(isInternal)
+    if (!NAV_GUARD_ENABLED) {
+      setIsValid(true)
+      return
+    }
+    // Path-based check: internal nav stores the exact target path.
+    // Manual URL typing or back/forward breaks the match.
+    const expectedPath = sessionStorage.getItem(STORAGE_KEY)
+    setIsValid(!!expectedPath && expectedPath === location.pathname)
   }, [location])
 
   useEffect(() => {

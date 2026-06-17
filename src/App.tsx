@@ -379,19 +379,32 @@ function App() {
 }
 
 // Intercept all react-router navigations via History API + click listener
+// Path-based validation: stores the path that internal nav intends to go to.
+// Manual URL typing or back/forward breaks the match → ValidatedNavigationRoute redirects.
 function NavigationTracker() {
   useEffect(() => {
+    if (import.meta.env.VITE_VALIDATED_NAVIGATION !== '1') return
+
+    const extractPath = (url: unknown): string => {
+      if (typeof url !== 'string') return window.location.pathname
+      try {
+        return new URL(url, window.location.origin).pathname
+      } catch {
+        return window.location.pathname
+      }
+    }
+
     // Patch History API used by react-router for navigate() and Link clicks
     const origPushState = history.pushState
     const origReplaceState = history.replaceState
 
     history.pushState = function (...args) {
-      sessionStorage.setItem('validated_nav_internal', '1')
+      sessionStorage.setItem('validated_nav_path', extractPath(args[2]))
       return origPushState.apply(this, args)
     }
 
     history.replaceState = function (...args) {
-      sessionStorage.setItem('validated_nav_internal', '1')
+      sessionStorage.setItem('validated_nav_path', extractPath(args[2]))
       return origReplaceState.apply(this, args)
     }
 
@@ -399,16 +412,17 @@ function NavigationTracker() {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
       const link = target.closest('a')
-      if (link && link.getAttribute('href')?.startsWith('/')) {
-        sessionStorage.setItem('validated_nav_internal', '1')
+      const href = link?.getAttribute('href')
+      if (link && href && href.startsWith('/')) {
+        sessionStorage.setItem('validated_nav_path', extractPath(href))
       }
     }
     document.addEventListener('click', handleClick)
 
     // Clear flag on back/forward — popstate fires before React Router processes it,
-    // so ValidatedNavigationRoute sees no flag and redirects to dashboard
+    // so ValidatedNavigationRoute sees no matching path and redirects to dashboard
     const handlePopState = () => {
-      sessionStorage.removeItem('validated_nav_internal')
+      sessionStorage.removeItem('validated_nav_path')
     }
     window.addEventListener('popstate', handlePopState)
 
