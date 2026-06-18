@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+import { createPortal } from "react-dom"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import { File, Trash2, Check, FileImage, FileType, Eye, X } from 'lucide-react'
@@ -82,7 +83,11 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
           {/* Rekomendasi & Asesi Row 1 */}
           <tr>
             <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
-              <span style={{ fontWeight: 'bold' }}>Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan melalui pendekatan</span><br /><br />
+              <span style={{ fontWeight: 'bold' }}>
+                Rekomendasi Untuk Asesi: Asesmen{' '}
+                <span style={{ textDecoration: apl02Data?.is_dilanjutkan === false ? 'line-through' : 'none' }}>dapat</span> / {' '}
+                <span style={{ textDecoration: apl02Data?.is_dilanjutkan === true ? 'line-through' : 'none' }}>tidak dapat</span> dilanjutkan melalui pendekatan
+              </span><br /><br />
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                 <CustomCheckbox
                   checked={metodeAsesmen === 'observasi'}
@@ -793,27 +798,62 @@ interface BuktiDropdownProps {
 
 function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, disabled }: BuktiDropdownProps) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  const [menuPosition, setMenuPosition] = React.useState({ top: 0, left: 0, width: 0 })
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+  const menuRef = React.useRef<HTMLDivElement>(null)
 
-  // Close dropdown when clicking outside
+  const toggleDropdown = () => {
+    if (disabled || uploadedFiles.length === 0) return
+
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const dropdownHeight = Math.min(uploadedFiles.length * 40 + 20, 180) // Estimate height
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+
+      let top: number
+      if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+        // Not enough space below, flip above
+        top = rect.top - dropdownHeight - 4
+      } else {
+        top = rect.bottom + 4
+      }
+
+      setMenuPosition({ top, left: rect.left, width: rect.width })
+    }
+    setIsOpen(!isOpen)
+  }
+
   React.useEffect(() => {
     if (!isOpen) return
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+      const isClickInsideButton = buttonRef.current?.contains(target)
+      const isClickInsideMenu = menuRef.current?.contains(target)
+      if (!isClickInsideButton && !isClickInsideMenu) {
         setIsOpen(false)
       }
     }
 
+    const handleScroll = () => setIsOpen(false)
+    const handleResize = () => setIsOpen(false)
+
     document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+    window.addEventListener('scroll', handleScroll, true)
+    window.addEventListener('resize', handleResize)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', handleScroll, true)
+      window.removeEventListener('resize', handleResize)
+    }
   }, [isOpen])
 
   return (
-    <div className="bukti-dropdown-container" ref={dropdownRef} style={{ position: 'relative' }}>
+    <div style={{ position: 'relative' }}>
       <button
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={toggleDropdown}
         disabled={disabled || uploadedFiles.length === 0}
         style={{
           width: '100%',
@@ -873,21 +913,23 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
         </span>
       </button>
 
-      {isOpen && uploadedFiles.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          background: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: '6px',
-          marginTop: '4px',
-          maxHeight: '180px',
-          overflowY: 'auto',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }}>
+      {isOpen && uploadedFiles.length > 0 && createPortal(
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${menuPosition.top}px`,
+            left: `${menuPosition.left}px`,
+            width: `${menuPosition.width}px`,
+            zIndex: 100000,
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            maxHeight: '180px',
+            overflowY: 'auto',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          }}
+        >
           {uploadedFiles.map((file, index) => {
             const isSelected = selectedFileIds.includes(file.id)
             return (
@@ -941,7 +983,8 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
               </div>
             )
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -1259,6 +1302,7 @@ type Apl02Data = {
   nama_asesi: string
   tanggal: string
   metode?: 'observasi' | 'portofolio'
+  is_dilanjutkan?: boolean
   units: Unit[]
 }
 
@@ -1840,6 +1884,7 @@ export default function Apl02Page() {
         let units: Unit[] = []
         let metodeFromApi: 'observasi' | 'portofolio' | undefined
         let barcodesFromApi: SubunitBarcodes | undefined
+        let isDilanjutkanFromApi: boolean | undefined
 
         if (apl02Response.ok) {
           const apl02Result: Apl02Response = await apl02Response.json()
@@ -1847,6 +1892,7 @@ export default function Apl02Page() {
             units = apl02Result.data.units || []
             metodeFromApi = apl02Result.data.metode
             barcodesFromApi = apl02Result.data.barcodes
+            isDilanjutkanFromApi = apl02Result.data.is_dilanjutkan
 
             // Map subunit.kompeten to kukChecklist
             const newKukChecklist: Record<string, 'K' | 'BK' | null> = {}
@@ -1938,6 +1984,7 @@ export default function Apl02Page() {
           nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
           tanggal: new Date().toLocaleDateString('id-ID'),
           metode: metodeFromApi,
+          is_dilanjutkan: isDilanjutkanFromApi,
           units: units,
         })
         setIsDataLoading(false)
@@ -1949,6 +1996,7 @@ export default function Apl02Page() {
           nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
           tanggal: new Date().toLocaleDateString('id-ID'),
           metode: metodeFromApi,
+          is_dilanjutkan: isDilanjutkanFromApi,
           units: units,
         }
       } catch (error) {
