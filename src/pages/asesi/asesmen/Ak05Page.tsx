@@ -53,14 +53,10 @@ export default function Ak05Page() {
   // Get dynamic steps - AK.05 is only for asesor
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
 
-  // Redirect asesi away from this page
-  useEffect(() => {
-    if (!isAsesor && !authLoading) {
-      navigate('/asesi/dashboard')
-    }
-  }, [isAsesor, authLoading, navigate])
+  // Asesi dapat lihat AK05 (K/BK disabled, dari AK02)
 
   // All asesor can edit (removed restriction to asesor_1 only)
+  // K/BK selalu disabled — nilainya dari AK02
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
@@ -159,6 +155,20 @@ export default function Ak05Page() {
           const dataMap: Record<string, Ak05PerAsesi> = {}
           const fetches = asesiItems.map(async (asesi) => {
             try {
+              // Ambil is_kompeten dari AK02
+              const ak02Res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak02`, {
+                headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+              })
+              let kompeten = false
+              if (ak02Res.ok) {
+                const ak02Json = await ak02Res.json()
+                if (ak02Json.message === "Success" && ak02Json.data) {
+                  kompeten = ak02Json.data.is_kompeten === true
+                }
+              }
+              dataMap[asesi.id_izin] = { kompeten, keterangan: '' }
+
+              // AK05 data untuk keterangan
               const res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak05`, {
                 headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
               })
@@ -166,7 +176,7 @@ export default function Ak05Page() {
                 const json = await res.json()
                 if (json.message === "Success" && json.data) {
                   dataMap[asesi.id_izin] = {
-                    kompeten: json.data.kompeten || false,
+                    kompeten, // tetap pakai dari AK02
                     keterangan: json.data.answers?.keterangan || '',
                   }
                   return
@@ -175,7 +185,9 @@ export default function Ak05Page() {
             } catch (err) {
               console.error(`Error fetching AK05 for ${asesi.id_izin}:`, err)
             }
-            dataMap[asesi.id_izin] = { kompeten: false, keterangan: '' }
+            if (!dataMap[asesi.id_izin]) {
+              dataMap[asesi.id_izin] = { kompeten: false, keterangan: '' }
+            }
           })
 
           await Promise.all(fetches)
@@ -399,21 +411,15 @@ export default function Ak05Page() {
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={perAsesi.kompeten}
-                        onChange={() => canEdit && !signing.allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
-                          ...prev,
-                          [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
-                        }))}
-                        style={{ cursor: rowDisabled ? 'not-allowed' : 'pointer', opacity: rowDisabled ? 0.6 : 1 }}
+                        onChange={() => {}}
+                        style={{ cursor: 'not-allowed', opacity: 0.6 }}
                       />
                     </td>
                     <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
                       <CustomCheckbox
                         checked={!perAsesi.kompeten}
-                        onChange={() => canEdit && !signing.allSigned && isCurrentAsesi && setAk05DataMap(prev => ({
-                          ...prev,
-                          [asesi.id_izin]: { ...perAsesi, kompeten: !perAsesi.kompeten }
-                        }))}
-                        style={{ cursor: rowDisabled ? 'not-allowed' : 'pointer', opacity: rowDisabled ? 0.6 : 1 }}
+                        onChange={() => {}}
+                        style={{ cursor: 'not-allowed', opacity: 0.6 }}
                       />
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>

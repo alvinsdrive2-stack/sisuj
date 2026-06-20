@@ -586,11 +586,9 @@ export default function Ia10Page() {
           )}
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-            {isAsesor && (
-              <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia08`)}>
-                Kembali ke IA.08
-              </ActionButton>
-            )}
+            <ActionButton variant="secondary" onClick={() => navigate(`/asesi/asesmen/${id}/ia08`)}>
+              Kembali ke IA.08
+            </ActionButton>
             <ActionButton variant="secondary" onClick={() => navigate(-1)}>
               Kembali
             </ActionButton>

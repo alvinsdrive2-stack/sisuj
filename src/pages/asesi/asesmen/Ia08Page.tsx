@@ -104,6 +104,7 @@ export default function Ia08Page() {
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
+  const [apl02Files, setApl02Files] = useState<Array<{ filetype: string; path: string }>>([])
 
   // Extractable fetch function — called on mount and by SSE events
   const fetchIa08Data = useCallback(async () => {
@@ -123,6 +124,7 @@ export default function Ia08Page() {
         if (result.message === "Success" && result.data) {
           // Map soal.1 (referensi) to portfolio items
           if (result.data.soal?.["1"]) {
+            console.log('IA08 soal.1:', result.data.soal["1"])
             const savedApl2 = result.data.apl2_answers || {}
             const referensiItems = result.data.soal["1"].map((item: any, index: number) => {
               const saved = savedApl2[String(item.id)]
@@ -197,9 +199,32 @@ export default function Ia08Page() {
       }
     } catch (err) {
       console.error("Error fetching IA08:", err)
-    } finally {
-      setIsDataLoading(false)
     }
+
+    // fetch APL02 files for dokumen link mapping — pakai id dari URL param
+    console.log('IA08 fetch APL02 files, id from params:', id)
+    if (id) {
+      try {
+        const token = localStorage.getItem("access_token")
+        const url = `${API_BASE_URL}/praasesmen/${id}/apl02/files`
+        console.log('IA08 fetching APL02 files from:', url)
+        const filesRes = await fetch(url, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        })
+        console.log('IA08 APL02 files response status:', filesRes.status)
+        if (filesRes.ok) {
+          const filesJson = await filesRes.json()
+          console.log('APL02 files response:', filesJson)
+          if (filesJson.message === "Success" && Array.isArray(filesJson.data)) {
+            setApl02Files(filesJson.data)
+          }
+        }
+      } catch (e) {
+        console.error('IA08 APL02 files fetch error:', e)
+      }
+    }
+
+    setIsDataLoading(false)
   }, [id, authLoading])
 
   // Initial fetch
@@ -228,7 +253,7 @@ export default function Ia08Page() {
 
   const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-  const isFormDisabled = !isAsesor || signing.allSigned
+  const isFormDisabled = !isAsesor
 
   const handlePortfolioCheck = (id: number, field: keyof PortfolioItem) => {
     if (isFormDisabled) return
@@ -330,7 +355,7 @@ export default function Ia08Page() {
   if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: 'Arial, Helvetica, sans-serif', userSelect: 'text' }}>
 
       <AsesmenBreadcrumb currentPage="IA.08" />
 
@@ -435,9 +460,18 @@ export default function Ia08Page() {
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
             </tr>
-            {portfolioItems.map((item) => (
-              <tr key={item.id}>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>{item.dokumen}</td>
+            {portfolioItems.map((item) => {
+              const dokumenKey = item.dokumen.toLowerCase().replace(/\s+/g, '_')
+              const matchedFile = [...apl02Files].reverse().find(f => f.filetype?.toLowerCase() === dokumenKey)
+              if (item.id > 0) console.log('IA08 matching:', { dokumen: item.dokumen, key: dokumenKey, matched: matchedFile?.filetype, path: matchedFile?.path })
+              return (<tr key={item.id}>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  {matchedFile?.path ? (
+                    <a href={matchedFile.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{item.dokumen}</a>
+                  ) : (
+                    <span>{item.dokumen}</span>
+                  )}
+                </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                   <CustomCheckbox checked={item.valid_ya} onChange={() => handlePortfolioCheck(item.id, 'valid_ya')} disabled={isFormDisabled} />
                 </td>
@@ -463,7 +497,8 @@ export default function Ia08Page() {
                   <CustomCheckbox checked={item.memadai_tidak} onChange={() => handlePortfolioCheck(item.id, 'memadai_tidak')} disabled={isFormDisabled} />
                 </td>
               </tr>
-            ))}
+            );
+          })}
           </tbody>
         </table>
 
@@ -709,13 +744,11 @@ export default function Ia08Page() {
 
         {/* Actions */}
         <div style={{ marginTop: '20px' }}>
-          {!signing.allSigned && (
-          <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
+        <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
               <CustomCheckbox
                 checked={signing.agreedChecklist}
                 onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
-                disabled={signing.allSigned}
                 style={{ marginTop: '2px' }}
               />
               <span style={{ fontSize: '13px', color: '#333' }}>
@@ -723,7 +756,6 @@ export default function Ia08Page() {
               </span>
             </label>
           </div>
-          )}
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <ActionButton variant="secondary" onClick={() => navigate(-1)}>
@@ -731,7 +763,7 @@ export default function Ia08Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isAsesor ? isSaving : signing.buttonDisabled}
+              disabled={isSaving}
               onClick={handleSave}
             >
               {isSaving ? "Menyimpan..." : (isAsesor ? "Simpan & Tanda Tangan" : signing.buttonText)}

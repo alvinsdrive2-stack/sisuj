@@ -249,12 +249,12 @@ interface Apl02ContentProps {
   kukChecklist: Record<string, 'K' | 'BK' | null>
   kukBukti: Record<string, number[]>
   uploadedFilesInfo: Array<{ id: number; name: string; path: string; kebenaran?: boolean }>
-  excludedApiFileIds: Set<number>
+  excludedApiFileIds: Set<string>
   isAsesor: boolean
   isSaving: boolean
   jenjang: string | number
   onCheckRadio: (kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => void
-  onToggleExclude: (fileId: number) => void
+  onToggleExclude: (unitId: string, subunitId: string, fileId: number) => void
   onRemoveBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
   onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
   onViewFile: (file: { id: number; name: string; path: string }) => void
@@ -429,10 +429,10 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                                     key={file.id}
                                     fileName={file.name}
                                     file={file}
-                                    isExcluded={excludedApiFileIds.has(file.id)}
+                                    isExcluded={excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)}
                                     isAsesor={isAsesor}
                                     onView={onViewFile}
-                                    onRemove={onToggleExclude.bind(null, file.id)}
+                                    onRemove={() => onToggleExclude(unit.id, subunit.id, file.id)}
                                   />
                                 ))}
                               </div>
@@ -1460,7 +1460,7 @@ export default function Apl02Page() {
   const [filePanelRefreshKey, setFilePanelRefreshKey] = useState(0)
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
-  const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<number>>(new Set()) // API files excluded from POST
+  const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<string>>(new Set()) // API files excluded from POST — composite key `${unitId}-${subunitId}-${fileId}`
   // metodeAsesmen moved to RekomendasiAsesiSection - use ref for POST value
   const metodeAsesmenRef = useRef<'observasi' | 'portofolio' | null>(null)
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
@@ -1502,11 +1502,12 @@ export default function Apl02Page() {
     metodeAsesmenRef.current = metode
   }, [])
 
-  const handleToggleExclude = useCallback((fileId: number) => {
+  const handleToggleExclude = useCallback((unitId: string, subunitId: string, fileId: number) => {
+    const key = `${unitId}-${subunitId}-${fileId}`
     setExcludedApiFileIds(prev => {
       const newSet = new Set(prev)
-      if (newSet.has(fileId)) newSet.delete(fileId)
-      else newSet.add(fileId)
+      if (newSet.has(key)) newSet.delete(key)
+      else newSet.add(key)
       return newSet
     })
   }, [])
@@ -1694,14 +1695,14 @@ export default function Apl02Page() {
       if (response.ok) {
         // Remove from uploadedFilesInfo
         setUploadedFilesInfo(prev => prev.filter(f => f.id !== fileId))
-        // Remove from all kukBukti selections
-        setKukBukti(prev => {
-          const newKukBukti = { ...prev }
-          Object.keys(newKukBukti).forEach(kukId => {
-            newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
-          })
-          return newKukBukti
-        })
+        // Preserve file selections per bukti; do not remove from kukBukti on delete
+        // setKukBukti(prev => {
+        //   const newKukBukti = { ...prev }
+        //   Object.keys(newKukBukti).forEach(kukId => {
+        //     newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
+        //   })
+        //   return newKukBukti
+        // })
         showSuccess('File berhasil dihapus')
       } else if (response.status === 404) {
         // File not found on server - remove from local state anyway
@@ -1773,9 +1774,20 @@ export default function Apl02Page() {
         }
         return new globalThis.File([f as unknown as Blob], newName, { type: (f as unknown as { type: string }).type })
       })
+      const filetypes = stagingFiles.map((f, idx) => {
+        const ext = f.name.includes('.') ? f.name.split('.').pop()! : ''
+        const dtype = fileDocTypes[String(idx)]
+        if (dtype === 'Lainnya') {
+          return fileCustomTypes[String(idx)]?.trim() || f.name.replace(`.${ext}`, '')
+        } else if (dtype) {
+          return dtype
+        }
+        return f.name.replace(`.${ext}`, '')
+      })
       const formData = new FormData()
-      renamedFiles.forEach(file => {
+      renamedFiles.forEach((file, idx) => {
         formData.append('files[]', file)
+        formData.append('filetypes[]', filetypes[idx].toLowerCase().replace(/\s+/g, '_'))
       })
       const uploadResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/files`, {
         method: 'POST',
@@ -2169,6 +2181,55 @@ export default function Apl02Page() {
 
       setIsSaving(true)
       try {
+        // Build answers: include file_ids + file_urls so backend tidak error
+        // (file tidak boleh kosong). Logic sama dengan flow asesi.
+        const dedupByUrl = (arr: { url: string; name: string }[]) => {
+          const seen = new Set<string>()
+          return arr.filter(item => {
+            if (seen.has(item.url)) return false
+            seen.add(item.url)
+            return true
+          })
+        }
+
+        const asesorAnswers = apl02Data ? apl02Data.units.flatMap(unit =>
+          unit.subunits.map(subunit => {
+            const subunitId = parseInt(subunit.id)
+            const fileIds = new Set<number>()
+            const fileUrls: { url: string; name: string }[] = []
+
+            // Regular API files dari subunit (tidak di-exclude)
+            subunit.files.forEach(file => {
+              if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
+                fileIds.add(file.id)
+              }
+            })
+
+            // Kebeneran/dokumen asesi dari kukBukti pilihan user (url-based)
+            Object.entries(kukBukti).forEach(([kukId, ids]) => {
+              const parts = kukId.split('-')
+              if (parseInt(parts[1]) !== subunitId) return
+              ids.forEach(id => {
+                if (excludedApiFileIds.has(String(id))) return
+                const fInfo = uploadedFilesInfo.find(f => f.id === id)
+                if (!fInfo) return
+                if (fInfo.kebenaran || id < 0) {
+                  if (fInfo.path) fileUrls.push({ url: fInfo.path, name: fInfo.name })
+                } else {
+                  fileIds.add(id)
+                }
+              })
+            })
+
+            return {
+              subunit_id: subunitId,
+              kompeten: subunit.kompeten ?? true,
+              file_ids: Array.from(fileIds),
+              file_urls: dedupByUrl(fileUrls)
+            }
+          })
+        ) : []
+
         // POST metode ke apl02 endpoint
         const metodeResponse = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
           method: 'POST',
@@ -2176,12 +2237,7 @@ export default function Apl02Page() {
           body: JSON.stringify({
             metode: metodeAsesmenRef.current,
             is_dilanjutkan: true,
-            answers: apl02Data ? apl02Data.units.flatMap(unit =>
-              unit.subunits.map(subunit => ({
-                subunit_id: parseInt(subunit.id),
-                kompeten: subunit.kompeten ?? true
-              }))
-            ) : []
+            answers: asesorAnswers
           }),
         })
 
@@ -2244,7 +2300,7 @@ export default function Apl02Page() {
       // Add user-selected file IDs (filter out excluded API files)
       const fileIds = kukBukti[kukId] || []
       fileIds.forEach(id => {
-        if (excludedApiFileIds.has(id)) return
+        if (excludedApiFileIds.has(String(id))) return
         const fInfo = uploadedFilesInfo.find(f => f.id === id)
         if (!fInfo) return
         if (fInfo.kebenaran || id < 0) {
@@ -2265,7 +2321,7 @@ export default function Apl02Page() {
           const data = subunitDataMap.get(subunitId)
       if (!data) return
           subunit.files.forEach(file => {
-            if (!excludedApiFileIds.has(file.id)) {
+            if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
               // Regular files from subunit: only file_ids (already on server)
               data.allFileIds.add(file.id)
             }

@@ -93,6 +93,7 @@ export default function Ia09Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+  const [apl02Files, setApl02Files] = useState<Array<{ filetype: string; path: string }>>([])
 
   const fetchIa09Data = useCallback(async () => {
     if (!id || authLoading) return
@@ -133,6 +134,22 @@ export default function Ia09Page() {
       }
     } catch (err) {
       console.error("Error fetching IA09:", err)
+    }
+
+    // fetch APL02 files for dokumen link mapping
+    if (id) {
+      try {
+        const token = localStorage.getItem("access_token")
+        const filesRes = await fetch(`${API_BASE_URL}/praasesmen/${id}/apl02/files`, {
+          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+        })
+        if (filesRes.ok) {
+          const filesJson = await filesRes.json()
+          if (filesJson.message === "Success" && Array.isArray(filesJson.data)) {
+            setApl02Files(filesJson.data)
+          }
+        }
+      } catch {}
     }
   }, [id, authLoading])
 
@@ -384,7 +401,15 @@ export default function Ia09Page() {
             {buktiList.map((b) => (
               <tr key={b.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{b.no}</td>
-                <td style={{ border: "1px solid #000", padding: "6px" }}>{b.nama}</td>
+                <td style={{ border: "1px solid #000", padding: "6px" }}>
+                  {(() => {
+                    const key = b.nama.toLowerCase().replace(/\s+/g, '_')
+                    const f = [...apl02Files].reverse().find(f => f.filetype?.toLowerCase() === key)
+                    return f?.path ? (
+                      <a href={f.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{b.nama}</a>
+                    ) : <span>{b.nama}</span>
+                  })()}
+                </td>
               </tr>
             ))}
           </tbody>

@@ -156,7 +156,6 @@ export default function DaftarAsesiSudahPage() {
       })
       if (response.ok) {
         setSelectedDokumen(null)
-        setKomtekFiles(prev => ({ ...prev, my_ttd_signed: true }))
         showSuccess('BA Komtek berhasil ditandatangani!')
       } else {
         showError('Gagal menandatangani BA Komtek')
@@ -473,7 +472,7 @@ export default function DaftarAsesiSudahPage() {
                     setSelectedDokumen({
                       url: komtekFiles.ba_komtek!,
                       title: 'BA Komtek',
-                      onSign: mySigned ? undefined : handleSignBaKomtek,
+                      onSign: handleSignBaKomtek,
                     })
                   }}
                 >

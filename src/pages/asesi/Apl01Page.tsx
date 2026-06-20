@@ -157,6 +157,7 @@ export default function Apl01Page() {
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
+  const [dokumenAsesi, setDokumenAsesi] = useState<Record<string, string>>({})
   const [isDataLoading, setIsDataLoading] = useState(true)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -245,11 +246,62 @@ export default function Apl01Page() {
           setIsDataLoading(false)
         }
       }
+
+      // fetch dokumen file URLs for bukti persyaratan
+      let dokumenMap: Record<string, string> = {}
+      try {
+        const docRes = await fetch(`${API_BASE_URL}/kegiatan/${idIzin}/dokumen-asesi`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        })
+        if (docRes.ok) {
+          const docJson = await docRes.json()
+          if (docJson.message === "Success" && docJson.data) {
+            dokumenMap = { ...docJson.data }
+          }
+        }
+      } catch {}
+
+      // fetch kebenaran-data for pas_foto (used by bukti administratif)
+      try {
+        const kebRes = await fetch(`${API_BASE_URL}/praasesmen/kebenaran-data/${idIzin}`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        })
+        if (kebRes.ok) {
+          const kebJson = await kebRes.json()
+          if (kebJson.success && kebJson.data) {
+            if (kebJson.data.pas_foto) dokumenMap['pas_foto'] = kebJson.data.pas_foto
+            if (kebJson.data.ktp) dokumenMap['ktp'] = kebJson.data.ktp
+          }
+        }
+      } catch {}
+
+      setDokumenAsesi(dokumenMap)
+
     } catch (error) {
       // Continue with empty form
       setIsDataLoading(false)
     }
   }, [idIzin])
+
+  // map bukti label to dokumen-asesi key
+  const getDokumenUrl = useCallback((label: string): string | null => {
+    const lower = label.toLowerCase()
+    if (lower.includes('ktp')) return dokumenAsesi['ktp'] ?? null
+    if (lower.includes('npwp')) return dokumenAsesi['npwp'] ?? null
+    if (lower.includes('ijazah')) return dokumenAsesi['ijazah'] ?? null
+    if (lower.includes('pas') && lower.includes('foto')) return dokumenAsesi['pas_foto'] ?? null
+    if (lower.includes('foto')) return dokumenAsesi['pas_foto'] ?? null
+    if (lower.includes('referensi') || lower.includes('surat')) return dokumenAsesi['referensi_kerja'] ?? null
+    if (lower.includes('spt') || lower.includes('asesor')) return dokumenAsesi['spt_asesor'] ?? null
+    if (lower.includes('verifikasi') || lower.includes('tuk')) return dokumenAsesi['verifikasi_tuk'] ?? null
+    return null
+  }, [dokumenAsesi])
 
   const signing = useSigningState({
     pageKey: 'apl01',
@@ -773,7 +825,15 @@ anda pada saat ini.</span>
               buktiPersyaratan.map((bukti, index) => (
                 <tr key={index}>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{bukti.no}</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    {(() => {
+                      const url = bukti.checked ? getDokumenUrl(bukti.bukti) : null
+                      if (url) {
+                        return <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{bukti.bukti}</a>
+                      }
+                      return <span>{bukti.bukti}</span>
+                    })()}
+                  </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <CustomCheckbox checked={bukti.checked} onChange={() => {}} disabled />
@@ -822,7 +882,15 @@ anda pada saat ini.</span>
               buktiAdministratif.map((bukti, index) => (
                 <tr key={index}>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{bukti.no}</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{bukti.bukti}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                    {(() => {
+                      const url = bukti.checked ? getDokumenUrl(bukti.bukti) : null
+                      if (url) {
+                        return <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{bukti.bukti}</a>
+                      }
+                      return <span>{bukti.bukti}</span>
+                    })()}
+                  </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                       <CustomCheckbox checked={bukti.checked || false} onChange={() => {}} disabled />

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, Check } from "lucide-react"
+import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, Check, ExternalLink } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -17,15 +17,17 @@ interface DokumenDirekturResponse {
   data: {
     sk_pelaksanaan_uji: string | null
     spt_asesor: string | null
-    spt_komtek: string | null
     sk_komtek: string | null
+    spt_komtek: string | null
     ba_komtek: string | null
+    sk_ketetapan_uji: string | null
     approval_status: {
       sk_pelaksanaan_uji: boolean
       spt_asesor: boolean
       spt_komtek: boolean
       sk_komtek: boolean
       ba_komtek: { komtek1: boolean; komtek2: boolean; komtek3: boolean }
+      sk_ketetapan_uji?: boolean
     }
   }
 }
@@ -42,14 +44,15 @@ interface SelectedDokumen {
   title: string
 }
 
-type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'spt_komtek' | 'sk_komtek' | 'ba_komtek'
+type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'sk_komtek' | 'spt_komtek' | 'ba_komtek' | 'sk_ketetapan_uji'
 
 const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEndpoint?: string }> = [
   { key: 'sk_pelaksanaan_uji', label: 'SK Pelaksanaan Uji', approveEndpoint: '/direktur/approve-sk-pelaksanaan-uji' },
   { key: 'spt_asesor', label: 'SPT Asesor', approveEndpoint: '/direktur/approve-spt-asesor' },
-  { key: 'spt_komtek', label: 'SPT Komtek', approveEndpoint: '/direktur/approve-spt-komtek' },
   { key: 'sk_komtek', label: 'SK Komtek' },
+  { key: 'spt_komtek', label: 'SPT Komtek', approveEndpoint: '/direktur/approve-spt-komtek' },
   { key: 'ba_komtek', label: 'BA Komtek' },
+  { key: 'sk_ketetapan_uji', label: 'SK Ketetapan Uji' },
 ]
 
 export default function DetailDokumenDirekturPage() {
@@ -435,12 +438,15 @@ export default function DetailDokumenDirekturPage() {
                 const isBaKomtek = doc.key === 'ba_komtek'
                 const baPending = isBaKomtek ? getBaKomtekPending() : []
                 const baAllApproved = isBaKomtek && baPending.length === 0
+                const isSkKomtek = doc.key === 'sk_komtek'
                 return (
                   <Button
                     key={doc.key}
                     variant="outline"
                     className={`w-full h-auto min-h-16 flex items-center justify-between px-4 ${
-                      alreadyApproved || baAllApproved
+                      isSkKomtek
+                        ? 'border-slate-300 bg-slate-50 hover:bg-slate-100'
+                        : alreadyApproved || baAllApproved
                         ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
                         : 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400'
                     }`}
@@ -451,27 +457,32 @@ export default function DetailDokumenDirekturPage() {
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`w-5 h-5 ${alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
+                      <FileText className={`w-5 h-5 ${isSkKomtek ? 'text-slate-400' : alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
                       <div className="text-left">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold block">{doc.label}</span>
-                          {(alreadyApproved || baAllApproved) && (
+                          {(alreadyApproved || baAllApproved) && !isSkKomtek && (
                             <Check className="w-4 h-4 text-emerald-500" />
                           )}
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {alreadyApproved || baAllApproved
-                            ? 'Sudah ditandatangani'
-                            : isBaKomtek && baPending.length > 0
-                              ? `Belum diapprove: ${baPending.join(', ')}`
-                            : hasDocument
-                              ? 'Klik untuk tanda tangan'
-                              : 'Belum tersedia'
+                          {isSkKomtek
+                            ? hasDocument ? 'Klik untuk buka' : 'Belum tersedia'
+                            : alreadyApproved || baAllApproved
+                              ? 'Sudah ditandatangani'
+                              : isBaKomtek && baPending.length > 0
+                                ? `Belum diapprove: ${baPending.join(', ')}`
+                              : hasDocument
+                                ? 'Klik untuk tanda tangan'
+                                : 'Belum tersedia'
                           }
                         </span>
                       </div>
                     </div>
-                    {hasDocument && !alreadyApproved && !baAllApproved && hasApproveEndpoint && (
+                    {isSkKomtek && hasDocument && (
+                      <ExternalLink className="w-5 h-5 text-slate-400" />
+                    )}
+                    {hasDocument && !alreadyApproved && !baAllApproved && hasApproveEndpoint && !isSkKomtek && (
                       <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
                         Perlu TTD
                       </span>
