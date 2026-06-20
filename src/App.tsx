@@ -438,13 +438,14 @@ function NavigationTracker() {
 }
 
 function GlobalDokumenFullscreenModal() {
-  const { isOpen, closeModal, asesiId, asesiNama, onPenilaianSuccess, readOnly } = useDokumenModal()
+  const { isOpen, closeModal, asesiId, asesiNama, jadwalId, onPenilaianSuccess, readOnly } = useDokumenModal()
   return (
     <DokumenFullscreenModal
       isOpen={isOpen}
       onClose={closeModal}
       asesiId={asesiId}
       asesiNama={asesiNama}
+      jadwalId={jadwalId}
       onPenilaianSuccess={onPenilaianSuccess || undefined}
       readOnly={readOnly}
     />

@@ -20,14 +20,14 @@ interface DokumenDirekturResponse {
     sk_komtek: string | null
     spt_komtek: string | null
     ba_komtek: string | null
-    sk_ketetapan_uji: string | null
+    sk_penetapan: string | null
     approval_status: {
       sk_pelaksanaan_uji: boolean
       spt_asesor: boolean
       spt_komtek: boolean
       sk_komtek: boolean
       ba_komtek: { komtek1: boolean; komtek2: boolean; komtek3: boolean }
-      sk_ketetapan_uji?: boolean
+      sk_penetapan?: { asesi_status: Record<string, boolean> }
     }
   }
 }
@@ -44,7 +44,7 @@ interface SelectedDokumen {
   title: string
 }
 
-type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'sk_komtek' | 'spt_komtek' | 'ba_komtek' | 'sk_ketetapan_uji'
+type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'sk_komtek' | 'spt_komtek' | 'ba_komtek' | 'sk_penetapan'
 
 const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEndpoint?: string }> = [
   { key: 'sk_pelaksanaan_uji', label: 'SK Pelaksanaan Uji', approveEndpoint: '/direktur/approve-sk-pelaksanaan-uji' },
@@ -52,7 +52,7 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEn
   { key: 'sk_komtek', label: 'SK Komtek' },
   { key: 'spt_komtek', label: 'SPT Komtek', approveEndpoint: '/direktur/approve-spt-komtek' },
   { key: 'ba_komtek', label: 'BA Komtek' },
-  { key: 'sk_ketetapan_uji', label: 'SK Ketetapan Uji' },
+  { key: 'sk_penetapan', label: 'SK Penetapan' },
 ]
 
 export default function DetailDokumenDirekturPage() {
@@ -136,7 +136,7 @@ export default function DetailDokumenDirekturPage() {
   }
 
   const handleOpenDokumenModal = (asesi: { id_izin: string; nama: string }) => {
-    openDokumenModal(asesi.id_izin, asesi.nama, true)
+    openDokumenModal(asesi.id_izin, asesi.nama, true, id)
   }
 
   const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
@@ -198,6 +198,15 @@ export default function DetailDokumenDirekturPage() {
     if (status && docKey in status) {
       const val = status[docKey]
       if (typeof val === 'boolean') return val
+      // ba_komtek: check all komtek positions
+      if (docKey === 'ba_komtek' && typeof val === 'object' && val !== null) {
+        return Object.values(val as Record<string, boolean>).every(Boolean)
+      }
+      // sk_penetapan: check all asesi approved
+      if (docKey === 'sk_penetapan' && typeof val === 'object' && val !== null) {
+        const asesiStatus = (val as { asesi_status?: Record<string, boolean> }).asesi_status
+        return asesiStatus ? Object.values(asesiStatus).every(Boolean) : false
+      }
     }
     return approvedDocs.has(docKey)
   }
@@ -209,6 +218,20 @@ export default function DetailDokumenDirekturPage() {
       .filter(([, v]) => !v)
       .map(([k]) => k)
   }
+
+  const getSkPenetapanStatus = (): { approved: number; total: number } => {
+    const skStatus = dokumenDirektur?.approval_status?.sk_penetapan
+    if (!skStatus?.asesi_status) return { approved: 0, total: 0 }
+    const entries = Object.values(skStatus.asesi_status)
+    return {
+      approved: entries.filter(Boolean).length,
+      total: entries.length,
+    }
+  }
+
+  // Map asesi id -> sk_penetapan approval status
+  const skPenAsesiMap: Record<string, boolean> =
+    dokumenDirektur?.approval_status?.sk_penetapan?.asesi_status ?? {}
 
   // Group asesi by skema
   const skemaMap = new Map<string, string>()
@@ -399,6 +422,22 @@ export default function DetailDokumenDirekturPage() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                              {/* SK Penetapan Status */}
+                              {asesi.id_izin in skPenAsesiMap && (
+                                skPenAsesiMap[asesi.id_izin]
+                                  ? (
+                                    <div className="flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                      Disetujui
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                      <div className="w-2 h-2 rounded-full bg-amber-500" />
+                                      Menunggu
+                                    </div>
+                                  )
+                              )}
+
                               {/* Kompeten Badge */}
                               <Badge variant="outline" className="border-slate-300 dark:border-slate-600">
                                 {asesi.kompeten}
@@ -439,6 +478,9 @@ export default function DetailDokumenDirekturPage() {
                 const baPending = isBaKomtek ? getBaKomtekPending() : []
                 const baAllApproved = isBaKomtek && baPending.length === 0
                 const isSkKomtek = doc.key === 'sk_komtek'
+                const isSkPenetapan = doc.key === 'sk_penetapan'
+                const skPenStatus = isSkPenetapan ? getSkPenetapanStatus() : { approved: 0, total: 0 }
+                const skPenAllApproved = isSkPenetapan && skPenStatus.total > 0 && skPenStatus.approved === skPenStatus.total
                 return (
                   <Button
                     key={doc.key}
@@ -446,9 +488,13 @@ export default function DetailDokumenDirekturPage() {
                     className={`w-full h-auto min-h-16 flex items-center justify-between px-4 ${
                       isSkKomtek
                         ? 'border-slate-300 bg-slate-50 hover:bg-slate-100'
-                        : alreadyApproved || baAllApproved
-                        ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
-                        : 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400'
+                        : isSkPenetapan
+                          ? skPenAllApproved
+                            ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
+                            : 'border-amber-300 bg-amber-50 hover:bg-amber-100'
+                          : alreadyApproved || baAllApproved
+                          ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
+                          : 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400'
                     }`}
                     disabled={!hasDocument}
                     onClick={() => {
@@ -457,24 +503,28 @@ export default function DetailDokumenDirekturPage() {
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`w-5 h-5 ${isSkKomtek ? 'text-slate-400' : alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
+                      <FileText className={`w-5 h-5 ${isSkKomtek ? 'text-slate-400' : isSkPenetapan ? (skPenAllApproved ? 'text-emerald-500' : 'text-amber-500') : alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
                       <div className="text-left">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold block">{doc.label}</span>
-                          {(alreadyApproved || baAllApproved) && !isSkKomtek && (
+                          {(alreadyApproved || baAllApproved || skPenAllApproved) && !isSkKomtek && (
                             <Check className="w-4 h-4 text-emerald-500" />
                           )}
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {isSkKomtek
                             ? hasDocument ? 'Klik untuk buka' : 'Belum tersedia'
-                            : alreadyApproved || baAllApproved
-                              ? 'Sudah ditandatangani'
-                              : isBaKomtek && baPending.length > 0
-                                ? `Belum diapprove: ${baPending.join(', ')}`
-                              : hasDocument
-                                ? 'Klik untuk tanda tangan'
-                                : 'Belum tersedia'
+                            : isSkPenetapan
+                              ? skPenAllApproved
+                                ? 'Semua asesi disetujui'
+                                : `${skPenStatus.approved}/${skPenStatus.total} asesi disetujui`
+                              : alreadyApproved || baAllApproved
+                                ? 'Sudah ditandatangani'
+                                : isBaKomtek && baPending.length > 0
+                                  ? `Belum diapprove: ${baPending.join(', ')}`
+                                : hasDocument
+                                  ? 'Klik untuk tanda tangan'
+                                  : 'Belum tersedia'
                           }
                         </span>
                       </div>
@@ -482,7 +532,7 @@ export default function DetailDokumenDirekturPage() {
                     {isSkKomtek && hasDocument && (
                       <ExternalLink className="w-5 h-5 text-slate-400" />
                     )}
-                    {hasDocument && !alreadyApproved && !baAllApproved && hasApproveEndpoint && !isSkKomtek && (
+                    {hasDocument && !alreadyApproved && !baAllApproved && !skPenAllApproved && hasApproveEndpoint && !isSkKomtek && !isSkPenetapan && (
                       <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
                         Perlu TTD
                       </span>

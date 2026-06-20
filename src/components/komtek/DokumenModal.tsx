@@ -59,11 +59,12 @@ interface DokumenModalProps {
   onClose: () => void
   asesiId: string
   asesiNama: string
+  jadwalId?: string
   onPenilaianSuccess?: () => void
   readOnly?: boolean
 }
 
-export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
+export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
   const [jenjang, setJenjang] = useState<string>('0')
   const [metode, setMetode] = useState<string>('')
@@ -74,6 +75,16 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [rekomendasiValue, setRekomendasiValue] = useState<string | null>(null) // "K" or "BK" or null
   const [isPreviewHovered, setIsPreviewHovered] = useState(false)
+  const [isPenetapanDone, setIsPenetapanDone] = useState(false)
+  const [penetapanValue, setPenetapanValue] = useState<string | null>(null)
+
+  // Check if current user is direktur with a jadwalId
+  const isDirekturMode = (() => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("user_data") || "{}")
+      return userData?.role?.name === "Direktur LSP" && !!jadwalId
+    } catch { return false }
+  })()
   const documentListRef = useRef<HTMLDivElement>(null)
 
   // Fetch dokumen dan rekomendasi status
@@ -159,6 +170,8 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
       setIsPreviewHovered(false)
       setJenjang('0')
       setMetode('')
+      setIsPenetapanDone(false)
+      setPenetapanValue(null)
     }
   }, [isOpen])
 
@@ -222,6 +235,38 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
     const currentIndex = documentsWithUrls.findIndex(d => d.key === selectedDoc.key)
     if (currentIndex < documentsWithUrls.length - 1) {
       setSelectedDoc(documentsWithUrls[currentIndex + 1])
+    }
+  }
+
+  const submitPenetapan = async (kompeten: boolean) => {
+    if (!jadwalId) return
+    setIsSubmitting(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/direktur/approve-sk-penetapan/${jadwalId}`, {
+        method: 'POST',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id_izin: asesiId, kompeten: kompeten ? 'K' : 'BK' }),
+      })
+
+      if (response.ok) {
+        setIsPenetapanDone(true)
+        setPenetapanValue(kompeten ? 'K' : 'BK')
+        setShowConfirmModal(false)
+        onPenilaianSuccess?.()
+        onClose()
+      } else {
+        const error = await response.json()
+        console.error('Error submitting penetapan:', error)
+      }
+    } catch (err) {
+      console.error('Error submitting penetapan:', err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -560,7 +605,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                           )}
 
                           {/* Overlay Image - disappears on hover */}
-                          {rekomendasiValue && !isPreviewHovered && (
+                          {(rekomendasiValue || (isDirekturMode && penetapanValue)) && !isPreviewHovered && (
                             <div style={{
                               position: 'absolute',
                               top: 0,
@@ -574,7 +619,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                               transition: 'opacity 0.3s ease',
                               background: 'rgba(255, 255, 255, 0.7)'
                             }}>
-                              <StatusStamp kompeten={rekomendasiValue === 'K'} />
+                              <StatusStamp kompeten={(rekomendasiValue || penetapanValue) === 'K'} />
                             </div>
                           )}
                         </div>
@@ -655,7 +700,10 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
               </span>
               <button
                 onClick={() => {
-                  if (readOnly && isLastDoc) {
+                  if (isDirekturMode && isLastDoc) {
+                    if (isPenetapanDone) onClose()
+                    else setShowConfirmModal(true)
+                  } else if (readOnly && isLastDoc) {
                     onClose()
                   } else if (isLastDoc && isCompleted) {
                     onClose()
@@ -671,11 +719,15 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                   alignItems: 'center',
                   gap: '6px',
                   padding: '8px 16px',
-                  background: readOnly || isCompleted
-                    ? '#10b981'
-                    : isLastDoc
-                      ? '#f59e0b'
-                      : '#10b981',
+                  background: isDirekturMode
+                    ? isPenetapanDone || !isLastDoc
+                      ? '#10b981'
+                      : '#f59e0b'
+                    : readOnly || isCompleted
+                      ? '#10b981'
+                      : isLastDoc
+                        ? '#f59e0b'
+                        : '#10b981',
                   color: '#fff',
                   fontSize: '13px',
                   fontWeight: '600',
@@ -688,10 +740,21 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                   e.currentTarget.style.background = '#059669'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = readOnly || isCompleted ? '#10b981' : isLastDoc ? '#f59e0b' : '#10b981'
+                  e.currentTarget.style.background = isDirekturMode
+                    ? isPenetapanDone || !isLastDoc ? '#10b981' : '#f59e0b'
+                    : readOnly || isCompleted ? '#10b981' : isLastDoc ? '#f59e0b' : '#10b981'
                 }}
               >
-                {readOnly && isLastDoc ? (
+                {isDirekturMode && isLastDoc ? (
+                  isPenetapanDone ? (
+                    'Selesai'
+                  ) : (
+                    <>
+                      Lanjut ke Penilaian
+                      <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '12px' }} />
+                    </>
+                  )
+                ) : readOnly && isLastDoc ? (
                   <>
                     Tutup
                     <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: '12px' }} />
@@ -760,10 +823,10 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
                 <FontAwesomeIcon icon={faFileText} style={{ fontSize: '28px', color: '#10b981' }} />
               </div>
               <h3 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
-                Penilaian Asesi
+                {isDirekturMode ? 'Penetapan Asesi' : 'Penilaian Asesi'}
               </h3>
               <p style={{ fontSize: '14px', color: '#6b7280' }}>
-                Berikan penilaian untuk <strong>{asesiNama}</strong>
+                {isDirekturMode ? 'Tetapkan status untuk' : 'Berikan penilaian untuk'} <strong>{asesiNama}</strong>
               </p>
             </div>
 
@@ -804,7 +867,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
               </button>
 
               <button
-                onClick={() => submitRekomendasi(false)}
+                onClick={() => isDirekturMode ? submitPenetapan(false) : submitRekomendasi(false)}
                 disabled={isSubmitting}
                 style={{
                   display: 'flex',
@@ -847,7 +910,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, onPenilaianS
               </button>
 
               <button
-                onClick={() => submitRekomendasi(true)}
+                onClick={() => isDirekturMode ? submitPenetapan(true) : submitRekomendasi(true)}
                 disabled={isSubmitting}
                 style={{
                   display: 'flex',
