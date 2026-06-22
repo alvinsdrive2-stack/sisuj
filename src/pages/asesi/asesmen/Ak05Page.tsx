@@ -145,15 +145,43 @@ export default function Ak05Page() {
 
         if (listRes.ok) {
           const listData = await listRes.json()
-          const asesiItems: AsesiItem[] = (listData?.list_asesi || [])
+          const rawItems: AsesiItem[] = (listData?.list_asesi || [])
             .map((a: any) => ({ id_izin: a.id_izin, nama: a.nama }))
             .filter((a: AsesiItem) => a.id_izin)
 
-          setAsesiList(asesiItems)
+          // Filter asesi by jabatan_kerja match against current jadwal's jabatan_kerja
+          const targetJabatan = (jabatanKerja || '').trim().toLowerCase()
+          let filteredItems: AsesiItem[] = rawItems
+
+          if (targetJabatan) {
+            const matched = await Promise.all(
+              rawItems.map(async (a) => {
+                try {
+                  const r = await fetch(`${API_BASE_URL}/praasesmen/${a.id_izin}/data-dokumen`, {
+                    headers: {
+                      "Accept": "application/json",
+                      "Authorization": `Bearer ${token}`,
+                    },
+                  })
+                  if (!r.ok) return null
+                  const j = await r.json()
+                  const jk = (j?.data?.jabatan_kerja || '').toString().trim().toLowerCase()
+                  return jk && jk === targetJabatan ? a : null
+                } catch {
+                  return null
+                }
+              })
+            )
+            filteredItems = matched.filter((a): a is AsesiItem => a !== null)
+          } else {
+            showWarning('Jabatan kerja jadwal belum terisi, menampilkan semua asesi.')
+          }
+
+          setAsesiList(filteredItems)
 
           // Fetch AK05 data per asesi
           const dataMap: Record<string, Ak05PerAsesi> = {}
-          const fetches = asesiItems.map(async (asesi) => {
+          const fetches = filteredItems.map(async (asesi) => {
             try {
               // Ambil is_kompeten dari AK02
               const ak02Res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak02`, {
