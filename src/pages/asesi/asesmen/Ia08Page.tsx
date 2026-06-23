@@ -5,6 +5,7 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
@@ -59,10 +60,11 @@ export default function Ia08Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorList.length, metode, tahap])
 
   const {
     showAwalModal,
@@ -238,7 +240,7 @@ export default function Ia08Page() {
     pageKey: 'ia08',
     nextPageName: nextStepLabel,
     isAsesor,
-    tahap: _kegiatan?.tahap ?? 2,
+    tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -282,6 +284,13 @@ export default function Ia08Page() {
   }
 
   const handleSave = async () => {
+    // Tahap 0: skip save/TTD, langsung navigasi next
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
     if (hasSigned) {
       // Asesi → navigate
       if (!isAsesor) {

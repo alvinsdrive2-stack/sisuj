@@ -5,6 +5,7 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -66,6 +67,7 @@ export default function Ia04bPage() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const { role: asesorRole } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
@@ -172,12 +174,12 @@ export default function Ia04bPage() {
     fetchData()
   }, [fetchData])
 
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
   const signing = useSigningState({
     pageKey: 'ia04b',
     isAsesor,
-    tahap: 1,
+    tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -254,6 +256,13 @@ export default function Ia04bPage() {
   }
 
   const handleSave = async () => {
+    // Tahap 0: skip save/TTD, langsung navigasi next
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
     // If all signed → redirect
     if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))

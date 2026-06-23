@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
@@ -87,11 +88,12 @@ export default function Ia01Page() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId, metode } = useDataDokumenAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // All asesor can fill (removed restriction to asesor_1 only)
   const isFormDisabledBase = !isAsesor
@@ -236,7 +238,7 @@ export default function Ia01Page() {
     pageKey: 'ia01',
     nextPageName: ia01NextStepLabel,
     isAsesor,
-    tahap: 1,
+    tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -667,6 +669,12 @@ export default function Ia01Page() {
               variant="primary"
               disabled={signing.buttonDisabled}
               onClick={async () => {
+                if (tahap === 0) {
+                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                  const nextStep = asesmenSteps[currentStepIndex + 1]
+                  navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+                  return
+                }
                 if (signing.allSigned) {
                   const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
                   const nextStep = asesmenSteps[currentStepIndex + 1]

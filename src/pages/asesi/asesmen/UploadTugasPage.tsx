@@ -9,6 +9,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -80,9 +81,10 @@ export default function UploadTugasPage() {
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const { kegiatan: _kegiatan } = useKegiatanByRole()
+  const { tahap } = useDataDokumenPraAsesmen(id)
 
   // Get dynamic steps
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -125,7 +127,7 @@ export default function UploadTugasPage() {
   const signing = useSigningState({
     pageKey: 'upload-tugas',
     isAsesor,
-    tahap: 1,
+    tahap,
     barcodes: barcodes as BarcodeState | null,
     setBarcodes: setBarcodes as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -541,6 +543,19 @@ export default function UploadTugasPage() {
               </span>
             </label>
             )}
+            {tahap===0 && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', padding: '12px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+              <input
+                type="checkbox"
+                checked={signing.agreedChecklist}
+                onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
+                style={{ marginTop: '4px', width: '16px', height: '16px' }}
+              />
+              <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
+                Saya menyatakan bahwa file yang saya upload adalah hasil karya sendiri dan tidak melanggar hak cipta pihak lain. Saya bersedia bertanggung jawab atas keaslian dokumen yang saya sertakan.
+              </span>
+            </label>
+            )}
           </div>
 
         {/* Actions - hide for asesor */}
@@ -563,8 +578,14 @@ export default function UploadTugasPage() {
           )}
           <ActionButton
             variant="primary"
-            disabled={isNavigating || signing.buttonDisabled || !uploadedTugas}
+            disabled={isNavigating || signing.buttonDisabled}
             onClick={async () => {
+              if (tahap === 0) {
+                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
+                const nextStep = asesmenSteps[currentStepIndex + 1]
+                navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+                return
+              }
               if (signing.allSigned) {
                 const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
                 const nextStep = asesmenSteps[currentStepIndex + 1]

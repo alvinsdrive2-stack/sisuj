@@ -282,11 +282,10 @@ export default function FrAk01Page() {
   const handleSave = async () => {
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      if (isAsesor) {
-        navigate(`/asesor/asesi/${jadwalId}`)
-      } else {
-        navigate(successPath)
-      }
+      const isLowJenjang = jenjang && parseInt(jenjang) < 4
+      const isPortofolio = metode?.toLowerCase() === 'portofolio'
+      const nextStep = isLowJenjang ? 'ia01' : (isPortofolio ? 'ia08' : 'ia04a')
+      navigate(`/asesi/asesmen/${actualIdIzin}/${nextStep}`)
       return
     }
 
@@ -381,7 +380,7 @@ export default function FrAk01Page() {
         // Untuk tahap 0, langsung navigasi ke halaman berikutnya
         if (tahap === 0) {
           setTimeout(() => {
-            navigate(`/asesor/asesi/${jadwalId}`)
+            navigate(`/asesi/asesmen/{actualIdIzin}/ia04a`)
           }, 500)
         }
       } else {

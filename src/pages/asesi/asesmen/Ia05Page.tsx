@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
@@ -79,6 +80,7 @@ export default function Ia05Page() {
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, isLoading: isDataLoading, jadwalId } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
+  const { tahap } = useDataDokumenPraAsesmen(id)
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
@@ -86,7 +88,7 @@ export default function Ia05Page() {
   // Check if current user is asesor
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor // All asesor can edit umpan_balik
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -162,7 +164,7 @@ export default function Ia05Page() {
   const signing = useSigningState({
     pageKey: 'ia05',
     isAsesor,
-    tahap: _kegiatan?.tahap ?? 2,
+    tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -182,6 +184,13 @@ export default function Ia05Page() {
 
   // Handler for asesi to submit answers (memoized for timer hook)
   const handleSubmit = useCallback(async () => {
+    // Tahap 0: skip save/TTD, langsung navigasi next
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
     // If asesi already signed → redirect (prevent re-generate QR)
     if (isAsesi && signing.asesiHasSigned) {
       const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
@@ -280,7 +289,7 @@ export default function Ia05Page() {
     } finally {
       setIsSaving(false)
     }
-  }, [isAsesi, signing, asesmenSteps, navigate, ia05Data, id, answers, umpanBalik, jadwalId, showSuccess, showWarning, showError])
+  }, [isAsesi, signing, asesmenSteps, navigate, ia05Data, id, answers, umpanBalik, jadwalId, showSuccess, showWarning, showError, tahap])
 
   // Handler for asesor to save umpan_balik
   const handleSaveUmpanBalik = async () => {

@@ -5,6 +5,7 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -82,12 +83,13 @@ export default function Ia03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId } = useDataDokumenAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // Asesor-only editable (asesi read-only)
   const isFormDisabledBase = !isAsesor1 && !isAsesor2
@@ -225,7 +227,7 @@ export default function Ia03Page() {
     pageKey: 'ia03',
     nextPageName: nextStepLabel,
     isAsesor,
-    tahap: 1,
+    tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
@@ -255,12 +257,13 @@ export default function Ia03Page() {
   }, [tanggapanAnswers])
 
   const handleNext = async () => {
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia03'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
     if (signing.allSigned) {
-      // Tahap 0 → dashboard
-      if (_kegiatan?.tahap === 0) {
-        navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
-        return
-      }
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia03'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
       if (nextStep) {

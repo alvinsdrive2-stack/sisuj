@@ -7,6 +7,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
@@ -76,12 +77,13 @@ export default function Ak06Page() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId, jenisKelas, namaAsesi } = useDataDokumenAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // All asesor can fill (removed restriction to specific asesor)
   const isFormDisabled = !isAsesor
@@ -195,7 +197,7 @@ export default function Ak06Page() {
   const signing = useSigningState({
     pageKey: 'ak06',
     isAsesor,
-    tahap: 1,
+    tahap,
     barcodes: barcodes as any,
     setBarcodes: setBarcodes as any,
     asesorList,
@@ -238,6 +240,13 @@ export default function Ak06Page() {
   }
 
   const handleSave = async () => {
+    // Tahap 0: skip save/TTD, langsung navigasi next
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
     // If user already signed → check absen akhir before navigate
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
