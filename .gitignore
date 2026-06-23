@@ -3,4 +3,6 @@
 nul
 node_modules
 .claude
-.env
+.env.env.local
+.env.local.example
+main-portal/.env.example
