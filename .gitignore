@@ -3,3 +3,4 @@
 nul
 node_modules
 .claude
+.env

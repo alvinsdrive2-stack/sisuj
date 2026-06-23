@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "copyright": "© 2025 Ananda Alviansyah & Rafie Pradipta. All rights reserved.",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
