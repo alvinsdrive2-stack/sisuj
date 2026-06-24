@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
-import { getFilteredMenus } from "@/lib/rbac-config"
+import { getFilteredMenus, resolveUserRole, RoleId } from "@/lib/rbac-config"
 import { ChevronRight, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
@@ -17,11 +17,11 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Get user role and menus
-  const userRole = user?.role?.name
+  const userRole = resolveUserRole(user?.role)
   const menuItems = userRole ? getFilteredMenus(userRole) : []
 
   // Always call hooks (Rules of Hooks), skip via enabled param for non-asesors
-  const isAsesor = userRole === "Asesor"
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const asesorAbsen = useAsesorAbsenPending(isAsesor)
   const asesorPersiapan = useAsesorPersiapanPending(isAsesor)
 

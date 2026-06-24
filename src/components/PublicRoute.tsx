@@ -1,6 +1,6 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
-import { getRoleConfig } from "@/lib/rbac-config"
+import { getRoleConfig, resolveUserRole } from "@/lib/rbac-config"
 
 interface PublicRouteProps {
   children: React.ReactNode
@@ -16,7 +16,7 @@ export default function PublicRoute({ children }: PublicRouteProps) {
 
   // If user is authenticated, redirect to their role's default route
   if (user) {
-    const userRole = user.role?.name
+    const userRole = resolveUserRole(user.role)
     if (userRole) {
       const roleConfig = getRoleConfig(userRole)
       if (roleConfig) {

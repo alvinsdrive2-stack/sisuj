@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
-import { UserRole } from "@/lib/rbac-config"
+import { UserRole, resolveUserRole } from "@/lib/rbac-config"
 
 interface ForbiddenPageProps {
   redirectPath?: string
@@ -12,7 +12,7 @@ export default function ForbiddenPage({ redirectPath }: ForbiddenPageProps) {
   const navigate = useNavigate()
   const [countdown, setCountdown] = useState(3)
 
-  const userRoleName = user?.role?.name as UserRole | undefined
+  const userRoleName = resolveUserRole(user?.role) as UserRole | undefined
 
   // Add styles only once on mount
   useEffect(() => {

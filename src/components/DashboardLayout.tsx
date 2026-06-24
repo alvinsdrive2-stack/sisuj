@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom"
 import { useLocation } from "react-router-dom"
 import DashboardSidebar from "./DashboardSidebar"
 import DashboardNavbar from "./DashboardNavbar"
-import { getRoleConfig } from "@/lib/rbac-config"
+import { getRoleConfig, resolveUserRole } from "@/lib/rbac-config"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import loopVideo from "@/assets/Sequence 01.mp4"
@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (!isLoading && user) {
-      const userRole = user?.role?.name
+      const userRole = resolveUserRole(user?.role)
       const roleConfiguration = userRole ? getRoleConfig(userRole) : null
 
       // Redirect to role-based default route if on root dashboard

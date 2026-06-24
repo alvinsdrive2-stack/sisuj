@@ -45,6 +45,63 @@ export const RoleId = {
 
 export type RoleIdValue = typeof RoleId[keyof typeof RoleId]
 
+// Map role.id -> internal UserRole (used for menu/rbac config lookup).
+// Backend role.name is free-form; ALWAYS resolve via id.
+export const RoleIdToUserRole: Record<number, UserRole> = {
+  [RoleId.SUPERADMIN]: "superadmin",
+  [RoleId.ADMIN_LSP]: "Admin LSP",
+  [RoleId.ADMIN_VERIFIKASI]: "Admin TUK",
+  [RoleId.KOMTEK]: "Komtek",
+  [RoleId.ASESOR]: "Asesor",
+  [RoleId.DIREKTUR_LSP]: "Direktur LSP",
+  [RoleId.MANAJER_SERTIFIKASI]: "Manajer Sertifikasi",
+  [RoleId.ASESI]: "Asesi",
+}
+
+// Customizable UI display labels keyed by role.id.
+// Edit freely here without touching backend.
+export const RoleDisplayName: Record<number, string> = {
+  [RoleId.SUPERADMIN]: "Superadmin",
+  [RoleId.ADMIN_LSP]: "Admin LSP",
+  [RoleId.ADMIN_VERIFIKASI]: "Admin Verifikasi",
+  [RoleId.KOMTEK]: "Komtek",
+  [RoleId.ASESOR]: "Asesor",
+  [RoleId.DIREKTUR_LSP]: "Direktur LSP",
+  [RoleId.MANAJER_SERTIFIKASI]: "Manajer Sertifikasi",
+  [RoleId.ASESI]: "Asesi",
+  [RoleId.FINANCE]: "Finance",
+  [RoleId.VALIDATOR_TUK]: "Validator TUK",
+  [RoleId.KETUA_TUK]: "Ketua TUK",
+  [RoleId.VERIFIKATOR_TUK]: "Verifikator TUK",
+  [RoleId.MANAGER_MUTU]: "Manager Mutu",
+}
+
+interface RoleLike {
+  id?: number | null
+  name?: string | null
+}
+
+// Resolve internal UserRole from role.id; fallback to name, then null.
+export function resolveUserRole(role?: RoleLike | null): UserRole | null {
+  if (!role) return null
+  if (role.id != null && RoleIdToUserRole[role.id]) {
+    return RoleIdToUserRole[role.id]
+  }
+  if (role.name && (roleConfig as Record<string, unknown>)[role.name as string]) {
+    return role.name as UserRole
+  }
+  return null
+}
+
+// Get display label for UI; fallback to backend name, then 'Guest'.
+export function getRoleDisplayName(role?: RoleLike | null): string {
+  if (!role) return "Guest"
+  if (role.id != null && RoleDisplayName[role.id]) {
+    return RoleDisplayName[role.id]
+  }
+  return role.name || "Guest"
+}
+
 // Permission Types
 export type Permission =
   | "view_all_assessment_status"

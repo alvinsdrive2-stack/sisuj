@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { getRoleConfig } from "@/lib/rbac-config"
+import { getRoleConfig, resolveUserRole, getRoleDisplayName } from "@/lib/rbac-config"
 import favicon from "@/assets/favicon.png"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { LoopingVideoBackground, isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
@@ -51,7 +51,7 @@ export default function LoginPage() {
       const userData = await login({ account, password })
 
       // Get user role from returned user data
-      const userRole = userData?.role?.name
+      const userRole = resolveUserRole(userData?.role)
 
       
       
@@ -63,7 +63,7 @@ export default function LoginPage() {
         
 
         // Show success toast
-        showSuccess(`Login Berhasil, Selamat datang ${userRole} ${userData?.name}!`)
+        showSuccess(`Login Berhasil, Selamat datang ${getRoleDisplayName(userData?.role)} ${userData?.name}!`)
 
         setShowSuccessLoader(true)
         preloadDashboardImages()

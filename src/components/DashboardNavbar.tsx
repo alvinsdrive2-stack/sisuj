@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
 import { VideoOff, Video } from "lucide-react"
 import logo from "@/assets/logo.png"
+import { getRoleDisplayName } from "@/lib/rbac-config"
 
 const PAS_FOTO_CACHE_KEY = "pas_foto_cache"
 
@@ -135,7 +136,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
             <button
               onClick={handleLogoClick}
               className="w-[230px] h-[110px] flex items-center justify-center overflow-hidden cursor-pointer transition-transform duration-20"
-              title={`Kembali ke Dashboard ${user?.role?.name?.toString()}`}
+              title={`Kembali ke Dashboard ${getRoleDisplayName(user?.role)}`}
             >
               <img src={logo} alt="LSP Gatensi Logo" className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
             </button>
@@ -166,7 +167,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
             {/* User Info */}
             <div className="hidden lg:block">
               <p className="text-sm font-medium text-slate-800">{userName}</p>
-              <p className="text-xs text-slate-500">{user?.role?.name || 'Guest'}</p>
+              <p className="text-xs text-slate-500">{getRoleDisplayName(user?.role)}</p>
             </div>
 
             {/* Video BG Toggle */}
@@ -225,7 +226,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
                 </div>
                 <div>
                   <p className="font-semibold text-slate-800 dark:text-slate-200">{userName}</p>
-                  <p className="text-xs text-slate-500">{user?.role?.name || 'Guest'}</p>
+                  <p className="text-xs text-slate-500">{getRoleDisplayName(user?.role)}</p>
                 </div>
               </div>
 

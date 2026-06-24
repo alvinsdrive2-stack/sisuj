@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
-import { getRoleConfig } from "@/lib/rbac-config"
+import { getRoleConfig, resolveUserRole } from "@/lib/rbac-config"
 
 export default function DefaultRoute() {
   const { user, isLoading } = useAuth()
@@ -23,7 +23,7 @@ export default function DefaultRoute() {
 
   // If user is authenticated, redirect to their role's default route
   if (user) {
-    const userRole = user.role?.name
+    const userRole = resolveUserRole(user.role)
     console.log('[DefaultRoute] User authenticated:', userRole)
     if (userRole) {
       const roleConfig = getRoleConfig(userRole)

@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { RoleId, UserRole } from "@/lib/rbac-config"
+import { RoleId, UserRole, resolveUserRole } from "@/lib/rbac-config"
 import ForbiddenPage from "./ForbiddenPage"
 
 interface RoleRouteProps {
@@ -34,7 +34,7 @@ export default function RoleRoute({ children, allowedRoles, fallback }: RoleRout
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
-  const userRoleName = user.role?.name as UserRole | undefined
+  const userRoleName = resolveUserRole(user.role) as UserRole | undefined
 
   // Check if user's role is in the allowed roles list
   if (userRoleName && allowedRoles.includes(userRoleName)) {
@@ -201,7 +201,7 @@ export function AsesiOrAsesorRoute({ children, fallback }: { children: React.Rea
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
-  const userRoleName = user.role?.name as UserRole | undefined
+  const userRoleName = resolveUserRole(user.role) as UserRole | undefined
 
   // Allow access if user is Asesi
   if (user?.role?.id === RoleId.ASESI) {

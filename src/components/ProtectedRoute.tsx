@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { Permission, getRoleConfig, RoleId, UserRole } from "@/lib/rbac-config"
+import { Permission, getRoleConfig, RoleId, UserRole, resolveUserRole } from "@/lib/rbac-config"
 import ForbiddenPage from "./ForbiddenPage"
 
 interface ProtectedRouteProps {
@@ -33,7 +33,7 @@ export default function ProtectedRoute({
     return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
-  const userRoleName = user?.role?.name as UserRole | undefined
+  const userRoleName = resolveUserRole(user?.role) as UserRole | undefined
 
   // Get default route for redirect
   const getDefaultRoute = (role?: UserRole): string => {
@@ -58,8 +58,8 @@ export default function ProtectedRoute({
   if (devBypass) return <>{children}</>
 
   // Check role-based access
-  if (requiredRoles.length > 0 && user?.role?.name) {
-    if (!requiredRoles.includes(user.role.name)) {
+  if (requiredRoles.length > 0 && userRoleName) {
+    if (!requiredRoles.includes(userRoleName)) {
       return <ForbiddenPage redirectPath={getDefaultRoute(userRoleName)} />
     }
   }

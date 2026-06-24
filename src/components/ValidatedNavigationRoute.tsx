@@ -2,6 +2,7 @@
 import { useNavigate, useLocation } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useAuth } from "@/contexts/auth-context"
+import { resolveUserRole } from "@/lib/rbac-config"
 
 interface ValidatedNavigationRouteProps {
   children: React.ReactNode
@@ -42,8 +43,8 @@ export default function ValidatedNavigationRoute({ children }: ValidatedNavigati
 
   useEffect(() => {
     if (isValid === false) {
-      const roleName = user?.role?.name || ''
-      const dashboardPath = DASHBOARD_PATHS[roleName] || '/login'
+      const userRole = resolveUserRole(user?.role) || ''
+      const dashboardPath = DASHBOARD_PATHS[userRole] || '/login'
       navigate(dashboardPath, { replace: true })
     }
   }, [isValid, navigate, user])
