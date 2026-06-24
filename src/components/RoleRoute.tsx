@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { UserRole } from "@/lib/rbac-config"
+import { RoleId, UserRole } from "@/lib/rbac-config"
 import ForbiddenPage from "./ForbiddenPage"
 
 interface RoleRouteProps {
@@ -204,12 +204,12 @@ export function AsesiOrAsesorRoute({ children, fallback }: { children: React.Rea
   const userRoleName = user.role?.name as UserRole | undefined
 
   // Allow access if user is Asesi
-  if (userRoleName === "Asesi") {
+  if (user?.role?.id === RoleId.ASESI) {
     return <>{children}</>
   }
 
   // Allow access if user is Asesor with noreg
-  if (userRoleName === "Asesor" && user.noreg) {
+  if (user?.role?.id === RoleId.ASESOR && user.noreg) {
     return <>{children}</>
   }
 

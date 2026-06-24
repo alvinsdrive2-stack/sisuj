@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
@@ -82,7 +83,7 @@ export default function Ak06Page() {
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   // All asesor can fill (removed restriction to specific asesor)

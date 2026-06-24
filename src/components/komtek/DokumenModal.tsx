@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faFile, faFileText, faChevronLeft, faChevronRight, faEye, faClose, faCheck, faTimes } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { StatusStamp } from "@/components/ui/StatusStamp"
+import { RoleId } from "@/lib/rbac-config"
 import { API_BASE_URL } from "@/config/api"
 
 interface DokumenResponse {
@@ -82,7 +83,7 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
   const isDirekturMode = (() => {
     try {
       const userData = JSON.parse(localStorage.getItem("user_data") || "{}")
-      return userData?.role?.name === "Direktur LSP" && !!jadwalId
+      return userData?.role?.id === RoleId.DIREKTUR_LSP && !!jadwalId
     } catch { return false }
   })()
   const documentListRef = useRef<HTMLDivElement>(null)

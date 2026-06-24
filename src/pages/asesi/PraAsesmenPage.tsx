@@ -7,6 +7,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import AsesiLayout from "@/components/AsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
@@ -63,7 +64,7 @@ export default function PraAsesmenPage() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   // Get asesor data for absen check
   const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzinFromUrl)

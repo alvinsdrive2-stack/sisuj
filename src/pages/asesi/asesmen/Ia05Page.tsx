@@ -3,6 +3,7 @@ import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
@@ -83,8 +84,8 @@ export default function Ia05Page() {
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   // Get dynamic steps
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
-  const isAsesi = user?.role?.name?.toLowerCase() === 'asesi'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
+  const isAsesi = user?.role?.id === RoleId.ASESI
   // Check if current user is asesor
   const canEditIa05 = isAsesi // Only asesi can answer the questions
   const canEditUmpanBalik = isAsesor // All asesor can edit umpan_balik

@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import AsesiLayout from "@/components/AsesiLayout"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -12,7 +13,7 @@ export default function MukPage() {
   const { user } = useAuth()
   const { idIzin } = useParams<{ idIzin: string }>()
   const { tahap, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
-  const isAsesi = user?.role?.name?.toLowerCase() !== 'asesor'
+  const isAsesi = user?.role?.id !== RoleId.ASESOR
 
   const mukTitle = metode?.toLowerCase() === 'portofolio' ? 'MUK Portofolio' : 'MUK Observasi'
 

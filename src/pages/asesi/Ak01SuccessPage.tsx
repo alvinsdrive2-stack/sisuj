@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { PRAASESMEN_STEPS } from "@/lib/asesmen-steps"
 import { ActionButton } from "@/components/ui/ActionButton"
 
@@ -21,7 +22,7 @@ export default function Ak01SuccessPage() {
   const currentStep = isPerjanjianFlow ? 2 : PRAASESMEN_STEPS.length + 1
   const steps = isPerjanjianFlow ? PERJANJIAN_STEPS : [...PRAASESMEN_STEPS, { number: PRAASESMEN_STEPS.length + 1, label: 'Selesai', href: '' }]
 
-  const isAsesor = user?.role?.name?.toLowerCase() === "asesor"
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const handleBackToDashboard = () => {
     if (isAsesor && jadwalId) {

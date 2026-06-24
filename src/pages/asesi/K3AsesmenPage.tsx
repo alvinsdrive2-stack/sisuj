@@ -3,6 +3,7 @@ import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -24,7 +25,7 @@ export default function K3AsesmenPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { showWarning, showSuccess } = useToast()

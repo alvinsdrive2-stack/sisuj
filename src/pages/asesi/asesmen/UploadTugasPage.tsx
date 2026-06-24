@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCloudUploadAlt, faEye, faCheck, faRedo, faSpinner } from "@fortawesome/free-solid-svg-icons"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
@@ -69,7 +70,7 @@ export default function UploadTugasPage() {
   const { showSuccess, showError, showWarning } = useToast()
 
   // Check if user is an asesor (view-only mode)
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const isReadOnly = isAsesor
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)

@@ -3,6 +3,7 @@ import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -31,7 +32,7 @@ export default function AsesmenSelesaiPage() {
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps based on role
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, _kegiatan?.tahap])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)

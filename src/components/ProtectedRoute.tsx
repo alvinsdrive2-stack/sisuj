@@ -1,7 +1,7 @@
 import { Navigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
-import { Permission, getRoleConfig, UserRole } from "@/lib/rbac-config"
+import { Permission, getRoleConfig, RoleId, UserRole } from "@/lib/rbac-config"
 import ForbiddenPage from "./ForbiddenPage"
 
 interface ProtectedRouteProps {
@@ -67,7 +67,7 @@ export default function ProtectedRoute({
   // Check permissions if specified
   if (requiredPermissions.length > 0 && user) {
     // Allow asesor with noreg to access if enabled (case insensitive)
-    if (allowAsesorWithNoreg && userRoleName?.toLowerCase() === 'asesor' && user.noreg) {
+    if (allowAsesorWithNoreg && user?.role?.id === RoleId.ASESOR && user.noreg) {
       return <>{children}</>
     }
 

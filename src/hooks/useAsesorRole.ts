@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { RoleId } from "@/lib/rbac-config"
 
 export type AsesorRole = 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none'
 
@@ -26,7 +27,7 @@ export function useAsesorRole(idIzin: string | undefined): UseAsesorRoleResult {
       isAsesorOther: false,
     }
 
-    if (!user || user.role?.name?.toLowerCase() !== 'asesor') {
+    if (!user || user.role?.id !== RoleId.ASESOR) {
       return defaultResult
     }
 

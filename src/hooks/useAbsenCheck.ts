@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/toast"
+import { RoleId } from "@/lib/rbac-config"
 
 import { API_BASE_URL } from "@/config/api"
 
@@ -70,7 +71,7 @@ export function useAbsenCheck({
     if (role !== 'auto') return role
 
     // If role is 'auto', detect based on user and asesorList
-    const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+    const isAsesor = user?.role?.id === RoleId.ASESOR
 
     if (!isAsesor) return 'asesi'
 
@@ -164,7 +165,7 @@ export function useAbsenCheck({
       }
 
       // For asesor with 'auto' role, wait for asesorList to be populated
-      const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+      const isAsesor = user?.role?.id === RoleId.ASESOR
       if (isAsesor && role === 'auto' && asesorList.length === 0) {
         console.log('[useAbsenCheck] Asesor with empty asesorList — skipping modal until asesorList is loaded')
         setIsChecking(false)

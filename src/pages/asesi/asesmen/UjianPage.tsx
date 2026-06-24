@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
@@ -122,7 +123,7 @@ export default function UjianPage() {
   const { kegiatan: _kegiatan } = useKegiatanByRole()
   const { isAsesor1: _isAsesor1 } = useAsesorRole(id)
 
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap])
   const canEdit = !isAsesor

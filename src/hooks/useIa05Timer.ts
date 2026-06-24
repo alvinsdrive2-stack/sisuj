@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 
 const TIMER_DURATION_MS = 60 * 60 * 1000 // 1 hour
 
@@ -18,7 +19,7 @@ interface UseIa05TimerReturn {
 
 export function useIa05Timer({ idIzin, onExpired, onSaveAndRedirect }: UseIa05TimerOptions): UseIa05TimerReturn {
   const { user } = useAuth()
-  const isAsesi = user?.role?.name?.toLowerCase() === 'asesi'
+  const isAsesi = user?.role?.id === RoleId.ASESI
   const [remainingMs, setRemainingMs] = useState(TIMER_DURATION_MS)
   const [isExpired, setIsExpired] = useState(false)
   const [isPaused, setIsPaused] = useState(false)

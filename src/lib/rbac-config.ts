@@ -25,6 +25,26 @@ export type UserRole =
   | "Asesi"
   | "Komtek"
 
+// Role IDs (authoritative source: backend master roles)
+// Compare via role.id, NOT role.name.
+export const RoleId = {
+  SUPERADMIN: 1,
+  ADMIN_LSP: 2,
+  ADMIN_VERIFIKASI: 3,
+  KOMTEK: 4,
+  ASESOR: 5,
+  DIREKTUR_LSP: 6,
+  MANAJER_SERTIFIKASI: 7,
+  ASESI: 8,
+  FINANCE: 9,
+  VALIDATOR_TUK: 10,
+  KETUA_TUK: 11,
+  VERIFIKATOR_TUK: 12,
+  MANAGER_MUTU: 13,
+} as const
+
+export type RoleIdValue = typeof RoleId[keyof typeof RoleId]
+
 // Permission Types
 export type Permission =
   | "view_all_assessment_status"

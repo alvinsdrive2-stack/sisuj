@@ -3,16 +3,17 @@ import DashboardNavbar from "./DashboardNavbar"
 import DashboardSidebar from "./DashboardSidebar"
 import { useAuth } from "@/contexts/auth-context"
 import { subscribeNavbarTimer } from "@/lib/navbar-timer"
+import { RoleId } from "@/lib/rbac-config"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import loopVideo from "@/assets/Sequence 01.mp4"
 
 export default function AsesiMainLayout({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [timerNode, setTimerNode] = useState<ReactNode>(null)
-  const role = user?.role?.name
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   // Asesor gets sidebar-only layout (no navbar — page has own breadcrumb)
-  if (role === "asesor") {
+  if (isAsesor) {
     return (
       <>
         <LoopingVideoBackground videoSrc={loopVideo} />

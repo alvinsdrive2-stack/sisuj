@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 
 interface AsesmenBreadcrumbProps {
   currentPage: string
@@ -9,7 +10,7 @@ interface AsesmenBreadcrumbProps {
 export default function AsesmenBreadcrumb({ currentPage, isAsesorOverride }: AsesmenBreadcrumbProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isAsesor = isAsesorOverride ?? user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = isAsesorOverride ?? user?.role?.id === RoleId.ASESOR
 
   return (
     <div style={{ borderBottom: '1px solid #999', background: '#fff' }}>

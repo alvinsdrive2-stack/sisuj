@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
+import { RoleId } from "@/lib/rbac-config"
 import { API_BASE_URL } from "@/config/api"
 
 export function useMissingStepsRedirect(idIzin: string | undefined, enabled = true) {
@@ -13,7 +14,7 @@ export function useMissingStepsRedirect(idIzin: string | undefined, enabled = tr
   const { kegiatan: _kegiatan } = useKegiatanByRole()
   const [checked, setChecked] = useState(false)
 
-  const isAsesi = user?.role?.name?.toLowerCase() === 'asesi'
+  const isAsesi = user?.role?.id === RoleId.ASESI
 
   const redirectToFirstMissing = useCallback(async () => {
     if (!idIzin || !isAsesi || !enabled) {

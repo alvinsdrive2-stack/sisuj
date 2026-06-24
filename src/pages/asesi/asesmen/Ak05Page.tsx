@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
@@ -53,7 +54,7 @@ export default function Ak05Page() {
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps - AK.05 is only for asesor
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   // Asesi dapat lihat AK05 (K/BK disabled, dari AK02)
 

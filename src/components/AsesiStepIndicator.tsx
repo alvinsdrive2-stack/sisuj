@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 
 interface Step {
   number: number
@@ -47,7 +48,7 @@ const getPerjanjianPath = (stepNumber: number, idIzin?: string): string | null =
 export default function AsesiStepIndicator({ currentStep, idIzin, tahap, flow = 'praasesmen', showVerifikasiTukAjj }: AsesiStepIndicatorProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const steps = flow === 'perjanjian' ? PERJANJIAN_STEPS : PRAASESMEN_STEPS
 

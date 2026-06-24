@@ -3,6 +3,7 @@ import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -47,7 +48,7 @@ export default function FrAk04Page() {
   const { user } = useAuth()
   const { kegiatan } = useKegiatanAsesi()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)

@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react"
 import ModularStepIndicator from "./ModularStepIndicator"
 import Apl02FilePanel from "./Apl02FilePanel"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 
 interface ModularAsesiLayoutProps {
   children: ReactNode
@@ -21,7 +22,7 @@ function getAsesmenTitle(metode?: string): string {
 export default function ModularAsesiLayout({ children, currentStep, steps, id, title, metode }: ModularAsesiLayoutProps) {
   const sidebarTitle = title || (metode ? getAsesmenTitle(metode) : undefined)
   const { user } = useAuth()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const [showSteps, setShowSteps] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
   const [filePanelCollapsed, setFilePanelCollapsed] = useState(false)

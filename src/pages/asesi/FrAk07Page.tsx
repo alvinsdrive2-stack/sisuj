@@ -348,7 +348,7 @@ export default function FrAk07Page() {
     }
 
     // If already signed, navigate to FR AK 04 (skip untuk tahap 0)
-    if (tahap !== 0 && (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
+    if (tahap !== 0 && signing.allSigned) {
       navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`)
       return
     }

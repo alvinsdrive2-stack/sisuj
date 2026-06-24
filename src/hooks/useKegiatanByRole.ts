@@ -1,5 +1,6 @@
 import { useKegiatanAsesi, useKegiatanAsesor } from "@/hooks/useKegiatan"
 import { useAuth } from "@/contexts/auth-context"
+import { RoleId } from "@/lib/rbac-config"
 
 /**
  * Hook yang otomatis memilih useKegiatanAsesi atau useKegiatanAsesor
@@ -12,7 +13,7 @@ import { useAuth } from "@/contexts/auth-context"
  */
 export function useKegiatanByRole() {
   const { user } = useAuth()
-  const isAsesor = user?.role?.name?.toLowerCase() === 'asesor'
+  const isAsesor = user?.role?.id === RoleId.ASESOR
 
   // Hooks harus dipanggil unconditionally, tapi kita kontrol enabled-nya
   // Hanya fetch untuk role yang sesuai
