@@ -63,7 +63,7 @@ export const RoleIdToUserRole: Record<number, UserRole> = {
 export const RoleDisplayName: Record<number, string> = {
   [RoleId.SUPERADMIN]: "Superadmin",
   [RoleId.ADMIN_LSP]: "Admin LSP",
-  [RoleId.ADMIN_VERIFIKASI]: "Admin Verifikasi",
+  [RoleId.ADMIN_VERIFIKASI]: "Admin Kegiatan",
   [RoleId.KOMTEK]: "Komtek",
   [RoleId.ASESOR]: "Asesor",
   [RoleId.DIREKTUR_LSP]: "Direktur LSP",
