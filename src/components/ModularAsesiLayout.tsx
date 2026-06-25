@@ -14,6 +14,7 @@ interface ModularAsesiLayoutProps {
 }
 
 function getAsesmenTitle(metode?: string): string {
+  if (import.meta.env.VITE_SAAT_INI === 'KAN') return 'UJI COBA MUK (ASSIMILATION ASESMEN)'
   const lower = metode?.toLowerCase()
   const muk = lower === 'portofolio' ? 'MUK Portofolio' : 'MUK Observasi'
   return `Asesmen - ${muk}`
