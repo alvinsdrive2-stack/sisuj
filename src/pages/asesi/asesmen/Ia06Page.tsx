@@ -17,23 +17,167 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 
 interface SoalEsai {
-  id: number
-  no: string
-  unit_kode: string
-  kuk_kode: string
-  soal: string
-  jawaban_asesi?: string
-  skor?: number
+  id: number; no: string; unit_kode: string; kuk_kode: string; soal: string
+  jawaban_asesi?: string; skor?: number
 }
 
 interface Ia06Response {
   message: string
-  data: {
-    soal: SoalEsai[]
-    dokumen: { id: number }
-    barcodes?: any
-    umpan_balik?: string
-  }
+  data: { soal: SoalEsai[]; dokumen: { id: number }; barcodes?: any; umpan_balik?: string }
+}
+
+const td = { border: '0.2px solid black', padding: '4px 6px' }
+const hdDok = { backgroundColor: '#c40000', color: '#fff' }
+const panduanTitle = { backgroundColor: '#c00000', color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
+const fontS = { fontFamily: '"Arial Narrow", Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif', fontSize: '12pt' }
+const formatter = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
+
+function Td({ children, style, colSpan, rowSpan }: { children?: React.ReactNode; style?: React.CSSProperties; colSpan?: number; rowSpan?: number }) {
+  return <td colSpan={colSpan} rowSpan={rowSpan} style={{ ...td, ...style }}>{children}</td>
+}
+
+function IdentitasTable({ jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi }: {
+  jabatanKerja?: string; nomorSkema?: string; tuk?: string; asesorList: any[]; namaAsesi: string
+}) {
+  return (
+    <table style={{ border: '2px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+      <tbody>
+        <tr>
+          <Td rowSpan={2} style={{ width: '30%' }}>Skema Sertifikasi (KKNI/Okupasi/Klaster)</Td>
+          <Td style={{ width: '12%' }}>Judul</Td>
+          <Td style={{ width: '3%', textAlign: 'center' }}>:</Td>
+          <Td style={{ textTransform: 'uppercase' }}>{jabatanKerja || '-'}</Td>
+        </tr>
+        <tr>
+          <Td>Nomor</Td>
+          <Td style={{ textAlign: 'center' }}>:</Td>
+          <Td style={{ textTransform: 'uppercase' }}>{nomorSkema || '-'}</Td>
+        </tr>
+        <tr>
+          <Td>TUK</Td>
+          <Td style={{ textAlign: 'center' }}>:</Td>
+          <Td colSpan={2} style={{ textTransform: 'uppercase' }}>{tuk || '-'}</Td>
+        </tr>
+        {asesorList.map((a: any, i: number) => (
+          <tr key={i}>
+            <Td>Nama Asesor {asesorList.length > 1 ? i + 1 : ''}</Td>
+            <Td style={{ textAlign: 'center' }}>:</Td>
+            <Td colSpan={2} style={{ textTransform: 'uppercase' }}>{a?.nama || '-'}</Td>
+          </tr>
+        ))}
+        <tr>
+          <Td>Nama Asesi</Td>
+          <Td style={{ textAlign: 'center' }}>:</Td>
+          <Td colSpan={2} style={{ textTransform: 'uppercase' }}>{namaAsesi || '-'}</Td>
+        </tr>
+        <tr>
+          <Td>Tanggal</Td>
+          <Td style={{ textAlign: 'center' }}>:</Td>
+          <Td colSpan={2}>{formatter.format(new Date())}</Td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
+function Panduan({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <>
+      <div style={panduanTitle}>{title}</div>
+      <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+        <tbody>
+          <tr>
+            <td style={{ border: 'none', fontSize: '11pt' }}>{children}</td>
+          </tr>
+        </tbody>
+      </table>
+      <br />
+    </>
+  )
+}
+
+function PenyusunValidatorTable() {
+  return (
+    <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+      <tbody>
+        <tr style={{ fontWeight: 'bold', textAlign: 'center' }}>
+          <Td style={{ width: '15%' }}>Status</Td>
+          <Td style={{ width: '8%' }}>No</Td>
+          <Td>Nama</Td>
+          <Td style={{ width: '20%' }}>Nomor MET</Td>
+          <Td style={{ width: '25%' }}>Tanda Tangan Dan Tanggal</Td>
+        </tr>
+        <tr style={{ fontWeight: 'bold' }}>
+          <Td rowSpan={2}>PENYUSUN</Td>
+          <Td style={{ textAlign: 'center' }}>1</Td>
+          <Td></Td>
+          <Td></Td>
+          <Td style={{ height: '50px' }}></Td>
+        </tr>
+        <tr>
+          <Td style={{ textAlign: 'center' }}>2</Td>
+          <Td></Td>
+          <Td></Td>
+          <Td style={{ height: '50px' }}></Td>
+        </tr>
+        <tr style={{ fontWeight: 'bold' }}>
+          <Td rowSpan={2}>VALIDATOR</Td>
+          <Td style={{ textAlign: 'center' }}>1</Td>
+          <Td></Td>
+          <Td></Td>
+          <Td style={{ height: '50px' }}></Td>
+        </tr>
+        <tr>
+          <Td style={{ textAlign: 'center' }}>2</Td>
+          <Td></Td>
+          <Td></Td>
+          <Td style={{ height: '50px' }}></Td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}
+
+function TTDTable({ title, nama, noReg, barcode }: {
+  title: string; nama: string; noReg?: string; barcode?: any
+}) {
+  return (
+    <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+      <tbody>
+        <tr style={{ fontWeight: 'bold' }}>
+          <Td colSpan={3}>{title}</Td>
+        </tr>
+        <tr>
+          <Td style={{ width: '20%' }}>Nama</Td>
+          <Td style={{ width: '5%' }}>:</Td>
+          <Td>{nama}</Td>
+        </tr>
+        {noReg !== undefined && (
+          <tr>
+            <Td>No. Reg</Td>
+            <Td style={{ textAlign: 'center' }}>:</Td>
+            <Td>{noReg || ''}</Td>
+          </tr>
+        )}
+        <tr>
+          <Td>Tanda tangan/ Tanggal</Td>
+          <Td style={{ textAlign: 'center' }}>:</Td>
+          <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
+            {barcode?.url ? (
+              <>
+                <img src={barcode.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
+                <span style={{ fontSize: '11px' }}>
+                  {barcode?.tanggal ? new Date(barcode.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                </span>
+              </>
+            ) : (
+              <span style={{ color: '#999' }}>Belum ditandatangani</span>
+            )}
+          </Td>
+        </tr>
+      </tbody>
+    </table>
+  )
 }
 
 export default function Ia06Page() {
@@ -51,11 +195,7 @@ export default function Ia06Page() {
   const currentStep = getStepNumberFromHref(asesmenSteps, '/asesi/asesmen/ia06')
 
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
-    phase: 'asesmen',
-    role: 'auto',
-    checkOnMount: true,
-    idIzin: id,
-    asesorList
+    phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList
   })
 
   const [soalList, setSoalList] = useState<SoalEsai[]>([])
@@ -65,20 +205,20 @@ export default function Ia06Page() {
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
-  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
+  const [barcodes, setBarcodes] = useState<any>(null)
 
   const fetchIa06Data = useCallback(async () => {
     if (!id) return
     try {
       const token = localStorage.getItem("access_token")
       const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
-        headers: { "Authorization": `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       })
       if (response.ok) {
         const result: Ia06Response = await response.json()
         setSoalList(result.data.soal || [])
         setDokumenId(result.data.dokumen?.id || 0)
-        if (result.data.barcodes) setBarcodes(result.data.barcodes as any)
+        if (result.data.barcodes) setBarcodes(result.data.barcodes)
         const savedJawaban: Record<number, string> = {}
         const savedSkor: Record<number, number> = {}
         result.data.soal.forEach((s: SoalEsai) => {
@@ -89,11 +229,8 @@ export default function Ia06Page() {
         setSkor(savedSkor)
         if (result.data.umpan_balik) setUmpanBalik(result.data.umpan_balik)
       }
-    } catch (error) {
-      console.error("Error fetching IA.06 data:", error)
-    } finally {
-      setIsLoading(false)
-    }
+    } catch (error) { console.error("Error fetching IA.06 data:", error)
+    } finally { setIsLoading(false) }
   }, [id])
 
   useEffect(() => { fetchIa06Data() }, [fetchIa06Data])
@@ -102,76 +239,41 @@ export default function Ia06Page() {
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia06')) + 1]?.label
 
   const signing = useSigningState({
-    pageKey: 'ia06',
-    isAsesor,
-    tahap,
+    pageKey: 'ia06', isAsesor, tahap,
     barcodes: barcodes as unknown as BarcodeState | null,
     setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
-    asesorList,
-    userId: user?.id,
-    userName: user?.name,
-    isSaving,
-    idIzin: id,
-    jadwalId,
-    nextPageName: nextStepLabel,
-    onRefresh: fetchIa06Data,
+    asesorList, userId: user?.id, userName: user?.name, isSaving, idIzin: id, jadwalId,
+    nextPageName: nextStepLabel, onRefresh: fetchIa06Data,
   })
 
   const handleSave = async () => {
-    if (!id || !dokumenId) {
-      showWarning("Data belum dimuat.")
-      return
-    }
-
+    if (!id || !dokumenId) { showWarning("Data belum dimuat."); return }
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
-      const jawabanPayload = soalList
-        .filter(s => jawaban[s.id])
-        .map(s => ({
-          soal_id: s.id,
-          jawaban: jawaban[s.id],
-          skor: skor[s.id] ?? null,
-        }))
-
-      const payload = {
-        id_izin: id,
-        dokumen_id: dokumenId,
-        jawaban: jawabanPayload,
-        umpan_balik: umpanBalik || undefined,
-      }
+      const jawabanPayload = soalList.filter(s => jawaban[s.id]).map(s => ({
+        soal_id: s.id, jawaban: jawaban[s.id], skor: skor[s.id] ?? null,
+      }))
+      const payload = { id_izin: id, dokumen_id: dokumenId, jawaban: jawabanPayload, umpan_balik: umpanBalik || undefined }
 
       const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       })
 
       if (response.ok) {
         showSuccess("IA.06 berhasil disimpan!")
         signing.publishUpdate()
-
         const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
         const nextStep = asesmenSteps[currentIdx + 1]
-        if (nextStep) {
-          const nextPath = nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`)
-          setTimeout(() => navigate(nextPath), 500)
-        } else {
-          setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
-        }
+        const nextPath = nextStep ? nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+        setTimeout(() => navigate(nextPath), 500)
       } else {
         const result = await response.json()
         showError(`Gagal menyimpan: ${result.message || "Terjadi kesalahan"}`)
       }
-    } catch (error) {
-      console.error("Error saving IA.06:", error)
-      showError("Gagal menyimpan data.")
-    } finally {
-      setIsSaving(false)
-    }
+    } catch (error) { console.error("Error saving IA.06:", error); showError("Gagal menyimpan data.")
+    } finally { setIsSaving(false) }
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.06..." />
@@ -180,170 +282,192 @@ export default function Ia06Page() {
     <ModularAsesiLayout currentStep={currentStep} steps={asesmenSteps} id={id} metode={metode}>
       <AsesmenBreadcrumb currentPage="IA.06" />
 
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="bg-primary text-white p-6 rounded-t-lg">
-          <h1 className="text-xl font-bold">FR.IA.06C. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI</h1>
-          <p className="text-white/80 text-sm mt-1">Lembar Jawaban Pertanyaan Tertulis Esai</p>
+      <div style={{ ...fontS, maxWidth: '1000px', margin: '0 auto' }}>
+        {/* TITLE */}
+        <div style={{ fontWeight: 'bold', fontSize: '16px', letterSpacing: '1px', color: '#4F81BD', marginBottom: '16px' }}>
+          FR.IA.06C. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI
         </div>
 
-        {/* Identitas */}
-        <div className="bg-white border rounded-lg p-6 text-sm space-y-2">
-          <div className="flex"><span className="font-semibold text-slate-700 w-[200px] shrink-0">Skema Sertifikasi (KKNI/Okupasi/Klaster)</span><span className="w-5">:</span><span className="font-semibold">{jabatanKerja || '-'}</span></div>
-          <div className="flex"><span className="w-[200px] shrink-0"></span><span className="w-5">:</span><span className="text-slate-600">{nomorSkema || '-'}</span></div>
-          <div className="flex"><span className="w-[200px] shrink-0">TUK</span><span className="w-5">:</span><span>{tuk || '-'}</span></div>
-          {asesorList.map((_: any, i: number) => (
-            <div key={i} className="flex"><span className="w-[200px] shrink-0">Nama Asesor {i + 1}</span><span className="w-5">:</span><span className="font-semibold">{asesorList[i]?.nama || '-'}</span></div>
-          ))}
-          <div className="flex"><span className="w-[200px] shrink-0">Nama Asesi</span><span className="w-5">:</span><span className="font-semibold">{namaAsesi || user?.name || '-'}</span></div>
-          <div className="flex"><span className="w-[200px] shrink-0">Tanggal</span><span className="w-5">:</span><span>{new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</span></div>
-        </div>
+        {/* IDENTITAS */}
+        <IdentitasTable jabatanKerja={jabatanKerja} nomorSkema={nomorSkema} tuk={tuk} asesorList={asesorList} namaAsesi={namaAsesi || user?.name || '-'} />
+        <p style={{ fontSize: '12px', margin: '4px 0' }}>*Coret yang tidak perlu</p>
 
-        {/* Panduan */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
-          <h3 className="font-bold text-blue-800 mb-2">PANDUAN BAGI ASESOR</h3>
-          <ul className="list-disc list-inside space-y-1 text-slate-700">
-            <li>Lakukan penilaian jawaban esai setiap butir soal.</li>
-            <li>Penilaian dilakukan dengan memberikan skor 0, 1, 2, atau 3 sesuai tingkat kesesuaian dan kelengkapan jawaban.</li>
-            <li>0 = Jawaban tidak sesuai, keliru atau tidak menjawab.</li>
-            <li>1 = Jawaban sebagian benar, namun tidak lengkap/kurang tepat.</li>
-            <li>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.</li>
-            <li>3 = Jawaban lengkap, tepat, runtut dan sesuai konteks.</li>
-            <li>Seluruh hasil penilaian dijumlahkan dan dicatat pada kolom Rekapitulasi Skor Penilaian.</li>
-          </ul>
-        </div>
+        {/* PANDUAN ASESOR */}
+        <Panduan title="PANDUAN BAGI ASESOR">
+          <b>Instruksi:</b><br />
+          • Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.<br />
+          • Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:<br />
+          • Dibutuhkan jastifikasi profesional asesor untuk memutuskan hal ini. <br />
+          &nbsp;&nbsp;0 = Jawaban tidak sesuai, keliru atau tidak menjawab.<br />
+          &nbsp;&nbsp;1 = Jawaban sebagian benar, namun tidak lengkap/ kurang tepat.<br />
+          &nbsp;&nbsp;2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.<br />
+          &nbsp;&nbsp;3 = Jawaban lengkap, tepat, runtut dan sesuai konteks.<br />
+          • Seluruh hasil penilaian di jumlahkan dan di catat pada kolom Rekapitulasi Skor Penilaian Pertanyaan Esai.
+        </Panduan>
 
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm">
-          <h3 className="font-bold text-green-800 mb-2">PANDUAN BAGI ASESI</h3>
-          <ul className="list-disc list-inside space-y-1 text-slate-700">
-            <li>Pertanyaan esai merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
-            <li>Baca dengan teliti dan cermat pertanyaan esai pada lembar soal.</li>
-            <li>Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Tertulis Esai.</li>
-          </ul>
-        </div>
+        {/* PANDUAN ASESI */}
+        <Panduan title="PANDUAN BAGI ASESI">
+          <b>Instruksi:</b><br />
+          • Pertanyaan esai merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada. <br />
+          • Baca dengan teliti dan cermat pertanyaan esai pada lembar soal.<br />
+          • Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Tertulis Esai.
+        </Panduan>
 
-        {/* Daftar Soal & Jawaban */}
-        <div className="bg-white border rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-primary text-white">
-                <th className="p-3 text-left w-[100px]">KUK</th>
-                <th className="p-3 text-left" colSpan={2}>SOAL ESAI</th>
+        {/* SOAL */}
+        <table style={{ border: '2px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          <tbody>
+            <tr>
+              <td style={{ ...panduanTitle, width: '100px', textAlign: 'center' }}>KUK</td>
+              <td colSpan={2} style={{ ...panduanTitle, textAlign: 'center' }}>SOAL ESAI</td>
+            </tr>
+            {soalList.length === 0 && (
+              <tr><td colSpan={3} style={{ ...td, textAlign: 'center', padding: '20px' }}>Belum ada soal esai.</td></tr>
+            )}
+            {soalList.map((soal, idx) => (
+              <tr key={soal.id}>
+                <td style={{ ...td, textAlign: 'center', fontWeight: 'bold', backgroundColor: '#d58a94' }}>
+                  {soal.unit_kode && <>{soal.unit_kode}<br /></>}
+                  {soal.kuk_kode || ''}
+                </td>
+                <td style={{ ...td, width: '40px', textAlign: 'center' }}>{idx + 1}.</td>
+                <td style={td}>{soal.soal}</td>
               </tr>
-            </thead>
-            <tbody>
-              {soalList.length === 0 && (
-                <tr><td colSpan={3} className="p-8 text-center text-slate-500">Belum ada soal esai.</td></tr>
-              )}
-              {soalList.map((soal, idx) => (
-                <tr key={soal.id} className="border-t">
-                  <td className="p-3 align-top text-xs font-semibold text-slate-600 bg-slate-50">
-                    {soal.unit_kode && <div>{soal.unit_kode}</div>}
-                    {soal.kuk_kode && <div>{soal.kuk_kode}</div>}
-                  </td>
-                  <td className="p-3 align-top w-[40px] text-slate-400">{idx + 1}.</td>
-                  <td className="p-3 align-top">
-                    <p className="text-slate-800 mb-3">{soal.soal}</p>
+            ))}
+          </tbody>
+        </table>
+        <br />
 
-                    {/* Jawaban (asesi) */}
-                    {isAsesi && (
-                      <textarea
-                        className="w-full border rounded-lg p-3 min-h-[100px] text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        placeholder="Tulis jawaban Anda di sini..."
-                        value={jawaban[soal.id] || ""}
-                        onChange={e => setJawaban(prev => ({ ...prev, [soal.id]: e.target.value }))}
-                      />
+        {/* PENYUSUN DAN VALIDATOR */}
+        <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>PENYUSUN DAN VALIDATOR</h2>
+        <PenyusunValidatorTable />
+
+        {/* FR.IA.06C LEMBAR JAWABAN */}
+        <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>FR.IA.06C. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI</h2>
+        <IdentitasTable jabatanKerja={jabatanKerja} nomorSkema={nomorSkema} tuk={tuk} asesorList={asesorList} namaAsesi={namaAsesi || user?.name || '-'} />
+        <p style={{ fontSize: '12px', margin: '4px 0' }}>*Coret yang tidak perlu</p>
+
+        {/* LEMBAR JAWABAN TABLE */}
+        <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          <tbody>
+            <tr style={{ ...hdDok, fontWeight: 'bold', textAlign: 'center' }}>
+              <Td rowSpan={2}>KUK</Td>
+              <Td rowSpan={2} colSpan={2}>JAWABAN SOAL ESAI</Td>
+              <Td colSpan={4}>Skor Penilaian</Td>
+            </tr>
+            <tr style={{ ...hdDok, fontWeight: 'bold', textAlign: 'center' }}>
+              <Td style={{ width: '5%' }}>0</Td>
+              <Td style={{ width: '5%' }}>1</Td>
+              <Td style={{ width: '5%' }}>2</Td>
+              <Td style={{ width: '5%' }}>3</Td>
+            </tr>
+            {soalList.map((soal, idx) => (
+              <tr key={soal.id}>
+                <Td style={{ textAlign: 'center', backgroundColor: '#d58a94', width: '15%' }}>{idx + 1}</Td>
+                <Td style={{ width: '5%', textAlign: 'center', backgroundColor: '#d58a94' }}>{idx + 1}</Td>
+                <td style={{ ...td, textAlign: 'left' }}>
+                  <b>Soal:</b> {soal.soal}
+                  {/* Jawaban textarea for asesi */}
+                  {isAsesi && (
+                    <textarea
+                      style={{ width: '100%', border: '1px solid #000', padding: '4px', marginTop: '4px', minHeight: '60px', fontSize: '11pt' }}
+                      value={jawaban[soal.id] || ""}
+                      onChange={e => setJawaban(prev => ({ ...prev, [soal.id]: e.target.value }))}
+                      placeholder="Tulis jawaban Anda di sini..."
+                    />
+                  )}
+                  {/* Display jawaban for asesor */}
+                  {isAsesor && jawaban[soal.id] && (
+                    <div style={{ marginTop: '4px', padding: '4px', border: '1px dashed #999', background: '#f9f9f9' }}>
+                      <b>Jawaban Asesi:</b><br />{jawaban[soal.id]}
+                    </div>
+                  )}
+                </td>
+                {[0, 1, 2, 3].map(n => (
+                  <td key={n} style={{ ...td, textAlign: 'center', verticalAlign: 'middle' }}>
+                    {isAsesor ? (
+                      <span style={{ width: '12px', height: '12px', border: '1px solid #000', display: 'inline-block', textAlign: 'center', lineHeight: '11px', fontSize: '10px', cursor: 'pointer', ...(skor[soal.id] === n ? { backgroundColor: '#000', color: '#fff' } : {}) }}
+                        onClick={() => setSkor(prev => {
+                          if (prev[soal.id] === n) { const { [soal.id]: _, ...rest } = prev; return rest }
+                          return { ...prev, [soal.id]: n }
+                        })}>
+                        {skor[soal.id] === n ? '✓' : ''}
+                      </span>
+                    ) : (
+                      <span style={{ width: '12px', height: '12px', border: '1px solid #000', display: 'inline-block', textAlign: 'center', lineHeight: '11px', fontSize: '10px', ...(skor[soal.id] === n ? { backgroundColor: '#000', color: '#fff' } : {}) }}>
+                        {skor[soal.id] === n ? '✓' : ''}
+                      </span>
                     )}
-
-                    {/* Skor (asesor) */}
-                    {isAsesor && (
-                      <div className="flex items-center gap-4 pt-2 border-t mt-2">
-                        <span className="text-sm font-medium text-slate-600">Skor:</span>
-                        {[0, 1, 2, 3].map(n => (
-                          <button
-                            key={n}
-                            type="button"
-                            onClick={() => setSkor(prev => ({ ...prev, [soal.id]: n }))}
-                            className={`w-9 h-9 rounded-full text-xs font-bold border-2 transition-colors ${
-                              skor[soal.id] === n
-                                ? "bg-primary text-white border-primary"
-                                : "bg-white text-slate-500 border-slate-300 hover:border-primary"
-                            }`}
-                          >
-                            {n}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <br />
 
-        {/* Rekapitulasi Skor */}
-        <div className="bg-white border rounded-lg overflow-hidden">
-          <div className="bg-primary text-white p-3 text-center font-bold">
-            Rekapitulasi Skor Penilaian Pertanyaan IA06
-            <div className="text-xs font-normal mt-1">Penilaian = Jumlah skor seluruh butir soal</div>
-          </div>
-          <div className="grid grid-cols-2">
-            <div className="p-4 text-center font-semibold border-r border-b bg-slate-50">Total Skor Penilaian</div>
-            <div className="p-4 text-center font-bold text-lg">{totalSkor}</div>
-          </div>
-        </div>
+        {/* REKAPITULASI */}
+        <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
+          <tbody>
+            <tr style={{ fontWeight: 'bold', backgroundColor: '#c40000', color: '#fff' }}>
+              <Td colSpan={2} style={{ textAlign: 'center' }}>
+                Rekapitulasi Skor Penilaian Pertanyaan IA06<br />
+                <span style={{ fontWeight: 'normal' }}>( Penilaian = Jumlah skor seluruh butir soal)</span>
+              </Td>
+            </tr>
+            <tr>
+              <Td style={{ textAlign: 'center', fontWeight: 'bold', width: '50%' }}>Total Skor Penilaian</Td>
+              <Td style={{ textAlign: 'center', width: '50%', fontSize: '14pt' }}>{totalSkor}</Td>
+            </tr>
+          </tbody>
+        </table>
+        <br /><br />
 
-        {/* Umpan Balik */}
-        {isAsesor && (
-          <div className="bg-white border rounded-lg p-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Umpan Balik untuk Asesi</label>
-            <p className="text-xs text-slate-500 mb-3">Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)</p>
-            <textarea
-              className="w-full border rounded-lg p-3 min-h-[80px] text-sm"
-              value={umpanBalik}
-              onChange={e => setUmpanBalik(e.target.value)}
-              placeholder="Tulis umpan balik..."
-            />
-          </div>
-        )}
+        {/* UMPAN BALIK HEADER */}
+        <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          <tbody>
+            <tr>
+              <Td style={{ fontWeight: 'bold' }}>Umpan balik untuk asesi:</Td>
+              <Td>:</Td>
+              <Td>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …</Td>
+            </tr>
+          </tbody>
+        </table>
+        <br />
 
-        {/* Tanda Tangan Preview */}
-        {signing.allSigned && (
-          <div className="bg-white border rounded-lg p-4 text-sm">
-            <h3 className="font-bold text-slate-700 mb-3">Tanda Tangan</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="font-semibold">Asesi:</p>
-                <p>{namaAsesi || user?.name || '-'}</p>
-              </div>
-              {asesorList.map((a: any, i: number) => (
-                <div key={i}>
-                  <p className="font-semibold">Asesor {i + 1}:</p>
-                  <p>{a.nama || '-'}</p>
-                </div>
-              ))}
-            </div>
+        {/* Umpan Balik textarea or display */}
+        {isAsesor ? (
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>Umpan Balik untuk Asesi</label>
+            <textarea style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt' }}
+              value={umpanBalik} onChange={e => setUmpanBalik(e.target.value)} placeholder="Tulis umpan balik..." />
           </div>
-        )}
+        ) : umpanBalik ? (
+          <div style={{ marginBottom: '16px', border: '1px solid #000', padding: '8px' }}>
+            <strong>Umpan Balik Asesor:</strong>
+            <p>{umpanBalik}</p>
+          </div>
+        ) : null}
+
+        {/* TTD */}
+        <TTDTable title="Asesi :" nama={namaAsesi || user?.name || '-'} barcode={(barcodes as any)?.['asesi']} />
+        <br />
+        {asesorList.map((a: any, idx: number) => (
+          <div key={idx}>
+            <TTDTable title={`Asesor ${asesorList.length > 1 ? idx + 1 : ''} :`} nama={a?.nama || '-'} noReg={a?.no_reg} barcode={(barcodes as any)?.[`asesor${idx + 1}`]} />
+            <br />
+          </div>
+        ))}
 
         {/* Buttons */}
-        <div className="flex justify-end gap-3 py-4">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px 0' }}>
           <ActionButton variant="primary" disabled={signing.buttonDisabled || isSaving} onClick={handleSave}>
             {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
           </ActionButton>
         </div>
       </div>
 
-      {/* Absen Awal Modal */}
-      <WebcamModal
-        isOpen={showAwalModal}
-        onClose={handleAwalModalClose}
-        onSubmit={submitAbsenAwal}
-        title="Absen Masuk Asesmen"
-        description="Silakan ambil foto wajah Anda untuk absen masuk"
-        canClose={false}
-      />
+      <WebcamModal isOpen={showAwalModal} onClose={handleAwalModalClose} onSubmit={submitAbsenAwal}
+        title="Absen Masuk Asesmen" description="Silakan ambil foto wajah Anda untuk absen masuk" canClose={false} />
     </ModularAsesiLayout>
   )
 }
