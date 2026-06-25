@@ -2,6 +2,7 @@
 .nul
 nul
 node_modules
+dist
 .claude
 .env
 .env.*
