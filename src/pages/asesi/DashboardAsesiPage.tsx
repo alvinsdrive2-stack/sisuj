@@ -359,6 +359,14 @@ export default function DashboardAsesiPage() {
                     // Mark valid navigation entry
                     sessionStorage.setItem('validNavigationEntry', 'true')
 
+                    // KAN flow: langsung ke IA04b, skip tahap/jenjang/metode logic
+                    const saatIni = import.meta.env.VITE_SAAT_INI
+                    if (saatIni === 'KAN') {
+                      sessionStorage.setItem('validNavigationEntry', 'true')
+                      navigate(`/asesi/asesmen/${idIzin}/ia04b`, { state: { fromInternal: true } })
+                      return
+                    }
+
                     if (kegiatan?.tahap === 1) {
                       // Tahap 1: always go to APL-01
                       sessionStorage.setItem('validNavigationEntry', 'true')

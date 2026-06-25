@@ -184,6 +184,33 @@ export function getMukSteps(tahap: number, jenjang: string, metode?: string): St
   return [...MUK_STEPS]
 }
 
+// KAN flow steps: ia04b → ia05 → ia06 → survei → selesai
+export const ASESMEN_STEPS_KAN_ASESI: StepConfig[] = [
+  { number: 1, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
+  { number: 2, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 3, label: 'IA.06', href: '/asesi/asesmen/ia06' },
+  { number: 4, label: 'Survei', href: '/asesi/asesmen/survei' },
+  { number: 5, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+export const ASESMEN_STEPS_KAN_ASESOR_1: StepConfig[] = [
+  { number: 1, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
+  { number: 2, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 3, label: 'IA.06', href: '/asesi/asesmen/ia06' },
+  { number: 4, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 5, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 6, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
+export const ASESMEN_STEPS_KAN_ASESOR_2: StepConfig[] = [
+  { number: 1, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
+  { number: 2, label: 'IA.05', href: '/asesi/asesmen/ia05' },
+  { number: 3, label: 'IA.06', href: '/asesi/asesmen/ia06' },
+  { number: 4, label: 'AK.05', href: '/asesi/asesmen/ak05' },
+  { number: 5, label: 'AK.06', href: '/asesi/asesmen/ak06' },
+  { number: 6, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+]
+
 // Get asesmen steps based on jenjang_id, metode, asesor role, and tahap
 export function getAsesmenSteps(
   jenjangId: string,
@@ -193,6 +220,18 @@ export function getAsesmenSteps(
   metode?: string,
   tahap?: number
 ): StepConfig[] {
+  // KAN flow bypasses all jenjang/metode/tahap logic
+  if (import.meta.env.VITE_SAAT_INI === 'KAN') {
+    let kanSteps: StepConfig[]
+    if (!isAsesor) kanSteps = [...ASESMEN_STEPS_KAN_ASESI]
+    else if (asesorRole === 'asesor_1') kanSteps = [...ASESMEN_STEPS_KAN_ASESOR_1]
+    else kanSteps = [...ASESMEN_STEPS_KAN_ASESOR_2]
+    if (tahap === 0 || tahap === 2) {
+      kanSteps = kanSteps.map((s, i) => ({ ...s, number: i + 1 }))
+    }
+    return kanSteps
+  }
+
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
   const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
