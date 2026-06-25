@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
-import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -16,7 +15,6 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { kegiatanService } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 
 interface Unit { id: number; kode: string }
@@ -48,7 +46,6 @@ export default function Ia05KANPage() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
-  const { showSuccess, showError, showWarning } = useToast()
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
@@ -62,7 +59,7 @@ export default function Ia05KANPage() {
 
   const [data, setData] = useState<Ia05Response["data"] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
   const [barcodes, setBarcodes] = useState<any>(null)
@@ -108,32 +105,11 @@ export default function Ia05KANPage() {
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
 
-  const handleSubmit = async () => {
-    if (!data || !id) { showWarning("Data belum dimuat."); return }
-    setIsSaving(true)
-    try {
-      const token = localStorage.getItem("access_token")
-      const answersPayload = data.soal.filter(s => answers[s.id]).map(s => ({ soal_id: s.id, jawaban: answers[s.id] }))
-      const payload = { id_izin: id, dokumen_id: data.dokumen.id, answers: answersPayload, umpan_balik: umpanBalik || undefined }
-
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      })
-
-      if (res.ok) {
-        showSuccess("IA.05 berhasil disimpan!")
-        signing.publishUpdate()
-        if (jadwalId) { await kegiatanService.generateQRIa05(id, jadwalId) }
-
-        const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
-        const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-        setTimeout(() => navigate(path), 500)
-      } else {
-        const err = await res.json()
-        showError(`Gagal menyimpan: ${err.message || "Terjadi kesalahan"}`)
-      }
-    } catch (e) { showError("Gagal menyimpan data.") } finally { setIsSaving(false) }
+  const handleSubmit = () => {
+    if (!id) return
+    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
+    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(path)
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.05..." />
@@ -299,7 +275,22 @@ export default function Ia05KANPage() {
             <tr>
               <td style={{ fontWeight: 'bold', width: '20%', ...td }}>Umpan balik untuk asesi:</td>
               <td style={{ width: '5%', ...td }}>:</td>
-              <td style={td}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …</td>
+              <td style={td}>
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …
+                {isAsesor ? (
+                  <textarea
+                    style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
+                    value={umpanBalik}
+                    onChange={e => setUmpanBalik(e.target.value)}
+                    placeholder="Tulis umpan balik..."
+                  />
+                ) : umpanBalik ? (
+                  <div style={{ marginTop: '8px' }}>
+                    <strong>Umpan Balik Asesor:</strong>
+                    <p style={{ margin: '4px 0 0 0' }}>{umpanBalik}</p>
+                  </div>
+                ) : null}
+              </td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}>
               <td colSpan={3} style={td}>Asesi :</td>

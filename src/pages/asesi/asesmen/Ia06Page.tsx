@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
-import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -187,7 +186,6 @@ export default function Ia06Page() {
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
-  const { showSuccess, showError, showWarning } = useToast()
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
@@ -200,9 +198,9 @@ export default function Ia06Page() {
   })
 
   const [soalList, setSoalList] = useState<SoalEsai[]>([])
-  const [dokumenId, setDokumenId] = useState<number>(0)
+  const [_dokumenId, setDokumenId] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSaving] = useState(false)
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
@@ -247,34 +245,12 @@ export default function Ia06Page() {
     nextPageName: nextStepLabel, onRefresh: fetchIa06Data,
   })
 
-  const handleSave = async () => {
-    if (!id || !dokumenId) { showWarning("Data belum dimuat."); return }
-    setIsSaving(true)
-    try {
-      const token = localStorage.getItem("access_token")
-      const jawabanPayload = soalList.filter(s => jawaban[s.id]).map(s => ({
-        soal_id: s.id, jawaban: jawaban[s.id], skor: skor[s.id] ?? null,
-      }))
-      const payload = { id_izin: id, dokumen_id: dokumenId, jawaban: jawabanPayload, umpan_balik: umpanBalik || undefined }
-
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      })
-
-      if (response.ok) {
-        showSuccess("IA.06 berhasil disimpan!")
-        signing.publishUpdate()
-        const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
-        const nextStep = asesmenSteps[currentIdx + 1]
-        const nextPath = nextStep ? nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-        setTimeout(() => navigate(nextPath), 500)
-      } else {
-        const result = await response.json()
-        showError(`Gagal menyimpan: ${result.message || "Terjadi kesalahan"}`)
-      }
-    } catch (error) { console.error("Error saving IA.06:", error); showError("Gagal menyimpan data.")
-    } finally { setIsSaving(false) }
+  const handleSave = () => {
+    if (!id) return
+    const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
+    const nextStep = asesmenSteps[currentIdx + 1]
+    const nextPath = nextStep ? nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(nextPath)
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.06..." />
@@ -429,10 +405,22 @@ export default function Ia06Page() {
             <tr>
               <Td style={{ fontWeight: 'bold', width: '20%' }}>Umpan balik untuk asesi:</Td>
               <Td style={{ width: '5%' }}>:</Td>
-              <Td>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …</Td>
-            </tr>
-            <tr>
-              
+              <Td>
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …
+                {isAsesor ? (
+                  <textarea
+                    style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
+                    value={umpanBalik}
+                    onChange={e => setUmpanBalik(e.target.value)}
+                    placeholder="Tulis umpan balik..."
+                  />
+                ) : umpanBalik ? (
+                  <div style={{ marginTop: '8px' }}>
+                    <strong>Umpan Balik Asesor:</strong>
+                    <p style={{ margin: '4px 0 0 0' }}>{umpanBalik}</p>
+                  </div>
+                ) : null}
+              </Td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}>
               <Td colSpan={3}>Asesi :</Td>

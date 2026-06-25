@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
-import { useToast } from "@/contexts/ToastContext"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -31,14 +30,14 @@ export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
-  const { showSuccess, showError, showWarning } = useToast(); const { tahap } = useDataDokumenPraAsesmen(id)
+  const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({ phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList })
 
   const [data, setData] = useState<ApiResponse["data"] | null>(null)
-  const [isSaving, setIsSaving] = useState(false); const [jawaban, setJawaban] = useState<Record<number, string>>({})
+  const [isSaving] = useState(false); const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({}); const [barcodes, setBarcodes] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -70,26 +69,11 @@ export default function Ia04bKANPage() {
     nextPageName: nextStepLabel, onRefresh: fetchData,
   })
 
-  const handleSave = async () => {
-    if (!data || !id) { showWarning("Data belum dimuat."); return }
-    setIsSaving(true)
-    try {
-      const token = localStorage.getItem("access_token")
-      const res1 = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ dokumen_id: data.dokumen.id, answers: data.soal.map(s => ({ soal_id: s.id, jawaban: jawaban[s.id] || s.jawaban || "" })) }),
-      })
-      if (!res1.ok) { showError("Gagal menyimpan jawaban."); setIsSaving(false); return }
-      if (isAsesor) {
-        await fetch(`${API_BASE_URL}/asesmen/${id}/nilai-ia04b`, {
-          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ dokumen_id: data.dokumen.id, evaluations: data.soal.map(s => ({ soal_id: s.id, pencapaian: skor[s.id] ?? null })) }),
-        })
-      }
-      await signing.generateQR(); signing.publishUpdate(); showSuccess("IA.04.B berhasil disimpan!")
-      const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
-      setTimeout(() => navigate(next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`), 500)
-    } catch (e) { showError("Gagal menyimpan data.") } finally { setIsSaving(false) }
+  const handleSave = () => {
+    if (!id) return
+    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
+    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(path)
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.04.B..." />
