@@ -79,7 +79,9 @@ const Ia03Page = lazy(() => import('./pages/asesi/asesmen/Ia03Page'))
 const Ia04aPage = lazy(() => import('./pages/asesi/asesmen/Ia04aPage'))
 const UploadTugasPage = lazy(() => import('./pages/asesi/asesmen/UploadTugasPage'))
 const Ia04bPage = lazy(() => import('./pages/asesi/asesmen/Ia04bPage'))
+const Ia04bKANPage = lazy(() => import('./pages/asesi/asesmen/Ia04bKANPage'))
 const Ia05Page = lazy(() => import('./pages/asesi/asesmen/Ia05Page'))
+const Ia05KANPage = lazy(() => import('./pages/asesi/asesmen/Ia05KANPage'))
 const Ia06Page = lazy(() => import('./pages/asesi/asesmen/Ia06Page'))
 const Ia08Page = lazy(() => import('./pages/asesi/asesmen/Ia08Page'))
 const Ia09Page = lazy(() => import('./pages/asesi/asesmen/Ia09Page'))
@@ -324,9 +326,17 @@ function App() {
                   <Route path="asesmen/:id/ia03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ia04a" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/upload-tugas" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia04b" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia04b" element={
+                    import.meta.env.VITE_SAAT_INI === 'KAN'
+                      ? <AsesiOrAsesorRoute><Ia04bKANPage /></AsesiOrAsesorRoute>
+                      : <ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>
+                  } />
                   <Route path="asesmen/:id/uji" element={<ValidatedNavigationRoute><AsesiRoute><UjianPage /></AsesiRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia05" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia05" element={
+                    import.meta.env.VITE_SAAT_INI === 'KAN'
+                      ? <AsesiOrAsesorRoute><Ia05KANPage /></AsesiOrAsesorRoute>
+                      : <ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>
+                  } />
                   <Route path="asesmen/:id/ia06" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia06Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ak02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
                   <Route path="asesmen/:id/ak03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
