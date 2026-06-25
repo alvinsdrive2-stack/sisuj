@@ -97,7 +97,7 @@ export default function Ia04bKANPage() {
 
   return (
     <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia04b'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>
-      <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: '"Open Sans",Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif', fontSize: '13px' }}>
+      <div style={{ minHeight: '100vh', background: '#fff', fontFamily: '"Open Sans",Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif', fontSize: '13px' }}>
         <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
           {/* Title */}
           <table width="100%" cellPadding="5" style={{ border: '0', borderCollapse: 'collapse' }}>
@@ -253,7 +253,7 @@ export default function Ia04bKANPage() {
           </table>
           <br />
 
-          {/* TTD Asesi */}
+          {/* Umpan Balik */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
@@ -265,21 +265,45 @@ export default function Ia04bKANPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>{(namaAsesi || user?.name || '-').toUpperCase()}</td></tr>
             <tr><td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                {(barcodes as any)?.['asesi']?.url ? (
+                  <>
+                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" /><br />
+                    <span style={{ fontSize: '11px' }}>
+                      {(barcodes as any)['asesi']?.tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
+                )}
+              </td>
             </tr>
-          </table>
-          <br />
 
           {/* TTD Asesor */}
-          {asesorList.map((a: any, i: number) => (
-            <table key={i} width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', borderTop: 'none', background: '#fff' }}>
+          {asesorList.map((a: any, i: number) => ( 
               <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor {asesorList.length > 1 ? i + 1 : ''} :</td></tr>
               <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>
                 <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>{a.nama?.toUpperCase() || ''}</td></tr>
+              {(a.no_reg !== undefined && a.no_reg !== null) ? (
+                <tr><td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>{a.no_reg || ''}</td></tr>
+              ) : null}
               <tr><td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-                <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}></td>
+                <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                  {(barcodes as any)?.[`asesor${i + 1}`]?.url ? (
+                    <>
+                      <img src={(barcodes as any)[`asesor${i + 1}`].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`barcode asesor ${i + 1}`} /><br />
+                      <span style={{ fontSize: '11px' }}>
+                        {(barcodes as any)[`asesor${i + 1}`]?.tanggal ? new Date((barcodes as any)[`asesor${i + 1}`].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                      </span>
+                    </>
+                  ) : (
+                    <span style={{ color: '#999' }}>Belum ditandatangani</span>
+                  )}
+                </td>
               </tr>
             </table>
           ))}
