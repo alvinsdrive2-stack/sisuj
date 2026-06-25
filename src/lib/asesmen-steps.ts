@@ -184,13 +184,12 @@ export function getMukSteps(tahap: number, jenjang: string, metode?: string): St
   return [...MUK_STEPS]
 }
 
-// KAN flow steps: ia04b → ia05 → ia06 → survei → selesai
+// KAN flow steps: ia04b → ia05 → ia06 → selesai
 export const ASESMEN_STEPS_KAN_ASESI: StepConfig[] = [
   { number: 1, label: 'IA.04.B', href: '/asesi/asesmen/ia04b' },
   { number: 2, label: 'IA.05', href: '/asesi/asesmen/ia05' },
   { number: 3, label: 'IA.06', href: '/asesi/asesmen/ia06' },
-  { number: 4, label: 'Survei', href: '/asesi/asesmen/survei' },
-  { number: 5, label: 'Selesai', href: '/asesi/asesmen/selesai' },
+  { number: 4, label: 'Selesai', href: '/asesi/asesmen/selesai' },
 ]
 
 export const ASESMEN_STEPS_KAN_ASESOR_1: StepConfig[] = [
