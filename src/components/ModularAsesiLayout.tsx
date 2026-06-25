@@ -42,7 +42,9 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id, t
 
       {/* File Panel - desktop */}
       <div className="hidden lg:block" style={{ position: 'sticky', top: '100px', alignSelf: 'flex-start' }}>
-        <Apl02FilePanel idIzin={id} onCollapse={setFilePanelCollapsed} />
+        {import.meta.env.VITE_SAAT_INI !== 'KAN' && (
+          <Apl02FilePanel idIzin={id} onCollapse={setFilePanelCollapsed} />
+        )}
       </div>
 
       {/* Floating button - Steps (mobile) */}
@@ -62,6 +64,7 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id, t
       </button>
 
       {/* Floating button - Files (mobile) */}
+      {import.meta.env.VITE_SAAT_INI !== 'KAN' && (
       <button
         className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
         style={{ background: '#0d2137', color: '#fff', border: 'none' }}
@@ -74,6 +77,7 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id, t
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
       </button>
+      )}
 
       {/* Modal - Steps (mobile) */}
       {showSteps && (
@@ -86,7 +90,7 @@ export default function ModularAsesiLayout({ children, currentStep, steps, id, t
       )}
 
       {/* Modal - Files (mobile) */}
-      {showFiles && (
+      {import.meta.env.VITE_SAAT_INI !== 'KAN' && showFiles && (
         <div className="lg:hidden fixed inset-0 z-[60] flex items-end" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowFiles(false)}>
           <div className="w-full rounded-t-2xl" style={{ background: '#fff', maxHeight: '70vh', overflowY: 'auto', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
             <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: '#ddd' }} />
