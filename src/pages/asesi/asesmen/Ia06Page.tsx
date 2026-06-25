@@ -8,7 +8,6 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -185,7 +184,7 @@ export default function Ia06Page() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
@@ -235,17 +234,7 @@ export default function Ia06Page() {
   useEffect(() => { fetchIa06Data() }, [fetchIa06Data])
 
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
-  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia06')) + 1]?.label
-
-  const signing = useSigningState({
-    pageKey: 'ia06', isAsesor, tahap,
-    barcodes: barcodes as unknown as BarcodeState | null,
-    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
-    asesorList, userId: user?.id, userName: user?.name, isSaving, idIzin: id, jadwalId,
-    nextPageName: nextStepLabel, onRefresh: fetchIa06Data,
-  })
-
-  const handleSave = () => {
+const handleSave = () => {
     if (!id) return
     const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
     const nextStep = asesmenSteps[currentIdx + 1]
@@ -456,7 +445,7 @@ export default function Ia06Page() {
 
         {/* Buttons */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px 0' }}>
-          <ActionButton variant="primary" disabled={signing.buttonDisabled || isSaving} onClick={handleSave}>
+          <ActionButton variant="primary" onClick={handleSave}>
             {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
           </ActionButton>
         </div>

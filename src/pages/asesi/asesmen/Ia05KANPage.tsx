@@ -8,7 +8,6 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
 import { CustomRadio } from "@/components/ui/Radio"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -45,7 +44,7 @@ export default function Ia05KANPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
@@ -92,17 +91,7 @@ export default function Ia05KANPage() {
     [data, answers])
   const jumlahSalah = jumlahSoal - jumlahBenar
 
-  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
-
-  const signing = useSigningState({
-    pageKey: 'ia05', isAsesor, tahap,
-    barcodes: barcodes as unknown as BarcodeState | null,
-    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
-    asesorList, userId: user?.id, userName: user?.name, isSaving, idIzin: id, jadwalId,
-    nextPageName: nextStepLabel, onRefresh: fetchData,
-  })
-
-  const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
+const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
 
   const handleSubmit = () => {
@@ -331,7 +320,7 @@ export default function Ia05KANPage() {
 
         {/* ==================== BUTTONS ==================== */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px 0' }}>
-          <ActionButton variant="primary" disabled={signing.buttonDisabled || isSaving} onClick={handleSubmit}>
+          <ActionButton variant="primary" onClick={handleSubmit}>
             {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
           </ActionButton>
         </div>

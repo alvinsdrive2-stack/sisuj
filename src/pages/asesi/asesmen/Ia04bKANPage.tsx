@@ -7,7 +7,6 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -29,7 +28,7 @@ interface ApiResponse {
 export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jadwalId, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
@@ -60,16 +59,7 @@ export default function Ia04bKANPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
-  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
-
-  const signing = useSigningState({
-    pageKey: 'ia04b', isAsesor, tahap, barcodes: barcodes as unknown as BarcodeState | null,
-    setBarcodes: setBarcodes as unknown as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
-    asesorList, userId: user?.id, userName: user?.name, isSaving, idIzin: id, jadwalId,
-    nextPageName: nextStepLabel, onRefresh: fetchData,
-  })
-
-  const handleSave = () => {
+const handleSave = () => {
     if (!id) return
     const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
     const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
@@ -295,7 +285,7 @@ export default function Ia04bKANPage() {
 
           {/* Buttons */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <ActionButton variant="primary" disabled={signing.buttonDisabled || isSaving} onClick={handleSave}>
+            <ActionButton variant="primary" onClick={handleSave}>
               {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
             </ActionButton>
           </div>
