@@ -11,6 +11,8 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
+import { CustomRadio } from "@/components/ui/Radio"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -154,28 +156,70 @@ export default function Ia05KANPage() {
 
         {/* ==================== PANDUAN ASESOR ==================== */}
         <Panduan title="PANDUAN BAGI ASESOR">
-          <b>Instruksi:</b><br />
-          1. Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.<br />
-          2. Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (✓) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:<br />
-          &nbsp;&nbsp;0 = Jawaban Salah<br />
-          &nbsp;&nbsp;1 = Jawaban Benar<br />
-          3. Dibutuhkan justifikasi profesional asesor untuk memutuskan hal ini.
+          <b>Instruksi:</b>
+          <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
+            <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (✓) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:
+              <br/>0 = Jawaban Salah
+              <br/>1 = Jawaban Benar
+            </li>
+            <li style={{ marginBottom: '4px' }}>Dibutuhkan justifikasi profesional asesor untuk memutuskan hal ini.</li>
+          </ul>
         </Panduan>
 
         {/* ==================== PANDUAN ASESI ==================== */}
         <Panduan title="PANDUAN BAGI ASESI">
-          <b>Instruksi:</b><br />
-          1. Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.<br />
-          2. Baca dengan teliti dan cermat pertanyaan Pilihan Ganda pada lembar soal.<br />
-          3. Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Pilihan Ganda.
+          <b>Instruksi:</b>
+          <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
+            <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
+            <li style={{ marginBottom: '4px' }}>Baca dengan teliti dan cermat pertanyaan Pilihan Ganda pada lembar soal.</li>
+            <li style={{ marginBottom: '0' }}>Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Pilihan Ganda.</li>
+          </ul>
         </Panduan>
 
         {/* ==================== SOAL ==================== */}
         <table style={{ border: '2px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          {/* Static header — one time only */}
+          <thead>
+            <tr>
+              <Td style={{ textAlign: 'center', fontWeight: 'bold', width: '100px', color: '#fff', backgroundColor: '#c00000' }}>
+                KUK
+              </Td>
+              <Td colSpan={2} style={{ fontWeight: 'bold', color: '#fff', backgroundColor: '#c00000' }}>
+                SOAL, Pilih Jawaban semua pertanyaan berikut (A / B / C / D) :
+              </Td>
+            </tr>
+          </thead>
           <tbody>
-            {data?.soal.map((soal) => (
-              <SoalRow key={soal.id} soal={soal} isAsesi={isAsesi} answers={answers} onAnswerChange={handleAnswerChange} />
-            ))}
+            {data?.soal.flatMap((soal) => {
+              const cols = [
+                { key: 'A' as const, label: soal.jawab_a },
+                { key: 'B' as const, label: soal.jawab_b },
+                { key: 'C' as const, label: soal.jawab_c },
+                { key: 'D' as const, label: soal.jawab_d },
+              ]
+              const optionRows = cols.map(({ key, label }) => (
+                <tr key={`${soal.id}-${key}`}>
+                  <Td></Td>
+                  <Td style={{ textAlign: 'center' }}>
+                    <CustomRadio name={`soal-${soal.id}`} value={key} checked={answers[soal.id] === key} onChange={() => handleAnswerChange(soal.id, key)} disabled={!isAsesi} />
+                  </Td>
+                  <Td>
+                    &nbsp; {key.toLowerCase()}. {label}
+                  </Td>
+                </tr>
+              ))
+              return [
+                <tr key={soal.id}>
+                  <Td style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#d58a94' }}>
+                    {soal.unit.kode}<br />{soal.kuk?.kode || ''}
+                  </Td>
+                  <Td style={{ width: '40px', textAlign: 'center' }}>{soal.no}.</Td>
+                  <Td>{soal.soal}</Td>
+                </tr>,
+                ...optionRows,
+              ]
+            })}
           </tbody>
         </table>
         <br />
@@ -183,9 +227,10 @@ export default function Ia05KANPage() {
         {/* ==================== PENYUSUN DAN VALIDATOR ==================== */}
         <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>PENYUSUN DAN VALIDATOR</h2>
         <PenyusunValidatorTable />
-
+        <br /><br /><br />
         {/* ==================== FR.05.C LEMBAR JAWABAN ==================== */}
-        <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>FR.05.C. LEMBAR JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
+        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#4F81BD' }}>FR.05.C. LEMBAR JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
+        <br />
         <IdentitasTable jabatanKerja={jabatanKerja} nomorSkema={nomorSkema} tuk={tuk} asesorList={asesorList} namaAsesi={namaAsesi || user?.name || '-'} />
         <p style={{ fontSize: '12px', margin: '4px 0' }}>*Coret yang tidak perlu</p>
 
@@ -218,10 +263,10 @@ export default function Ia05KANPage() {
                     )}
                   </td>
                   <td style={{ ...td, textAlign: 'center' }}>
-                    <CheckBox checked={hasAnswer && isCorrect} />
+                    <CustomCheckbox checked={hasAnswer && isCorrect} onChange={() => {}} disabled />
                   </td>
                   <td style={{ ...td, textAlign: 'center' }}>
-                    <CheckBox checked={hasAnswer && !isCorrect} />
+                    <CustomCheckbox checked={hasAnswer && !isCorrect} onChange={() => {}} disabled />
                   </td>
                 </tr>
               )
@@ -248,43 +293,40 @@ export default function Ia05KANPage() {
         </table>
         <br /><br />
 
-        {/* ==================== UMPAN BALIK HEADER ==================== */}
+        {/* ==================== UMPAN BALIK + TTD ASESI ==================== */}
         <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
           <tbody>
             <tr>
-              <td style={{ fontWeight: 'bold', ...td }}>Umpan balik untuk asesi:</td>
-              <td style={td}>:</td>
+              <td style={{ fontWeight: 'bold', width: '20%', ...td }}>Umpan balik untuk asesi:</td>
+              <td style={{ width: '5%', ...td }}>:</td>
               <td style={td}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …</td>
+            </tr>
+            <tr style={{ fontWeight: 'bold' }}>
+              <td colSpan={3} style={td}>Asesi :</td>
+            </tr>
+            <tr>
+              <td style={{ width: '20%', ...td }}>Nama</td>
+              <td style={{ width: '5%', ...td }}>:</td>
+              <td style={td}>{namaAsesi || user?.name || '-'}</td>
+            </tr>
+            <tr>
+              <td style={td}>Tanda tangan/ Tanggal</td>
+              <td style={{ ...td, textAlign: 'center' }}>:</td>
+              <td style={{ ...td, height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {((barcodes as any)?.['asesi']?.url) ? (
+                  <>
+                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
+                    <span style={{ fontSize: '11px' }}>
+                      {(barcodes as any)['asesi'].tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
+                )}
+              </td>
             </tr>
           </tbody>
         </table>
-        <br />
-
-        {/* Umpan Balik Textarea (asesor) or Display (asesi) */}
-        {isAsesor ? (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>Umpan Balik untuk Asesi</label>
-            <textarea
-              style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt' }}
-              value={umpanBalik}
-              onChange={e => setUmpanBalik(e.target.value)}
-              placeholder="Tulis umpan balik..."
-            />
-          </div>
-        ) : umpanBalik ? (
-          <div style={{ marginBottom: '16px', border: '1px solid #000', padding: '8px' }}>
-            <strong>Umpan Balik Asesor:</strong>
-            <p>{umpanBalik}</p>
-          </div>
-        ) : null}
-
-        {/* ==================== TTD ==================== */}
-        <TTDTable
-          title="Asesi :"
-          nama={namaAsesi || user?.name || '-'}
-          barcode={(barcodes as any)?.['asesi']}
-        />
-        <br />
         {asesorList.map((a: any, idx: number) => (
           <div key={idx}>
             <TTDTable
@@ -293,7 +335,6 @@ export default function Ia05KANPage() {
               noReg={a?.no_reg}
               barcode={(barcodes as any)?.[`asesor${idx + 1}`]}
             />
-            <br />
           </div>
         ))}
 
@@ -315,31 +356,6 @@ export default function Ia05KANPage() {
 
 function Td({ children, style, colSpan, rowSpan }: { children?: React.ReactNode; style?: React.CSSProperties; colSpan?: number; rowSpan?: number }) {
   return <td colSpan={colSpan} rowSpan={rowSpan} style={{ ...td, ...style }}>{children}</td>
-}
-
-function CheckBox({ checked }: { checked: boolean }) {
-  return (
-    <span style={{
-      width: '12px', height: '12px', border: '1px solid #000', display: 'inline-block',
-      textAlign: 'center', lineHeight: '11px', fontSize: '10px',
-      ...(checked ? { backgroundColor: '#000', color: '#fff' } : {}),
-    }}>
-      {checked ? '✓' : ''}
-    </span>
-  )
-}
-
-function RadioBtn({ checked, onClick }: { checked: boolean; onClick?: () => void }) {
-  return (
-    <span onClick={onClick} style={{
-      width: '12px', height: '12px', border: '1px solid #000', borderRadius: '50%',
-      display: 'inline-block', textAlign: 'center', lineHeight: '10px', fontSize: '10px',
-      cursor: onClick ? 'pointer' : 'default',
-      ...(checked ? { backgroundColor: '#000' } : {}),
-    }}>
-      {checked ? '•' : ''}
-    </span>
-  )
 }
 
 function IdentitasTable({ jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi }: {
@@ -398,49 +414,6 @@ function Panduan({ title, children }: { title: string; children: React.ReactNode
         </tbody>
       </table>
       <br />
-    </>
-  )
-}
-
-function SoalRow({ soal, isAsesi, answers, onAnswerChange }: {
-  soal: Soal; isAsesi: boolean; answers: Record<number, string>; onAnswerChange: (id: number, v: 'A'|'B'|'C'|'D') => void
-}) {
-  const cols = [
-    { key: 'A', label: soal.jawab_a },
-    { key: 'B', label: soal.jawab_b },
-    { key: 'C', label: soal.jawab_c },
-    { key: 'D', label: soal.jawab_d },
-  ] as const
-  return (
-    <>
-      {/* Header row */}
-      <tr>
-        <Td rowSpan={5} style={{ textAlign: 'center', fontWeight: 'bold', width: '100px', backgroundColor: '#d58a94', verticalAlign: 'middle' }}>
-          {soal.unit.kode}<br />{soal.kuk?.kode || ''}
-        </Td>
-        <Td style={{ width: '40px', textAlign: 'center', fontWeight: 'bold', backgroundColor: '#d58a94' }}>
-          {soal.no}.
-        </Td>
-        <Td style={{ fontWeight: 'bold', backgroundColor: '#d58a94' }}>
-          SOAL, Pilih Jawaban semua pertanyaan berikut (A / B / C / D) :
-        </Td>
-      </tr>
-      {/* Soal text row */}
-      <tr>
-        <Td></Td>
-        <Td>{soal.soal}</Td>
-      </tr>
-      {/* Option rows */}
-      {cols.map(({ key, label }) => (
-        <tr key={`${soal.id}-${key}`}>
-          <td></td>
-          <td></td>
-          <Td>
-            <RadioBtn checked={answers[soal.id] === key} onClick={isAsesi ? () => onAnswerChange(soal.id, key) : undefined} />
-            &nbsp; {key.toLowerCase()}. {label}
-          </Td>
-        </tr>
-      ))}
     </>
   )
 }

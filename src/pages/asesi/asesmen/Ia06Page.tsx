@@ -14,6 +14,7 @@ import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { API_BASE_URL } from "@/config/api"
 
 interface SoalEsai {
@@ -294,23 +295,28 @@ export default function Ia06Page() {
 
         {/* PANDUAN ASESOR */}
         <Panduan title="PANDUAN BAGI ASESOR">
-          <b>Instruksi:</b><br />
-          • Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.<br />
-          • Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:<br />
-          • Dibutuhkan jastifikasi profesional asesor untuk memutuskan hal ini. <br />
-          &nbsp;&nbsp;0 = Jawaban tidak sesuai, keliru atau tidak menjawab.<br />
-          &nbsp;&nbsp;1 = Jawaban sebagian benar, namun tidak lengkap/ kurang tepat.<br />
-          &nbsp;&nbsp;2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.<br />
-          &nbsp;&nbsp;3 = Jawaban lengkap, tepat, runtut dan sesuai konteks.<br />
-          • Seluruh hasil penilaian di jumlahkan dan di catat pada kolom Rekapitulasi Skor Penilaian Pertanyaan Esai.
+          <b>Instruksi:</b>
+          <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
+            <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
+              <br/>0 = Jawaban tidak sesuai, keliru atau tidak menjawab.
+              <br/>1 = Jawaban sebagian benar, namun tidak lengkap/ kurang tepat.
+              <br/>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.
+              <br/>3 = Jawaban lengkap, tepat, runtut dan sesuai konteks.
+            </li>
+            <li style={{ marginBottom: '4px' }}>Dibutuhkan jastifikasi profesional asesor untuk memutuskan hal ini.</li>
+            <li style={{ marginBottom: '0' }}>Seluruh hasil penilaian di jumlahkan dan di catat pada kolom Rekapitulasi Skor Penilaian Pertanyaan Esai.</li>
+          </ul>
         </Panduan>
 
         {/* PANDUAN ASESI */}
         <Panduan title="PANDUAN BAGI ASESI">
-          <b>Instruksi:</b><br />
-          • Pertanyaan esai merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada. <br />
-          • Baca dengan teliti dan cermat pertanyaan esai pada lembar soal.<br />
-          • Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Tertulis Esai.
+          <b>Instruksi:</b>
+          <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
+            <li style={{ marginBottom: '4px' }}>Pertanyaan esai merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
+            <li style={{ marginBottom: '4px' }}>Baca dengan teliti dan cermat pertanyaan esai pada lembar soal.</li>
+            <li style={{ marginBottom: '0' }}>Tuliskan jawaban Anda pada Lembar Jawaban Pertanyaan Tertulis Esai.</li>
+          </ul>
         </Panduan>
 
         {/* SOAL */}
@@ -340,9 +346,9 @@ export default function Ia06Page() {
         {/* PENYUSUN DAN VALIDATOR */}
         <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>PENYUSUN DAN VALIDATOR</h2>
         <PenyusunValidatorTable />
-
+            <br/><br/><br/>
         {/* FR.IA.06C LEMBAR JAWABAN */}
-        <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>FR.IA.06C. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI</h2>
+        <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#4F81BD' }}>FR.IA.06C. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI</h2>
         <IdentitasTable jabatanKerja={jabatanKerja} nomorSkema={nomorSkema} tuk={tuk} asesorList={asesorList} namaAsesi={namaAsesi || user?.name || '-'} />
         <p style={{ fontSize: '12px', margin: '4px 0' }}>*Coret yang tidak perlu</p>
 
@@ -384,19 +390,14 @@ export default function Ia06Page() {
                 </td>
                 {[0, 1, 2, 3].map(n => (
                   <td key={n} style={{ ...td, textAlign: 'center', verticalAlign: 'middle' }}>
-                    {isAsesor ? (
-                      <span style={{ width: '12px', height: '12px', border: '1px solid #000', display: 'inline-block', textAlign: 'center', lineHeight: '11px', fontSize: '10px', cursor: 'pointer', ...(skor[soal.id] === n ? { backgroundColor: '#000', color: '#fff' } : {}) }}
-                        onClick={() => setSkor(prev => {
-                          if (prev[soal.id] === n) { const { [soal.id]: _, ...rest } = prev; return rest }
-                          return { ...prev, [soal.id]: n }
-                        })}>
-                        {skor[soal.id] === n ? '✓' : ''}
-                      </span>
-                    ) : (
-                      <span style={{ width: '12px', height: '12px', border: '1px solid #000', display: 'inline-block', textAlign: 'center', lineHeight: '11px', fontSize: '10px', ...(skor[soal.id] === n ? { backgroundColor: '#000', color: '#fff' } : {}) }}>
-                        {skor[soal.id] === n ? '✓' : ''}
-                      </span>
-                    )}
+                    <CustomCheckbox
+                      checked={skor[soal.id] === n}
+                      onChange={() => setSkor(prev => {
+                        if (prev[soal.id] === n) { const { [soal.id]: _, ...rest } = prev; return rest }
+                        return { ...prev, [soal.id]: n }
+                      })}
+                      disabled={!isAsesor}
+                    />
                   </td>
                 ))}
               </tr>
@@ -422,39 +423,46 @@ export default function Ia06Page() {
         </table>
         <br /><br />
 
-        {/* UMPAN BALIK HEADER */}
+        {/* ==================== UMPAN BALIK + TTD ASESI ==================== */}
         <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
           <tbody>
             <tr>
-              <Td style={{ fontWeight: 'bold' }}>Umpan balik untuk asesi:</Td>
-              <Td>:</Td>
+              <Td style={{ fontWeight: 'bold', width: '20%' }}>Umpan balik untuk asesi:</Td>
+              <Td style={{ width: '5%' }}>:</Td>
               <Td>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …</Td>
+            </tr>
+            <tr>
+              
+            </tr>
+            <tr style={{ fontWeight: 'bold' }}>
+              <Td colSpan={3}>Asesi :</Td>
+            </tr>
+            <tr>
+              <Td style={{ width: '20%' }}>Nama</Td>
+              <Td style={{ width: '5%' }}>:</Td>
+              <Td>{namaAsesi || user?.name || '-'}</Td>
+            </tr>
+            <tr>
+              <Td>Tanda tangan/ Tanggal</Td>
+              <Td>:</Td>
+              <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {(barcodes as any)?.['asesi']?.url ? (
+                  <>
+                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
+                    <span style={{ fontSize: '11px' }}>
+                      {(barcodes as any)['asesi']?.tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
+                )}
+              </Td>
             </tr>
           </tbody>
         </table>
-        <br />
-
-        {/* Umpan Balik textarea or display */}
-        {isAsesor ? (
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>Umpan Balik untuk Asesi</label>
-            <textarea style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt' }}
-              value={umpanBalik} onChange={e => setUmpanBalik(e.target.value)} placeholder="Tulis umpan balik..." />
-          </div>
-        ) : umpanBalik ? (
-          <div style={{ marginBottom: '16px', border: '1px solid #000', padding: '8px' }}>
-            <strong>Umpan Balik Asesor:</strong>
-            <p>{umpanBalik}</p>
-          </div>
-        ) : null}
-
-        {/* TTD */}
-        <TTDTable title="Asesi :" nama={namaAsesi || user?.name || '-'} barcode={(barcodes as any)?.['asesi']} />
-        <br />
         {asesorList.map((a: any, idx: number) => (
           <div key={idx}>
             <TTDTable title={`Asesor ${asesorList.length > 1 ? idx + 1 : ''} :`} nama={a?.nama || '-'} noReg={a?.no_reg} barcode={(barcodes as any)?.[`asesor${idx + 1}`]} />
-            <br />
           </div>
         ))}
 

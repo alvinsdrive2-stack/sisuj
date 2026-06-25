@@ -13,6 +13,7 @@ import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { API_BASE_URL } from "@/config/api"
 
 interface SoalKAN {
@@ -25,8 +26,6 @@ interface ApiResponse {
     barcodes?: any; dokumen: { id: number; nama_dokumen: string }; soal: SoalKAN[]
   }
 }
-
-const checkboxStyle = { width: '14px', height: '14px', border: '1.5px solid #000', display: 'inline-block', textAlign: 'center' as const, lineHeight: '12px', fontSize: '12px', cursor: 'pointer' as const }
 
 export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
@@ -192,19 +191,14 @@ export default function Ia04bKANPage() {
                 <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal2}</td>
                 {[0, 1, 2, 3].map(n => (
                   <td key={n} style={{ textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
-                    {isAsesor ? (
-                      <span style={{ ...checkboxStyle, background: skor[soal.id] === n ? '#000' : '#fff', color: skor[soal.id] === n ? '#fff' : '#000' }}
-                        onClick={() => setSkor(prev => {
-                          if (prev[soal.id] === n) { const { [soal.id]: _, ...rest } = prev; return rest }
-                          return { ...prev, [soal.id]: n }
-                        })}>
-                        {skor[soal.id] === n ? '✓' : ''}
-                      </span>
-                    ) : (
-                      <span style={{ ...checkboxStyle, background: skor[soal.id] === n ? '#000' : '#fff', color: skor[soal.id] === n ? '#fff' : '#000' }}>
-                        {skor[soal.id] === n ? '✓' : ''}
-                      </span>
-                    )}
+                    <CustomCheckbox
+                      checked={skor[soal.id] === n}
+                      onChange={() => setSkor(prev => {
+                        if (prev[soal.id] === n) { const { [soal.id]: _, ...rest } = prev; return rest }
+                        return { ...prev, [soal.id]: n }
+                      })}
+                      disabled={!isAsesor}
+                    />
                   </td>
                 ))}
               </tr>
@@ -255,6 +249,7 @@ export default function Ia04bKANPage() {
 
           {/* Umpan Balik */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
+            <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: …</td>
@@ -278,9 +273,13 @@ export default function Ia04bKANPage() {
                 )}
               </td>
             </tr>
+          </tbody>
+        </table>
 
-          {/* TTD Asesor */}
-          {asesorList.map((a: any, i: number) => ( 
+        {/* TTD Asesor */}
+        {asesorList.map((a: any, i: number) => (
+          <table key={i} width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
+            <tbody>
               <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor {asesorList.length > 1 ? i + 1 : ''} :</td></tr>
               <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>
                 <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>:</td>
@@ -305,8 +304,9 @@ export default function Ia04bKANPage() {
                   )}
                 </td>
               </tr>
-            </table>
-          ))}
+            </tbody>
+          </table>
+        ))}
           <br />
 
           {/* Buttons */}
