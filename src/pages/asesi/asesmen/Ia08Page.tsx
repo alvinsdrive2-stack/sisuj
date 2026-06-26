@@ -106,7 +106,7 @@ export default function Ia08Page() {
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
-  const [apl02Files, setApl02Files] = useState<Array<{ filetype: string; path: string }>>([])
+  const [ia08Files, setIa08Files] = useState<Array<{ id: number; original_name: string; path: string; filetype: string | null; soal_id: number | null }>>([])
 
   // Extractable fetch function — called on mount and by SSE events
   const fetchIa08Data = useCallback(async () => {
@@ -175,6 +175,11 @@ export default function Ia08Page() {
             })
           }
 
+          // Set IA08 files
+          if (result.data.files) {
+            setIa08Files(result.data.files)
+          }
+
           // Set referensi
           if (result.data.referensi) {
             setIa08Referensi(result.data.referensi)
@@ -192,8 +197,8 @@ export default function Ia08Page() {
           }
 
           // Store dokumen_id for POST
-          if (result.data.dokumen_id) {
-            setDokumenId(result.data.dokumen_id)
+          if (result.data.dokumen?.id) {
+            setDokumenId(result.data.dokumen.id)
           } else if (result.data.soal?.["2"]?.[0]?.id_dokumen) {
             setDokumenId(Number(result.data.soal["2"][0].id_dokumen))
           }
@@ -201,29 +206,6 @@ export default function Ia08Page() {
       }
     } catch (err) {
       console.error("Error fetching IA08:", err)
-    }
-
-    // fetch APL02 files for dokumen link mapping — pakai id dari URL param
-    console.log('IA08 fetch APL02 files, id from params:', id)
-    if (id) {
-      try {
-        const token = localStorage.getItem("access_token")
-        const url = `${API_BASE_URL}/praasesmen/${id}/apl02/files`
-        console.log('IA08 fetching APL02 files from:', url)
-        const filesRes = await fetch(url, {
-          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-        })
-        console.log('IA08 APL02 files response status:', filesRes.status)
-        if (filesRes.ok) {
-          const filesJson = await filesRes.json()
-          console.log('APL02 files response:', filesJson)
-          if (filesJson.message === "Success" && Array.isArray(filesJson.data)) {
-            setApl02Files(filesJson.data)
-          }
-        }
-      } catch (e) {
-        console.error('IA08 APL02 files fetch error:', e)
-      }
     }
 
     setIsDataLoading(false)
@@ -324,6 +306,7 @@ export default function Ia08Page() {
           asli: item.asli_ya,
           terkini: item.terkini_ya,
           memadai: item.memadai_ya,
+          file_ids: ia08Files.filter(f => String(f.soal_id) === String(item.id)).map(f => f.id),
         })),
         unit_answers: wawancaraItems.map(item => ({
           soal_id: item.id,
@@ -470,13 +453,16 @@ export default function Ia08Page() {
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
             </tr>
             {portfolioItems.map((item) => {
-              const dokumenKey = item.dokumen.toLowerCase().replace(/\s+/g, '_')
-              const matchedFile = [...apl02Files].reverse().find(f => f.filetype?.toLowerCase() === dokumenKey)
-              if (item.id > 0) console.log('IA08 matching:', { dokumen: item.dokumen, key: dokumenKey, matched: matchedFile?.filetype, path: matchedFile?.path })
+              const itemFiles = ia08Files.filter(f => String(f.soal_id) === String(item.id))
               return (<tr key={item.id}>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {matchedFile?.path ? (
-                    <a href={matchedFile.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{item.dokumen}</a>
+                  {itemFiles.length > 0 ? (
+                    itemFiles.map((f, fi) => (
+                      <span key={f.id}>
+                        <a href={f.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{f.original_name}</a>
+                        {fi < itemFiles.length - 1 && ', '}
+                      </span>
+                    ))
                   ) : (
                     <span>{item.dokumen}</span>
                   )}
