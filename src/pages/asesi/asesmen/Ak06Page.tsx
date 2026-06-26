@@ -785,7 +785,7 @@ export default function Ak06Page() {
               Upload video AJJ asesi <strong>{namaAsesi || ''}</strong> ke folder berikut:
             </p>
             <a
-              href="https://drive.google.com/drive/folders/REPLACE_ME"
+              href="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -812,7 +812,7 @@ export default function Ak06Page() {
               type="text"
               value={videoLink}
               onChange={(e) => setVideoLink(e.target.value)}
-              placeholder="https://drive.google.com/drive/folders/1aBc...xYz?usp=sharing"
+              placeholder="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
               style={{
                 width: '100%', padding: '8px 12px', border: '1px solid #ccc',
                 borderRadius: '4px', fontSize: '14px', marginBottom: '16px',
