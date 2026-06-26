@@ -543,6 +543,7 @@ export default function Ia08Page() {
               <td style={{ height: '80px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
                 <b>Sebagai berikut :</b>
                 <textarea
+                  value={buktiTambahan}
                   onChange={(e) => setBuktiTambahan(e.target.value)}
                   disabled={isFormDisabled}
                   style={{
