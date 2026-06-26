@@ -12,11 +12,11 @@ export default function AsesiMainLayout({ children }: { children: ReactNode }) {
   const [timerNode, setTimerNode] = useState<ReactNode>(null)
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
-  // Asesor gets sidebar-only layout (no navbar — page has own breadcrumb)
   if (isAsesor) {
     return (
       <>
         <LoopingVideoBackground videoSrc={loopVideo} />
+        <DashboardNavbar userName={user?.name} timerNode={timerNode} />
         <div className="min-h-screen flex">
           <DashboardSidebar />
           <main className="flex-1 overflow-y-auto p-6">
