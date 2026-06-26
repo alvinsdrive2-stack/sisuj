@@ -30,10 +30,11 @@ interface Pertanyaan {
   bk: boolean
 }
 
-interface BuktiItem {
+interface Ia09File {
   id: number
-  no: string
-  nama: string
+  original_name: string
+  path: string
+  filetype: string | null
 }
 
 interface Ia09Response {
@@ -89,13 +90,12 @@ export default function Ia09Page() {
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
-  const [buktiList, setBuktiList] = useState<BuktiItem[]>([])
+  const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData | null
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
-  const [apl02Files, setApl02Files] = useState<Array<{ filetype: string; path: string }>>([])
 
   const fetchIa09Data = useCallback(async () => {
     if (!id || authLoading) return
@@ -107,11 +107,8 @@ export default function Ia09Page() {
       if (response.ok) {
         const result: Ia09Response = await response.json()
         if (result.message === "Success" && result.data) {
-          if (result.data.soal?.["1"]) {
-            const buktiItems = result.data.soal["1"].map((item: any, index: number) => ({
-              id: item.id || index + 1, no: item.no || String(index + 1), nama: item.soal || "-",
-            }))
-            setBuktiList(buktiItems)
+          if (result.data.files) {
+            setIa09Files(result.data.files)
           }
           if (result.data.soal?.["2"]) {
             const savedAnswers = result.data.answers || {}
@@ -138,21 +135,6 @@ export default function Ia09Page() {
       console.error("Error fetching IA09:", err)
     }
 
-    // fetch APL02 files for dokumen link mapping
-    if (id) {
-      try {
-        const token = localStorage.getItem("access_token")
-        const filesRes = await fetch(`${API_BASE_URL}/praasesmen/${id}/apl02/files`, {
-          headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-        })
-        if (filesRes.ok) {
-          const filesJson = await filesRes.json()
-          if (filesJson.message === "Success" && Array.isArray(filesJson.data)) {
-            setApl02Files(filesJson.data)
-          }
-        }
-      } catch {}
-    }
   }, [id, authLoading])
 
   useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
@@ -407,17 +389,11 @@ export default function Ia09Page() {
             </tr>
           </thead>
           <tbody>
-            {buktiList.map((b) => (
-              <tr key={b.id}>
-                <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{b.no}</td>
+            {ia09Files.map((f, i) => (
+              <tr key={f.id}>
+                <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{i + 1}</td>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>
-                  {(() => {
-                    const key = b.nama.toLowerCase().replace(/\s+/g, '_')
-                    const f = [...apl02Files].reverse().find(f => f.filetype?.toLowerCase() === key)
-                    return f?.path ? (
-                      <a href={f.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{b.nama}</a>
-                    ) : <span>{b.nama}</span>
-                  })()}
+                  <a href={f.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{f.original_name}</a>
                 </td>
               </tr>
             ))}
