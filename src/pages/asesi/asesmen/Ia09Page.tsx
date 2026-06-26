@@ -44,6 +44,7 @@ interface Ia09Response {
       "1"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
       "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
     }
+    files?: Array<{ id: number; original_name: string; path: string; filetype: string | null }>
     answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
     dokumen?: { id: number; nama_dokumen: string }
     barcodes?: {
