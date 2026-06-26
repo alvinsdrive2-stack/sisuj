@@ -22,17 +22,17 @@ interface BarcodeData {
   nama: string
 }
 
-interface PortfolioItem {
+interface Ia08File {
   id: number
-  dokumen: string
-  valid_ya: boolean
-  valid_tidak: boolean
-  asli_ya: boolean
-  asli_tidak: boolean
-  terkini_ya: boolean
-  terkini_tidak: boolean
-  memadai_ya: boolean
-  memadai_tidak: boolean
+  original_name: string
+  path: string
+  filetype: string | null
+  answer: {
+    valid: boolean | null
+    asli: boolean | null
+    terkini: boolean | null
+    memadai: boolean | null
+  } | null
 }
 
 interface WawancaraItem {
@@ -78,12 +78,6 @@ export default function Ia08Page() {
     asesorList
   })
 
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([
-    { id: 1, dokumen: 'Data yang diupload di APL 2 otomatis terhubung', valid_ya: false, valid_tidak: false, asli_ya: false, asli_tidak: false, terkini_ya: false, terkini_tidak: false, memadai_ya: false, memadai_tidak: false },
-    { id: 2, dokumen: 'Contoh: Ijazah', valid_ya: false, valid_tidak: false, asli_ya: false, asli_tidak: false, terkini_ya: false, terkini_tidak: false, memadai_ya: false, memadai_tidak: false },
-    { id: 3, dokumen: 'Contoh: Referensi Kerja', valid_ya: false, valid_tidak: false, asli_ya: false, asli_tidak: false, terkini_ya: false, terkini_tidak: false, memadai_ya: false, memadai_tidak: false },
-  ])
-
   const [wawancaraItems, setWawancaraItems] = useState<WawancaraItem[]>([
     { id: 1, unit_kompetensi: 'F.41BPC00.001.2', no_elemen: 1, materi: 'Ketentuan terkait tugas perencanaan', checked: false },
     { id: 2, unit_kompetensi: 'F.41BPC00.002.2', no_elemen: 2, materi: 'Lokasi kerja dan gambar rencana', checked: false },
@@ -106,7 +100,7 @@ export default function Ia08Page() {
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
-  const [ia08Files, setIa08Files] = useState<Array<{ id: number; original_name: string; path: string; filetype: string | null; soal_id: number | null }>>([])
+  const [ia08Files, setIa08Files] = useState<Ia08File[]>([])
 
   // Extractable fetch function — called on mount and by SSE events
   const fetchIa08Data = useCallback(async () => {
@@ -124,26 +118,9 @@ export default function Ia08Page() {
       if (response.ok) {
         const result = await response.json()
         if (result.message === "Success" && result.data) {
-          // Map soal.1 (referensi) to portfolio items
-          if (result.data.soal?.["1"]) {
-            console.log('IA08 soal.1:', result.data.soal["1"])
-            const savedApl2 = result.data.apl2_answers || {}
-            const referensiItems = result.data.soal["1"].map((item: any, index: number) => {
-              const saved = savedApl2[String(item.id)]
-              return {
-                id: item.id || index + 1,
-                dokumen: item.soal || "-",
-                valid_ya: saved?.valid === true,
-                valid_tidak: saved?.valid === false,
-                asli_ya: saved?.asli === true,
-                asli_tidak: saved?.asli === false,
-                terkini_ya: saved?.terkini === true,
-                terkini_tidak: saved?.terkini === false,
-                memadai_ya: saved?.memadai === true,
-                memadai_tidak: saved?.memadai === false,
-              }
-            })
-            setPortfolioItems(referensiItems)
+          // Portfolio: use files directly (each file has answer)
+          if (result.data.files) {
+            setIa08Files(result.data.files)
           }
 
           // Map soal.2 (unit/kuk) to wawancara items
@@ -173,11 +150,6 @@ export default function Ia08Page() {
               asesor1: result.data.barcodes.asesor1,
               asesor2: result.data.barcodes.asesor2,
             })
-          }
-
-          // Set IA08 files
-          if (result.data.files) {
-            setIa08Files(result.data.files)
           }
 
           // Set referensi
@@ -239,22 +211,16 @@ export default function Ia08Page() {
 
   const isFormDisabled = !isAsesor
 
-  const handlePortfolioCheck = (id: number, field: keyof PortfolioItem) => {
+  const handleFileCheck = (fileId: number, field: 'valid' | 'asli' | 'terkini' | 'memadai', value: boolean) => {
     if (isFormDisabled) return
-    setPortfolioItems(prev => prev.map(item => {
-      if (item.id === id) {
-        const fieldName = field as keyof Omit<PortfolioItem, 'id' | 'dokumen'>
-        const oppositeField = (fieldName.endsWith('_ya') ? fieldName.replace('_ya', '_tidak') : fieldName.replace('_tidak', '_ya')) as keyof PortfolioItem
-
-        // If clicking the same checkbox that's already checked, uncheck it
-        if (item[fieldName]) {
-          return { ...item, [fieldName]: false }
-        }
-
-        // Check this one, uncheck the opposite
-        return { ...item, [fieldName]: true, [oppositeField]: false }
+    setIa08Files(prev => prev.map(f => {
+      if (f.id !== fileId) return f
+      const current = f.answer?.[field]
+      const newVal = (current === value) ? null : value
+      return {
+        ...f,
+        answer: { ...(f.answer || { valid: null, asli: null, terkini: null, memadai: null }), [field]: newVal },
       }
-      return item
     }))
   }
 
@@ -300,13 +266,12 @@ export default function Ia08Page() {
 
       const payload = {
         dokumen_id: dokumenId,
-        apl2_answers: portfolioItems.map(item => ({
-          soal_id: item.id,
-          valid: item.valid_ya,
-          asli: item.asli_ya,
-          terkini: item.terkini_ya,
-          memadai: item.memadai_ya,
-          file_ids: ia08Files.filter(f => String(f.soal_id) === String(item.id)).map(f => f.id),
+        apl2_answers: ia08Files.map(f => ({
+          file_id: f.id,
+          valid: f.answer?.valid ?? null,
+          asli: f.answer?.asli ?? null,
+          terkini: f.answer?.terkini ?? null,
+          memadai: f.answer?.memadai ?? null,
         })),
         unit_answers: wawancaraItems.map(item => ({
           soal_id: item.id,
@@ -452,48 +417,37 @@ export default function Ia08Page() {
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
             </tr>
-            {portfolioItems.map((item) => {
-              const itemFiles = ia08Files.filter(f => String(f.soal_id) === String(item.id))
-              return (<tr key={item.id}>
+            {ia08Files.map((file) => (
+              <tr key={file.id}>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {itemFiles.length > 0 ? (
-                    itemFiles.map((f, fi) => (
-                      <span key={f.id}>
-                        <a href={f.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{f.original_name}</a>
-                        {fi < itemFiles.length - 1 && ', '}
-                      </span>
-                    ))
-                  ) : (
-                    <span>{item.dokumen}</span>
-                  )}
+                  <a href={file.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{file.original_name}</a>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.valid_ya} onChange={() => handlePortfolioCheck(item.id, 'valid_ya')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.valid === true} onChange={() => handleFileCheck(file.id, 'valid', true)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.valid_tidak} onChange={() => handlePortfolioCheck(item.id, 'valid_tidak')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.valid === false} onChange={() => handleFileCheck(file.id, 'valid', false)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.asli_ya} onChange={() => handlePortfolioCheck(item.id, 'asli_ya')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.asli === true} onChange={() => handleFileCheck(file.id, 'asli', true)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.asli_tidak} onChange={() => handlePortfolioCheck(item.id, 'asli_tidak')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.asli === false} onChange={() => handleFileCheck(file.id, 'asli', false)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.terkini_ya} onChange={() => handlePortfolioCheck(item.id, 'terkini_ya')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.terkini === true} onChange={() => handleFileCheck(file.id, 'terkini', true)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.terkini_tidak} onChange={() => handlePortfolioCheck(item.id, 'terkini_tidak')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.terkini === false} onChange={() => handleFileCheck(file.id, 'terkini', false)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.memadai_ya} onChange={() => handlePortfolioCheck(item.id, 'memadai_ya')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.memadai === true} onChange={() => handleFileCheck(file.id, 'memadai', true)} disabled={isFormDisabled} />
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                  <CustomCheckbox checked={item.memadai_tidak} onChange={() => handlePortfolioCheck(item.id, 'memadai_tidak')} disabled={isFormDisabled} />
+                  <CustomCheckbox checked={file.answer?.memadai === false} onChange={() => handleFileCheck(file.id, 'memadai', false)} disabled={isFormDisabled} />
                 </td>
               </tr>
-            );
-          })}
+            ))}
           </tbody>
         </table>
 
