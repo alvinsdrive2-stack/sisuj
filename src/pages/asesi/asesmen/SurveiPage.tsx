@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
-import * as XLSX from "xlsx"
+
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -242,48 +242,6 @@ export default function SurveiPage() {
     return `/asesi/asesmen/${id}/selesai`
   }
 
-  const handleExportXlsx = () => {
-    const wb = XLSX.utils.book_new()
-
-    // Sheet 1 - Identitas
-    const identitasData = [
-      ["FORM SURVEI KEPUASAN TERHADAP LSP"],
-      [],
-      ["A. Identitas Responden"],
-      ["Nama", namaAsesi || "-"],
-      ["ID Ijin", id || "-"],
-      ["Skema Sertifikasi", jabatanKerja || "-"],
-      ["Tempat Uji Kompetensi (TUK)", tuk || "-"],
-      ["Tanggal Uji Kompetensi", tanggalUji || "-"],
-    ]
-    const identitasSheet = XLSX.utils.aoa_to_sheet(identitasData)
-    XLSX.utils.book_append_sheet(wb, identitasSheet, "Identitas")
-
-    // Sheet 2 - Penilaian
-    const penilaianHeader = ["No.", "Aspek Penilaian", "Deskripsi", "Skor (1-5)"]
-    const penilaianRows = surveyItems.map(item => [
-      item.no,
-      item.aspek,
-      item.deskripsi,
-      item.skor !== null ? String(item.skor) : "",
-    ])
-    const penilaianSheet = XLSX.utils.aoa_to_sheet([penilaianHeader, ...penilaianRows])
-    XLSX.utils.book_append_sheet(wb, penilaianSheet, "Penilaian")
-
-    // Sheet 3 - Saran
-    const saranData = [
-      ["D. Saran dan Masukan"],
-      [saran || "-"],
-      [],
-      ["E. Pernyataan"],
-      ["Isi survei ini dengan jujur sesuai pengalaman saya:", pernyataan ? "Ya" : "Belum"],
-    ]
-    const saranSheet = XLSX.utils.aoa_to_sheet(saranData)
-    XLSX.utils.book_append_sheet(wb, saranSheet, "Saran & Pernyataan")
-
-    XLSX.writeFile(wb, `Survei-LSP-${id || "asesi"}.xlsx`)
-  }
-
   const handleNext = () => {
     navigate(getNextPath())
   }
@@ -507,9 +465,6 @@ export default function SurveiPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
-          <ActionButton variant="secondary" onClick={handleExportXlsx}>
-            Export XLSX
-          </ActionButton>
           {isAsesor && (
             <ActionButton variant="secondary" onClick={() => navigate(getBackPath())}>
               Kembali
