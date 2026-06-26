@@ -5,11 +5,24 @@ import { useAuth } from "@/contexts/auth-context"
 import { subscribeNavbarTimer } from "@/lib/navbar-timer"
 import { RoleId } from "@/lib/rbac-config"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
+import { FullPageLoader } from "@/components/ui/loading-spinner"
 import loopVideo from "@/assets/Sequence 01.mp4"
 
 export default function AsesiMainLayout({ children }: { children: ReactNode }) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const [timerNode, setTimerNode] = useState<ReactNode>(null)
+
+  useEffect(() => subscribeNavbarTimer(setTimerNode), [])
+
+  if (isLoading) {
+    return (
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <FullPageLoader text="Memuat..." />
+      </>
+    )
+  }
+
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
   if (isAsesor) {
@@ -29,9 +42,6 @@ export default function AsesiMainLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  useEffect(() => subscribeNavbarTimer(setTimerNode), [])
-
-  // Asesi gets minimal layout (just top navbar)
   return (
     <>
       <DashboardNavbar userName={user?.name} timerNode={timerNode} />
