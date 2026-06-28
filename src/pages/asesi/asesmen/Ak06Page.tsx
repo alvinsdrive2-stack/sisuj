@@ -393,6 +393,10 @@ export default function Ak06Page() {
         setVideoAjj(videoLink.trim())
         setShowVideoLinkModal(false)
         showSuccess('Link video berhasil disimpan')
+
+        // Re-upload mode — already signed, just close
+        if (signing.allSigned) return
+
         // Proceed to absen akhir
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
@@ -456,7 +460,10 @@ export default function Ak06Page() {
         setShowVideoLinkModal(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
-        // Proceed to absen akhir
+        // Re-upload mode (already signed) — just close and stay
+        if (signing.allSigned) return
+
+        // First-time upload flow — proceed to absen akhir
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
           setShowAkhirModal(true)
@@ -850,6 +857,17 @@ export default function Ak06Page() {
                 Kembali
               </ActionButton>
             )}
+
+            {/* Re-upload video button — visible after all signed */}
+            {signing.allSigned && isAsesor1 && (
+              <ActionButton
+                variant="secondary"
+                onClick={() => setShowVideoLinkModal(true)}
+              >
+                Upload Ulang Video
+              </ActionButton>
+            )}
+
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
