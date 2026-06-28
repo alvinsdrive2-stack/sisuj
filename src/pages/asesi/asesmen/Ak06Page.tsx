@@ -18,9 +18,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
-import { createGoogleDriveFile } from "@/lib/google-drive"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faSpinner } from "@fortawesome/free-solid-svg-icons"
+import GoogleDriveUploader from "@/components/GoogleDriveUploader"
 
 interface AspekAPI {
   aspek_id: string
@@ -133,8 +131,7 @@ export default function Ak06Page() {
   const [showVideoLinkModal, setShowVideoLinkModal] = useState(false)
   const [videoLink, setVideoLink] = useState('')
   const [videoAjj, setVideoAjj] = useState('')
-  const [isDriveUploading, setIsDriveUploading] = useState(false)
-  const [driveProgress, setDriveProgress] = useState('')
+  const [showDriveUploader, setShowDriveUploader] = useState(false)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   const driveParentFolderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID as string | undefined
 
@@ -422,28 +419,8 @@ export default function Ak06Page() {
     }
   }
 
-  const handleDriveUpload = async (file: File) => {
-    if (!googleClientId) {
-      showWarning('Google Drive belum dikonfigurasi. Silakan upload manual.')
-      return
-    }
-
-    const folderName = `${id} - ${namaAsesi}`
-    setIsDriveUploading(true)
-    setDriveProgress('Menyiapkan upload...')
-
+  const handleDriveUploadSuccess = useCallback(async (webViewLink: string) => {
     try {
-      setDriveProgress('Otentikasi Google...')
-      const result = await createGoogleDriveFile(
-        googleClientId,
-        folderName,
-        file,
-        driveParentFolderId,
-        (pct) => setDriveProgress(`Upload ${pct}%`)
-      )
-
-      setDriveProgress('Menyimpan...')
-      // Auto-save the Drive link
       const token = localStorage.getItem('access_token')
       const res = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
         method: 'PUT',
@@ -452,12 +429,13 @@ export default function Ak06Page() {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ link_video: result.webViewLink }),
+        body: JSON.stringify({ link_video: webViewLink }),
       })
 
       if (res.ok) {
-        setVideoAjj(result.webViewLink)
+        setVideoAjj(webViewLink)
         setShowVideoLinkModal(false)
+        setShowDriveUploader(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
         // Re-upload mode (already signed) — just close and stay
@@ -478,33 +456,13 @@ export default function Ak06Page() {
           }
         }
       } else {
-        // Upload to Drive succeeded but save failed — fallback to manual
-        setVideoLink(result.webViewLink)
+        setVideoLink(webViewLink)
         showWarning('File terupload ke Drive. Klik Simpan untuk melanjutkan.')
       }
-    } catch (error: any) {
-      console.error('Error uploading to Google Drive:', error)
-      if (error.message?.includes('user_cancelled') || error.message?.includes('User cancelled')) {
-        showWarning('Upload dibatalkan.')
-      } else {
-        showError(extractErrorMessage(error, 'Gagal upload ke Google Drive'))
-      }
-    } finally {
-      setIsDriveUploading(false)
-      setDriveProgress('')
+    } catch (err) {
+      showError(extractErrorMessage(err, 'Gagal menyimpan tautan video'))
     }
-  }
-
-  const triggerDriveFilePick = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = 'video/*,.mp4,.avi,.mkv,.mov,.webm'
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0]
-      if (file) handleDriveUpload(file)
-    }
-    input.click()
-  }
+  }, [jadwalId, signing.allSigned, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowVideoLinkModal, setShowAkhirModal, setPendingAfterAbsen, setVideoLink])
 
   const handleAkhirModalClose = () => {
     _handleAkhirModalClose()
@@ -862,7 +820,13 @@ export default function Ak06Page() {
             {signing.allSigned && isAsesor1 && (
               <ActionButton
                 variant="secondary"
-                onClick={() => setShowVideoLinkModal(true)}
+                onClick={() => {
+                  if (isAsesor1) {
+                    setShowDriveUploader(true)
+                  } else {
+                    setShowVideoLinkModal(true)
+                  }
+                }}
               >
                 Upload Ulang Video
               </ActionButton>
@@ -875,7 +839,7 @@ export default function Ak06Page() {
         </div>
       </ModularAsesiLayout>
 
-      {/* Video AJJ Link Modal */}
+      {/* Video AJJ Link Modal — manual input only */}
       {showVideoLinkModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -883,83 +847,54 @@ export default function Ak06Page() {
           alignItems: 'center', justifyContent: 'center', zIndex: 1000
         }}>
           <div style={{
-            background: '#fff', borderRadius: '8px', padding: '24px',
-            width: '90%', maxWidth: '480px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            background: '#fff', borderRadius: '16px', padding: '24px',
+            width: '90%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            animation: 'driveModalIn 0.25s ease-out',
           }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 'bold' }}>
-              Upload Video AJJ
+            <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '700', color: '#111827' }}>
+              Link Video AJJ
             </h3>
-            <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#666' }}>
-              Upload video AJJ asesi <strong>{namaAsesi || ''}</strong>
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#6b7280' }}>
+              Masukkan link Google Drive video AJJ asesi <strong>{namaAsesi || ''}</strong>
             </p>
 
-            {/* Automated Drive upload — only for Asesor 1 */}
-            {isAsesor1 && !isDriveUploading && (
-              <button
-                onClick={triggerDriveFilePick}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                  width: '100%', padding: '14px', marginBottom: '16px',
-                  background: '#4285F4', color: '#fff', fontSize: '14px', fontWeight: '600',
-                  border: 'none', borderRadius: '8px', cursor: 'pointer',
-                  transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(66,133,244,0.2)'
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = '#3367D6' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#4285F4' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-                  <path d="M24 2L46 30H2L24 2Z" fill="#fff"/>
-                  <path d="M24 18L46 46H2L24 18Z" fill="#fff" fillOpacity="0.7"/>
-                </svg>
-                Upload Video ke Google Drive
-              </button>
-            )}
-
-            {/* Upload progress */}
-            {isDriveUploading && (
-              <div style={{
-                textAlign: 'center', padding: '20px', marginBottom: '16px',
-                background: '#f0f7ff', borderRadius: '8px', border: '1px solid #b3d4fc'
-              }}>
-                <FontAwesomeIcon icon={faSpinner} style={{ fontSize: '28px', color: '#4285F4', animation: 'spin 1s linear infinite', marginBottom: '10px' }} />
-                <p style={{ fontSize: '13px', color: '#1a56db', fontWeight: '500', margin: 0 }}>
-                  {driveProgress || 'Upload ke Google Drive...'}
-                </p>
-              </div>
-            )}
-
-            {/* Folder link (always visible for reference) */}
+            {/* Folder link */}
             <a
               href="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                display: 'block', padding: '10px 12px', background: '#eff6ff',
-                border: '1px solid #93c5fd', borderRadius: '6px', fontSize: '13px',
-                color: '#1d4ed8', textDecoration: 'none', marginBottom: '12px',
-                wordBreak: 'break-all'
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '10px 14px', background: '#f0f7ff',
+                border: '1px solid #93c5fd', borderRadius: '8px', fontSize: '13px',
+                color: '#1d4ed8', textDecoration: 'none', marginBottom: '16px',
               }}
             >
-              📂 Buka Folder Google Drive
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              Buka Folder Google Drive
             </a>
 
-            {/* Manual link input (fallback for all roles) */}
-            <div style={{
-              background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '6px',
-              padding: '10px 12px', marginBottom: '16px', fontSize: '12px', color: '#92400e'
-            }}>
-              <strong>Manual:</strong> Upload ke folder di atas, lalu paste link folder di sini.
-            </div>
+            {/* Manual link input */}
+            <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
+              Link video dari Google Drive
+            </p>
             <input
               type="text"
               value={videoLink}
               onChange={(e) => setVideoLink(e.target.value)}
-              placeholder="https://drive.google.com/drive/u/4/folders/..."
+              placeholder="https://drive.google.com/file/d/..."
               style={{
-                width: '100%', padding: '8px 12px', border: '1px solid #ccc',
-                borderRadius: '4px', fontSize: '14px', marginBottom: '16px',
-                boxSizing: 'border-box'
+                width: '100%', padding: '10px 14px', border: '1px solid #d1d5db',
+                borderRadius: '10px', fontSize: '14px', marginBottom: '16px',
+                boxSizing: 'border-box', outline: 'none',
+                transition: 'border-color 0.2s',
               }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#4285F4'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
             />
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
               <ActionButton variant="secondary" onClick={() => {
@@ -974,6 +909,24 @@ export default function Ak06Page() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Google Drive Uploader */}
+      {showDriveUploader && (
+        <GoogleDriveUploader
+          googleClientId={googleClientId}
+          folderName={`${id} - ${namaAsesi}`}
+          parentFolderId={driveParentFolderId}
+          namaAsesi={namaAsesi || ''}
+          onUploadSuccess={handleDriveUploadSuccess}
+          onClose={() => {
+            setShowDriveUploader(false)
+            // If re-upload mode, don't trigger absen flow
+            if (!signing.allSigned && pendingAfterAbsen) {
+              setPendingAfterAbsen(false)
+            }
+          }}
+        />
       )}
 
       {/* Absen Awal Modal */}
