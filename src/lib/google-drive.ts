@@ -187,7 +187,7 @@ export async function uploadFileToDrive(
   await setFilePermission(fileId)
 
   const meta = await driveFetch(
-    `${DRIVE_API}/files/${fileId}?fields=id,name,webViewLink,mimeType${drivesParam}`
+    `${DRIVE_API}/files/${fileId}?fields=id,name,webViewLink,mimeType&supportsAllDrives=true`
   )
 
   return {
@@ -206,7 +206,7 @@ function uploadContentWithProgress(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('PATCH', `${DRIVE_UPLOAD}/files/${fileId}?uploadType=media`)
+    xhr.open('PATCH', `${DRIVE_UPLOAD}/files/${fileId}?uploadType=media&supportsAllDrives=true`)
     xhr.setRequestHeader('Authorization', `Bearer ${token}`)
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
 
