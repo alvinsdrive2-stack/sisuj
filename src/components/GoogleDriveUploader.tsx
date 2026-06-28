@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from "react"
+import favicon from "@/assets/favicon.png"
 
 interface DriveUploaderProps {
   googleClientId: string | undefined
@@ -265,13 +266,7 @@ export default function GoogleDriveUploader({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
           >
-            <svg style={styles.driveIcon} viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L26.1 52.3H0c0 1.95.5 3.9 1.5 5.6l5.1 8.95z" fill="#0066da"/>
-              <path d="M43.65 25L29.15 52.3h29L69.9 25H43.65z" fill="#00ac47"/>
-              <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l5.1-8.95c1-1.7 1.5-3.65 1.5-5.6H61.2l12.35 17.85z" fill="#ea4335"/>
-              <path d="M43.65 25L29.15 52.3H13.05l12.4-17.85L43.65 2.35c-1.75 0-3.5.5-5.1 1.5L6.6 23.15c-2.5 1.45-4.5 3.5-5.1 6.65v22.5h26.95L43.65 25h-.4z" fill="#2684fc"/>
-              <path d="M74.25 35.8c-.6-3.15-2.6-5.2-5.1-6.65L38.55 3.85C37 2.85 35.25 2.35 33.5 2.35L43.65 25l27.1 27.3h15.55c0-1.95-.5-3.9-1.5-5.6l-5.1-8.95-5.45-2.25v.7z" fill="none"/>
-            </svg>
+            <img src={favicon} alt="SISUJ" style={{ width: '48px', height: '48px', marginBottom: '16px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
             <p style={{ fontSize: '15px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>
               Klik untuk pilih video
             </p>
@@ -348,10 +343,7 @@ export default function GoogleDriveUploader({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#3367D6'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(66,133,244,0.4)' }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#4285F4'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(66,133,244,0.3)' }}
             >
-              <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-                <path d="M24 2L46 30H2L24 2Z" fill="#fff"/>
-                <path d="M24 18L46 46H2L24 18Z" fill="#fff" fillOpacity="0.7"/>
-              </svg>
+              <img src={favicon} alt="" style={{ width: '18px', height: '18px' }} />
               Upload ke Google Drive
             </button>
           </div>
@@ -366,13 +358,8 @@ export default function GoogleDriveUploader({
             textAlign: 'center',
           }}>
             {/* Animated Drive icon */}
-            <div style={{ animation: 'drivePulse 1.5s ease-in-out infinite', marginBottom: '16px' }}>
-              <svg width="40" height="40" viewBox="0 0 87.3 78" style={{ margin: '0 auto', display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-                <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L26.1 52.3H0c0 1.95.5 3.9 1.5 5.6l5.1 8.95z" fill="#0066da"/>
-                <path d="M43.65 25L29.15 52.3h29L69.9 25H43.65z" fill="#00ac47"/>
-                <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l5.1-8.95c1-1.7 1.5-3.65 1.5-5.6H61.2l12.35 17.85z" fill="#ea4335"/>
-                <path d="M43.65 25L29.15 52.3H13.05l12.4-17.85L43.65 2.35c-1.75 0-3.5.5-5.1 1.5L6.6 23.15c-2.5 1.45-4.5 3.5-5.1 6.65v22.5h26.95L43.65 25h-.4z" fill="#2684fc"/>
-              </svg>
+            <div style={{ animation: 'drivePulse 1.5s ease-in-out infinite', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+              <img src={favicon} alt="" style={{ width: '40px', height: '40px' }} />
             </div>
 
             {selectedFile && (
