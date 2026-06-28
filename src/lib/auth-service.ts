@@ -130,9 +130,10 @@ class AuthService {
     })
 
     if (!response.ok) {
-      // If unauthorized, clear token and throw error
       console.warn('[AuthService] /auth/me returned status:', response.status)
-      if (response.status === 401) {
+      // UUID flow: token from UUID link won't work with /auth/me — don't clear it
+      const isUuidSession = !!sessionStorage.getItem("praasesmen_uuid_data")
+      if (response.status === 401 && !isUuidSession) {
         this.removeToken()
       }
       throw new Error(`Failed to get current user (status: ${response.status})`)

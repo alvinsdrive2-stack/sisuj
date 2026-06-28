@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
@@ -97,7 +98,7 @@ export default function VerifikasiTukAjjPage() {
         toast(result.message || "Gagal mengirim verifikasi", "error")
       }
     } catch (error) {
-      toast("Terjadi kesalahan. Silakan coba lagi.", "error")
+      toast(extractErrorMessage(error, "Terjadi kesalahan. Silakan coba lagi."), "error")
     } finally {
       setIsLoading(false)
     }

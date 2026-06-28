@@ -3,13 +3,6 @@ import { useParams, useNavigate } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 
-const authHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("access_token")
-  const h: Record<string, string> = { "Accept": "application/json" }
-  if (token) h["Authorization"] = `Bearer ${token}`
-  return h
-}
-
 export default function PraAsesmenByUuidPage() {
   const { uuid } = useParams<{ uuid: string }>()
   const navigate = useNavigate()
@@ -19,7 +12,15 @@ export default function PraAsesmenByUuidPage() {
     if (!uuid) { setError("UUID tidak valid"); return }
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/persiapan-asesmen/${uuid}`, { headers: authHeaders() })
+        // Bersihkan semua auth state sebelumnya agar tidak konflik dengan token UUID
+        localStorage.removeItem("access_token")
+        localStorage.removeItem("user_data")
+        sessionStorage.removeItem("praasesmen_uuid_data")
+        sessionStorage.removeItem("isUuidFlow")
+
+        const res = await fetch(`${API_BASE_URL}/persiapan-asesmen/${uuid}`, {
+          headers: { "Accept": "application/json" }
+        })
         if (!res.ok) throw new Error("Gagal memuat data")
         const result = await res.json()
         if (!result.success || !result.data?.id_izin) throw new Error("Data tidak ditemukan")

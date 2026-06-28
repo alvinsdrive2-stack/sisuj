@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
 import { toast } from "@/components/ui/toast"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import AsesiLayout from "@/components/AsesiLayout"
@@ -34,6 +35,7 @@ interface PersonalData {
 
 interface ApiResponse {
   success: boolean
+  message?: string
   data: PersonalData
 }
 
@@ -97,17 +99,18 @@ export default function PraAsesmenPage() {
       })
 
       if (!response.ok) {
-        throw new Error("Gagal memuat data")
+        const apiMsg = await extractApiError(response, "Gagal memuat data")
+        throw new Error(apiMsg)
       }
 
       const result: ApiResponse = await response.json()
       if (result.success) {
         setData(result.data)
       } else {
-        throw new Error("Data tidak ditemukan")
+        throw new Error(result.message || "Data tidak ditemukan")
       }
     } catch (error) {
-      toast(error instanceof Error ? error.message : "Gagal memuat data", "error")
+      toast(extractErrorMessage(error, "Gagal memuat data"), "error")
     }
   }, [])
 
@@ -157,7 +160,7 @@ export default function PraAsesmenPage() {
       // Fallback: jika tidak ada id_izin, gunakan jadwal_id
       navigate(`/asesi/praasesmen/${kegiatan.jadwal_id}/apl01`)
     } catch (error) {
-      toast("Gagal mengambil data kegiatan", "error")
+      toast(extractErrorMessage(error, "Gagal mengambil data kegiatan"), "error")
     } finally {
       setIsConfirming(false)
     }

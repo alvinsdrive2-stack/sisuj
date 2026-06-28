@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
@@ -407,7 +408,7 @@ export default function UjianPage() {
       try {
         await saveAnswer()
       } catch (error) {
-        showError('Gagal menyimpan jawaban. Silakan coba lagi.')
+        showError(extractErrorMessage(error, 'Gagal menyimpan jawaban. Silakan coba lagi.'))
         setIsSaving(false)
         return
       }
@@ -462,7 +463,7 @@ export default function UjianPage() {
         console.error('Failed to generate QR Ujian:', qrError)
       }
     } catch (error) {
-      showError('Gagal menyimpan jawaban. Silakan coba lagi.')
+      showError(extractErrorMessage(error, 'Gagal menyimpan jawaban. Silakan coba lagi.'))
       setShowCelebration(false)
     } finally {
       setIsSaving(false)

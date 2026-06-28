@@ -5,6 +5,7 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -282,12 +283,12 @@ export default function Ak03Page() {
         await signing.generateQR()
         signing.publishUpdate()
       } else {
-        console.error('Failed to save AK03:', response.status)
-        showError('Gagal menyimpan data. Silakan coba lagi.')
+        const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error saving AK03:', err)
-      showError('Terjadi kesalahan. Silakan coba lagi.')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }

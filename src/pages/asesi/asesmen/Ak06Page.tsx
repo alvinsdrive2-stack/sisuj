@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -17,6 +18,9 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { createGoogleDriveFile } from "@/lib/google-drive"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { faSpinner } from "@fortawesome/free-solid-svg-icons"
 
 interface AspekAPI {
   aspek_id: string
@@ -129,6 +133,10 @@ export default function Ak06Page() {
   const [showVideoLinkModal, setShowVideoLinkModal] = useState(false)
   const [videoLink, setVideoLink] = useState('')
   const [videoAjj, setVideoAjj] = useState('')
+  const [isDriveUploading, setIsDriveUploading] = useState(false)
+  const [driveProgress, setDriveProgress] = useState('')
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
+  const driveParentFolderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID as string | undefined
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak06')) + 1]?.label
 
@@ -328,12 +336,12 @@ export default function Ak06Page() {
           signing.publishUpdate()
         }
       } else {
-        console.error('Failed to save AK06:', response.status)
-        showError('Gagal menyimpan data. Silakan coba lagi.')
+        const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error saving AK06:', err)
-      showError('Terjadi kesalahan. Silakan coba lagi.')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }
@@ -401,12 +409,94 @@ export default function Ak06Page() {
           }
         }
       } else {
-        showError('Gagal menyimpan link video. Silakan coba lagi.')
+        const msg = await extractApiError(response, 'Gagal menyimpan link video. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error saving video link:', err)
-      showError('Terjadi kesalahan. Silakan coba lagi.')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
     }
+  }
+
+  const handleDriveUpload = async (file: File) => {
+    if (!googleClientId) {
+      showWarning('Google Drive belum dikonfigurasi. Silakan upload manual.')
+      return
+    }
+
+    const folderName = `${id} - ${namaAsesi}`
+    setIsDriveUploading(true)
+    setDriveProgress('Menyiapkan upload...')
+
+    try {
+      setDriveProgress('Otentikasi Google...')
+      const result = await createGoogleDriveFile(
+        googleClientId,
+        folderName,
+        file,
+        driveParentFolderId,
+        (pct) => setDriveProgress(`Upload ${pct}%`)
+      )
+
+      setDriveProgress('Menyimpan...')
+      // Auto-save the Drive link
+      const token = localStorage.getItem('access_token')
+      const res = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
+        method: 'PUT',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ link_video: result.webViewLink }),
+      })
+
+      if (res.ok) {
+        setVideoAjj(result.webViewLink)
+        setShowVideoLinkModal(false)
+        showSuccess('Video AJJ berhasil diupload ke Google Drive!')
+
+        // Proceed to absen akhir
+        const needsAbsenAkhir = await shouldShowAkhirModal()
+        if (needsAbsenAkhir) {
+          setShowAkhirModal(true)
+        } else {
+          setPendingAfterAbsen(false)
+          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+          const nextStep = asesmenSteps[currentIdx + 1]
+          if (nextStep) {
+            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        }
+      } else {
+        // Upload to Drive succeeded but save failed — fallback to manual
+        setVideoLink(result.webViewLink)
+        showWarning('File terupload ke Drive. Klik Simpan untuk melanjutkan.')
+      }
+    } catch (error: any) {
+      console.error('Error uploading to Google Drive:', error)
+      if (error.message?.includes('user_cancelled') || error.message?.includes('User cancelled')) {
+        showWarning('Upload dibatalkan.')
+      } else {
+        showError(extractErrorMessage(error, 'Gagal upload ke Google Drive'))
+      }
+    } finally {
+      setIsDriveUploading(false)
+      setDriveProgress('')
+    }
+  }
+
+  const triggerDriveFilePick = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'video/*,.mp4,.avi,.mkv,.mov,.webm'
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (file) handleDriveUpload(file)
+    }
+    input.click()
   }
 
   const handleAkhirModalClose = () => {
@@ -782,8 +872,45 @@ export default function Ak06Page() {
               Upload Video AJJ
             </h3>
             <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#666' }}>
-              Upload video AJJ asesi <strong>{namaAsesi || ''}</strong> ke folder berikut:
+              Upload video AJJ asesi <strong>{namaAsesi || ''}</strong>
             </p>
+
+            {/* Automated Drive upload — only for Asesor 1 */}
+            {isAsesor1 && !isDriveUploading && (
+              <button
+                onClick={triggerDriveFilePick}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                  width: '100%', padding: '14px', marginBottom: '16px',
+                  background: '#4285F4', color: '#fff', fontSize: '14px', fontWeight: '600',
+                  border: 'none', borderRadius: '8px', cursor: 'pointer',
+                  transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(66,133,244,0.2)'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#3367D6' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#4285F4' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+                  <path d="M24 2L46 30H2L24 2Z" fill="#fff"/>
+                  <path d="M24 18L46 46H2L24 18Z" fill="#fff" fillOpacity="0.7"/>
+                </svg>
+                Upload Video ke Google Drive
+              </button>
+            )}
+
+            {/* Upload progress */}
+            {isDriveUploading && (
+              <div style={{
+                textAlign: 'center', padding: '20px', marginBottom: '16px',
+                background: '#f0f7ff', borderRadius: '8px', border: '1px solid #b3d4fc'
+              }}>
+                <FontAwesomeIcon icon={faSpinner} style={{ fontSize: '28px', color: '#4285F4', animation: 'spin 1s linear infinite', marginBottom: '10px' }} />
+                <p style={{ fontSize: '13px', color: '#1a56db', fontWeight: '500', margin: 0 }}>
+                  {driveProgress || 'Upload ke Google Drive...'}
+                </p>
+              </div>
+            )}
+
+            {/* Folder link (always visible for reference) */}
             <a
               href="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
               target="_blank"
@@ -797,22 +924,19 @@ export default function Ak06Page() {
             >
               📂 Buka Folder Google Drive
             </a>
+
+            {/* Manual link input (fallback for all roles) */}
             <div style={{
               background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '6px',
               padding: '10px 12px', marginBottom: '16px', fontSize: '12px', color: '#92400e'
             }}>
-              <strong>Langkah:</strong><br />
-              1. Buka folder link di atas<br />
-              2. Buat folder baru dengan nama: <strong>{id} - {namaAsesi || ''}</strong><br />
-              3. Upload video ke dalam folder tersebut<br />
-              4. Klik kanan folder → Bagikan → Salin link publik<br />
-              5. Tempelkan link hasil share di bawah ini
+              <strong>Manual:</strong> Upload ke folder di atas, lalu paste link folder di sini.
             </div>
             <input
               type="text"
               value={videoLink}
               onChange={(e) => setVideoLink(e.target.value)}
-              placeholder="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
+              placeholder="https://drive.google.com/drive/u/4/folders/..."
               style={{
                 width: '100%', padding: '8px 12px', border: '1px solid #ccc',
                 borderRadius: '4px', fontSize: '14px', marginBottom: '16px',

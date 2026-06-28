@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -355,7 +356,7 @@ export default function Ak05Page() {
       }
     } catch (err) {
       console.error('Error saving AK05:', err)
-      showError('Terjadi kesalahan. Silakan coba lagi.')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
       return
     } finally {
       setIsSaving(false)

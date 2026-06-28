@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -222,12 +223,12 @@ export default function SurveiPage() {
           }
         }
       } else {
-        console.error('Failed to save survei:', response.status)
-        showError('Gagal menyimpan survei. Silakan coba lagi.')
+        const msg = await extractApiError(response, 'Gagal menyimpan survei. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error saving survei:', err)
-      showError('Terjadi kesalahan. Silakan coba lagi.')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }

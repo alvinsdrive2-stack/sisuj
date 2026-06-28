@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faClose, faCamera, faClock, faUpload, faImage, faUsers, faUserCheck, faFilePdf, faExternalLinkAlt, faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
+import { extractErrorMessage } from "@/lib/error-utils"
 import QRCode from "qrcode"
 import { encryptCaptureData } from "@/utils/crypto"
 
@@ -233,7 +234,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
       }
     } catch (error) {
       console.error('Error uploading:', error)
-      toast("Gagal mengupload", "error")
+      toast(extractErrorMessage(error, "Gagal mengupload"), "error")
     } finally {
       setIsUploading(null)
     }

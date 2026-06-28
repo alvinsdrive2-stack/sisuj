@@ -8,6 +8,7 @@ import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useDokumenModal } from "@/contexts/DokumenModalContext"
 import { DokumenViewerModal } from "@/components/direktur"
 import { API_BASE_URL } from "@/config/api"
@@ -114,11 +115,12 @@ export default function DetailDokumenDirekturPage() {
           const result: DokumenDirekturResponse = await response.json()
           setDokumenDirektur(result.data)
         } else {
-          showError('Gagal memuat dokumen direktur')
+          const msg = await extractApiError(response, 'Gagal memuat dokumen direktur')
+          showError(msg)
         }
       } catch (error) {
         console.error("Error fetching dokumen direktur:", error)
-        showError('Terjadi kesalahan saat memuat dokumen')
+        showError(extractErrorMessage(error, 'Terjadi kesalahan saat memuat dokumen'))
       }
     }
 
@@ -181,13 +183,12 @@ export default function DetailDokumenDirekturPage() {
 
         showSuccess(`${config.label} berhasil ditandatangani!`)
       } else {
-        const errBody = await response.text()
-        console.error(`Failed to approve ${docKey}:`, errBody)
-        showError(`Gagal menandatangani ${config.label}`)
+        const msg = await extractApiError(response, `Gagal menandatangani ${config.label}`)
+        showError(msg)
       }
     } catch (error) {
       console.error(`Error approving ${docKey}:`, error)
-      showError('Terjadi kesalahan')
+      showError(extractErrorMessage(error, 'Terjadi kesalahan'))
     } finally {
       setIsSigning(false)
     }

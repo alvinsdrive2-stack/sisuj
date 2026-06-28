@@ -8,6 +8,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -1715,11 +1716,12 @@ export default function Apl02Page() {
           return newKukBukti
         })
       } else {
-        showError('Gagal menghapus file')
+        const msg = await extractApiError(response, 'Gagal menghapus file')
+        showError(msg)
       }
     } catch (error) {
       console.error("Error deleting file:", error)
-      showError('Terjadi kesalahan saat menghapus file')
+      showError(extractErrorMessage(error, 'Terjadi kesalahan saat menghapus file'))
     }
   }
 
@@ -1811,11 +1813,12 @@ export default function Apl02Page() {
           showSuccess(`${stagingFiles.length} file berhasil diupload`)
         }
       } else {
-        showError('Gagal upload file')
+        const msg = await extractApiError(uploadResponse, 'Gagal upload file')
+        showError(msg)
       }
     } catch (error) {
       console.error('Error uploading files:', error)
-      showError('Terjadi kesalahan saat upload file')
+      showError(extractErrorMessage(error, 'Terjadi kesalahan saat upload file'))
     } finally {
       setIsUploading(false)
       setShowFileTypeModal(false)
@@ -2242,7 +2245,8 @@ export default function Apl02Page() {
         })
 
         if (!metodeResponse.ok) {
-          showError('Gagal menyimpan metode asesmen')
+          const errMsg = await extractApiError(metodeResponse, 'Gagal menyimpan metode asesmen')
+          showError(errMsg)
           return
         }
 
@@ -2262,7 +2266,7 @@ export default function Apl02Page() {
         }
       } catch (error) {
         console.error('Error saving metode:', error)
-        showError('Gagal menyimpan metode asesmen')
+        showError(extractErrorMessage(error, 'Gagal menyimpan metode asesmen'))
       } finally {
         setIsSaving(false)
       }
@@ -2427,11 +2431,12 @@ export default function Apl02Page() {
           setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
         }
       } else {
-        showError('Gagal menyimpan data APL 02')
+        const msg = await extractApiError(response, 'Gagal menyimpan data APL 02')
+        showError(msg)
       }
     } catch (error) {
       console.error('Error saving APL02:', error)
-      showError(error instanceof Error ? error.message : "Gagal menyimpan data APL 02")
+      showError(extractErrorMessage(error, "Gagal menyimpan data APL 02"))
     } finally {
       setIsSaving(false)
     }

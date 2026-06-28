@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -743,13 +744,12 @@ export default function Ia01Page() {
 
                     await signing.generateQR()
                   } else {
-                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
-                    console.error('Failed to save IA01:', response.status, errorData)
-                    showError(errorData.message || 'Gagal menyimpan data. Silakan coba lagi.')
+                    const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
+                    showError(msg)
                   }
                 } catch (err) {
                   console.error('Error saving IA01:', err)
-                  showError('Terjadi kesalahan. Silakan coba lagi.')
+                  showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
                 } finally {
                   setIsSaving(false)
                 }

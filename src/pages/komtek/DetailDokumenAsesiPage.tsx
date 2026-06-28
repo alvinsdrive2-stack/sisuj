@@ -5,6 +5,7 @@ import { faFilePdf, faFilePowerpoint, faFileImage, faFile, faArrowLeft, faSpinne
 import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
@@ -90,11 +91,12 @@ export default function DetailDokumenAsesiPage() {
           const result: DokumenResponse = await response.json()
           setDokumenResponse(result)
         } else {
-          showError('Gagal memuat data dokumen')
+          const msg = await extractApiError(response, 'Gagal memuat data dokumen')
+          showError(msg)
         }
       } catch (error) {
         console.error("Error fetching dokumen:", error)
-        showError('Terjadi kesalahan saat memuat dokumen')
+        showError(extractErrorMessage(error, 'Terjadi kesalahan saat memuat dokumen'))
       } finally {
         setIsLoading(false)
       }

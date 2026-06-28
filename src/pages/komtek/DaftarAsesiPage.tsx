@@ -11,6 +11,7 @@ import { useDokumenModal } from "@/contexts/DokumenModalContext"
 import { DokumenViewerModal } from "@/components/direktur"
 import { API_BASE_URL } from "@/config/api"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 
 interface KomtekFiles {
@@ -158,11 +159,12 @@ export default function DaftarAsesiSudahPage() {
         setSelectedDokumen(null)
         showSuccess('BA Komtek berhasil ditandatangani!')
       } else {
-        showError('Gagal menandatangani BA Komtek')
+        const msg = await extractApiError(response, 'Gagal menandatangani BA Komtek')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error signing BA Komtek:', err)
-      showError('Terjadi kesalahan saat menandatangani BA Komtek')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan saat menandatangani BA Komtek'))
     } finally {
       setIsSigning(false)
     }

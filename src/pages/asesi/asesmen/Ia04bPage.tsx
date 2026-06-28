@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
@@ -360,7 +361,7 @@ export default function Ia04bPage() {
 
       showSuccess('IA 04.B berhasil disimpan!')
     } catch (error) {
-      showError('Gagal menyimpan data. Silakan coba lagi.')
+      showError(extractErrorMessage(error, 'Gagal menyimpan data. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }

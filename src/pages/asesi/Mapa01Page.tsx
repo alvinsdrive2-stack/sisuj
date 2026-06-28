@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage } from "@/lib/error-utils"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -94,7 +95,7 @@ export default function Mapa01Page() {
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
-  const { showSuccess, showWarning } = useToast()
+  const { showSuccess, showWarning, showError } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -271,7 +272,7 @@ export default function Mapa01Page() {
       }
     } catch (error) {
       console.error('Error saving MAPA 01:', error)
-      showWarning('Terjadi kesalahan saat menyimpan')
+      showError(extractErrorMessage(error, 'Terjadi kesalahan saat menyimpan'))
     } finally {
       setIsSaving(false)
     }

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
@@ -299,11 +300,12 @@ export default function Ia08Page() {
         await signing.generateQR()
         signing.publishUpdate()
       } else {
-        showError('Gagal menyimpan IA 08')
+        const msg = await extractApiError(response, 'Gagal menyimpan IA 08')
+        showError(msg)
       }
     } catch (err) {
       console.error('Error saving IA08:', err)
-      showError('Terjadi kesalahan')
+      showError(extractErrorMessage(err, 'Terjadi kesalahan'))
     } finally {
       setIsSaving(false)
     }

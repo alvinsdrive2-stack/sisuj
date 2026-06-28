@@ -5,6 +5,7 @@ import MukLayout from "@/components/MukLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -268,7 +269,8 @@ export default function FrAk04Page() {
         })
 
         if (!response.ok) {
-          showError("Gagal menyimpan data. Status: " + response.status)
+          const errMsg = await extractApiError(response, "Gagal menyimpan data")
+          showError(errMsg)
           return
         }
         const result = await response.json()
@@ -301,7 +303,7 @@ export default function FrAk04Page() {
       }
     } catch (error) {
       console.error("Error saving AK04:", error)
-      showError("Terjadi kesalahan saat menyimpan data")
+      showError(extractErrorMessage(error, "Terjadi kesalahan saat menyimpan data"))
     } finally {
       setIsSaving(false)
     }

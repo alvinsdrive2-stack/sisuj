@@ -5,6 +5,7 @@ import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
@@ -281,12 +282,12 @@ export default function Ia05Page() {
           setTimeout(() => navigate(`/asesi/asesmen/${id}/selesai`), 500)
         }
       } else {
-        const result = await response.json()
-        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
+        const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (error) {
       console.error('Error saving IA05:', error)
-      showError('Gagal menyimpan data. Silakan coba lagi.')
+      showError(extractErrorMessage(error, 'Gagal menyimpan data. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }
@@ -360,12 +361,12 @@ export default function Ia05Page() {
         // Navigate to AK02
         setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
       } else {
-        const result = await response.json()
-        showError(`Gagal menyimpan: ${result.message || 'Terjadi kesalahan'}`)
+        const msg = await extractApiError(response, 'Gagal menyimpan umpan balik. Silakan coba lagi.')
+        showError(msg)
       }
     } catch (error) {
       console.error('Error saving umpan balik:', error)
-      showError('Gagal menyimpan umpan balik. Silakan coba lagi.')
+      showError(extractErrorMessage(error, 'Gagal menyimpan umpan balik. Silakan coba lagi.'))
     } finally {
       setIsSaving(false)
     }
