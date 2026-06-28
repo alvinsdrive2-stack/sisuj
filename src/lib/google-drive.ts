@@ -228,7 +228,7 @@ function uploadContentWithProgress(
 
 /** Set file to "Anyone with link can view". Returns file accessible without Google login. */
 async function setFilePermission(fileId: string): Promise<void> {
-  await driveFetch(`${DRIVE_API}/files/${fileId}/permissions`, {
+  await driveFetch(`${DRIVE_API}/files/${fileId}/permissions?supportsAllDrives=true`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
