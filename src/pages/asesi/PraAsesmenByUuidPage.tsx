@@ -12,6 +12,19 @@ export default function PraAsesmenByUuidPage() {
     if (!uuid) { setError("UUID tidak valid"); return }
     ;(async () => {
       try {
+        // Logout user sebelumnya dulu — panggil API biar session invalid server-side
+        const oldToken = localStorage.getItem("access_token")
+        if (oldToken) {
+          try {
+            await fetch(`${API_BASE_URL}/auth/logout`, {
+              method: "POST",
+              headers: { "Accept": "application/json", "Authorization": `Bearer ${oldToken}` },
+            })
+          } catch {
+            // Abaikan error logout — tetap lanjut bersih-bersih
+          }
+        }
+
         // Bersihkan semua auth state sebelumnya agar tidak konflik dengan token UUID
         localStorage.removeItem("access_token")
         localStorage.removeItem("user_data")
