@@ -511,35 +511,6 @@ export default function GoogleDriveUploader({
             </div>
           </div>
         )}
-
-        {/* Manual link input — always visible */}
-        <div style={{
-          marginTop: '16px',
-          padding: '12px',
-          background: '#fffbeb',
-          border: '1px solid #fcd34d',
-          borderRadius: '10px',
-        }}>
-          <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '600', color: '#92400e' }}>
-            Upload manual?
-          </p>
-          <p style={{ margin: '0 0 8px', fontSize: '11px', color: '#b45309', lineHeight: '1.4' }}>
-            Upload langsung ke folder Drive di atas, lalu paste link videonya.
-          </p>
-          <a
-            href="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: '6px',
-              fontSize: '12px', color: '#1d4ed8', textDecoration: 'underline',
-              marginBottom: '8px',
-            }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-            Buka Folder Google Drive
-          </a>
-        </div>
       </div>
     </div>
   )
