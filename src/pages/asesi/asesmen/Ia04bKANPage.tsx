@@ -12,58 +12,102 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { API_BASE_URL } from "@/config/api"
 
 interface SoalKAN {
-  id: number; no: string; jenis: string; soal: string; soal1: string; soal2: string
-  is_komentar: string | null; jawaban?: string; pencapaian?: number
-}
-
-interface ApiResponse {
-  message: string; data: {
-    barcodes?: any; dokumen: { id: number; nama_dokumen: string }; soal: SoalKAN[]
-  }
+  id: number; no: string; soal: string; soal1: string; soal2: string | null
+  tipe: number; is_komentar: boolean | null; jawaban?: string; skor?: number; pencapaian?: number
 }
 
 export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
 
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({ phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList })
+  const { showSuccess, showError } = useToast()
 
-  const [data, setData] = useState<ApiResponse["data"] | null>(null)
-  const [isSaving] = useState(false); const [jawaban, setJawaban] = useState<Record<number, string>>({})
-  const [skor, setSkor] = useState<Record<number, number>>({}); const [barcodes, setBarcodes] = useState<any>(null)
+  const [dokumen, setDokumen] = useState<{ id: number; nama_dokumen: string } | null>(null)
+  const [soalList, setSoalList] = useState<SoalKAN[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [jawaban, setJawaban] = useState<Record<number, string>>({})
+  const [skor, setSkor] = useState<Record<number, number>>({})
+  const [barcodes, setBarcodes] = useState<any>(null)
+  const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!id) return
     try {
       const token = localStorage.getItem("access_token")
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
-        headers: { "Accept": "application/json", Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b?version=kan`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
-        const result: ApiResponse = await res.json(); setData(result.data)
-        if (result.data.barcodes) setBarcodes(result.data.barcodes)
-        const jwb: Record<number, string> = {}; const sk: Record<number, number> = {}
-        result.data.soal.forEach(s => { if (s.jawaban) jwb[s.id] = s.jawaban; if (s.pencapaian !== undefined) sk[s.id] = s.pencapaian })
+        const body = await res.json()
+        const d = body.data
+        setDokumen(d.dokumen || null)
+        setSoalList(d.soal_list || [])
+        if (d.barcodes) setBarcodes(d.barcodes)
+        if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
+        const jwb: Record<number, string> = {}
+        const sk: Record<number, number> = {}
+        ;(d.soal_list || []).forEach((s: SoalKAN) => {
+          if (s.jawaban) jwb[s.id] = s.jawaban
+          if (s.pencapaian !== undefined && s.pencapaian !== null) sk[s.id] = s.pencapaian
+        })
         setJawaban(jwb); setSkor(sk)
       }
-    } catch (e) { console.error("Error", e) } finally { setIsLoading(false) }
+    } catch (e) { console.error("Error fetch KAN IA04B", e) } finally { setIsLoading(false) }
   }, [id])
 
   useEffect(() => { fetchData() }, [fetchData])
+
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
-const handleSave = () => {
-    if (!id) return
-    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
-    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-    navigate(path)
+
+  const handleSave = async () => {
+    if (!id || !dokumen) return
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const answers = soalList.map(s => ({
+        soal_id: s.id,
+        jawaban: jawaban[s.id] || '',
+        skor: skor[s.id] ?? null,
+      }))
+      const payload: any = { dokumen_id: dokumen.id, answers }
+      if (rekomendasi) payload.rekomendasi = rekomendasi === 'kompeten'
+
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b?version=kan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const msg = await extractApiError(res, 'Gagal menyimpan IA.04.B')
+        showError(msg); setIsSaving(false); return
+      }
+
+      if (jadwalId) {
+        await fetch(`${API_BASE_URL}/qr/${id}/ia04b?version=kan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id_jadwal: jadwalId }),
+        })
+      }
+
+      showSuccess('IA.04.B berhasil disimpan!')
+      const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
+      const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+      navigate(path)
+    } catch (e) {
+      showError(extractErrorMessage(e, 'Gagal menyimpan data'))
+    } finally { setIsSaving(false) }
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.04.B..." />
@@ -76,7 +120,7 @@ const handleSave = () => {
           <table width="100%" cellPadding="5" style={{ border: '0', borderCollapse: 'collapse' }}>
             <tr>
               <td style={{ border: '0', fontWeight: 'bold', fontSize: '16px', letterSpacing: '1px', color: '#4F81BD' }}>
-                FR.IA.04.B {data?.dokumen?.nama_dokumen || 'LEMBAR PERIKSA KEGIATAN TERSTRUKTUR'}
+                FR.IA.04.B {dokumen?.nama_dokumen || 'LEMBAR PERIKSA KEGIATAN TERSTRUKTUR'}
               </td>
             </tr>
           </table>
@@ -144,12 +188,12 @@ const handleSave = () => {
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px' }}>2</td>
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px' }}>3</td>
             </tr>
-            {data?.soal.map((soal, idx) => (
+            {soalList.map((soal, idx) => (
               <tr key={soal.id}>
                 <td style={{ textAlign: 'center', verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.no || idx + 1}</td>
-                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal}</td>
+                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal1}</td>
                 <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>
-                  <div>{soal.soal1}</div>
+                  <div>{soal.soal}</div>
                   {isAsesi ? (
                     <>
                       <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: 'bold' }}>Jawaban asesi:</p>
@@ -219,6 +263,28 @@ const handleSave = () => {
               <td style={{ fontWeight: 'bold', height: '50px', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>{totalSkor}</td>
             </tr>
           </table>
+          <br />
+
+          {/* Rekomendasi */}
+          {isAsesor && (
+          <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
+            <tbody>
+              <tr>
+                <td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px', width: '30%' }}>Rekomendasi:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  <div onClick={() => setRekomendasi('kompeten')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', cursor: 'pointer' }}>
+                    <CustomCheckbox checked={rekomendasi === 'kompeten'} onChange={() => {}} disabled={false} />
+                    Kompeten
+                  </div>
+                  <div onClick={() => setRekomendasi('belum_kompeten')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <CustomCheckbox checked={rekomendasi === 'belum_kompeten'} onChange={() => {}} disabled={false} />
+                    Belum Kompeten
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          )}
           <br />
 
           {/* Umpan Balik */}

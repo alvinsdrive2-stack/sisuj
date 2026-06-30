@@ -14,22 +14,15 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { useToast } from "@/contexts/ToastContext"
+import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { API_BASE_URL } from "@/config/api"
 
-interface Unit { id: number; kode: string }
-interface Kuk { id: number; kode: string }
-interface Soal {
-  id: number; no: string; id_unitkompetensi: string; id_kuk: string | null
-  jenis: string; soal: string
+interface SoalKAN {
+  id: number; no: string; soal: string
   jawab_a: string; jawab_b: string; jawab_c: string; jawab_d: string
-  kunci_jawaban: string
-  jawaban_asesi: string | null
-  unit: Unit; kuk: Kuk | null
-}
-
-interface Ia05Response {
-  message: string
-  data: { dokumen: { id: number }; soal: Soal[]; barcodes?: any; umpan_balik?: string }
+  kunci_jawaban: string; jawaban_asesi: string | null; skor?: number
+  unit_kode: string; kuk_kode: string | null
 }
 
 const td = { border: '0.2px solid black', padding: '4px 6px' }
@@ -44,8 +37,9 @@ export default function Ia05KANPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
+  const { showSuccess, showError } = useToast()
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
   const isAsesi = user?.role?.id === RoleId.ASESI
@@ -56,9 +50,10 @@ export default function Ia05KANPage() {
     phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList
   })
 
-  const [data, setData] = useState<Ia05Response["data"] | null>(null)
+  const [dokumen, setDokumen] = useState<{ id: number; nama_dokumen: string } | null>(null)
+  const [soalList, setSoalList] = useState<SoalKAN[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isSaving] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
   const [barcodes, setBarcodes] = useState<any>(null)
@@ -67,17 +62,19 @@ export default function Ia05KANPage() {
     if (!id) return
     try {
       const token = localStorage.getItem("access_token")
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05?version=kan`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
-        const result: Ia05Response = await res.json()
-        setData(result.data)
-        if (result.data.barcodes) setBarcodes(result.data.barcodes)
+        const body = await res.json()
+        const d = body.data
+        setDokumen(d.dokumen || null)
+        setSoalList(d.soal_list || [])
+        if (d.barcodes) setBarcodes(d.barcodes)
         const a: Record<number, 'A'|'B'|'C'|'D'> = {}
-        result.data.soal.forEach(s => { if (s.jawaban_asesi) a[s.id] = s.jawaban_asesi as 'A'|'B'|'C'|'D' })
+        ;(d.soal_list || []).forEach((s: SoalKAN) => { if (s.jawaban_asesi) a[s.id] = s.jawaban_asesi as 'A'|'B'|'C'|'D' })
         setAnswers(a)
-        if (result.data.umpan_balik) setUmpanBalik(result.data.umpan_balik)
+        if (d.umpan_balik) setUmpanBalik(d.umpan_balik)
       }
     } catch (e) { console.error("Error fetching IA.05 KAN:", e)
     } finally { setIsLoading(false) }
@@ -85,20 +82,53 @@ export default function Ia05KANPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const jumlahSoal = data?.soal.length || 0
+  const jumlahSoal = soalList.length || 0
   const jumlahBenar = useMemo(() =>
-    data?.soal.filter(s => s.jawaban_asesi === s.kunci_jawaban).length || 0,
-    [data, answers])
+    soalList.filter(s => answers[s.id] === s.kunci_jawaban).length || 0,
+    [soalList, answers])
   const jumlahSalah = jumlahSoal - jumlahBenar
 
-const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
+  const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
 
-  const handleSubmit = () => {
-    if (!id) return
-    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
-    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-    navigate(path)
+  const handleSubmit = async () => {
+    if (!id || !dokumen) return
+    setIsSaving(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const answersPayload = soalList.map(s => ({
+        soal_id: s.id,
+        jawaban: answers[s.id] || '',
+        skor: answers[s.id] === s.kunci_jawaban ? 1 : 0,
+      }))
+      const payload: any = { dokumen_id: dokumen.id, answers: answersPayload }
+      if (isAsesor) payload.umpan_balik = umpanBalik
+
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05?version=kan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const msg = await extractApiError(res, 'Gagal menyimpan IA.05')
+        showError(msg); setIsSaving(false); return
+      }
+
+      if (jadwalId) {
+        await fetch(`${API_BASE_URL}/qr/${id}/ia05?version=kan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ id_jadwal: jadwalId }),
+        })
+      }
+
+      showSuccess('IA.05 berhasil disimpan!')
+      const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
+      const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+      navigate(path)
+    } catch (e) {
+      showError(extractErrorMessage(e, 'Gagal menyimpan data'))
+    } finally { setIsSaving(false) }
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.05..." />
@@ -144,7 +174,6 @@ const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
 
         {/* ==================== SOAL ==================== */}
         <table style={{ border: '2px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
-          {/* Static header — one time only */}
           <thead>
             <tr>
               <Td style={{ textAlign: 'center', fontWeight: 'bold', width: '100px', color: '#fff', backgroundColor: '#c00000' }}>
@@ -156,7 +185,7 @@ const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
             </tr>
           </thead>
           <tbody>
-            {data?.soal.flatMap((soal) => {
+            {soalList.flatMap((soal) => {
               const cols = [
                 { key: 'A' as const, label: soal.jawab_a },
                 { key: 'B' as const, label: soal.jawab_b },
@@ -177,7 +206,7 @@ const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
               return [
                 <tr key={soal.id}>
                   <Td style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#d58a94' }}>
-                    {soal.unit.kode}<br />{soal.kuk?.kode || ''}
+                    {soal.unit_kode}<br />{soal.kuk_kode || ''}
                   </Td>
                   <Td style={{ width: '40px', textAlign: 'center' }}>{soal.no}.</Td>
                   <Td>{soal.soal}</Td>
@@ -212,17 +241,15 @@ const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
               <td style={{ ...td, width: '25%' }}>Benar</td>
               <td style={{ ...td, width: '25%' }}>Salah</td>
             </tr>
-            {data?.soal.map((soal) => {
-              const jawabKey = `jawab_${(soal.jawaban_asesi || '').toLowerCase()}` as keyof Soal
-              const jawabText = soal.jawaban_asesi ? soal[jawabKey] || '' : ''
-              const isCorrect = soal.jawaban_asesi === soal.kunci_jawaban
-              const hasAnswer = !!soal.jawaban_asesi
+            {soalList.map((soal) => {
+              const isCorrect = answers[soal.id] === soal.kunci_jawaban
+              const hasAnswer = !!answers[soal.id]
               return (
                 <tr key={soal.id}>
                   <td style={{ ...td, textAlign: 'center' }}>{soal.no}</td>
                   <td style={td}>
-                    {soal.jawaban_asesi ? (
-                      <>{soal.jawaban_asesi} - {String(jawabText)}</>
+                    {answers[soal.id] ? (
+                      <>{answers[soal.id]} - {soal[`jawab_${answers[soal.id]!.toLowerCase()}` as keyof SoalKAN] || ''}</>
                     ) : (
                       <span style={{ color: '#999', fontStyle: 'italic' }}>Belum dijawab</span>
                     )}
