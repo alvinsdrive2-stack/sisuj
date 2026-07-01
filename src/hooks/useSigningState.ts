@@ -77,16 +77,14 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const handleAblyMessage = useCallback((data?: any) => {
     if (data?.role && data?.barcode) {
-      // Direct barcode update from Ably — no API refetch needed
       const payload = data as AblySigningPayload
       setBarcodes(prev => ({
         ...prev,
         [payload.role]: payload.barcode,
       }))
-    } else {
-      // Fallback: full refetch
-      refresh()
     }
+    // Always refetch data on any Ably message — ensures answer data syncs
+    refresh()
   }, [setBarcodes, refresh])
 
   const { publishUpdate } = useRealtimeSync({
