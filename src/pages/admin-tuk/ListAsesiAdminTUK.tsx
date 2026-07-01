@@ -125,7 +125,7 @@ export default function ListAsesiAdminTUK() {
         const wibParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
         const todayWIB = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
         const response = await kegiatanService.getKegiatanAdminTUK(todayWIB)
-        const found = response.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
+        const found = response.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === jadwalId)
         if (found) {
           setKegiatan(found)
         }
