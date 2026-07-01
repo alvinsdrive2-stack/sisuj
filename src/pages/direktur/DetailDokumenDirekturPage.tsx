@@ -80,11 +80,11 @@ export default function DetailDokumenDirekturPage() {
 
       try {
         const responseFalse = await kegiatanService.getKegiatanDirektur(false)
-        let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
+        let found = responseFalse.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === String(id))
 
         if (!found) {
           const responseTrue = await kegiatanService.getKegiatanDirektur(true)
-          found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
+          found = responseTrue.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === String(id))
         }
 
         if (found) {
