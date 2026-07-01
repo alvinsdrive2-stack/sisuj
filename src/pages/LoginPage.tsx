@@ -67,7 +67,6 @@ export default function LoginPage() {
 
         setShowSuccessLoader(true)
         preloadDashboardImages()
-        await new Promise(resolve => setTimeout(resolve, 2000))
         navigate(roleConfiguration?.defaultRoute || "/dashboard")
       } else {
         console.error("No role found for user")
