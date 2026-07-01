@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useDokumenAsesmenCtx } from "@/contexts/AsesmenDataContext"
 import { API_BASE_URL } from "@/config/api"
 
 interface Asesor {
@@ -67,6 +68,9 @@ interface UseDataDokumenAsesmenResult {
 }
 
 export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokumenAsesmenResult {
+  const ctx = useDokumenAsesmenCtx()
+  if (ctx) return ctx
+
   const [data, setData] = useState<{
     jabatanKerja: string
     nomorSkema: string

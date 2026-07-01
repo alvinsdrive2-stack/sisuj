@@ -370,7 +370,6 @@ export default function Ia06Page() {
                 <Td style={{ textAlign: 'center', backgroundColor: '#d58a94', width: '15%' }}>{idx + 1}</Td>
                 <Td style={{ width: '5%', textAlign: 'center', backgroundColor: '#d58a94' }}>{idx + 1}</Td>
                 <td style={{ ...td, textAlign: 'left' }}>
-                  <b>Soal:</b> {soal.soal}
                   {isAsesi && (
                     <textarea
                       style={{ width: '100%', border: '1px solid #000', padding: '4px', marginTop: '4px', minHeight: '60px', fontSize: '11pt' }}

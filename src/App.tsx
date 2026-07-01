@@ -21,6 +21,8 @@ import {
 } from './components/RoleRoute'
 import PublicRoute from './components/PublicRoute'
 import DefaultRoute from './components/DefaultRoute'
+import AsesmenDataGate from './components/AsesmenDataGate'
+import PraAsesmenDataGate from './components/PraAsesmenDataGate'
 import DokumenFullscreenModal from './components/komtek/DokumenFullscreenModal'
 import { DaftarHadirModal } from './components/admin-tuk/DaftarHadirModal'
 import { KegiatanModal } from './components/admin-tuk/KegiatanModal'
@@ -303,50 +305,50 @@ function App() {
                   <Routes>
                   <Route path="dashboard" element={<AsesiRoute><DashboardAsesiPage /></AsesiRoute>} />
                   <Route path="praasesmen" element={<AsesiOrAsesorRoute><PraAsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin" element={<AsesiOrAsesorRoute><PraAsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/apl01" element={<AsesiOrAsesorRoute><Apl01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/apl02" element={<AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/apl02/success" element={<AsesiOrAsesorRoute><Apl02SuccessPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/apl02/failed" element={<AsesiOrAsesorRoute><Apl02FailedPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/muk" element={<AsesiOrAsesorRoute><MukPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/mapa01" element={<AsesiOrAsesorRoute><Mapa01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/mapa02" element={<AsesiOrAsesorRoute><Mapa02Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/ak07" element={<AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/ak04" element={<AsesiOrAsesorRoute><FrAk04Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/k3-asesmen" element={<AsesiOrAsesorRoute><K3AsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/:idIzin/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="praasesmen/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
+                  <Route path="praasesmen/:idIzin" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><PraAsesmenPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/apl01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/apl02" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/apl02/success" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl02SuccessPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/apl02/failed" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl02FailedPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/muk" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><MukPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/mapa01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Mapa01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/mapa02" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Mapa02Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/ak07" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><FrAk07Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/ak04" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><FrAk04Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/k3-asesmen" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><K3AsesmenPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/:idIzin/ak01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="praasesmen/ak01-success" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
                   {/* Perjanjian Asesmen */}
-                  <Route path="perjanjian/:idIzin/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="perjanjian/ak01-success" element={<AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute>} />
+                  <Route path="perjanjian/:idIzin/ak01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+                  <Route path="perjanjian/ak01-success" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Ak01SuccessPage /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
                   <Route path="asesmen" element={<AsesiOrAsesorRoute><AsesmenPage /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ak01" element={<AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute>} />
-                  <Route path="asesmen/:id/ia01" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia04a" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/upload-tugas" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ak01" element={<AsesmenDataGate><AsesiOrAsesorRoute><FrAk01Page /></AsesiOrAsesorRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia01" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia01Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia02" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia03" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia04a" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/upload-tugas" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/ia04b" element={
                     import.meta.env.VITE_SAAT_INI === 'KAN'
-                      ? <AsesiOrAsesorRoute><Ia04bKANPage /></AsesiOrAsesorRoute>
-                      : <ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>
+                      ? <AsesmenDataGate><AsesiOrAsesorRoute><Ia04bKANPage /></AsesiOrAsesorRoute></AsesmenDataGate>
+                      : <AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>
                   } />
-                  <Route path="asesmen/:id/uji" element={<ValidatedNavigationRoute><AsesiRoute><UjianPage /></AsesiRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/uji" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiRoute><UjianPage /></AsesiRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/ia05" element={
                     import.meta.env.VITE_SAAT_INI === 'KAN'
-                      ? <AsesiOrAsesorRoute><Ia05KANPage /></AsesiOrAsesorRoute>
-                      : <ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>
+                      ? <AsesmenDataGate><AsesiOrAsesorRoute><Ia05KANPage /></AsesiOrAsesorRoute></AsesmenDataGate>
+                      : <AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>
                   } />
-                  <Route path="asesmen/:id/ia06" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia06Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ak02" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ak03" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/survei" element={<ValidatedNavigationRoute><AsesiRoute><SurveiPage /></AsesiRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ak05" element={<ValidatedNavigationRoute><AsesorRoute><Ak05Page /></AsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ak06" element={<ValidatedNavigationRoute><AsesorRoute><Ak06Page /></AsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia08" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia08Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia09" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia09Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/ia10" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia10Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
-                  <Route path="asesmen/:id/selesai" element={<ValidatedNavigationRoute><AsesiOrAsesorRoute><AsesmenSelesaiPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>} />
+                  <Route path="asesmen/:id/ia06" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia06Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ak02" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ak03" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/survei" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiRoute><SurveiPage /></AsesiRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ak05" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesorRoute><Ak05Page /></AsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ak06" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesorRoute><Ak06Page /></AsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia08" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia08Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia09" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia09Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia10" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia10Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/selesai" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><AsesmenSelesaiPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="profile" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Profil Saya</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />
                   <Route path="assessment" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />
                   <Route path="documents" element={<AsesiRoute><div className="p-4"><h2 className="text-xl font-bold">Dokumen</h2><p className="text-slate-600">Coming soon...</p></div></AsesiRoute>} />

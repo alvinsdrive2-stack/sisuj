@@ -19,6 +19,7 @@ import { API_BASE_URL } from "@/config/api"
 interface SoalKAN {
   id: number; no: string; soal: string; soal1: string; soal2: string | null
   tipe: number; is_komentar: boolean | null; jawaban?: string; skor?: number; pencapaian?: number
+  unit_kode?: string
 }
 
 export default function Ia04bKANPage() {
@@ -206,7 +207,7 @@ export default function Ia04bKANPage() {
                     </div>
                   ) : null}
                 </td>
-                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal2}</td>
+                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>Kode Unit : {soal.soal2 || soal.unit_kode || ''}</td>
                 {[0, 1, 2, 3].map(n => (
                   <td key={n} style={{ textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                     <CustomCheckbox
