@@ -43,7 +43,7 @@ export default function PraAsesmenByUuidPage() {
         sessionStorage.setItem("isUuidFlow", "true")
 
         // Redirect ke verifikasi TUK AJJ jika jenis kelas 3
-        if (jenis_kelas_id === "3") {
+        if (Number(jenis_kelas_id) === 3) {
           navigate(`/praasesmen/${id_izin}/verifikasi-tuk`, { replace: true })
         } else {
           navigate(`/praasesmen/${id_izin}/konfirmasi`, { replace: true })
