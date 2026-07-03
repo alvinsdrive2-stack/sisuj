@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { authService, LoginRequest, CurrentUser } from "@/lib/auth-service"
 import { RoleId } from "@/lib/rbac-config"
+import { connectEcho, disconnectEcho } from "@/lib/echo"
 
 export type { CurrentUser }
 
@@ -99,6 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Simpan token dulu
       authService.saveToken(response.data.access_token)
 
+      // Connect Echo Reverb for real-time
+      try { connectEcho() } catch (e) { console.warn('Echo connect gagal:', e) }
+
       // Fetch full user data dari /auth/me
       const userData = await authService.getCurrentUser()
 
@@ -121,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Logout API error:", error)
     } finally {
       setUser(null)
+      disconnectEcho()
     }
   }
 

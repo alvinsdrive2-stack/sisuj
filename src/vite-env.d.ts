@@ -5,6 +5,9 @@ interface ImportMetaEnv {
   readonly VITE_VALIDATED_NAVIGATION?: string
   readonly VITE_GOOGLE_CLIENT_ID?: string
   readonly VITE_GOOGLE_DRIVE_FOLDER_ID?: string
+  readonly VITE_REVERB_APP_KEY?: string
+  readonly VITE_REVERB_HOST?: string
+  readonly VITE_REVERB_PORT?: string
   // more env variables...
 }
 
