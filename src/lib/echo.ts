@@ -28,6 +28,7 @@ export function connectEcho(): Echo<any> {
     wsHost: import.meta.env.VITE_REVERB_HOST || 'localhost',
     wsPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
     wssPort: Number(import.meta.env.VITE_REVERB_PORT) || 443,
+    wsPath: '/app',
     forceTLS: true,
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
