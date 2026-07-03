@@ -35,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!cancelled) {
             authService.saveUserData(userData)
             setUser(userData)
+            try { connectEcho() } catch (e) { console.warn('Echo init gagal:', e) }
           }
         } catch (error) {
           console.error('[AuthContext] Failed to fetch user data:', error)
