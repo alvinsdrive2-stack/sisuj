@@ -11,7 +11,7 @@ import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { CustomRadio } from "@/components/ui/Radio"
 import { Check, ArrowLeft, Lightbulb } from 'lucide-react'
 import { WebcamModal } from "@/components/ui/WebcamModal"
-import { useEchoSync } from "@/hooks/useEchoSync"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
@@ -207,7 +207,7 @@ export default function UjianPage() {
 
   useEffect(() => { fetchUjianData() }, [fetchUjianData])
 
-  const { publishUpdate } = useEchoSync({
+  const { publishUpdate } = useRealtimeSync({
     channelName: `asesmen:${id}`,
     onUpdate: fetchUjianData
   })

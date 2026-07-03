@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { getSigningConfig, SigningOrder } from '@/lib/signing-config'
-import { useEchoSync } from '@/hooks/useEchoSync'
+import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { API_BASE_URL } from '@/config/api'
 
 export interface BarcodeState {
@@ -87,7 +87,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     refresh()
   }, [setBarcodes, refresh])
 
-  const { publishUpdate } = useEchoSync({
+  const { publishUpdate } = useRealtimeSync({
     channelName,
     onUpdate: handleAblyMessage,
   })

@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { RoleId } from "@/lib/rbac-config"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
-import { useEchoSync } from "@/hooks/useEchoSync"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { formatTimeWIB } from "@/lib/date-utils"
@@ -116,7 +116,7 @@ export default function PraAsesmenPage() {
 
   useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
 
-  useEchoSync({
+  const { publishUpdate: _publishUpdate } = useRealtimeSync({
     channelName: `praasesmen:${idIzinFromUrl}`,
     onUpdate: fetchPraAsesmenData
   })
