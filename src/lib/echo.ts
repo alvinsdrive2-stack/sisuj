@@ -39,8 +39,6 @@ export function connectEcho(): Echo<any> {
     },
   })
 
-  window.Echo = echoInstance
-
   return echoInstance
 }
 
