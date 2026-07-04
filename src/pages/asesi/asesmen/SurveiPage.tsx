@@ -19,10 +19,11 @@ import { API_BASE_URL } from "@/config/api"
 
 interface SurveyItem {
   id: number
-  no: string
+  no: number
   aspek: string
   deskripsi: string
   skor: number | null
+  kategori: string
 }
 
 const REFERRAL_SOURCES = [
@@ -35,25 +36,15 @@ const REFERRAL_SOURCES = [
   'Instagram',
 ] as const
 
-const DEFAULT_SURVEY_ITEMS: SurveyItem[] = [
-  { id: 1, no: '1', aspek: 'Informasi dan Transparansi', deskripsi: 'Informasi diterima dengan jelas meliputi persyaratan peserta dan biaya sertifikasi', skor: null },
-  { id: 2, no: '2', aspek: 'Ketidakberpihakan (Impartiality)', deskripsi: 'Proses uji kompetensi dilakukan secara adil tanpa diskriminasi dan sikap objektif asesor saat asesmen', skor: null },
-  { id: 3, no: '3', aspek: 'Kompetensi Asesor', deskripsi: 'Asesor bersikap profesional, komunikatif dan menguasai materi uji kompetensi', skor: null },
-  { id: 4, no: '4', aspek: 'Pelaksanaan Sertifikasi', deskripsi: 'Proses asesmen berjalan sesuai prosedur dan waktu pelaksanaan sesuai jadwal', skor: null },
-  { id: 5, no: '5', aspek: 'Hasil dan Banding', deskripsi: 'Hasil uji kompetensi dan mekanisme banding disampaikan dengan jelas', skor: null },
-  { id: 6, no: '6', aspek: 'Kesiapan dan Kelengkapan Fasilitas TUK', deskripsi: 'Peralatan dan fasilitas pendukung serta bahan uji tersedia sesuai standar dan siap digunakan', skor: null },
-  { id: 7, no: '7', aspek: 'Kondisi Lingkungan TUK', deskripsi: 'Keamanan, keselamatan, kebersihan dan kenyamanan area TUK terjaga', skor: null },
-  { id: 8, no: '8', aspek: 'Dukungan TUK Pelaksanaan Uji', deskripsi: 'Petugas TUK memberi informasi yang jelas dan membantu dengan baik', skor: null },
-  { id: 9, no: '9', aspek: 'Kepatuhan TUK terhadap Prosedur', deskripsi: 'Pelaksanaan uji kompetensi tanpa gangguan dan menerapkan protokol K3', skor: null },
-]
+const DEFAULT_SURVEY_ITEMS: SurveyItem[] = []
 
 interface SurveiResponse {
   status: string
   data: {
     id_izin: string
     surveys: {
-      LSP: { saran: string; pernyataan: boolean; answers: { pertanyaan_id: string; aspek: string; pertanyaan: string; skor: string }[] }
-      TUK: { saran: string; pernyataan: boolean; answers: { pertanyaan_id: string; aspek: string; pertanyaan: string; skor: string }[] }
+      LSP?: { saran?: string; pernyataan?: boolean; answers: { pertanyaan_id: number; aspek: string; pertanyaan: string; skor: number | null }[] }
+      TUK?: { saran?: string; pernyataan?: boolean; answers: { pertanyaan_id: number; aspek: string; pertanyaan: string; skor: number | null }[] }
     }
   }
 }
@@ -116,26 +107,25 @@ export default function SurveiPage() {
       if (response.ok) {
         const result: SurveiResponse = await response.json()
         if (result.status === "success" && result.data?.surveys) {
-          const allAnswers = [
-            ...(result.data.surveys.LSP?.answers || []),
-            ...(result.data.surveys.TUK?.answers || []),
-          ]
-          if (allAnswers.length > 0) {
-            setSurveyItems(prev => prev.map(item => {
-              const answer = allAnswers.find(a => parseInt(a.pertanyaan_id) === item.id)
-              if (answer) {
-                return {
-                  ...item,
-                  aspek: answer.aspek.replace(/^Aspek\s+/i, ''),
-                  deskripsi: answer.pertanyaan.trim(),
-                  skor: parseInt(answer.skor),
-                }
-              }
-              return item
-            }))
+          const items: SurveyItem[] = []
+          for (const kategori of ['LSP', 'TUK'] as const) {
+            const survey = result.data.surveys[kategori]
+            if (!survey?.answers) continue
+            survey.answers.forEach((a, i) => {
+              items.push({
+                id: a.pertanyaan_id,
+                no: i + 1,
+                aspek: a.aspek.replace(/^Aspek\s+/i, ''),
+                deskripsi: a.pertanyaan.trim(),
+                skor: a.skor ?? null,
+                kategori,
+              })
+            })
           }
+          if (items.length > 0) setSurveyItems(items)
+
           setSaran(result.data.surveys.LSP?.saran || '')
-          setPernyataan(result.data.surveys.LSP?.pernyataan || false)
+          setPernyataan(result.data.surveys.LSP?.pernyataan ?? false)
           setIsSubmitted(result.data.surveys.LSP?.pernyataan === true)
         }
       }
@@ -190,11 +180,11 @@ export default function SurveiPage() {
       const token = localStorage.getItem("access_token")
 
       const lspAnswers = surveyItems
-        .filter(item => parseInt(item.no) <= 5 && item.skor !== null)
+        .filter(item => item.kategori === 'LSP' && item.skor !== null)
         .map(item => ({ pertanyaan_id: item.id, skor: item.skor }))
 
       const tukAnswers = surveyItems
-        .filter(item => parseInt(item.no) >= 6 && item.skor !== null)
+        .filter(item => item.kategori === 'TUK' && item.skor !== null)
         .map(item => ({ pertanyaan_id: item.id, skor: item.skor }))
 
       const response = await fetch(`${API_BASE_URL}/survey/${id}`, {
