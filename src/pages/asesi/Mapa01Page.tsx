@@ -94,7 +94,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId, isLoading: dokumenLoading } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning, showError } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
@@ -302,7 +302,7 @@ export default function Mapa01Page() {
           <Mapa01Section1 referensiForm={mapaData?.referensi_form} isAsesor={isAsesor} disabled={tahap !== 0 && signing.allSigned} skkni={mapaData?.skkni} />
 
           {/* DYNAMIC/LOOPING: Section 2 - Kelompok Pekerjaan dari API */}
-          {mapaData?.kelompok_kerja?.kelompok_kerja && (
+          {mapaData?.kelompok_kerja?.kelompok_kerja && !dokumenLoading && (
             <Mapa01Section2
               kelompokKerja={mapaData.kelompok_kerja.kelompok_kerja}
               jenjang={jenjang}
