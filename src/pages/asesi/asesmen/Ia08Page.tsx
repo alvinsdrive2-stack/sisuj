@@ -715,10 +715,10 @@ export default function Ia08Page() {
             </ActionButton>
             <ActionButton
               variant="primary"
-              disabled={isSaving}
+              disabled={signing.buttonDisabled || isSaving}
               onClick={handleSave}
             >
-              {isSaving ? "Menyimpan..." : (isAsesor ? "Simpan & Tanda Tangan" : signing.buttonText)}
+              {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
             {isAsesor && hasSigned && (
               <ActionButton
