@@ -330,6 +330,24 @@ export default function Ak06Page() {
           await signing.generateQR()
           signing.publishUpdate()
         }
+
+        // Auto-check absen akhir setelah save pertama — biar ga kelewat
+        const needsAbsenAkhir = await shouldShowAkhirModal()
+        if (needsAbsenAkhir) {
+          if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
+            setShowDriveUploader(true)
+            return
+          }
+          setShowAkhirModal(true)
+        } else {
+          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+          const nextStep = asesmenSteps[currentIdx + 1]
+          if (nextStep) {
+            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
         showError(msg)
