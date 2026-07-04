@@ -84,7 +84,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
       }))
     }
     // Always refetch data on any Ably message — ensures answer data syncs
-    refresh()
+    // Wrap in try-catch so Ably callback errors don't crash the page
+    try { refresh() } catch {}
   }, [setBarcodes, refresh])
 
   const { publishUpdate } = useRealtimeSync({

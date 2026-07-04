@@ -72,7 +72,7 @@ export default function AsesiPage() {
 
   const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesorList()
   const [allKegiatans, setAllKegiatans] = useState<KegiatanAsesor[]>(kegiatans)
-  const currentKegiatan = allKegiatans.find(k => k.jadwal_id === Number(jadwalId)) || allKegiatans[0]
+  const currentKegiatan = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId)) || allKegiatans[0]
   const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
 
   // Keep sync with hook data + fallback fetch all pages if kegiatan not found on page 1
@@ -82,7 +82,7 @@ export default function AsesiPage() {
 
   useEffect(() => {
     if (kegiatanLoading) return
-    const found = allKegiatans.find(k => k.jadwal_id === Number(jadwalId))
+    const found = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId))
     if (found) return
     if (allKegiatans.length === 0 && !kegiatanError) return
 
@@ -94,7 +94,7 @@ export default function AsesiPage() {
           const response = await kegiatanService.getKegiatanAsesor(page)
           if (!response.data || response.data.length === 0) break
           all = [...all, ...response.data]
-          const found = all.find(k => k.jadwal_id === Number(jadwalId))
+          const found = all.find(k => String(k.jadwal_id) === String(jadwalId))
           if (found) {
             setAllKegiatans(all)
             return

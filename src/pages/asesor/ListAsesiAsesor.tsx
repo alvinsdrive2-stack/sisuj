@@ -97,7 +97,7 @@ export default function ListAsesiAsesor() {
           const response = await kegiatanService.getKegiatanAsesor(currentPage)
           const kegiatanArray = response.data
           if (!kegiatanArray || kegiatanArray.length === 0) break
-          found = kegiatanArray.find(k => k.jadwal_id === Number(jadwalId)) || null
+          found = kegiatanArray.find(k => String(k.jadwal_id) === String(jadwalId)) || null
           currentPage++
         }
 
