@@ -33,7 +33,7 @@ export const ActionButton = React.memo(function ActionButton({
             ? '#00488f'
             : '#fff',
         color: disabled
-          ? '#fff'
+          ? '#475569'
           : isPrimary
             ? '#fff'
             : '#64748b',

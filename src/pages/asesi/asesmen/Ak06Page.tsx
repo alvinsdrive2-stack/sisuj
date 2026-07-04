@@ -807,10 +807,8 @@ export default function Ak06Page() {
           onUploadSuccess={handleDriveUploadSuccess}
           onClose={() => {
             setShowDriveUploader(false)
-            // If re-upload mode, don't trigger absen flow
-            if (!signing.allSigned && pendingAfterAbsen) {
-              setPendingAfterAbsen(false)
-            }
+            // Reset pending absen — user cancel upload, biar ga stuck
+            setPendingAfterAbsen(false)
           }}
         />
       )}
