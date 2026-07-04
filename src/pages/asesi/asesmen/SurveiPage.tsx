@@ -63,7 +63,7 @@ export default function SurveiPage() {
   const { isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji, metode, jenisKelas } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji, metode } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
@@ -86,11 +86,6 @@ export default function SurveiPage() {
     idIzin: id,
     asesorList
   })
-
-  const isDaring = jenisKelas === '3'
-  const displayItems = useMemo(() =>
-    isDaring ? surveyItems.filter(item => parseInt(item.no) <= 5) : surveyItems,
-  [isDaring, surveyItems])
 
   // Form state
   const [surveyItems, setSurveyItems] = useState<SurveyItem[]>(DEFAULT_SURVEY_ITEMS)
