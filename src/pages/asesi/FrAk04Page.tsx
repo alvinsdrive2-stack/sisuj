@@ -134,17 +134,17 @@ export default function FrAk04Page() {
           if (apiData.alasan) setAlasanBanding(apiData.alasan)
           if (apiData.barcodes) {
             const bc = apiData.barcodes as any
-            setBarcodes({
+            setBarcodes(prev => ({
               asesi: bc.asesi?.url
                 ? { url: bc.asesi.url, tanggal: bc.asesi.tanggal, nama: bc.asesi.nama }
                 : bc.asesi,
               asesor1: bc.asesor1?.url
                 ? { url: bc.asesor1.url, tanggal: bc.asesor1.tanggal, nama: bc.asesor1.nama }
-                : bc.asesor1 || null,
+                : (bc.asesor1 ?? prev?.asesor1 ?? null),
               asesor2: bc.asesor2?.url
                 ? { url: bc.asesor2.url, tanggal: bc.asesor2.tanggal, nama: bc.asesor2.nama }
-                : bc.asesor2 || null,
-            })
+                : (bc.asesor2 ?? prev?.asesor2 ?? null),
+            }))
           }
         }
       } else {
