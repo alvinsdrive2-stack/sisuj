@@ -128,8 +128,6 @@ export default function Ak06Page() {
     asesor2: null
   })
   const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
-  const [showVideoLinkModal, setShowVideoLinkModal] = useState(false)
-  const [videoLink, setVideoLink] = useState('')
   const [videoAjj, setVideoAjj] = useState('')
   const [showDriveUploader, setShowDriveUploader] = useState(false)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
@@ -257,10 +255,10 @@ export default function Ak06Page() {
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
-        // If luring and video link not yet provided, show video link modal first
+        // If luring and video not yet uploaded, show OAuth drive uploader
         if (jenisKelas === '3' && !videoAjj) {
           setPendingAfterAbsen(true)
-          setShowVideoLinkModal(true)
+          setShowDriveUploader(true)
           return
         }
         setPendingAfterAbsen(true)
@@ -367,57 +365,6 @@ export default function Ak06Page() {
     await submitAbsenAkhir(imageBlob)
   }
 
-  // Handle video AJJ link submit
-  const handleVideoLinkSubmit = async () => {
-    if (!videoLink.trim()) {
-      showWarning('Silakan masukkan link Google Drive terlebih dahulu')
-      return
-    }
-
-    try {
-      const token = localStorage.getItem('access_token')
-      const response = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
-        method: 'PUT',
-        headers: {
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ link_video: videoLink.trim() }),
-      })
-
-      if (response.ok) {
-        setVideoAjj(videoLink.trim())
-        setShowVideoLinkModal(false)
-        showSuccess('Link video berhasil disimpan')
-
-        // Re-upload mode — already signed, just close
-        if (signing.allSigned) return
-
-        // Proceed to absen akhir
-        const needsAbsenAkhir = await shouldShowAkhirModal()
-        if (needsAbsenAkhir) {
-          setShowAkhirModal(true)
-        } else {
-          setPendingAfterAbsen(false)
-          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
-          const nextStep = asesmenSteps[currentIdx + 1]
-          if (nextStep) {
-            const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-            navigate(nextPath)
-          } else {
-            navigate(`/asesi/asesmen/${id}/selesai`)
-          }
-        }
-      } else {
-        const msg = await extractApiError(response, 'Gagal menyimpan link video. Silakan coba lagi.')
-        showError(msg)
-      }
-    } catch (err) {
-      console.error('Error saving video link:', err)
-      showError(extractErrorMessage(err, 'Terjadi kesalahan. Silakan coba lagi.'))
-    }
-  }
 
   const handleDriveUploadSuccess = useCallback(async (webViewLink: string) => {
     try {
@@ -434,7 +381,6 @@ export default function Ak06Page() {
 
       if (res.ok) {
         setVideoAjj(webViewLink)
-        setShowVideoLinkModal(false)
         setShowDriveUploader(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
@@ -456,13 +402,12 @@ export default function Ak06Page() {
           }
         }
       } else {
-        setVideoLink(webViewLink)
-        showWarning('File terupload ke Drive. Klik Simpan untuk melanjutkan.')
+        showWarning('Gagal menyimpan tautan. Silakan coba upload ulang.')
       }
     } catch (err) {
       showError(extractErrorMessage(err, 'Gagal menyimpan tautan video'))
     }
-  }, [jadwalId, signing.allSigned, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowVideoLinkModal, setShowAkhirModal, setPendingAfterAbsen, setVideoLink])
+  }, [jadwalId, signing.allSigned, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowAkhirModal, setPendingAfterAbsen])
 
   const handleAkhirModalClose = () => {
     _handleAkhirModalClose()
@@ -820,13 +765,7 @@ export default function Ak06Page() {
             {signing.allSigned && isAsesor1 && (
               <ActionButton
                 variant="secondary"
-                onClick={() => {
-                  if (isAsesor1) {
-                    setShowDriveUploader(true)
-                  } else {
-                    setShowVideoLinkModal(true)
-                  }
-                }}
+                onClick={() => setShowDriveUploader(true)}
               >
                 Upload Ulang Video
               </ActionButton>
@@ -839,77 +778,6 @@ export default function Ak06Page() {
         </div>
       </ModularAsesiLayout>
 
-      {/* Video AJJ Link Modal — manual input only */}
-      {showVideoLinkModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 1000
-        }}>
-          <div style={{
-            background: '#fff', borderRadius: '16px', padding: '24px',
-            width: '90%', maxWidth: '480px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-            animation: 'driveModalIn 0.25s ease-out',
-          }}>
-            <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: '700', color: '#111827' }}>
-              Link Video AJJ
-            </h3>
-            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#6b7280' }}>
-              Masukkan link Google Drive video AJJ asesi <strong>{namaAsesi || ''}</strong>
-            </p>
-
-            {/* Folder link */}
-            <a
-              href="https://drive.google.com/drive/u/4/folders/186HA_D7xfC9d0etEiz8q1b6e-9khIzHc"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 14px', background: '#f0f7ff',
-                border: '1px solid #93c5fd', borderRadius: '8px', fontSize: '13px',
-                color: '#1d4ed8', textDecoration: 'none', marginBottom: '16px',
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-              Buka Folder Google Drive
-            </a>
-
-            {/* Manual link input */}
-            <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: '600', color: '#374151' }}>
-              Link video dari Google Drive
-            </p>
-            <input
-              type="text"
-              value={videoLink}
-              onChange={(e) => setVideoLink(e.target.value)}
-              placeholder="https://drive.google.com/file/d/..."
-              style={{
-                width: '100%', padding: '10px 14px', border: '1px solid #d1d5db',
-                borderRadius: '10px', fontSize: '14px', marginBottom: '16px',
-                boxSizing: 'border-box', outline: 'none',
-                transition: 'border-color 0.2s',
-              }}
-              onFocus={(e) => e.currentTarget.style.borderColor = '#4285F4'}
-              onBlur={(e) => e.currentTarget.style.borderColor = '#d1d5db'}
-            />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <ActionButton variant="secondary" onClick={() => {
-                setShowVideoLinkModal(false)
-                setPendingAfterAbsen(false)
-              }}>
-                Batal
-              </ActionButton>
-              <ActionButton variant="primary" onClick={handleVideoLinkSubmit}>
-                Simpan & Lanjutkan
-              </ActionButton>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Google Drive Uploader */}
       {showDriveUploader && (
