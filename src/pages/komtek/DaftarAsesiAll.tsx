@@ -173,9 +173,27 @@ export default function DaftarAsesiAll() {
     setSearch(e.target.value)
   }
 
-  const handleDownloadAllDocs = (docs: DokumenData) => {
-    const urls = [...new Set(Object.values(docs).filter((v): v is string => v !== null))]
-    urls.forEach((url, i) => setTimeout(() => window.open(url, "_blank"), i * 500))
+  const handleDownloadAllDocs = (idIzin: string) => {
+    const token = localStorage.getItem("access_token")
+    const url = `${API_BASE_URL}/dokumen/asesi/${idIzin}/download`
+    const a = document.createElement("a")
+    a.href = url
+    a.target = "_blank"
+    a.rel = "noopener"
+    // fetch with auth header so backend gets the token
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const objUrl = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = objUrl
+        link.download = `Dokumen_${idIzin}.zip`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(objUrl)
+      })
+      .catch(() => window.open(url, "_blank"))
   }
 
   const formatDate = (dateString: string) => {
@@ -331,7 +349,7 @@ export default function DaftarAsesiAll() {
                                       ))
                                   )}
                                   <button
-                                    onClick={() => handleDownloadAllDocs(docs)}
+                                    onClick={() => handleDownloadAllDocs(item.id_izin)}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-md text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
                                   >
                                     <Download className="w-3 h-3" />
@@ -422,7 +440,7 @@ export default function DaftarAsesiAll() {
                           })}
                           {hasDocs && (
                             <button
-                              onClick={() => handleDownloadAllDocs(docs!)}
+                              onClick={() => handleDownloadAllDocs(item.id_izin)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-md text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
                             >
                               <Download className="w-3 h-3" />
