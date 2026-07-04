@@ -69,57 +69,6 @@ export default function DaftarAsesiAll() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dokumenCache, setDokumenCache] = useState<Record<string, DokumenData>>({})
   const [loadingDocs, setLoadingDocs] = useState<string | null>(null)
-  const [downloadingAll, setDownloadingAll] = useState(false)
-
-  const fetchDokumenForAll = useCallback(async () => {
-    const t = localStorage.getItem("access_token")
-    const results: Record<string, DokumenData> = { ...dokumenCache }
-    const uncached = data.filter((item) => !dokumenCache[item.id_izin])
-
-    await Promise.all(
-      uncached.map(async (item) => {
-        try {
-          const res = await fetch(`${API_BASE_URL}/dokumen/asesi/${item.id_izin}`, {
-            headers: { Accept: "application/json", Authorization: `Bearer ${t}` },
-          })
-          if (res.ok) {
-            const json = await res.json()
-            results[item.id_izin] = json.data || {}
-          } else {
-            results[item.id_izin] = {}
-          }
-        } catch {
-          results[item.id_izin] = {}
-        }
-      })
-    )
-
-    setDokumenCache(results)
-    return results
-  }, [data, dokumenCache])
-
-  const handleDownloadAll = async () => {
-    setDownloadingAll(true)
-    try {
-      const allDocs = await fetchDokumenForAll()
-      const urls: string[] = []
-
-      for (const doc of Object.values(allDocs)) {
-        for (const url of Object.values(doc)) {
-          if (url) urls.push(url)
-        }
-      }
-
-      const unique = [...new Set(urls)]
-      if (unique.length === 0) return
-
-      unique.forEach((url, i) => {
-        setTimeout(() => window.open(url, "_blank"), i * 500)
-      })
-    } finally {
-      setDownloadingAll(false)
-    }
-  }
 
   const fetchData = async () => {
     setIsLoading(true)
@@ -207,6 +156,11 @@ export default function DaftarAsesiAll() {
     setSearch(e.target.value)
   }
 
+  const handleDownloadAllDocs = (docs: DokumenData) => {
+    const urls = [...new Set(Object.values(docs).filter((v): v is string => v !== null))]
+    urls.forEach((url, i) => setTimeout(() => window.open(url, "_blank"), i * 500))
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })
@@ -260,15 +214,6 @@ export default function DaftarAsesiAll() {
           className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 disabled:opacity-50"
         >
           {isLoading ? "Memuat..." : "Cari"}
-        </button>
-
-        <button
-          onClick={handleDownloadAll}
-          disabled={downloadingAll || data.length === 0}
-          className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 inline-flex items-center gap-1.5"
-        >
-          <Download className="w-4 h-4" />
-          {downloadingAll ? "Mendownload..." : "Download All PDF"}
         </button>
       </div>
 
@@ -368,6 +313,13 @@ export default function DaftarAsesiAll() {
                                         </a>
                                       ))
                                   )}
+                                  <button
+                                    onClick={() => handleDownloadAllDocs(docs)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-md text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                  >
+                                    <Download className="w-3 h-3" />
+                                    Download All
+                                  </button>
                                 </div>
                               )}
                             </div>
@@ -451,6 +403,15 @@ export default function DaftarAsesiAll() {
                               </div>
                             )
                           })}
+                          {hasDocs && (
+                            <button
+                              onClick={() => handleDownloadAllDocs(docs!)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-md text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
+                            >
+                              <Download className="w-3 h-3" />
+                              Download All
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
