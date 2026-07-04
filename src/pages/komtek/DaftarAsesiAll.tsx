@@ -48,12 +48,29 @@ const DOC_LABELS: Record<string, string> = {
   tugas: "Tugas",
   foto_kegiatan: "Foto Kegiatan",
   k3: "K3",
+  pernyataan: "Pernyataan",
+  // Extra docs
+  foto_foto_bersama: "Foto Bersama",
+  foto_ttd_asesi_asesmen: "TTD Asesi (Asesmen)",
+  foto_ttd_asesi_pra: "TTD Asesi (Pra)",
+  foto_ttd_asesor_asesmen: "TTD Asesor (Asesmen)",
+  foto_ttd_asesor_pra: "TTD Asesor (Pra)",
+  surat_verifikasi_tuk: "Surat Verifikasi TUK",
+  spt_asesor: "SPT Asesor",
+  spt_komtek: "SPT Komtek",
+  sk_komtek: "SK Komtek",
+  sk_pelaksanaan_uji: "SK Pelaksanaan Uji",
+  sk_penetapan: "SK Penetapan",
 }
 
 const DOC_GROUPS: { title: string; keys: string[] }[] = [
   { title: "Pra Asesmen", keys: ["apl01", "apl02", "mapa01", "mapa02", "ak07", "ak04", "k3"] },
   { title: "Perjanjian Asesmen", keys: ["ak01"] },
-  { title: "Asesmen", keys: ["ia01", "ia02", "ia03", "ia04a", "ia04b", "ia05", "ia08", "ia09", "ia10", "ak02", "ak03", "ak05", "ak06", "tugas", "foto_kegiatan"] },
+  { title: "Asesmen", keys: ["ia01", "ia02", "ia03", "ia04a", "ia04b", "ia05", "ia08", "ia09", "ia10", "ak02", "ak03", "ak05", "ak06", "tugas", "foto_kegiatan", "pernyataan"] },
+  { title: "Foto Dokumentasi", keys: ["foto_foto_bersama", "foto_ttd_asesi_asesmen", "foto_ttd_asesi_pra", "foto_ttd_asesor_asesmen", "foto_ttd_asesor_pra"] },
+  { title: "Surat Verifikasi TUK", keys: ["surat_verifikasi_tuk"] },
+  { title: "SPT", keys: ["spt_asesor", "spt_komtek"] },
+  { title: "SK", keys: ["sk_komtek", "sk_pelaksanaan_uji", "sk_penetapan"] },
 ]
 
 export default function DaftarAsesiAll() {
