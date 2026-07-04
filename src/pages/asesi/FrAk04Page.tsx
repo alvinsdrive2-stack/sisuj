@@ -58,7 +58,11 @@ export default function FrAk04Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, AnswerType>>({})
   const [alasanBanding, setAlasanBanding] = useState('')
-  const [barcodes, setBarcodes] = useState<{ asesi?: { url: string; tanggal: string; nama: string } } | null>(null)
+  const [barcodes, setBarcodes] = useState<{
+    asesi?: { url: string; tanggal: string; nama: string }
+    asesor1?: { url: string; tanggal: string; nama: string } | null
+    asesor2?: { url: string; tanggal: string; nama: string } | null
+  } | null>(null)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
   const [isDataLoading, setIsDataLoading] = useState(true)
 
@@ -131,9 +135,15 @@ export default function FrAk04Page() {
           if (apiData.barcodes) {
             const bc = apiData.barcodes as any
             setBarcodes({
-              asesi: bc.asesi?.url_image
-                ? { url: bc.asesi.url_image, tanggal: bc.asesi.tanggal, nama: bc.asesi.nama }
+              asesi: bc.asesi?.url
+                ? { url: bc.asesi.url, tanggal: bc.asesi.tanggal, nama: bc.asesi.nama }
                 : bc.asesi,
+              asesor1: bc.asesor1?.url
+                ? { url: bc.asesor1.url, tanggal: bc.asesor1.tanggal, nama: bc.asesor1.nama }
+                : bc.asesor1 || null,
+              asesor2: bc.asesor2?.url
+                ? { url: bc.asesor2.url, tanggal: bc.asesor2.tanggal, nama: bc.asesor2.nama }
+                : bc.asesor2 || null,
             })
           }
         }
