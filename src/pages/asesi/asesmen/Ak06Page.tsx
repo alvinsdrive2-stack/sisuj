@@ -255,8 +255,8 @@ export default function Ak06Page() {
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
-        // If luring and video not yet uploaded, show OAuth drive uploader
-        if (jenisKelas === '3' && !videoAjj) {
+        // If luring, no video, and no one signed yet → require upload
+        if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
           setPendingAfterAbsen(true)
           setShowDriveUploader(true)
           return

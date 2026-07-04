@@ -109,9 +109,9 @@ export default function GoogleDriveUploader({
   const { createGoogleDriveFile } = useDriveClient()
 
   const handleFileSelect = useCallback((file: File) => {
-    const maxSize = 500 * 1024 * 1024 // 500MB
+    const maxSize = 5 * 1024 * 1024 * 1024 // 5GB
     if (file.size > maxSize) {
-      setErrorMsg(`File terlalu besar (${formatFileSize(file.size)}). Maksimal 500MB.`)
+      setErrorMsg(`File terlalu besar (${formatFileSize(file.size)}). Maksimal 5GB.`)
       setUploadState("error")
       return
     }
@@ -274,7 +274,7 @@ export default function GoogleDriveUploader({
               atau seret file ke sini
             </p>
             <p style={{ fontSize: '11px', color: '#d1d5db', marginTop: '12px' }}>
-              MP4, AVI, MKV, MOV, WEBM — Maks 500MB
+              MP4, AVI, MKV, MOV, WEBM — Maks 5GB
             </p>
             <input
               ref={fileInputRef}
