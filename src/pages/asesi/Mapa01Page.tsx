@@ -149,9 +149,9 @@ export default function Mapa01Page() {
           if ((result.data as any).barcodes) {
             setBarcodes((result.data as any).barcodes)
           }
-          setIsDataLoading(false)
         }
       }
+      setIsDataLoading(false)
     } catch (error) {
       console.error("Error fetching MAPA 01:", error)
       setIsDataLoading(false)
@@ -160,9 +160,8 @@ export default function Mapa01Page() {
 
   useEffect(() => {
     window.scrollTo(0, 0)
-    if (isAsesor && idIzin) fetchMapa01Data()
-    else if (kegiatan || jadwalId) fetchMapa01Data()
-  }, [kegiatan, idIzin, isAsesor, jadwalId, fetchMapa01Data])
+    if (idIzin) fetchMapa01Data()
+  }, [idIzin, fetchMapa01Data])
 
   const signing = useSigningState({
     pageKey: 'mapa01',

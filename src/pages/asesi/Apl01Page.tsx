@@ -586,7 +586,7 @@ anda pada saat ini.</span>
                   type="text"
                   value={formDataPekerjaan.perusahaan}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, perusahaan: e.target.value })}
-                  disabled={isAsesor || isSaving}
+                  disabled={(isAsesor && tahap !== 0) || isSaving}
                   style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>
@@ -598,7 +598,7 @@ anda pada saat ini.</span>
                   type="text"
                   value={formDataPekerjaan.jabatan}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, jabatan: e.target.value })}
-                  disabled={isAsesor || isSaving}
+                  disabled={(isAsesor && tahap !== 0) || isSaving}
                   style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>
@@ -609,7 +609,7 @@ anda pada saat ini.</span>
                 <textarea
                   value={formDataPekerjaan.alamat_kantor || ""}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, alamat_kantor: e.target.value })}
-                  disabled={isAsesor || isSaving}
+                  disabled={(isAsesor && tahap !== 0) || isSaving}
                   rows={3}
                   style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', resize: 'vertical', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
@@ -627,7 +627,7 @@ anda pada saat ini.</span>
                           type="text"
                           value={formDataPekerjaan.telepon_kantor || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, telepon_kantor: e.target.value })}
-                          disabled={isAsesor || isSaving}
+                          disabled={(isAsesor && tahap !== 0) || isSaving}
                           style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
@@ -637,7 +637,7 @@ anda pada saat ini.</span>
                           type="text"
                           value={formDataPekerjaan.fax || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, fax: e.target.value })}
-                          disabled={isAsesor || isSaving}
+                          disabled={(isAsesor && tahap !== 0) || isSaving}
                           style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
@@ -649,7 +649,7 @@ anda pada saat ini.</span>
                           type="email"
                           value={formDataPekerjaan.email_kantor || ""}
                           onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, email_kantor: e.target.value })}
-                          disabled={isAsesor || isSaving}
+                          disabled={(isAsesor && tahap !== 0) || isSaving}
                           style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', textTransform: 'uppercase', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                         />
                       </td>
@@ -659,7 +659,7 @@ anda pada saat ini.</span>
                   type="number"
                   value={formDataPekerjaan.kode_pos || ""}
                   onChange={(e) => setFormDataPekerjaan({ ...formDataPekerjaan, kode_pos: e.target.value ? parseInt(e.target.value) : null })}
-                  disabled={isAsesor || isSaving}
+                  disabled={(isAsesor && tahap !== 0) || isSaving}
                   style={{ width: '100%', padding: '4px 6px', border: '1px solid #000', fontSize: '13px', fontFamily: 'Arial, Helvetica, sans-serif', cursor: (isAsesor || isSaving) ? 'not-allowed' : 'text', background: (isAsesor || isSaving) ? '#f5f5f5' : '#fff' }}
                 />
               </td>

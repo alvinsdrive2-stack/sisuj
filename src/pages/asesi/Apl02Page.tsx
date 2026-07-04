@@ -1464,6 +1464,9 @@ export default function Apl02Page() {
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<string>>(new Set()) // API files excluded from POST — composite key `${unitId}-${subunitId}-${fileId}`
   // metodeAsesmen moved to RekomendasiAsesiSection - use ref for POST value
   const metodeAsesmenRef = useRef<'observasi' | 'portofolio' | null>(null)
+  // savedMetodeRef: nyimpen metode dari API, gak kena interaksi checkbox.
+  // Asesi submit pake ini biar backend INSERT ulang gak ilangin metode yg udah dipilih asesor.
+  const savedMetodeRef = useRef<'observasi' | 'portofolio' | undefined>(undefined)
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
   const [showPreview, setShowPreview] = useState(false)
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<{ id: number; name: string; path: string } | null>(null)
@@ -1986,8 +1989,10 @@ export default function Apl02Page() {
         // Set metode from API - default to observasi if not set
         if (metodeFromApi) {
           metodeAsesmenRef.current = metodeFromApi
+          savedMetodeRef.current = metodeFromApi
         } else {
           metodeAsesmenRef.current = null // No selection until asesor chooses
+          savedMetodeRef.current = undefined
         }
 
         // Set combined data
@@ -2371,7 +2376,7 @@ export default function Apl02Page() {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          metode: metodeAsesmenRef.current || '', // Default to observasi if null (asesi submit before asesor chooses)
+          metode: savedMetodeRef.current,
           is_dilanjutkan: true,
           answers
         }),

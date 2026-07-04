@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<CurrentUser>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  setUuidUser: () => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -137,6 +138,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const setUuidUser = (): boolean => {
+    const uuidData = sessionStorage.getItem("praasesmen_uuid_data")
+    if (!uuidData) return false
+    try {
+      const parsed = JSON.parse(uuidData)
+      const minimalUser: CurrentUser = {
+        id: 0,
+        name: 'Asesi',
+        email: '',
+        phone: '',
+        avatar: null,
+        role_id: String(RoleId.ASESI),
+        fcm_token: null,
+        address: null,
+        noreg: null,
+        is_deleted: '0',
+        created_at: '',
+        updated_at: null,
+        role: { id: RoleId.ASESI, name: 'Asesi', guard_name: 'web', permissions: [] },
+        id_izin: parsed.id_izin || '',
+      }
+      setUser(minimalUser)
+      setIsLoading(false)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -144,6 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     refreshUser,
+    setUuidUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { useAuth } from "@/contexts/auth-context"
 import { API_BASE_URL } from "@/config/api"
 
 export default function PraAsesmenByUuidPage() {
   const { uuid } = useParams<{ uuid: string }>()
   const navigate = useNavigate()
+  const { setUuidUser } = useAuth()
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,6 +43,9 @@ export default function PraAsesmenByUuidPage() {
         if (access_token) localStorage.setItem("access_token", access_token)
         sessionStorage.setItem("praasesmen_uuid_data", JSON.stringify({ id_izin, jadwal_id, jenis_kelas_id }))
         sessionStorage.setItem("isUuidFlow", "true")
+
+        // Sync UUID user ke auth context biar isAsesor dll akurat
+        setUuidUser()
 
         // Redirect ke verifikasi TUK AJJ jika jenis kelas 3
         if (Number(jenis_kelas_id) === 3) {
