@@ -183,11 +183,11 @@ export default function Ak05Page() {
 
           setAsesiList(filteredItems)
 
-          // Fetch AK05 data per asesi
+          // Fetch AK05 data per asesi — kompeten dari AK02, keterangan dari AK05
           const dataMap: Record<string, Ak05PerAsesi> = {}
           const fetches = filteredItems.map(async (asesi) => {
             try {
-              // Ambil is_kompeten dari AK02
+              // Ambil kompeten dari AK02 (sumber asli K/BK)
               const ak02Res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak02`, {
                 headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
               })
@@ -198,27 +198,21 @@ export default function Ak05Page() {
                   kompeten = ak02Json.data.is_kompeten === true
                 }
               }
-              dataMap[asesi.id_izin] = { kompeten, keterangan: '' }
 
-              // AK05 data untuk keterangan
+              // Ambil keterangan dari AK05
               const res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak05`, {
                 headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
               })
-              if (res.ok) {
-                const json = await res.json()
-                if (json.message === "Success" && json.data) {
-                  dataMap[asesi.id_izin] = {
-                    kompeten, // tetap pakai dari AK02
-                    keterangan: json.data.answers?.keterangan || '',
-                  }
-                  return
-                }
-              }
+              const keterangan = res.ok
+                ? (await res.json())?.data?.answers?.keterangan || ''
+                : ''
+
+              dataMap[asesi.id_izin] = { kompeten, keterangan }
             } catch (err) {
-              console.error(`Error fetching AK05 for ${asesi.id_izin}:`, err)
-            }
-            if (!dataMap[asesi.id_izin]) {
-              dataMap[asesi.id_izin] = { kompeten: false, keterangan: '' }
+              console.error(`Error fetching data for ${asesi.id_izin}:`, err)
+              if (!dataMap[asesi.id_izin]) {
+                dataMap[asesi.id_izin] = { kompeten: false, keterangan: '' }
+              }
             }
           })
 
@@ -284,75 +278,60 @@ export default function Ak05Page() {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
-      let allSuccess = true
 
-      // POST AK05 data for each asesi
-      for (const asesi of asesiList) {
-        const perAsesi = ak05DataMap[asesi.id_izin] || { kompeten: false, keterangan: '' }
+      // POST AK05 data — cuma untuk id_izin di URL
+      const perAsesi = ak05DataMap[id] || { kompeten: false, keterangan: '' }
+      const saveRes = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
+        method: 'POST',
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          kompeten: perAsesi.kompeten,
+          keterangan: perAsesi.keterangan,
+          aspek: ak05Data.aspek_positif_negatif,
+          pencatatan_penolakan: ak05Data.pencatatan_penolakan,
+          saran: ak05Data.saran,
+          catatan: ak05Data.catatan,
+        }),
+      })
 
-        const response = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/ak05`, {
-          method: 'POST',
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            kompeten: perAsesi.kompeten,
-            keterangan: perAsesi.keterangan,
-            aspek: ak05Data.aspek_positif_negatif,
-            pencatatan_penolakan: ak05Data.pencatatan_penolakan,
-            saran: ak05Data.saran,
-            catatan: ak05Data.catatan,
-          }),
-        })
-
-        if (!response.ok) {
-          allSuccess = false
-          console.error(`Failed to save AK05 for ${asesi.id_izin}`)
-        }
+      if (!saveRes.ok) {
+        showError('Gagal menyimpan data. Silakan coba lagi.')
+        return
       }
 
-      if (allSuccess) {
-        showSuccess('AK 05 berhasil disimpan!')
+      showSuccess('AK 05 berhasil disimpan!')
 
-        // POST QR for each asesi (if not already signed)
-        if (jadwalId) {
-          for (const asesi of asesiList) {
-            // Check existing barcode for this asesi's current role
-            // Use the barcodes from the current fetch — for other asesi we don't have their barcodes,
-            // so just try to generate QR unconditionally (API will handle duplicates)
-            try {
-              const qrResponse = await fetch(`${API_BASE_URL}/qr/${asesi.id_izin}/ak05`, {
-                method: 'POST',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({ id_jadwal: jadwalId })
-              })
+      // POST QR — cuma untuk id_izin di URL
+      if (jadwalId) {
+        try {
+          const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak05`, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ id_jadwal: jadwalId })
+          })
 
-              if (qrResponse.ok) {
-                const qrResult = await qrResponse.json()
-                // Only update local barcodes for the current id
-                if (asesi.id_izin === id && qrResult.data?.url_image) {
-                  if (role === 'asesor_1') {
-                    setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  } else {
-                    setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
-                  }
-                }
+          if (qrResponse.ok) {
+            const qrResult = await qrResponse.json()
+            if (qrResult.data?.url_image) {
+              if (role === 'asesor_1') {
+                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+              } else {
+                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
               }
-            } catch (qrError) {
-              console.error(`Error generating QR for ${asesi.id_izin}:`, qrError)
             }
           }
-          signing.publishUpdate()
+        } catch (qrError) {
+          console.error('Error generating QR:', qrError)
         }
-      } else {
-        showError('Gagal menyimpan data beberapa asesi. Silakan coba lagi.')
-        return
+        signing.publishUpdate()
       }
     } catch (err) {
       console.error('Error saving AK05:', err)
