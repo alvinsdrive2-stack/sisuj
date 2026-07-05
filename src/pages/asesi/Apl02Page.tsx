@@ -2398,7 +2398,7 @@ export default function Apl02Page() {
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
           )
 
-          if (!isUuidFlow && hasMissingBarcode) {
+          if (hasMissingBarcode) {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
