@@ -11,6 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import ValidatedNavigationRoute from './components/ValidatedNavigationRoute'
 import {
   AdminLSPRoute,
+  SuperAdminRoute,
   AdminTUKRoute,
   AsesorRoute,
   AsesiRoute,
@@ -40,6 +41,8 @@ const AttendancePage = lazy(() => import('./pages/AttendancePage'))
 
 // Admin LSP Pages
 const DashboardAdminLSP = lazy(() => import('./pages/admin-lsp/DashboardAdminLSP'))
+const PreviewIndexPage = lazy(() => import('./pages/admin-lsp/PreviewIndexPage'))
+const PreviewDetailPage = lazy(() => import('./pages/admin-lsp/PreviewDetailPage'))
 
 // Direktur Pages
 const TandatanganDirektur = lazy(() => import('./pages/direktur/TandatanganDirektur'))
@@ -165,11 +168,32 @@ function App() {
                       <Route path="reports" element={<div className="p-4"><h2 className="text-xl font-bold">Laporan Sertifikasi</h2><p className="text-slate-600">Coming soon...</p></div>} />
                       <Route path="users" element={<div className="p-4"><h2 className="text-xl font-bold">Manajemen User</h2><p className="text-slate-600">Coming soon...</p></div>} />
                       <Route path="settings" element={<div className="p-4"><h2 className="text-xl font-bold">Pengaturan</h2><p className="text-slate-600">Coming soon...</p></div>} />
+                      <Route path="preview" element={<PreviewIndexPage />} />
+                      <Route path="preview/:idJabatan/:docType" element={<PreviewDetailPage />} />
                       <Route path="" element={<Navigate to="dashboard" replace />} />
                     </Routes>
                   </DashboardLayout>
                 </ValidatedNavigationRoute>
               </AdminLSPRoute>
+            }
+          />
+
+          {/* Protected Routes - Superadmin */}
+          <Route
+            path="/superadmin/*"
+            element={
+              <SuperAdminRoute>
+                <ValidatedNavigationRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="dashboard" element={<DashboardAdminLSP />} />
+                      <Route path="preview" element={<PreviewIndexPage />} />
+                      <Route path="preview/:idJabatan/:docType" element={<PreviewDetailPage />} />
+                      <Route path="" element={<Navigate to="dashboard" replace />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ValidatedNavigationRoute>
+              </SuperAdminRoute>
             }
           />
 

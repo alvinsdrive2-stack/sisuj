@@ -11,7 +11,8 @@ import {
   Activity,
   PenTool,
   ClipboardList,
-  Award
+  Award,
+  Eye
 } from "lucide-react"
 
 // Role Types
@@ -163,6 +164,29 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         title: "Pengaturan",
         path: "/admin-lsp/settings",
         icon: Settings
+      },
+      {
+        title: "Preview Soal",
+        path: "/admin-lsp/preview",
+        icon: Eye
+      }
+    ]
+  },
+  "superadmin": {
+    name: "superadmin",
+    layout: "dashboard-admin",
+    defaultRoute: "/superadmin/dashboard",
+    permissions: ["view_all_assessment_status", "view_reports", "view_all_reports"],
+    menus: [
+      {
+        title: "Dashboard",
+        path: "/superadmin/dashboard",
+        icon: LayoutDashboard
+      },
+      {
+        title: "Preview Soal",
+        path: "/superadmin/preview",
+        icon: Eye
       }
     ]
   },

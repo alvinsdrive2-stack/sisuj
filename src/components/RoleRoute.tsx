@@ -74,7 +74,7 @@ function getDefaultRouteForRole(role?: UserRole): string {
  */
 export function SuperAdminRoute({ children, fallback }: { children: React.ReactNode; fallback?: string }) {
   return (
-    <RoleRoute allowedRoles={["Admin LSP"]} fallback={fallback}>
+    <RoleRoute allowedRoles={["superadmin"]} fallback={fallback}>
       {children}
     </RoleRoute>
   )
