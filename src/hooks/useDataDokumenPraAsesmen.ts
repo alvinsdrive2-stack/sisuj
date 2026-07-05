@@ -147,6 +147,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
         return
       }
 
+      setIsLoading(true)
       try {
         const response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
           headers: authHeaders(),

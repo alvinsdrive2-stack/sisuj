@@ -2149,8 +2149,8 @@ export default function Apl02Page() {
     return `${base}/${id}/${isUuidFlow ? 'apl02/success' : 'muk'}`
   }
 
-  const handleSubmit = async () => {
-    if (!signing.agreedChecklist) {
+  const handleSubmit = async (saveOnly = false) => {
+    if (!signing.agreedChecklist && !saveOnly) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -2431,8 +2431,10 @@ export default function Apl02Page() {
 
         showSuccess('APL 02 berhasil ditandatangani!')
         signing.publishUpdate()
-        // Navigasi ke halaman berikutnya
-        setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+        if (!saveOnly) {
+          // Navigasi ke halaman berikutnya
+          setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+        }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data APL 02')
         showError(msg)
@@ -2714,7 +2716,12 @@ export default function Apl02Page() {
               Kembali
             </ActionButton>
           )}
-          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
+          {tahap === 1 && !isAsesor && (
+            <ActionButton variant="secondary" onClick={() => handleSubmit(true)} disabled={isSaving}>
+              Simpan
+            </ActionButton>
+          )}
+          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={() => handleSubmit(false)}>
             {signing.buttonText}
           </ActionButton>
         </div>
