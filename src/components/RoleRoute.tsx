@@ -85,7 +85,7 @@ export function SuperAdminRoute({ children, fallback }: { children: React.ReactN
  */
 export function AdminLSPRoute({ children, fallback }: { children: React.ReactNode; fallback?: string }) {
   return (
-    <RoleRoute allowedRoles={["Admin LSP"]} fallback={fallback}>
+    <RoleRoute allowedRoles={["Admin LSP", "superadmin"]} fallback={fallback}>
       {children}
     </RoleRoute>
   )
