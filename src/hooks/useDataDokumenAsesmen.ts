@@ -130,6 +130,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
         return
       }
 
+      setIsLoading(true)
       try {
         const token = localStorage.getItem("access_token")
         const response = await fetch(`${API_BASE_URL}/asesmen/${idIzin}/data-dokumen`, {

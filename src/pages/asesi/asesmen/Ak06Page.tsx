@@ -323,6 +323,16 @@ export default function Ak06Page() {
       })
 
       if (response.ok) {
+        // Update UI dengan dimensi kompetensi dari jenjang/metode terkini
+        const dimensiLabel = getDimensiKompetensiLabel()
+        setDimensiKompetensi({
+          task_skills: dimensiLabel,
+          task_management_skills: dimensiLabel,
+          contingency_management_skills: dimensiLabel,
+          job_role_environment_skills: dimensiLabel,
+          transfer_skills: dimensiLabel,
+        })
+
         showSuccess('AK 06 berhasil disimpan!')
 
         // Generate QR via hook
