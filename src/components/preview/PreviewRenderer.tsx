@@ -1,37 +1,38 @@
 // ── Helpers ──
 
-const tableStyle = () => ({
+const tableStyle = (borderW?: string) => ({
   width: '100%' as const,
   borderCollapse: 'collapse' as const,
   marginBottom: '15px',
   fontSize: '13px',
   background: '#fff',
-  border: '2px solid #000',
+  border: (borderW || '1px') + ' solid #000',
 })
 
 const cell = (w?: string) => ({
   border: '1px solid #000' as const,
-  padding: '8px',
+  padding: '6px',
   width: w || 'auto',
 })
 
 const labelCell = () => ({
   ...cell('25%'),
   fontWeight: 'bold' as const,
-  background: '#f9f9f9' as const,
+  background: '#fff' as const,
+  textTransform: 'uppercase' as const,
 })
 
 const dividerCell = () => ({
   ...cell('5%'),
   textAlign: 'center' as const,
-  borderLeft: 'none' as const,
-  borderRight: 'none' as const,
+  padding: '6px 2px',
 })
 
 const th = (w?: string) => ({
   ...cell(w),
   fontWeight: 'bold' as const,
-  background: '#f0f0f0' as const,
+  background: '#c40000' as const,
+  color: '#fff' as const,
   textAlign: 'center' as const,
 })
 
@@ -62,22 +63,18 @@ export const DOC_TITLES: Record<string, string> = {
 
 // ── Shared Identity Table ──
 
-function IdentityTable({ jabatan, skema, kualifikasi }: { jabatan?: string; skema?: string; kualifikasi?: string }) {
-  const rows: { label: string; value: string }[] = []
-  if (jabatan) rows.push({ label: 'Skema Sertifikasi', value: jabatan })
-  if (skema) rows.push({ label: 'Nomor', value: skema })
-  if (kualifikasi) rows.push({ label: 'Kualifikasi', value: kualifikasi })
-
-  if (rows.length === 0) return null
+function IdentityTable({ items }: { items: { label: string; value?: string }[] }) {
+  const filtered = items.filter(i => i.value)
+  if (filtered.length === 0) return null
 
   return (
-    <table style={tableStyle()}>
+    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
       <tbody>
-        {rows.map((r, i) => (
+        {filtered.map((r, i) => (
           <tr key={i}>
-            <td style={labelCell()}>{r.label}</td>
-            <td style={dividerCell()}>:</td>
-            <td style={cell()}>{r.value}</td>
+            <td style={{ ...cell('30%'), fontWeight: 'bold', textTransform: 'uppercase' }}>{r.label}</td>
+            <td style={{ ...cell('5%'), textAlign: 'center' }}>:</td>
+            <td style={{ ...cell(), textTransform: 'uppercase' }}>{r.value}</td>
           </tr>
         ))}
       </tbody>
@@ -101,7 +98,13 @@ export function Apl01Preview({ data }: { data: any }) {
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
       {/* Identity Table */}
-      <IdentityTable jabatan={s.nama_jabatan} skema={s.no_skema} kualifikasi={s.kualifikasi} />
+      <IdentityTable items={[
+        { label: 'Skema Sertifikasi', value: s.nama_jabatan },
+        { label: 'No. Skema', value: s.no_skema },
+        { label: 'Kualifikasi', value: s.kualifikasi },
+        { label: 'Jenjang', value: s.jenjang },
+        { label: 'SKKNI', value: s.skkni },
+      ]} />
 
       {/* Data Sertifikasi */}
       <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Data Sertifikasi</h3>
@@ -115,16 +118,18 @@ export function Apl01Preview({ data }: { data: any }) {
         </tbody>
       </table>
 
-      {/* Unit Kompetensi */}
-      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Unit Kompetensi</h3>
+      {/* Daftar Unit Kompetensi */}
+      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Daftar Unit Kompetensi</h3>
       <table style={tableStyle()}>
         <thead>
-          <tr><th style={th('8%')}>No</th><th style={th('30%')}>Kode Unit</th><th style={th()}>Judul Unit</th></tr>
+          <tr><th style={th('8%')}>No</th><th style={th('30%')}>Kode Unit</th><th style={th()}>Judul Unit</th><th style={th('25%')}>Jenis Standar</th></tr>
         </thead>
         <tbody>
-          {units.length === 0 && <tr><td colSpan={3} style={cell()}>Tidak ada data</td></tr>}
+          {units.length === 0 && <tr><td colSpan={4} style={cell()}>Tidak ada data</td></tr>}
           {units.map((u: any, i: number) => (
-            <tr key={u.id || i}><td style={cell('8%')}>{i + 1}</td><td style={cell('30%')}>{u.kode || '-'}</td><td style={cell()}>{u.nama || '-'}</td></tr>
+            <tr key={u.id || i}><td style={cell('8%')}>{i + 1}</td><td style={cell('30%')}>{u.kode || '-'}</td><td style={cell()}>{u.nama || '-'}</td>
+              {i === 0 && <td rowSpan={units.length} style={{ ...cell('25%'), textAlign: 'center', verticalAlign: 'middle' }}>{s.skkni || 'SKKNI'}</td>}
+            </tr>
           ))}
         </tbody>
       </table>
@@ -350,36 +355,65 @@ export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
+      {/* Panduan */}
+      <div style={{ marginBottom: '15px', border: '1px solid #000', background: '#fff' }}>
+        <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+          PANDUAN BAGI ASESOR
+        </div>
+        <div style={{ padding: '10px', fontSize: '12px' }}>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
+            <li>Isi standar industri atau tempat kerja.</li>
+            <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
+            <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
+            <li>Isi kolom KUK sesuai SKKNI.</li>
+          </ul>
+        </div>
+      </div>
+
       {kelompoks.map((kel: any, i: number) => (
         <div key={kel.id || i} style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px', textTransform: 'uppercase' }}>
-            {kel.nama || `Kelompok ${i + 1}`}
-          </h3>
+          {/* Red header */}
+          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
+            Kelompok Pekerjaan {kel.urut || i + 1}
+          </div>
 
           {(kel.units || []).map((unit: any, ui: number) => (
             <div key={unit.id || ui} style={{ marginLeft: '10px', marginBottom: '12px' }}>
-              <p style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', color: '#333' }}>
-                {unit.unit?.kode ? `Unit: ${unit.unit.kode}` : unit.kode_unit || ''}
-              </p>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000', marginBottom: '8px' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: '20%', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Unit Kompetensi</td>
+                    <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.unit?.kode || unit.kode_unit || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Judul Unit</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.unit?.nama || unit.nama_unit || '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
+
               {(unit.questions || []).length > 0 && (
-                <table style={tableStyle()}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000' }}>
                   <thead>
-                    <tr>
-                      <th style={th('8%')}>No</th>
-                      <th style={th('15%')}>KUK</th>
-                      <th style={th('15%')}>Sub Unit</th>
-                      <th style={th()}>Soal / Pertanyaan</th>
-                      <th style={th('12%')}>Jenis</th>
+                    <tr style={{ background: '#c40000', color: '#fff' }}>
+                      <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
+                      <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>KUK</th>
+                      <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Sub Unit</th>
+                      <th style={{ border: '1px solid #000', padding: '6px' }}>Soal / Pertanyaan</th>
+                      <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Jenis</th>
                     </tr>
                   </thead>
                   <tbody>
                     {unit.questions.map((q: any, qi: number) => (
                       <tr key={q.id || qi}>
-                        <td style={cell('8%')}>{q.no || qi + 1}</td>
-                        <td style={cell('15%')}>{q.kuk?.kode || q.id_kuk || '-'}</td>
-                        <td style={cell('15%')}>{q.subunitkompetensi?.kode || '-'}</td>
-                        <td style={cell()}>{q.soal || '-'}</td>
-                        <td style={cell('12%')}>{q.jenis || '-'}</td>
+                        <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{q.no || qi + 1}</td>
+                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.kode || q.id_kuk || '-'}</td>
+                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.subunitkompetensi?.kode || '-'}</td>
+                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.soal || '-'}</td>
+                        <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{q.jenis || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -439,6 +473,7 @@ export function Ia02Preview({ data }: { data: any }) {
 
 export function Ia04aPreview({ data }: { data: any }) {
   const kelompoks = data?.kelompok_kerja || []
+  const units = (kelompoks[0]?.units || [])
   const soalList = data?.soal || []
   const referensi = data?.referensi_form || []
 
@@ -449,56 +484,83 @@ export function Ia04aPreview({ data }: { data: any }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      {/* Kelompok Kerja */}
-      {kelompoks.map((k: any, i: number) => (
-        <div key={k.id || i} style={{ marginBottom: '15px' }}>
-          <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
-            {k.urut ? `Kelompok ${k.urut}. ` : ''}{k.nama || '-'}
-          </p>
-          {(k.units || []).length > 0 && (
-            <table style={tableStyle()}>
-              <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
-              <tbody>
-                {k.units.map((u: any, ui: number) => (
-                  <tr key={u.id_unit || ui}><td style={cell('10%')}>{ui + 1}</td><td style={cell('35%')}>{u.kode_unit || '-'}</td><td style={cell()}>{u.nama_unit || '-'}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ))}
+      {/* Panduan */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>PANDUAN BAGI ASESOR</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>
+              <ul style={{ margin: '5px 0 5px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
+                <li style={{ marginBottom: '6px' }}>Tentukan proyek singkat atau kegiatan terstruktur lainnya yang harus dipersiapkan dan dipresentasikan oleh asesi.</li>
+                <li style={{ marginBottom: '6px' }}>Proyek singkat atau kegiatan terstruktur lainnya dibuat untuk keseluruhan unit kompetensi dalam Skema Sertifikasi atau untuk masing-masing kelompok pekerjaan.</li>
+                <li style={{ marginBottom: '0' }}>Kumpulkan hasil proyek singkat atau kegiatan terstruktur lainnya sesuai dengan hasil keluaran yang telah ditetapkan.</li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-      {/* Soal Observasi */}
+      {/* Kelompok Kerja */}
+      {kelompoks.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
+          <tbody>
+            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+              <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
+                {kelompoks[0]?.nama || 'Kelompok Pekerjaan'}
+              </td>
+              <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>
+              <td style={{ width: '25%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kode Unit</td>
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Judul Unit</td>
+            </tr>
+            {units.map((unit: any, index: number) => (
+              <tr key={unit.id_unit || index}>
+                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{index + 1}</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.kode_unit}</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.nama_unit}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Soal Sections */}
       {soalList.length > 0 && (
         <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Pertanyaan Observasi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('8%')}>No</th><th style={th('15%')}>Jenis</th><th style={th()}>Pertanyaan</th><th style={th('15%')}>Jawaban</th></tr></thead>
-            <tbody>
-              {soalList.map((s: any, i: number) => (
-                <tr key={s.id || i}>
-                  <td style={cell('8%')}>{s.urut || i + 1}</td>
-                  <td style={cell('15%')}>{s.jenis || '-'}</td>
-                  <td style={cell()}>{decodeHtmlEntities(s.soal || '-')}</td>
-                  <td style={cell('15%')}>{s.jawaban || '-'}</td>
+          <br />
+          {soalList.map((soalItem: any, i: number) => (
+            <table key={soalItem.id || i} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', background: '#fff', border: '1px solid #000', marginTop: '14px' }}>
+              <tbody>
+                <tr>
+                  <td style={{ width: '28%', fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>
+                    {decodeHtmlEntities(soalItem.soal || '-')}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '6px' }}>
+                    {soalItem.jawaban ? (
+                      <div style={{ margin: '5px 0', lineHeight: '1.6' }}>{soalItem.jawaban}</div>
+                    ) : (
+                      <div style={{ height: '40px' }}></div>
+                    )}
+                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          ))}
         </>
       )}
 
       {data?.persiapan_kegiatan && (
-        <div style={{ marginBottom: '15px' }}>
+        <div style={{ marginBottom: '15px', marginTop: '14px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Persiapan Kegiatan</h3>
-          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}>{data.persiapan_kegiatan}</p>
+          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #000' }}>{data.persiapan_kegiatan}</p>
         </div>
       )}
 
       {data?.hal_demonstrasi && (
-        <div style={{ marginBottom: '15px' }}>
+        <div style={{ marginBottom: '15px', marginTop: '14px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Hal yang Didemonstrasikan</h3>
-          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #ddd', borderRadius: '4px' }}>{data.hal_demonstrasi}</p>
+          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #000' }}>{data.hal_demonstrasi}</p>
         </div>
       )}
 
@@ -636,30 +698,31 @@ export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
 
       {soalList.map((kel: any, i: number) => (
         <div key={kel.id_kelompok || i} style={{ marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px', textTransform: 'uppercase' }}>
+          {/* Red header */}
+          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
             {kel.nama_kelompok || `Kelompok ${i + 1}`}
-          </h3>
+          </div>
           {(kel.questions || []).length > 0 && (
-            <table style={tableStyle()}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000' }}>
               <thead>
-                <tr>
-                  <th style={th('8%')}>No</th>
-                  <th style={th('15%')}>Unit</th>
-                  <th style={th('15%')}>KUK</th>
-                  <th style={th('15%')}>Sub Unit</th>
-                  <th style={th()}>Pertanyaan</th>
-                  <th style={th('12%')}>Jenis</th>
+                <tr style={{ background: '#c40000', color: '#fff' }}>
+                  <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
+                  <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Unit</th>
+                  <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>KUK</th>
+                  <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Sub Unit</th>
+                  <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan</th>
+                  <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Jenis</th>
                 </tr>
               </thead>
               <tbody>
                 {kel.questions.map((q: any, qi: number) => (
                   <tr key={q.id || qi}>
-                    <td style={cell('8%')}>{q.no || qi + 1}</td>
-                    <td style={cell('15%')}>{q.unitkompetensi?.kode || '-'}</td>
-                    <td style={cell('15%')}>{q.kuk?.kode || '-'}</td>
-                    <td style={cell('15%')}>{q.subunitkompetensi?.kode || '-'}</td>
-                    <td style={cell()}>{q.soal || '-'}</td>
-                    <td style={cell('12%')}>{q.jenis || '-'}</td>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{q.no || qi + 1}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.unitkompetensi?.kode || '-'}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.kode || '-'}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.subunitkompetensi?.kode || '-'}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.soal || '-'}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{q.jenis || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -691,6 +754,29 @@ export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
 export function Ak02Preview({ data }: { data: any }) {
   const units = data?.data_unit_kompetensi || []
 
+  const methods = [
+    'Observasi Demonstrasi',
+    'Portofolio',
+    'Pertanyaan Wawancara',
+    'Pertanyaan Lisan',
+    'Pertanyaan Tertulis',
+    'Proyek Kerja',
+    'Lainnya',
+  ]
+
+  const getMethodKey = (label: string) => {
+    const map: Record<string, string> = {
+      'Observasi Demonstrasi': 'observasi',
+      'Portofolio': 'portofolio',
+      'Pertanyaan Wawancara': 'pertanyaan_wawancara',
+      'Pertanyaan Lisan': 'pertanyaan_lisan',
+      'Pertanyaan Tertulis': 'pertanyaan_tertulis',
+      'Proyek Kerja': 'proyek_kerja',
+      'Lainnya': 'lainnya',
+    }
+    return map[label] || ''
+  }
+
   return (
     <div>
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
@@ -698,28 +784,41 @@ export function Ak02Preview({ data }: { data: any }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Rekapitulasi Penilaian</h3>
-      <table style={tableStyle()}>
-        <thead>
-          <tr>
-            <th style={th('8%')}>No</th>
-            <th style={th('15%')}>Kode</th>
-            <th style={th()}>Nama Unit</th>
-            <th style={th('12%')}>Observasi</th>
-            <th style={th('12%')}>Portofolio</th>
-            <th style={th('12%')}>Wawancara</th>
-          </tr>
-        </thead>
+      <p style={{ fontSize: '13px', marginBottom: '15px' }}>
+        Beri tanda centang (√) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
+      </p>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
         <tbody>
-          {units.length === 0 && <tr><td colSpan={6} style={cell()}>Tidak ada data</td></tr>}
+          <tr style={{ color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
+            <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Unit kompetensi</th>
+            {methods.map((m) => (
+              <th key={m} style={{ border: '1px solid #000', padding: '8px 4px', width: '20px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '1.3' }}>
+                    {m}
+                  </div>
+                </div>
+              </th>
+            ))}
+          </tr>
+          {units.length === 0 && (
+            <tr><td colSpan={8} style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>Tidak ada data</td></tr>
+          )}
           {units.map((u: any, i: number) => (
             <tr key={u.id || i}>
-              <td style={cell('8%')}>{i + 1}</td>
-              <td style={cell('15%')}>{u.kode || '-'}</td>
-              <td style={cell()}>{u.nama || '-'}</td>
-              <td style={cell('12%')}>{u.observasi || '-'}</td>
-              <td style={cell('12%')}>{u.portofolio || '-'}</td>
-              <td style={cell('12%')}>{u.pertanyaan_wawancara || u.pertanyaan_lisan || '-'}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>
+                {u.kode || '-'}<br />{u.nama || '-'}
+              </td>
+              {methods.map((m) => {
+                const key = getMethodKey(m)
+                const val = u[key]
+                return (
+                  <td key={m} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
+                    {val ? '✓' : ''}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>
