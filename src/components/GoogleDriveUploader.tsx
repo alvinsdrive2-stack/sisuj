@@ -6,7 +6,7 @@ interface DriveUploaderProps {
   folderName: string
   parentFolderId: string | undefined
   namaAsesi: string
-  onUploadSuccess: (webViewLink: string) => void
+  onUploadSuccess: (webViewLinks: string[]) => void
   onClose: () => void
 }
 
@@ -25,8 +25,9 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
-function getUploadStatusText(progress: number, phase: string): string {
+function getUploadStatusText(progress: number, phase: string, fileIndex: number, totalFiles: number): string {
   if (phase === "auth") return "Mengotentikasi ke Google..."
+  if (phase === "upload") return `Mengupload file ${fileIndex} dari ${totalFiles}... ${progress}%`
   if (progress < 100) return `Mengupload... ${progress}%`
   if (phase === "saving") return "Menyimpan tautan..."
   if (phase === "success") return "Upload berhasil!"
@@ -98,42 +99,67 @@ export default function GoogleDriveUploader({
   onClose,
 }: DriveUploaderProps) {
   const [uploadState, setUploadState] = useState<UploadState>("idle")
-  const [selectedFile, setSelectedFile] = useState<UploadFileInfo | null>(null)
-  const [selectedFileBlob, setSelectedFileBlob] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<UploadFileInfo[]>([])
+  const [selectedFileBlobs, setSelectedFileBlobs] = useState<File[]>([])
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState("")
   const [errorMsg, setErrorMsg] = useState("")
   const [isDragOver, setIsDragOver] = useState(false)
-  const [resultLink, setResultLink] = useState("")
+  const [uploadedResults, setUploadedResults] = useState<{ name: string; link: string }[]>([])
+  const [currentFileIndex, setCurrentFileIndex] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { createGoogleDriveFile } = useDriveClient()
 
-  const handleFileSelect = useCallback((file: File) => {
-    const maxSize = 5 * 1024 * 1024 * 1024 // 5GB
+  const validateFile = useCallback((file: File): string | null => {
+    const maxSize = 5 * 1024 * 1024 * 1024
     if (file.size > maxSize) {
-      setErrorMsg(`File terlalu besar (${formatFileSize(file.size)}). Maksimal 5GB.`)
-      setUploadState("error")
-      return
+      return `File "${file.name}" terlalu besar (${formatFileSize(file.size)}). Maksimal 5GB per file.`
     }
-
     if (!file.type.startsWith("video/")) {
-      setErrorMsg("Hanya file video yang didukung (.mp4, .avi, .mkv, .mov, .webm)")
-      setUploadState("error")
-      return
+      return `File "${file.name}" bukan video. Hanya file video yang didukung.`
+    }
+    return null
+  }, [])
+
+  const addFiles = useCallback((newFiles: FileList) => {
+    const files = Array.from(newFiles)
+    const valid: File[] = []
+    const info: UploadFileInfo[] = []
+    const errors: string[] = []
+
+    for (const file of files) {
+      const err = validateFile(file)
+      if (err) {
+        errors.push(err)
+      } else {
+        valid.push(file)
+        info.push({ name: file.name, size: file.size, type: file.type })
+      }
     }
 
-    setSelectedFile({ name: file.name, size: file.size, type: file.type })
-    setSelectedFileBlob(file)
-    setErrorMsg("")
-    setUploadState("idle")
+    if (errors.length > 0) {
+      setErrorMsg(errors.join('\n'))
+      setUploadState("error")
+    }
+
+    if (valid.length > 0) {
+      setSelectedFiles(prev => [...prev, ...info])
+      setSelectedFileBlobs(prev => [...prev, ...valid])
+      setErrorMsg("")
+      setUploadState("idle")
+    }
+  }, [validateFile])
+
+  const removeFile = useCallback((index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index))
+    setSelectedFileBlobs(prev => prev.filter((_, i) => i !== index))
   }, [])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) handleFileSelect(file)
-  }, [handleFileSelect])
+    if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files)
+  }, [addFiles])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -145,36 +171,44 @@ export default function GoogleDriveUploader({
   }, [])
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleFileSelect(file)
-  }, [handleFileSelect])
+    if (e.target.files && e.target.files.length > 0) addFiles(e.target.files)
+  }, [addFiles])
 
   const startUpload = useCallback(async () => {
-    if (!selectedFileBlob || !googleClientId) return
+    if (selectedFileBlobs.length === 0 || !googleClientId) return
 
     setUploadState("uploading")
     setProgress(0)
     setPhase("auth")
     setErrorMsg("")
+    setCurrentFileIndex(0)
+
+    const results: { name: string; link: string }[] = []
 
     try {
-      const result = await createGoogleDriveFile(
-        googleClientId,
-        folderName,
-        selectedFileBlob,
-        parentFolderId,
-        (pct) => {
-          setProgress(pct)
-          if (pct > 0) setPhase("upload")
-        }
-      )
+      for (let i = 0; i < selectedFileBlobs.length; i++) {
+        setCurrentFileIndex(i + 1)
+        setPhase("auth")
+
+        const result = await createGoogleDriveFile(
+          googleClientId,
+          folderName,
+          selectedFileBlobs[i],
+          parentFolderId,
+          (pct) => {
+            setProgress(pct)
+            if (pct > 0) setPhase("upload")
+          }
+        )
+
+        results.push({ name: selectedFileBlobs[i].name, link: result.webViewLink })
+      }
 
       setProgress(100)
       setPhase("saving")
+      setUploadedResults(results)
 
-      // Callback to parent to save the link
-      onUploadSuccess(result.webViewLink)
-      setResultLink(result.webViewLink)
+      onUploadSuccess(results.map(r => r.link))
 
       setPhase("success")
       setUploadState("success")
@@ -188,16 +222,17 @@ export default function GoogleDriveUploader({
       setPhase("error")
       setUploadState("error")
     }
-  }, [selectedFileBlob, googleClientId, folderName, parentFolderId, onUploadSuccess, createGoogleDriveFile])
+  }, [selectedFileBlobs, googleClientId, folderName, parentFolderId, onUploadSuccess, createGoogleDriveFile])
 
   const resetUpload = useCallback(() => {
     setUploadState("idle")
-    setSelectedFile(null)
-    setSelectedFileBlob(null)
+    setSelectedFiles([])
+    setSelectedFileBlobs([])
     setProgress(0)
     setPhase("")
     setErrorMsg("")
-    setResultLink("")
+    setUploadedResults([])
+    setCurrentFileIndex(0)
   }, [])
 
   const handleTryAgain = useCallback(() => {
@@ -258,95 +293,104 @@ export default function GoogleDriveUploader({
         </div>
 
         {/* === IDLE STATE === */}
-        {uploadState === "idle" && !selectedFile && (
-          <div
-            style={{ ...styles.dropzone, ...(isDragOver ? styles.dropzoneActive : {}) }}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <img src={favicon} alt="SISUJ" style={{ width: '48px', height: '48px', marginBottom: '16px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
-            <p style={{ fontSize: '15px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>
-              Klik untuk pilih video
-            </p>
-            <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
-              atau seret file ke sini
-            </p>
-            <p style={{ fontSize: '11px', color: '#d1d5db', marginTop: '12px' }}>
-              MP4, AVI, MKV, MOV, WEBM — Maks 5GB
-            </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="video/*,.mp4,.avi,.mkv,.mov,.webm"
-              onChange={handleInputChange}
-              style={{ display: 'none' }}
-            />
-          </div>
-        )}
-
-        {/* === FILE SELECTED STATE === */}
-        {uploadState === "idle" && selectedFile && (
-          <div style={{
-            border: '2px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '20px',
-            marginBottom: '16px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              {/* File icon */}
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '10px',
-                background: '#f0f7ff', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', flexShrink: 0,
-              }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {selectedFile.name}
-                </p>
-                <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#6b7280' }}>
-                  {formatFileSize(selectedFile.size)}
-                </p>
-              </div>
-              <button
-                onClick={resetUpload}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  padding: '4px', borderRadius: '6px', color: '#9ca3af',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M18 6L6 18M6 6l12 12" />
-                </svg>
-              </button>
+        {uploadState === "idle" && (
+          <>
+            {/* Dropzone */}
+            <div
+              style={{ ...styles.dropzone, ...(isDragOver ? styles.dropzoneActive : {}) }}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <img src={favicon} alt="SISUJ" style={{ width: '48px', height: '48px', marginBottom: '16px', display: 'block', marginLeft: 'auto', marginRight: 'auto' }} />
+              <p style={{ fontSize: '15px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>
+                {selectedFiles.length > 0 ? 'Klik untuk tambah file' : 'Klik untuk pilih video'}
+              </p>
+              <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
+                atau seret file ke sini
+              </p>
+              <p style={{ fontSize: '11px', color: '#d1d5db', marginTop: '12px' }}>
+                MP4, AVI, MKV, MOV, WEBM — Maks 5GB per file
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="video/*,.mp4,.avi,.mkv,.mov,.webm"
+                onChange={handleInputChange}
+                style={{ display: 'none' }}
+              />
             </div>
 
-            <button
-              onClick={startUpload}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-                width: '100%', padding: '14px', marginTop: '16px',
-                background: '#4285F4', color: '#fff', fontSize: '15px', fontWeight: '600',
-                border: 'none', borderRadius: '10px', cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 1px 3px rgba(66,133,244,0.3)',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#3367D6'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(66,133,244,0.4)' }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#4285F4'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(66,133,244,0.3)' }}
-            >
-              <img src={favicon} alt="" style={{ width: '18px', height: '18px' }} />
-              Upload ke Google Drive
-            </button>
-          </div>
+            {/* Selected files list */}
+            {selectedFiles.length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', margin: '0 0 8px' }}>
+                  {selectedFiles.length} file dipilih:
+                </p>
+                <div style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} style={{
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      border: '1px solid #e5e7eb', borderRadius: '10px',
+                      padding: '10px 12px',
+                    }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '8px',
+                        background: '#f0f7ff', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', flexShrink: 0,
+                      }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4285F4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                          <polyline points="14 2 14 8 20 8" />
+                        </svg>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {file.name}
+                        </p>
+                        <p style={{ margin: '1px 0 0', fontSize: '11px', color: '#6b7280' }}>
+                          {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeFile(idx)}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          padding: '4px', borderRadius: '6px', color: '#9ca3af',
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = '#9ca3af'}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={startUpload}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                    width: '100%', padding: '14px', marginTop: '16px',
+                    background: '#4285F4', color: '#fff', fontSize: '15px', fontWeight: '600',
+                    border: 'none', borderRadius: '10px', cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 3px rgba(66,133,244,0.3)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#3367D6'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(66,133,244,0.4)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = '#4285F4'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(66,133,244,0.3)' }}
+                >
+                  <img src={favicon} alt="" style={{ width: '18px', height: '18px' }} />
+                  Upload {selectedFiles.length} file ke Google Drive
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* === UPLOADING STATE === */}
@@ -362,13 +406,13 @@ export default function GoogleDriveUploader({
               <img src={favicon} alt="" style={{ width: '40px', height: '40px' }} />
             </div>
 
-            {selectedFile && (
-              <p style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-                {selectedFile.name}
-              </p>
-            )}
+            <p style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+              {currentFileIndex > 0 && selectedFiles.length > 0
+                ? selectedFiles[currentFileIndex - 1]?.name || ''
+                : selectedFiles[0]?.name || ''}
+            </p>
             <p style={{ margin: '0 0 4px', fontSize: '13px', color: '#6b7280' }}>
-              {getUploadStatusText(progress, phase)}
+              {getUploadStatusText(progress, phase, currentFileIndex, selectedFiles.length)}
             </p>
             <p style={{ margin: '0 0 4px', fontSize: '24px', fontWeight: '700', color: '#4285F4' }}>
               {progress}%
@@ -391,12 +435,9 @@ export default function GoogleDriveUploader({
               position: 'relative',
             }} />
 
-            {/* File size info */}
-            {selectedFile && (
-              <p style={{ marginTop: '12px', fontSize: '11px', color: '#9ca3af' }}>
-                {formatFileSize(selectedFile.size)} — Jangan tutup halaman ini
-              </p>
-            )}
+            <p style={{ marginTop: '12px', fontSize: '11px', color: '#9ca3af' }}>
+              Jangan tutup halaman ini
+            </p>
           </div>
         )}
 
@@ -420,29 +461,39 @@ export default function GoogleDriveUploader({
               Upload Berhasil!
             </h4>
             <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#6b7280' }}>
-              Video AJJ berhasil diupload ke Google Drive
+              {uploadedResults.length} file berhasil diupload ke Google Drive
             </p>
 
-            {resultLink && (
-              <a
-                href={resultLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  padding: '10px 16px', background: '#f0f7ff',
-                  border: '1px solid #93c5fd', borderRadius: '8px',
-                  fontSize: '13px', color: '#1d4ed8', textDecoration: 'none',
-                  marginBottom: '20px', wordBreak: 'break-all',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                  <polyline points="15 3 21 3 21 9" />
-                  <line x1="10" y1="14" x2="21" y2="3" />
-                </svg>
-                Buka di Google Drive
-              </a>
+            {/* Uploaded files list */}
+            {uploadedResults.length > 0 && (
+              <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {uploadedResults.map((r, idx) => (
+                    <a
+                      key={idx}
+                      href={r.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        padding: '10px 14px', background: '#f0f7ff',
+                        border: '1px solid #93c5fd', borderRadius: '8px',
+                        fontSize: '13px', color: '#1d4ed8', textDecoration: 'none',
+                        wordBreak: 'break-all',
+                      }}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.name}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
             )}
 
             <button
@@ -484,7 +535,7 @@ export default function GoogleDriveUploader({
             <p style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: '700', color: '#991b1b' }}>
               Upload Gagal
             </p>
-            <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#b91c1c' }}>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: '#b91c1c', whiteSpace: 'pre-line' }}>
               {errorMsg}
             </p>
             <div style={{ display: 'flex', gap: '8px' }}>

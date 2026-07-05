@@ -394,21 +394,26 @@ export default function Ak06Page() {
   }
 
 
-  const handleDriveUploadSuccess = useCallback(async (webViewLink: string) => {
+  const handleDriveUploadSuccess = useCallback(async (webViewLinks: string[]) => {
     try {
       const token = localStorage.getItem('access_token')
-      const res = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
-        method: 'PUT',
-        headers: {
-          Accept: 'application/json',
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ link_video: webViewLink }),
-      })
+      let allOk = true
 
-      if (res.ok) {
-        setVideoAjj(webViewLink)
+      for (const link of webViewLinks) {
+        const res = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
+          method: 'PUT',
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ link_video: link }),
+        })
+        if (!res.ok) allOk = false
+      }
+
+      if (allOk) {
+        setVideoAjj(webViewLinks[0] || '')
         setShowDriveUploader(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
@@ -430,7 +435,7 @@ export default function Ak06Page() {
           }
         }
       } else {
-        showWarning('Gagal menyimpan tautan. Silakan coba upload ulang.')
+        showWarning('Gagal menyimpan beberapa tautan. Silakan coba upload ulang.')
       }
     } catch (err) {
       showError(extractErrorMessage(err, 'Gagal menyimpan tautan video'))
