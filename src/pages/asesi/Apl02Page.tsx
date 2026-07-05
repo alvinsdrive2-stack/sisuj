@@ -2376,7 +2376,7 @@ export default function Apl02Page() {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          metode: savedMetodeRef.current,
+          metode: savedMetodeRef.current || '',
           is_dilanjutkan: true,
           answers
         }),
