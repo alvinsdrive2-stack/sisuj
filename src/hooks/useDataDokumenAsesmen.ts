@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import { useDokumenAsesmenCtx } from "@/contexts/AsesmenDataContext"
 import { API_BASE_URL } from "@/config/api"
 
@@ -69,6 +70,7 @@ interface UseDataDokumenAsesmenResult {
 
 export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokumenAsesmenResult {
   const ctx = useDokumenAsesmenCtx()
+  const location = useLocation()
   if (ctx) return ctx
 
   const [data, setData] = useState<{
@@ -205,7 +207,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
 
     fetchData()
     return () => controller.abort()
-  }, [idIzin])
+  }, [idIzin, location.pathname])
 
   return {
     ...data,

@@ -48,7 +48,11 @@ export default function K3AsesmenPage() {
       if (response.ok) {
         const result: K3Response = await response.json()
         if (result.message === "Success" && result.data) {
-          if (result.data.file) setPdfUrl(result.data.file)
+          if (result.data.file) {
+        const separator = result.data.file.includes('?') ? '&' : '?'
+        const cacheBustUrl = `${result.data.file}${separator}t=${Date.now()}`
+        setPdfUrl(cacheBustUrl)
+      }
           if (result.data.barcodes) setBarcodes(result.data.barcodes as BarcodeState)
         }
         setIsDataLoading(false)
