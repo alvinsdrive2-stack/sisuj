@@ -154,10 +154,14 @@ export function Apl01Preview({ data }: { data: any }) {
         <>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Bukti Administratif</h3>
           <table style={tableStyle()}>
-            <thead><tr><th style={th('8%')}>No</th><th style={th()}>Nama Dokumen</th><th style={th('15%')}>File</th></tr></thead>
+            <thead><tr><th style={th('8%')}>No</th><th style={th()}>Nama Dokumen</th><th style={th('10%')}>Ada</th></tr></thead>
             <tbody>
               {administratif.map((a: any, i: number) => (
-                <tr key={a.id || i}><td style={cell('8%')}>{i + 1}</td><td style={cell()}>{a.nama || '-'}</td><td style={cell('15%')}>{a.file_url ? 'Ada' : '-'}</td></tr>
+                <tr key={a.id || i}>
+                  <td style={cell('8%')}>{i + 1}</td>
+                  <td style={cell()}>{a.bukti || '-'}</td>
+                  <td style={cell('10%')}>{a.checked || a.foto_url || a.ktp_url ? 'Ada' : '-'}</td>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -211,6 +215,50 @@ export function Apl02Preview({ data }: { data: any }) {
         </div>
       ))}
       {units.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data unit kompetensi</p>}
+
+      {/* TTD / Signature Table */}
+      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Rekomendasi & Tanda Tangan</h3>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <td rowSpan={3} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', fontWeight: 'bold' }}>
+              Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan
+            </td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
+          </tr>
+          <tr>
+            <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
+            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.nama_asesi || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+            <td style={{ height: '80px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center', color: '#999' }}>
+              -
+            </td>
+          </tr>
+          <tr>
+            <td></td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor :</td>
+            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.nama_asesor || '-'}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
+            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.no_reg_asesor || '-'}</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
+            <td style={{ height: '80px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center', color: '#999' }}>
+              -
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   )
 }
