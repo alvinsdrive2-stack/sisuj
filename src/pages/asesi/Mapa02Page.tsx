@@ -367,7 +367,7 @@ export default function Mapa02Page() {
           {/* Keterangan */}
           {keteranganReferensi && (
             <div style={{ background: '#ffffff', border: '1px solid #6f6f6f', marginBottom: '16px', padding: '12px', fontSize: '14px' }}>
-              <div dangerouslySetInnerHTML={{ __html: keteranganReferensi.referensis[0]?.nama || '' }} />
+              <div dangerouslySetInnerHTML={{ __html: (keteranganReferensi.referensis[0]?.nama || '').replace(/<ul>/g, '<ol>').replace(/<\/ul>/g, '</ol>') }} />
             </div>
           )}
 
