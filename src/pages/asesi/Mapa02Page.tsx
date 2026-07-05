@@ -366,7 +366,12 @@ export default function Mapa02Page() {
           {/* Keterangan Table */}
           {keteranganReferensi && (
             <div style={{ background: '#ffffff', border: '1px solid #6f6f6f', marginBottom: '16px', padding: '12px', fontSize: '14px' }}>
-              <div dangerouslySetInnerHTML={{ __html: keteranganReferensi.referensis[0]?.nama || '' }} />
+              {keteranganReferensi.referensis.slice(0, 5).map((ref, i) => (
+                <div key={ref.id} style={{ marginBottom: i < 4 ? '8px' : '0' }}>
+                  <span style={{ fontWeight: 'bold' }}>{i + 1}. </span>
+                  <span dangerouslySetInnerHTML={{ __html: ref.nama || '' }} />
+                </div>
+              ))}
             </div>
           )}
 
