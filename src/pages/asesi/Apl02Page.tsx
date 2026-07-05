@@ -2390,7 +2390,7 @@ export default function Apl02Page() {
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
           )
 
-          if (tahap !== 0 && !isUuidFlow && hasMissingBarcode) {
+          if (!isUuidFlow && hasMissingBarcode) {
             try {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
@@ -2431,10 +2431,8 @@ export default function Apl02Page() {
 
         showSuccess('APL 02 berhasil ditandatangani!')
         signing.publishUpdate()
-        // Untuk tahap 0 atau UUID flow, langsung navigasi ke halaman berikutnya
-        if (tahap === 0 || isUuidFlow) {
-          setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
-        }
+        // Navigasi ke halaman berikutnya
+        setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data APL 02')
         showError(msg)
