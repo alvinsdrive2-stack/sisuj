@@ -108,7 +108,7 @@ export default function GoogleDriveUploader({
   const [uploadedResults, setUploadedResults] = useState<{ name: string; link: string }[]>([])
   const [currentFileIndex, setCurrentFileIndex] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { createGoogleDriveFile } = useDriveClient()
+  const driveClient = useDriveClient()
 
   const validateFile = useCallback((file: File): string | null => {
     const maxSize = 5 * 1024 * 1024 * 1024
@@ -186,15 +186,17 @@ export default function GoogleDriveUploader({
     const results: { name: string; link: string }[] = []
 
     try {
+      // Init drive & find/create folder sekali untuk semua file
+      await driveClient.init(googleClientId)
+      const folderId = await driveClient.findOrCreateFolder(folderName, parentFolderId)
+
       for (let i = 0; i < selectedFileBlobs.length; i++) {
         setCurrentFileIndex(i + 1)
         setPhase("auth")
 
-        const result = await createGoogleDriveFile(
-          googleClientId,
-          folderName,
+        const result = await driveClient.uploadFile(
           selectedFileBlobs[i],
-          parentFolderId,
+          folderId,
           (pct) => {
             setProgress(pct)
             if (pct > 0) setPhase("upload")
@@ -222,7 +224,7 @@ export default function GoogleDriveUploader({
       setPhase("error")
       setUploadState("error")
     }
-  }, [selectedFileBlobs, googleClientId, folderName, parentFolderId, onUploadSuccess, createGoogleDriveFile])
+  }, [selectedFileBlobs, googleClientId, folderName, parentFolderId, onUploadSuccess, driveClient])
 
   const resetUpload = useCallback(() => {
     setUploadState("idle")
@@ -568,20 +570,27 @@ export default function GoogleDriveUploader({
 }
 
 /**
- * Hook to lazy-import createGoogleDriveFile and avoid circular deps.
- * Same signature as the lib function.
+ * Hook to lazy-import google-drive helpers and avoid circular deps.
  */
 function useDriveClient() {
-  const createGoogleDriveFile = useCallback(async (
-    clientId: string,
-    folderName: string,
+  const init = useCallback(async (clientId: string) => {
+    const mod = await import("@/lib/google-drive")
+    await mod.initDriveClient(clientId)
+  }, [])
+
+  const findOrCreateFolder = useCallback(async (name: string, parentId?: string) => {
+    const mod = await import("@/lib/google-drive")
+    return mod.findOrCreateFolder(name, parentId)
+  }, [])
+
+  const uploadFile = useCallback(async (
     file: File,
-    parentFolderId?: string,
+    folderId: string,
     onProgress?: (pct: number) => void
   ) => {
     const mod = await import("@/lib/google-drive")
-    return mod.createGoogleDriveFile(clientId, folderName, file, parentFolderId, onProgress)
+    return mod.uploadFileToDrive(file, folderId, onProgress)
   }, [])
 
-  return { createGoogleDriveFile }
+  return { init, findOrCreateFolder, uploadFile }
 }
