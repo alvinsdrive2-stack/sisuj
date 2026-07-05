@@ -2068,6 +2068,14 @@ export default function Apl02Page() {
     })
   })()
 
+  // Check if any asesor has signed (for hiding "Simpan & Tanda Tangan" button)
+  const anyAsesorSigned = useMemo(() => {
+    if (tahap === 0 || isUuidFlow || isAsesor) return true
+    const subunits = Object.values(subunitBarcodes)
+    if (subunits.length === 0) return false
+    return subunits.some(sb => sb.asesor1?.url || sb.asesor2?.url)
+  }, [tahap, isUuidFlow, isAsesor, subunitBarcodes])
+
   // allSigned & missingLabels now handled by useSigningState hook
 
   // Derive single barcode state from per-subunit barcodes for signing hook
@@ -2150,7 +2158,7 @@ export default function Apl02Page() {
   }
 
   const handleSubmit = async (saveOnly = false) => {
-    if (!signing.agreedChecklist && !saveOnly) {
+    if (!signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -2716,13 +2724,13 @@ export default function Apl02Page() {
               Kembali
             </ActionButton>
           )}
-          {tahap === 1 && !isAsesor && (
+          {tahap === 1 && !isAsesor && !anyAsesorSigned && (
             <ActionButton variant="secondary" onClick={() => handleSubmit(true)} disabled={isSaving}>
-              Simpan
+              Simpan & Tanda Tangan
             </ActionButton>
           )}
-          <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={() => handleSubmit(false)}>
-            {signing.buttonText}
+          <ActionButton variant="primary" disabled={tahap === 1 && !isAsesor ? !signing.allAsesorSigned : signing.buttonDisabled} onClick={() => handleSubmit(false)}>
+            {tahap === 1 && !isAsesor ? 'Lanjut' : signing.buttonText}
           </ActionButton>
         </div>
         </div> {/* Close main content wrapper */}
