@@ -215,50 +215,6 @@ export function Apl02Preview({ data }: { data: any }) {
         </div>
       ))}
       {units.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data unit kompetensi</p>}
-
-      {/* TTD / Signature Table */}
-      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Rekomendasi & Tanda Tangan</h3>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
-        <tbody>
-          <tr>
-            <td rowSpan={3} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', fontWeight: 'bold' }}>
-              Rekomendasi Untuk Asesi: Asesmen dapat / tidak dapat dilanjutkan
-            </td>
-            <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
-          </tr>
-          <tr>
-            <td style={{ width: '20%', border: '1px solid #000', padding: '8px' }}>Nama</td>
-            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.nama_asesi || '-'}</td>
-          </tr>
-          <tr>
-            <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-            <td style={{ height: '80px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center', color: '#999' }}>
-              -
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Ditinjau Oleh Asesor :</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td style={{ border: '1px solid #000', padding: '8px' }}>Nama Asesor :</td>
-            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.nama_asesor || '-'}</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td style={{ border: '1px solid #000', padding: '8px' }}>No. Reg:</td>
-            <td style={{ border: '1px solid #000', padding: '8px' }}>{data?.no_reg_asesor || '-'}</td>
-          </tr>
-          <tr>
-            <td></td>
-            <td style={{ border: '1px solid #000', padding: '8px', verticalAlign: 'top' }}>Tanda tangan/<br />Tanggal</td>
-            <td style={{ height: '80px', border: '1px solid #000', padding: '8px', verticalAlign: 'middle', textAlign: 'center', color: '#999' }}>
-              -
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   )
 }

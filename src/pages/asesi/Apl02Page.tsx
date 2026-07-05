@@ -2033,9 +2033,9 @@ export default function Apl02Page() {
     }
   }, [kegiatan, isAsesor, idIzin, jadwalId, fetchData])
 
-  // Check if asesi has signed (skip untuk tahap 0)
+  // Check if asesi has signed
   const asesiHasSigned = (() => {
-    if (tahap === 0 || isUuidFlow) return true
+    if (isUuidFlow) return true
     if (isAsesor) return true
     const subunits = Object.values(subunitBarcodes)
     if (subunits.length === 0) return false
@@ -2163,8 +2163,8 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && !isUuidFlow && !isAsesor && asesiHasSigned && allAsesorSigned) {
+    // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya
+    if (!isUuidFlow && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
       if (finalIdIzin) {
         navigate(getNextRoute(finalIdIzin))
