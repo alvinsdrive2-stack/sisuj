@@ -86,8 +86,8 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
             <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
               <span style={{ fontWeight: 'bold' }}>
                 Rekomendasi Untuk Asesi: Asesmen{' '}
-                <span style={{ textDecoration: apl02Data?.is_dilanjutkan === false ? 'line-through' : 'none' }}>dapat</span> / {' '}
-                <span style={{ textDecoration: apl02Data?.is_dilanjutkan === true ? 'line-through' : 'none' }}>tidak dapat</span> dilanjutkan melalui pendekatan
+                <span style={{ textDecoration: !allAsesorSigned ? 'line-through' : 'none' }}>dapat</span> / {' '}
+                <span style={{ textDecoration: allAsesorSigned ? 'line-through' : 'none' }}>tidak dapat</span> dilanjutkan melalui pendekatan
               </span><br /><br />
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                 <CustomCheckbox
