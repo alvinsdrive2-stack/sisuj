@@ -113,7 +113,6 @@ export default function Ak06Page() {
   const [aspekItems, setAspekItems] = useState<AspekItem[]>([])
   const [rekomendasiPrinsip, setRekomendasiPrinsip] = useState('')
   const [rekomendasiDimensi, setRekomendasiDimensi] = useState('')
-  const [dimensiKompetensi, setDimensiKompetensi] = useState<DimensiKompetensiAPI | null>(null)
   const [komentarAsesor, setKomentarAsesor] = useState<Record<number, string>>({})
   const [feedbackData, setFeedbackData] = useState<{
     rekomendasi1: string
@@ -171,11 +170,6 @@ export default function Ak06Page() {
           setFeedbackData(result.data.feedback || null)
           setRekomendasiPrinsip(result.data.feedback?.rekomendasi1 || '')
           setRekomendasiDimensi(result.data.feedback?.rekomendasi2 || '')
-
-          // Set dimensi kompetensi
-          if (result.data.dimensi_kompetensi) {
-            setDimensiKompetensi(result.data.dimensi_kompetensi as DimensiKompetensiAPI)
-          }
 
           // Set barcodes data
           setBarcodes(result.data.barcodes || {
@@ -323,18 +317,6 @@ export default function Ak06Page() {
       })
 
       if (response.ok) {
-        // Update UI dengan dimensi kompetensi dari jenjang/metode terkini
-        if (metode) {
-          const dimensiLabel = getDimensiKompetensiLabel()
-          setDimensiKompetensi({
-            task_skills: dimensiLabel,
-            task_management_skills: dimensiLabel,
-            contingency_management_skills: dimensiLabel,
-            job_role_environment_skills: dimensiLabel,
-            transfer_skills: dimensiLabel,
-          })
-        }
-
         showSuccess('AK 06 berhasil disimpan!')
 
         // Generate QR via hook
@@ -664,11 +646,11 @@ export default function Ak06Page() {
                 <b>Konsistensi keputusan asesmen</b><br />
                 Bukti dari berbagai asesmen diperiksa untuk konsistensi dimensi kompetensi
               </td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_skills || '' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_management_skills || '' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.contingency_management_skills || '' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.job_role_environment_skills || '' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.transfer_skills || '' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
             </tr>
 
             <tr>
