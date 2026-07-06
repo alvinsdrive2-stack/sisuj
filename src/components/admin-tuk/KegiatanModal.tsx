@@ -8,7 +8,7 @@ import QRCode from "qrcode"
 import { encryptCaptureData } from "@/utils/crypto"
 
 import { API_BASE_URL } from "@/config/api"
-const CAPTURE_BASE_URL = "https://sisuj.vercel.app/capture"
+const CAPTURE_BASE_URL = "https://sitkon.lspgatensi.id/capture"
 
 type KegiatanType = 'foto_bersama' | 'daftar_hadir_asesi' | 'daftar_hadir_asesor'
 

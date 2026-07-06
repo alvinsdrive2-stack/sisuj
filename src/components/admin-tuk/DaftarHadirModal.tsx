@@ -273,7 +273,7 @@ export function DaftarHadirModal({
       const authToken = localStorage.getItem("access_token") || ""
       // In detail mode, use personId (idIzin), in qr mode use jadwalId
       const idForQR = mode === 'detail' ? personId : jadwalId
-      const url = `https://sisuj.vercel.app/attendance?token=${token}&type=${personType}&auth=${encodeURIComponent(authToken)}&id=${idForQR}`
+      const url = `https://sitkon.lspgatensi.id/attendance?token=${token}&type=${personType}&auth=${encodeURIComponent(authToken)}&id=${idForQR}`
 
       QRCode.toDataURL(url, {
         width: 220,
