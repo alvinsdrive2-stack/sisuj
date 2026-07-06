@@ -312,26 +312,28 @@ export default function Ak06Page() {
           rekomendasi2: rekomendasiDimensi,
           catatan_asesor1: komentarAsesor[asesorList[0]?.id] || '',
           catatan_asesor2: komentarAsesor[asesorList[1]?.id] || '',
-          dimensi_kompetensi: {
+          dimensi_kompetensi: metode ? {
             task_skills: getDimensiKompetensiLabel(),
             task_management_skills: getDimensiKompetensiLabel(),
             contingency_management_skills: getDimensiKompetensiLabel(),
             job_role_environment_skills: getDimensiKompetensiLabel(),
             transfer_skills: getDimensiKompetensiLabel(),
-          },
+          } : undefined,
         }),
       })
 
       if (response.ok) {
         // Update UI dengan dimensi kompetensi dari jenjang/metode terkini
-        const dimensiLabel = getDimensiKompetensiLabel()
-        setDimensiKompetensi({
-          task_skills: dimensiLabel,
-          task_management_skills: dimensiLabel,
-          contingency_management_skills: dimensiLabel,
-          job_role_environment_skills: dimensiLabel,
-          transfer_skills: dimensiLabel,
-        })
+        if (metode) {
+          const dimensiLabel = getDimensiKompetensiLabel()
+          setDimensiKompetensi({
+            task_skills: dimensiLabel,
+            task_management_skills: dimensiLabel,
+            contingency_management_skills: dimensiLabel,
+            job_role_environment_skills: dimensiLabel,
+            transfer_skills: dimensiLabel,
+          })
+        }
 
         showSuccess('AK 06 berhasil disimpan!')
 
@@ -662,11 +664,11 @@ export default function Ak06Page() {
                 <b>Konsistensi keputusan asesmen</b><br />
                 Bukti dari berbagai asesmen diperiksa untuk konsistensi dimensi kompetensi
               </td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_skills || 'L/DIT<br/> T/DPT' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_management_skills || 'L/DIT<br/> T/DPT' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.contingency_management_skills || 'L/DIT<br/> T/DPT' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.job_role_environment_skills || 'L/DIT<br/> T/DPT' }} />
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.transfer_skills || 'L/DIT<br/> T/DPT' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_skills || '' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.task_management_skills || '' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.contingency_management_skills || '' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.job_role_environment_skills || '' }} />
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: dimensiKompetensi?.transfer_skills || '' }} />
             </tr>
 
             <tr>
