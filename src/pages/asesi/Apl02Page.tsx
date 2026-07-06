@@ -67,6 +67,11 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
     setMetodeAsesmen(initialValue)
   }, [initialValue])
 
+  // Check if any subunit has asesor signature
+  const anyAsesorSigned = useMemo(() => {
+    return Object.values(subunitBarcodes).some(b => b.asesor1?.url || b.asesor2?.url)
+  }, [subunitBarcodes])
+
   // Notify parent when value changes (for POST)
   useEffect(() => {
     onMetodeChange(metodeAsesmen)
@@ -86,8 +91,8 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
             <td rowSpan={3 + (asesorList.length > 0 ? asesorList.length * 4 : 3)} style={{ width: '30%', border: '1px solid #000', padding: '8px', verticalAlign: 'middle' }}>
               <span style={{ fontWeight: 'bold' }}>
                 Rekomendasi Untuk Asesi: Asesmen{' '}
-                <span style={{ textDecoration: !allAsesorSigned ? 'line-through' : 'none' }}>dapat</span> / {' '}
-                <span style={{ textDecoration: allAsesorSigned ? 'line-through' : 'none' }}>tidak dapat</span> dilanjutkan melalui pendekatan
+                <span>dapat</span> / {' '}
+                <span style={{ textDecoration: anyAsesorSigned ? 'line-through' : 'none' }}>tidak dapat</span> dilanjutkan melalui pendekatan
               </span><br /><br />
               <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: isAsesor ? 'pointer' : 'not-allowed' }}>
                 <CustomCheckbox
