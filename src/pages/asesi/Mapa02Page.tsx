@@ -256,7 +256,7 @@ export default function Mapa02Page() {
           {/* Title */}
           <div style={{ marginBottom: '16px', textAlign: 'left' }}>
             <h1 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '4px', textTransform: 'uppercase' }}>
-              {mapaData?.kelompok_kerja.nama_dokumen || 'FR. MAPA.02 - FORMULIR MAPA 02'}
+              FR. MAPA.02 - {mapaData?.kelompok_kerja.nama_dokumen || 'FR. MAPA.02 - FORMULIR MAPA 02'}
             </h1>
           </div>
 
