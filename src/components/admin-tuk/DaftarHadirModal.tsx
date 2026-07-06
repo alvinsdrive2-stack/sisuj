@@ -351,11 +351,9 @@ export function DaftarHadirModal({
     try {
       const token = localStorage.getItem("access_token")
       const formData = new FormData()
-      formData.append('id_izin', personId)
-      formData.append('type', nodeId) // foto_kegiatan or foto_bersama
-      formData.append('file', file)
+      formData.append('image', file)
 
-      const response = await fetch(`${API_BASE_URL}/dokumen/absen/upload`, {
+      const response = await fetch(`${API_BASE_URL}/bukti/${personId}/foto-kegiatan`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -369,7 +367,7 @@ export function DaftarHadirModal({
       }
 
       toast("Foto berhasil diupload!", "success")
-      refetch() // Refresh data
+      refetch()
     } catch (error) {
       console.error('Error uploading file:', error)
       toast(error instanceof Error ? error.message : "Gagal mengupload foto", "error")
@@ -391,52 +389,66 @@ export function DaftarHadirModal({
       </p>
 
       {isMobile ? (
-        // Mobile - Camera option
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+        // Mobile - Camera + Gallery
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '300px' }}>
           <label
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px',
-              padding: '20px 32px',
-              background: 'linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%)',
+              gap: '10px',
+              padding: '14px 24px',
+              background: '#1e3a5f',
               color: '#fff',
               border: 'none',
-              borderRadius: '12px',
-              fontSize: '16px',
+              borderRadius: '10px',
+              fontSize: '15px',
               fontWeight: '600',
               cursor: 'pointer',
             }}
           >
-            <FontAwesomeIcon icon={faCamera} style={{ fontSize: '20px' }} />
+            <FontAwesomeIcon icon={faCamera} />
             Buka Kamera
-            <input type="file" accept="image/*,.pdf" capture="environment" style={{ display: 'none' }} />
+            <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+              disabled={!!uploadingNode}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleFileUpload('foto_kegiatan', file)
+                e.target.value = ''
+              }}
+            />
           </label>
 
-          <div style={{ color: '#9ca3af', fontSize: '13px' }}>atau</div>
+          <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>atau</div>
 
           <label style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '12px',
-            padding: '16px 24px',
+            gap: '8px',
+            padding: '12px 20px',
             background: '#f3f4f6',
             color: '#374151',
             border: '2px dashed #d1d5db',
-            borderRadius: '12px',
+            borderRadius: '10px',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
           }}>
-            <FontAwesomeIcon icon={faCamera} />
-            Upload dari Galeri
-            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} />
+            <FontAwesomeIcon icon={faUpload} />
+            Pilih dari Galeri
+            <input type="file" accept="image/*" style={{ display: 'none' }}
+              disabled={!!uploadingNode}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleFileUpload('foto_kegiatan', file)
+                e.target.value = ''
+              }}
+            />
           </label>
         </div>
       ) : (
-        // Desktop - QR Code + Upload
+        // Desktop - QR Code + Upload dari Komputer
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
           {qrDataUrl ? (
             <div style={{
@@ -466,25 +478,31 @@ export function DaftarHadirModal({
           }}>
             <FontAwesomeIcon icon={faClock} style={{ color: '#d97706', fontSize: '14px' }} />
             <span style={{ fontSize: '13px', color: '#92400e' }}>
-              QR berlaku 30 menit
+              QR berlaku 30 menit &mdash; Scan dengan HP
             </span>
           </div>
 
-          <div style={{ color: '#9ca3af', fontSize: '13px' }}>atau</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', maxWidth: '300px' }}>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+            <span style={{ fontSize: '12px', color: '#9ca3af' }}>atau</span>
+            <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+          </div>
 
           <label style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '12px',
-            padding: '14px 24px',
+            gap: '8px',
+            padding: '12px 20px',
             background: '#f3f4f6',
             color: '#374151',
             border: '2px dashed #d1d5db',
-            borderRadius: '12px',
+            borderRadius: '10px',
             fontSize: '14px',
             fontWeight: '500',
             cursor: 'pointer',
+            width: '100%',
+            maxWidth: '300px',
             transition: 'all 0.2s',
           }}
           onMouseEnter={(e) => {
@@ -496,9 +514,16 @@ export function DaftarHadirModal({
             e.currentTarget.style.background = '#f3f4f6'
           }}
           >
-            <FontAwesomeIcon icon={faCamera} />
+            <FontAwesomeIcon icon={faUpload} />
             Upload dari Komputer
-            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }} />
+            <input type="file" accept="image/*" style={{ display: 'none' }}
+              disabled={!!uploadingNode}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleFileUpload('foto_kegiatan', file)
+                e.target.value = ''
+              }}
+            />
           </label>
         </div>
       )}
