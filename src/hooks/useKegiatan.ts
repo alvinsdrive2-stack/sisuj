@@ -200,37 +200,35 @@ export function useKegiatanAdminTUK() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const setKegiatansRef = useRef(setKegiatans)
-  setKegiatansRef.current = setKegiatans
+  const fetchKegiatanAdminTUK = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      // Get today's date in WIB (YYYY-MM-DD format)
+      const now = new Date()
+      const wibParts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }).formatToParts(now)
+      const tanggalUji = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
 
-  useEffect(() => {
-    const fetchKegiatanAdminTUK = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        // Get today's date in WIB (YYYY-MM-DD format)
-        const now = new Date()
-        const wibParts = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'Asia/Jakarta',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).formatToParts(now)
-        const tanggalUji = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
-
-        const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji)
-        setKegiatansRef.current?.(response.data.data)
-      } catch (err) {
-        console.error('Error fetching kegiatan admin TUK:', err)
-        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan admin TUK")
-      } finally {
-        setIsLoading(false)
-      }
+      const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji)
+      setKegiatans(response.data.data)
+    } catch (err) {
+      console.error('Error fetching kegiatan admin TUK:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch kegiatan admin TUK")
+    } finally {
+      setIsLoading(false)
     }
-    fetchKegiatanAdminTUK()
   }, [])
 
-  return { kegiatans, isLoading, error }
+  useEffect(() => {
+    fetchKegiatanAdminTUK()
+  }, [fetchKegiatanAdminTUK])
+
+  return { kegiatans, isLoading, error, refetch: fetchKegiatanAdminTUK }
 }
 
 export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {

@@ -90,11 +90,15 @@ export default function ListAsesiAdminTUK() {
     return absen?.url_absen_asesi_pra_akhir
   })
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
+  const [kegiatanRefreshKey, setKegiatanRefreshKey] = useState(0)
 
   // Realtime sync: refetch when asesi completes absen akhir pra
   const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
     channelName: `jadwal:${jadwalId}`,
-    onUpdate: () => refetch(),
+    onUpdate: () => {
+      refetch()
+      setKegiatanRefreshKey(k => k + 1)
+    },
   })
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [startingPraAsesmen, setStartingPraAsesmen] = useState(false)
@@ -150,7 +154,7 @@ export default function ListAsesiAdminTUK() {
       }
     }
     fetchKegiatan()
-  }, [jadwalId])
+  }, [jadwalId, kegiatanRefreshKey])
 
   const countdown = useCountdown(kegiatan?.tanggal_uji || "")
 
@@ -161,6 +165,8 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startPraAsesmen(kegiatan.jadwal_id)
       toast("Pra-asesmen berhasil dimulai!", "success")
+      setKegiatan(prev => prev ? { ...prev, tahap: 1, is_started_praasesmen: "1" } : prev)
+      setKegiatanRefreshKey(k => k + 1)
       publishJadwalUpdate({ type: 'tahap-update', action: 'start-praasesmen', jadwalId: kegiatan.jadwal_id })
       refetch()
       setStartingPraAsesmen(false)
@@ -178,6 +184,8 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startAssessment(kegiatan.jadwal_id)
       toast("Asesmen berhasil dimulai!", "success")
+      setKegiatan(prev => prev ? { ...prev, tahap: 2, is_started: "1" } : prev)
+      setKegiatanRefreshKey(k => k + 1)
       publishJadwalUpdate({ type: 'tahap-update', action: 'start-asesmen', jadwalId: kegiatan.jadwal_id })
       refetch()
       setStartingAsesmen(false)

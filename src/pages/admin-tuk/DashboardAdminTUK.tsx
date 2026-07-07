@@ -15,7 +15,7 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
-  const { kegiatans, isLoading, error } = useKegiatanAdminTUK()
+  const { kegiatans, isLoading, error, refetch: refetchKegiatan } = useKegiatanAdminTUK()
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -110,6 +110,7 @@ export default function DashboardAdminTUK() {
       onUpdate: () => {
         refetch()
         setRefreshKey(k => k + 1)
+        refetchKegiatan()
       },
     })
 
@@ -120,6 +121,7 @@ export default function DashboardAdminTUK() {
         await kegiatanService.startAssessment(kegiatan.jadwal_id)
         toast("Asesmen berhasil dimulai!", "success")
         publishJadwalUpdate({ type: 'tahap-update', action: 'start-asesmen', jadwalId: kegiatan.jadwal_id })
+        refetchKegiatan()
         refetch()
         setRefreshKey(k => k + 1)
       } catch (err) {

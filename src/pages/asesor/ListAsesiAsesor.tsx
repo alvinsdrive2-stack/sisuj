@@ -83,11 +83,15 @@ export default function ListAsesiAsesor() {
   const navigate = useNavigate()
   const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
+  const [kegiatanRefreshKey, setKegiatanRefreshKey] = useState(0)
 
   // Realtime: refetch when admin TUK changes tahap
   useRealtimeSync({
     channelName: `jadwal:${jadwalId}`,
-    onUpdate: () => refetch(),
+    onUpdate: () => {
+      refetch()
+      setKegiatanRefreshKey(k => k + 1)
+    },
   })
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [jenjang, setJenjang] = useState<string>('0')
@@ -118,7 +122,7 @@ export default function ListAsesiAsesor() {
       }
     }
     fetchKegiatan()
-  }, [jadwalId])
+  }, [jadwalId, kegiatanRefreshKey])
 
   // Fetch jenjang from data-dokumen API
   useEffect(() => {
