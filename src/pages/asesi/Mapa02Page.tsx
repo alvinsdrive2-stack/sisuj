@@ -473,7 +473,7 @@ export default function Mapa02Page() {
               </ActionButton>
             )}
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSubmit}>
-              {signing.buttonText}
+              {tahap === 0 ? 'Lanjut ke MUK' : signing.buttonText}
             </ActionButton>
           </div>
         </div>
