@@ -409,7 +409,7 @@ export function DaftarHadirModal({
           >
             <FontAwesomeIcon icon={faCamera} />
             Buka Kamera
-            <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+            <input type="file" accept="image/*,.pdf" capture="environment" style={{ display: 'none' }}
               disabled={!!uploadingNode}
               onChange={(e) => {
                 const file = e.target.files?.[0]
@@ -437,7 +437,7 @@ export function DaftarHadirModal({
           }}>
             <FontAwesomeIcon icon={faUpload} />
             Pilih dari Galeri
-            <input type="file" accept="image/*" style={{ display: 'none' }}
+            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
               disabled={!!uploadingNode}
               onChange={(e) => {
                 const file = e.target.files?.[0]
@@ -516,7 +516,7 @@ export function DaftarHadirModal({
           >
             <FontAwesomeIcon icon={faUpload} />
             Upload dari Komputer
-            <input type="file" accept="image/*" style={{ display: 'none' }}
+            <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
               disabled={!!uploadingNode}
               onChange={(e) => {
                 const file = e.target.files?.[0]
@@ -918,7 +918,7 @@ export function DaftarHadirModal({
                         }}>
                           <FontAwesomeIcon icon={faUpload} />
                           Pilih dari Galeri
-                          <input type="file" accept="image/*" style={{ display: 'none' }}
+                          <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
                             disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]
@@ -995,7 +995,7 @@ export function DaftarHadirModal({
                               Upload dari Komputer
                             </>
                           )}
-                          <input type="file" accept="image/*" style={{ display: 'none' }}
+                          <input type="file" accept="image/*,.pdf" style={{ display: 'none' }}
                             disabled={!!uploadingNode}
                             onChange={(e) => {
                               const file = e.target.files?.[0]

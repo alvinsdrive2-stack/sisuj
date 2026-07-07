@@ -562,7 +562,7 @@ export default function AttendancePage() {
                   Buka Kamera
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     capture="user"
                     style={{ display: 'none' }}
                     onChange={handleCapture}
@@ -601,7 +601,7 @@ export default function AttendancePage() {
                   Pilih dari Galeri
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf"
                     style={{ display: 'none' }}
                     onChange={handleCapture}
                   />
