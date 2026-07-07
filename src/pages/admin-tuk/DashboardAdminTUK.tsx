@@ -105,7 +105,7 @@ export default function DashboardAdminTUK() {
     const [starting, setStarting] = useState(false)
 
     // Realtime: refetch when asesi completes absen akhir pra
-    useRealtimeSync({
+    const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
       channelName: `jadwal:${kegiatan.jadwal_id}`,
       onUpdate: () => {
         refetch()
@@ -119,7 +119,9 @@ export default function DashboardAdminTUK() {
       try {
         await kegiatanService.startAssessment(kegiatan.jadwal_id)
         toast("Asesmen berhasil dimulai!", "success")
-        window.location.reload()
+        publishJadwalUpdate({ type: 'tahap-update', action: 'start-asesmen', jadwalId: kegiatan.jadwal_id })
+        refetch()
+        setRefreshKey(k => k + 1)
       } catch (err) {
         toast(err instanceof Error ? err.message : "Gagal memulai asesmen", "error")
         setStarting(false)

@@ -164,37 +164,35 @@ export function useKegiatanAsesi(enabled = true) {
   const setKegiatanRef = useRef(setKegiatan)
   setKegiatanRef.current = setKegiatan
 
-  useEffect(() => {
+  const fetchKegiatanAsesi = useCallback(async () => {
     if (!enabled) {
       setIsLoading(false)
       return
     }
 
-    const fetchKegiatanAsesi = async () => {
-      setIsLoading(true)
-      setError(null)
+    setIsLoading(true)
+    setError(null)
 
-      try {
-        const response = await kegiatanService.getKegiatanAsesi()
-        // API may return array or single object - handle both cases
-        const kegiatanData = response.data
-        // Check if data is an array
-        if (Array.isArray(kegiatanData)) {
-          setKegiatanRef.current?.(kegiatanData?.[0] || null)
-        } else {
-          // Single object case
-          setKegiatanRef.current?.(kegiatanData || null)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
-      } finally {
-        setIsLoading(false)
+    try {
+      const response = await kegiatanService.getKegiatanAsesi()
+      const kegiatanData = response.data
+      if (Array.isArray(kegiatanData)) {
+        setKegiatanRef.current?.(kegiatanData?.[0] || null)
+      } else {
+        setKegiatanRef.current?.(kegiatanData || null)
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesi")
+    } finally {
+      setIsLoading(false)
     }
-    fetchKegiatanAsesi()
   }, [enabled])
 
-  return { kegiatan, isLoading, error }
+  useEffect(() => {
+    fetchKegiatanAsesi()
+  }, [fetchKegiatanAsesi])
+
+  return { kegiatan, isLoading, error, refetch: fetchKegiatanAsesi }
 }
 
 export function useKegiatanAdminTUK() {

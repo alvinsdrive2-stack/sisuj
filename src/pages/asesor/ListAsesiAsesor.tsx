@@ -9,6 +9,7 @@ import { useEffect, useState } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface CountdownTime {
   days: number
@@ -80,8 +81,14 @@ function useCountdown(targetDate: string): CountdownTime {
 export default function ListAsesiAsesor() {
   const { jadwalId } = useParams<{ jadwalId: string }>()
   const navigate = useNavigate()
-  const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
+  const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
+
+  // Realtime: refetch when admin TUK changes tahap
+  useRealtimeSync({
+    channelName: `jadwal:${jadwalId}`,
+    onUpdate: () => refetch(),
+  })
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [jenjang, setJenjang] = useState<string>('0')
   const [asesiMeta, setAsesiMeta] = useState<Record<string, { jenjang: string; metode: string }>>({})

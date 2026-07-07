@@ -26,11 +26,18 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
 import { API_BASE_URL } from "@/config/api"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
-  const { kegiatan, isLoading: _isLoading, error: _error } = useKegiatanAsesi()
+  const { kegiatan, isLoading: _isLoading, error: _error, refetch } = useKegiatanAsesi()
   const navigate = useNavigate()
+
+  // Realtime: refetch when admin TUK changes tahap
+  useRealtimeSync({
+    channelName: kegiatan?.jadwal_id ? `jadwal:${kegiatan.jadwal_id}` : '',
+    onUpdate: () => refetch(),
+  })
   const [showPage, setShowPage] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [idIzin, setIdIzin] = useState<string | undefined>(undefined)

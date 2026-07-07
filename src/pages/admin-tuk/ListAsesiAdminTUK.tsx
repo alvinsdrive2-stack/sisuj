@@ -92,7 +92,7 @@ export default function ListAsesiAdminTUK() {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
 
   // Realtime sync: refetch when asesi completes absen akhir pra
-  useRealtimeSync({
+  const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
     channelName: `jadwal:${jadwalId}`,
     onUpdate: () => refetch(),
   })
@@ -161,7 +161,9 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startPraAsesmen(kegiatan.jadwal_id)
       toast("Pra-asesmen berhasil dimulai!", "success")
-      setTimeout(() => window.location.reload(), 1000)
+      publishJadwalUpdate({ type: 'tahap-update', action: 'start-praasesmen', jadwalId: kegiatan.jadwal_id })
+      refetch()
+      setStartingPraAsesmen(false)
     } catch (error) {
       console.error('Error starting pra-asesmen:', error)
       toast(error instanceof Error ? error.message : "Gagal memulai pra-asesmen", "error")
@@ -176,7 +178,9 @@ export default function ListAsesiAdminTUK() {
     try {
       await kegiatanService.startAssessment(kegiatan.jadwal_id)
       toast("Asesmen berhasil dimulai!", "success")
-      setTimeout(() => window.location.reload(), 1000)
+      publishJadwalUpdate({ type: 'tahap-update', action: 'start-asesmen', jadwalId: kegiatan.jadwal_id })
+      refetch()
+      setStartingAsesmen(false)
     } catch (error) {
       console.error('Error starting asesmen:', error)
       toast(error instanceof Error ? error.message : "Gagal memulai asesmen", "error")
