@@ -100,7 +100,7 @@ export default function DashboardAdminTUK() {
     const { absenData } = useBatchAbsenData(asesiIds, isTahap1 && asesiIds.length > 0, refreshKey)
     const allAbsenDone = isTahap1 && asesiIds.length > 0 && asesiIds.every(id => {
       const absen = absenData[id]
-      return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
+      return absen?.url_absen_asesi_pra_akhir
     })
     const [starting, setStarting] = useState(false)
 
@@ -159,20 +159,27 @@ export default function DashboardAdminTUK() {
               {jenisKelasLabel(kegiatan.jenis_kelas)}
             </span>
           </div>
-          {allAbsenDone && (
-            <Button
-              size="sm"
-              onClick={handleStartAsesmen}
-              disabled={starting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8"
-            >
-              {starting ? (
-                <SimpleSpinner size="sm" className="text-white mr-1" />
-              ) : (
-                <Play className="w-3.5 h-3.5 mr-1" />
+          {isTahap1 && (
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                size="sm"
+                onClick={handleStartAsesmen}
+                disabled={starting || !allAbsenDone}
+                className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8"
+              >
+                {starting ? (
+                  <SimpleSpinner size="sm" className="text-white mr-1" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 mr-1" />
+                )}
+                Mulai Asesmen
+              </Button>
+              {!allAbsenDone && (
+                <span className="text-[10px] text-amber-600 text-right leading-tight max-w-[200px]">
+                  Semua asesi harus absen akhir pra-asesmen dulu
+                </span>
               )}
-              Mulai Asesmen
-            </Button>
+            </div>
           )}
         </div>
       </div>

@@ -87,7 +87,7 @@ export default function ListAsesiAdminTUK() {
   const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
   const allAbsenAkhirDone = asesiIds.length > 0 && asesiIds.every(id => {
     const absen = absenData[id]
-    return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
+    return absen?.url_absen_asesi_pra_akhir
   })
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
 
@@ -354,7 +354,7 @@ export default function ListAsesiAdminTUK() {
                   </Button>
                   {!allAbsenAkhirDone && (
                     <p className="text-[11px] text-amber-600 text-center leading-tight">
-                      Semua asesi & asesor 1 harus absen akhir pra-asesmen terlebih dahulu
+                      Semua asesi harus absen akhir pra-asesmen terlebih dahulu
                     </p>
                   )}
                 </div>
