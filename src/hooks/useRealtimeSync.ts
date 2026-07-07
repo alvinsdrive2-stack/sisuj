@@ -17,7 +17,7 @@ interface UseRealtimeSyncOptions {
 
 /**
  * Real-time sync via Ably. Publishes/receives full data payloads.
- * Auto-closes WebSocket when last consumer unmounts.
+ * WebSocket stays open for SPA lifetime — cleaned up on page unload.
  */
 export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-updated' }: UseRealtimeSyncOptions) {
   const channelRef = useRef<Ably.RealtimeChannel | null>(null)
@@ -53,10 +53,8 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
         mountedRef.current = false
         refCount--
       }
-      if (refCount <= 0 && ablyInstance) {
-        try { ablyInstance.connection.close() } catch {}
-        ablyInstance = null
-      }
+      // Don't close ablyInstance. In SPA, closing it mid-session
+      // kills connection for all routes. Browser GC handles cleanup.
     }
   }, [channelName, eventName])
 
