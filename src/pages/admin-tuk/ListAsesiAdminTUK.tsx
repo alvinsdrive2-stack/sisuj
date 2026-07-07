@@ -85,6 +85,10 @@ export default function ListAsesiAdminTUK() {
   const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(jadwalId || "")
   const asesiIds = asesiList.map(a => a.id_izin)
   const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
+  const allAbsenAkhirDone = asesiIds.length > 0 && asesiIds.every(id => {
+    const absen = absenData[id]
+    return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
+  })
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
 
   // Realtime sync: refetch when asesi completes absen akhir pra
@@ -330,23 +334,30 @@ export default function ListAsesiAdminTUK() {
                 </Button>
               )}
               {kegiatan?.tahap === 1 && (
-                <Button
-                  onClick={handleStartAsesmen}
-                  disabled={startingAsesmen}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {startingAsesmen ? (
-                    <>
-                      <SimpleSpinner size="sm" className="text-white mr-2" />
-                      Memulai...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Mulai Asesmen
-                    </>
+                <div className="space-y-1">
+                  <Button
+                    onClick={handleStartAsesmen}
+                    disabled={startingAsesmen || !allAbsenAkhirDone}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {startingAsesmen ? (
+                      <>
+                        <SimpleSpinner size="sm" className="text-white mr-2" />
+                        Memulai...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Mulai Asesmen
+                      </>
+                    )}
+                  </Button>
+                  {!allAbsenAkhirDone && (
+                    <p className="text-[11px] text-amber-600 text-center leading-tight">
+                      Semua asesi & asesor 1 harus absen akhir pra-asesmen terlebih dahulu
+                    </p>
                   )}
-                </Button>
+                </div>
               )}
 
               
