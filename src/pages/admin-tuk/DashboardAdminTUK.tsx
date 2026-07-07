@@ -11,6 +11,7 @@ import { jenisKelasLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
@@ -101,6 +102,12 @@ export default function DashboardAdminTUK() {
       return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
     })
     const [starting, setStarting] = useState(false)
+
+    // Realtime: refetch when asesi completes absen akhir pra
+    useRealtimeSync({
+      channelName: `jadwal:${kegiatan.jadwal_id}`,
+      onUpdate: () => window.location.reload(),
+    })
 
     const handleStartAsesmen = async (e: React.MouseEvent) => {
       e.stopPropagation()
