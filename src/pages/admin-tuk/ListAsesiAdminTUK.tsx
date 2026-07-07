@@ -4,11 +4,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText, ChevronDown, Camera } from "lucide-react"
 import { useListAsesi } from "@/hooks/useKegiatan"
+import { useBatchAbsenData } from "@/hooks/useAbsenData"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState, useRef } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
 import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
 interface CountdownTime {
@@ -80,8 +82,16 @@ function useCountdown(targetDate: string): CountdownTime {
 export default function ListAsesiAdminTUK() {
   const { jadwalId } = useParams<{ jadwalId: string }>()
   const navigate = useNavigate()
-  const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
+  const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(jadwalId || "")
+  const asesiIds = asesiList.map(a => a.id_izin)
+  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
+
+  // Realtime sync: refetch when asesi completes absen akhir pra
+  useRealtimeSync({
+    channelName: `jadwal:${jadwalId}`,
+    onUpdate: () => refetch(),
+  })
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [startingPraAsesmen, setStartingPraAsesmen] = useState(false)
   const [startingAsesmen, setStartingAsesmen] = useState(false)
@@ -375,23 +385,37 @@ export default function ListAsesiAdminTUK() {
                     {group.skema}
                   </h5>
                   <div className="space-y-2">
-                    {group.asesi.map((asesi, idx) => (
+                    {group.asesi.map((asesi, idx) => {
+                      const absen = absenData[asesi.id_izin]
+                      const asesiSudah = !!absen?.url_absen_asesi_pra_akhir
+                      const asesor1Sudah = !!absen?.url_absen_asesor1_pra_akhir
+                      const semuaSudah = asesiSudah && asesor1Sudah
+                      return (
                       <div
                         key={asesi.id_izin}
                         onClick={() => openDetailModal('asesi', asesi.id_izin, asesi.nama, jadwalId || "")}
-                        className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary hover:shadow-md transition-all cursor-pointer bg-white dark:bg-slate-800"
+                        className={`p-4 border rounded-lg hover:shadow-md transition-all cursor-pointer ${
+                          semuaSudah
+                            ? 'border-emerald-300 bg-emerald-50/50 hover:border-emerald-400'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-primary'
+                        } bg-white dark:bg-slate-800`}
                       >
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             <span className="text-sm font-bold text-primary">{idx + 1}</span>
                           </div>
-                          <div>
+                          <div className="flex-1">
                             <h4 className="font-semibold text-slate-800 dark:text-slate-100">{asesi.nama}</h4>
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${asesiSudah ? 'bg-emerald-500' : 'bg-slate-300'}`} title={`Asesi: ${asesiSudah ? 'sudah absen akhir' : 'belum absen akhir'}`} />
+                            <span className={`w-2.5 h-2.5 rounded-full ${asesor1Sudah ? 'bg-emerald-500' : 'bg-slate-300'}`} title={`Asesor 1: ${asesor1Sudah ? 'sudah absen akhir' : 'belum absen akhir'}`} />
+                          </div>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ))}

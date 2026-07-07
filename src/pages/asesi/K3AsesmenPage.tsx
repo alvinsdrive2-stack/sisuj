@@ -11,6 +11,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 interface K3Response {
@@ -90,6 +91,12 @@ export default function K3AsesmenPage() {
     tahap: tahap
   })
 
+  // Realtime sync: notify admin-tuk when absen akhir pra completed
+  const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
+    channelName: `jadwal:${jadwalId}`,
+    onUpdate: () => {},
+  })
+
   useEffect(() => {
     window.scrollTo(0, 0)
     fetchK3Data()
@@ -137,6 +144,7 @@ export default function K3AsesmenPage() {
 
   const handleAbsenAkhirSubmit = async (blob: Blob) => {
     await submitAbsenAkhir(blob)
+    publishJadwalUpdate({ type: 'absen-akhir-pra', idIzin })
     navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard')
   }
 
