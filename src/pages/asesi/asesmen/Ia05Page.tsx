@@ -186,11 +186,9 @@ export default function Ia05Page() {
 
   // Handler for asesi to submit answers (memoized for timer hook)
   const handleSubmit = useCallback(async () => {
-    // Tahap 0: skip save/TTD, langsung navigasi next
+    // Tahap 0: skip save/TTD, langsung balik ke list asesi
     if (tahap === 0) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      navigate(isAsesor && jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesi/dashboard')
       return
     }
     // If asesi already signed → redirect (prevent re-generate QR)
@@ -258,9 +256,9 @@ export default function Ia05Page() {
           // Don't block navigation on QR failure
         }
 
-        // Tahap 0 → dashboard instead of continuing asesmen
+        // Tahap 0 → balik ke list asesi instead of continuing asesmen
         if (_kegiatan?.tahap === 0) {
-          setTimeout(() => navigate(isAsesor ? '/asesor/dashboard' : '/asesi/dashboard'), 500)
+          setTimeout(() => navigate(isAsesor && jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesi/dashboard'), 500)
           return
         }
 

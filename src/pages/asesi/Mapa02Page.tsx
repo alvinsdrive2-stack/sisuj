@@ -175,9 +175,19 @@ export default function Mapa02Page() {
       return
     }
 
-    // Tahap 0: langsung navigasi tanpa save/ttd
+    // Tahap 0: langsung navigasi ke asesmen pertama berdasarkan metode/jenjang
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
+      const isPortofolio = metode?.toLowerCase() === 'portofolio'
+      const jenjangId = parseInt(jenjang || "0")
+      const isLowJenjang = jenjangId < 4
+
+      if (isPortofolio) {
+        navigate(`/asesi/asesmen/${finalIdIzin}/ia08`)
+      } else if (isLowJenjang) {
+        navigate(`/asesi/asesmen/${finalIdIzin}/ia01`)
+      } else {
+        navigate(`/asesi/asesmen/${finalIdIzin}/ia04a`)
+      }
       return
     }
 
@@ -228,9 +238,21 @@ export default function Mapa02Page() {
 
       showSuccess('MAPA 02 berhasil disimpan!')
       signing.publishUpdate()
-      // Untuk tahap 0, langsung navigasi ke halaman berikutnya
+      // Untuk tahap 0, langsung navigasi ke asesmen pertama
       if (tahap === 0) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`), 500)
+        const isPortofolio = metode?.toLowerCase() === 'portofolio'
+        const jenjangId = parseInt(jenjang || "0")
+        const isLowJenjang = jenjangId < 4
+
+        let nextPath: string
+        if (isPortofolio) {
+          nextPath = `/asesi/asesmen/${finalIdIzin}/ia08`
+        } else if (isLowJenjang) {
+          nextPath = `/asesi/asesmen/${finalIdIzin}/ia01`
+        } else {
+          nextPath = `/asesi/asesmen/${finalIdIzin}/ia04a`
+        }
+        setTimeout(() => navigate(nextPath), 500)
       }
     } catch (error) {
       console.error('Error saving MAPA 02:', error)

@@ -215,11 +215,9 @@ export default function Ia10Page() {
 
 
   const handleSave = async () => {
-    // Tahap 0: skip save/TTD, langsung navigasi next
+    // Tahap 0: skip save/TTD, langsung balik ke list asesi
     if (tahap === 0) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia10'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      navigate(isAsesor && jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesi/dashboard')
       return
     }
 
