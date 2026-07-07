@@ -280,7 +280,7 @@ export default function AsesiPage() {
   }
 
   const handleViewAsesi = async (idIzin: string) => {
-    const tahap = tahapMap[idIzin] ?? currentKegiatan?.tahap ?? 0
+    const tahap = currentKegiatan?.tahap ?? tahapMap[idIzin] ?? 0
 
     // Mark valid navigation entry for asesmen routes
     sessionStorage.setItem('validNavigationEntry', 'true')
