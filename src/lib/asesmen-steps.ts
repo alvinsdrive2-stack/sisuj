@@ -247,9 +247,18 @@ export function getAsesmenSteps(
     steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
   }
 
-  // Filter out AK.01 when tahap is 0 (MUK+IA combined) or 2 (asesmen, AK.01 is separate pre-step)
-  // Renumber steps starting from 1 when AK.01 is removed
-  if (tahap === 0 || tahap === 2) {
+  // For tahap 0 (non-KAN): return combined MUK + IA steps as unified breadcrumb
+  if (tahap === 0) {
+    const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
+    const isPortofolio = metode?.toLowerCase() === 'portofolio'
+
+    if (isPortofolio && !isLowJenjang) return [...MUK_STEPS_TAHAP_0_PORTOFOLIO]
+    if (isLowJenjang) return [...MUK_STEPS_TAHAP_0_LOW_JENJANG]
+    return [...MUK_STEPS_TAHAP_0_OBSERVASI]
+  }
+
+  // Filter out AK.01 when tahap is 2 (asesmen, AK.01 is separate pre-step)
+  if (tahap === 2) {
     steps = steps
       .filter(s => !s.href.includes('ak01'))
       .map((s, i) => ({ ...s, number: i + 1 }))
