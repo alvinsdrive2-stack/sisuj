@@ -9,6 +9,7 @@ import { kegiatanService } from "@/lib/kegiatan-service"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
 
@@ -70,10 +71,19 @@ export default function AsesiPage() {
   // Debug logging
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
 
-  const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError } = useKegiatanAsesorList()
+  const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError, refetch: refetchKegiatan } = useKegiatanAsesorList()
   const [allKegiatans, setAllKegiatans] = useState<KegiatanAsesor[]>(kegiatans)
   const currentKegiatan = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId)) || allKegiatans[0]
-  const { asesiList, isLoading: asesiLoading, error: asesiError } = useListAsesi(jadwalId || "")
+  const { asesiList, isLoading: asesiLoading, error: asesiError, refetch: refetchAsesi } = useListAsesi(jadwalId || "")
+
+  // Realtime: refetch when admin TUK changes tahap
+  useRealtimeSync({
+    channelName: jadwalId ? `jadwal:${jadwalId}` : '',
+    onUpdate: () => {
+      refetchKegiatan()
+      refetchAsesi()
+    },
+  })
 
   // Keep sync with hook data + fallback fetch all pages if kegiatan not found on page 1
   useEffect(() => {

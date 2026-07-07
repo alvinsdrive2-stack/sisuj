@@ -124,36 +124,34 @@ export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tah
   const [error, setError] = useState<string | null>(null)
   const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
 
-  const setKegiatansRef = useRef(setKegiatans)
-  setKegiatansRef.current = setKegiatans
-
-  useEffect(() => {
+  const fetchKegiatanAsesor = useCallback(async () => {
     if (!enabled) {
       setIsLoading(false)
       return
     }
 
-    const fetchKegiatanAsesor = async () => {
-      setIsLoading(true)
-      setError(null)
-      try {
-        const response = await kegiatanService.getKegiatanAsesor(page, search, tahap)
-        setKegiatansRef.current?.(response.data || [])
-        if ('current_page' in response) {
-          const pr = response as any
-          setPagination({ currentPage: pr.current_page || page, lastPage: pr.last_page || 1, total: pr.total || 0, perPage: pr.per_page || 10 })
-        }
-      } catch (err) {
-        console.error('Error fetching kegiatan asesor:', err)
-        setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesor")
-      } finally {
-        setIsLoading(false)
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await kegiatanService.getKegiatanAsesor(page, search, tahap)
+      setKegiatans(response.data || [])
+      if ('current_page' in response) {
+        const pr = response as any
+        setPagination({ currentPage: pr.current_page || page, lastPage: pr.last_page || 1, total: pr.total || 0, perPage: pr.per_page || 10 })
       }
+    } catch (err) {
+      console.error('Error fetching kegiatan asesor:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch kegiatan asesor")
+    } finally {
+      setIsLoading(false)
     }
-    fetchKegiatanAsesor()
   }, [enabled, page, search, tahap])
 
-  return { kegiatans, isLoading, error, pagination }
+  useEffect(() => {
+    fetchKegiatanAsesor()
+  }, [fetchKegiatanAsesor])
+
+  return { kegiatans, isLoading, error, pagination, refetch: fetchKegiatanAsesor }
 }
 
 export function useKegiatanAsesi(enabled = true) {
