@@ -1,12 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft } from "lucide-react"
+import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft, Play } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useKegiatanAdminTUK } from "@/hooks/useKegiatan"
+import { useKegiatanAdminTUK, useListAsesi } from "@/hooks/useKegiatan"
+import { useBatchAbsenData } from "@/hooks/useAbsenData"
 import { formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useState } from "react"
+import React, { useState } from "react"
 import { jenisKelasLabel } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { kegiatanService } from "@/lib/kegiatan-service"
+import { toast } from "@/components/ui/toast"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
@@ -87,6 +91,83 @@ export default function DashboardAdminTUK() {
 
   const formatDateString = (dateTime: string) => formatDateWIB(dateTime)
 
+  function KegiatanCard({ kegiatan }: { kegiatan: typeof kegiatans[0] }) {
+    const isTahap1 = kegiatan.tahap === 1
+    const { asesiList } = useListAsesi(isTahap1 ? kegiatan.jadwal_id : '')
+    const asesiIds = asesiList.map(a => a.id_izin)
+    const { absenData } = useBatchAbsenData(asesiIds, isTahap1 && asesiIds.length > 0)
+    const allAbsenDone = isTahap1 && asesiIds.length > 0 && asesiIds.every(id => {
+      const absen = absenData[id]
+      return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
+    })
+    const [starting, setStarting] = useState(false)
+
+    const handleStartAsesmen = async (e: React.MouseEvent) => {
+      e.stopPropagation()
+      setStarting(true)
+      try {
+        await kegiatanService.startAssessment(kegiatan.jadwal_id)
+        toast("Asesmen berhasil dimulai!", "success")
+        window.location.reload()
+      } catch (err) {
+        toast(err instanceof Error ? err.message : "Gagal memulai asesmen", "error")
+        setStarting(false)
+      }
+    }
+
+    return (
+      <div
+        onClick={() => navigate(`/admin-tuk/list-asesi/${kegiatan.jadwal_id}`)}
+        className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary cursor-pointer transition-all hover:shadow-md bg-white dark:bg-slate-800"
+      >
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''} • {kegiatan.tuk?.nama?.toUpperCase() || ''}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {getStatusBadge(kegiatan.is_started, kegiatan.tahap)}
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+            <span className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {formatDateTime(kegiatan.tanggal_uji)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {formatDateString(kegiatan.tanggal_uji)}
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              {jenisKelasLabel(kegiatan.jenis_kelas)}
+            </span>
+          </div>
+          {allAbsenDone && (
+            <Button
+              size="sm"
+              onClick={handleStartAsesmen}
+              disabled={starting}
+              className="bg-emerald-600 hover:bg-emerald-700 text-xs h-8"
+            >
+              {starting ? (
+                <SimpleSpinner size="sm" className="text-white mr-1" />
+              ) : (
+                <Play className="w-3.5 h-3.5 mr-1" />
+              )}
+              Mulai Asesmen
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Page Title */}
@@ -141,39 +222,7 @@ export default function DashboardAdminTUK() {
             <>
             <div className="space-y-3">
               {paginatedKegiatans.map((kegiatan) => (
-                <div
-                  key={kegiatan.jadwal_id}
-                  onClick={() => navigate(`/admin-tuk/list-asesi/${kegiatan.jadwal_id}`)}
-                  className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-primary cursor-pointer transition-all hover:shadow-md bg-white dark:bg-slate-800"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-slate-800 dark:text-slate-100">{kegiatan.nama_kegiatan}</h4>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                        {kegiatan.asesor?.nama?.toUpperCase() || ''}{kegiatan.asesor2 ? ` & ${kegiatan.asesor2.nama?.toUpperCase() || ''}` : ''} • {kegiatan.tuk?.nama?.toUpperCase() || ''}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(kegiatan.is_started, kegiatan.tahap)}
-                      <ChevronRight className="w-5 h-5 text-slate-400" />
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {formatDateTime(kegiatan.tanggal_uji)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {formatDateString(kegiatan.tanggal_uji)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {jenisKelasLabel(kegiatan.jenis_kelas)}
-                    </span>
-                  </div>
-                </div>
+                <KegiatanCard key={kegiatan.jadwal_id} kegiatan={kegiatan} />
               ))}
             </div>
 
