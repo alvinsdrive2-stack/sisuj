@@ -100,7 +100,7 @@ export function useAbsenData(idIzin: string, enabled = true) {
 }
 
 /** Batch absen data fetcher for multiple asesi IDs */
-export function useBatchAbsenData(asesiIds: string[], enabled = true) {
+export function useBatchAbsenData(asesiIds: string[], enabled = true, _refreshKey = 0) {
   const [absenData, setAbsenData] = useState<Record<string, AbsenData>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -151,7 +151,7 @@ export function useBatchAbsenData(asesiIds: string[], enabled = true) {
     }
 
     fetchAbsenData()
-  }, [asesiIds.join(','), enabled])
+  }, [asesiIds.join(','), enabled, _refreshKey])
 
   return { absenData, isLoading, error }
 }

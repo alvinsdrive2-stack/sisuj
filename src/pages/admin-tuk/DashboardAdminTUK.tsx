@@ -93,10 +93,11 @@ export default function DashboardAdminTUK() {
   const formatDateString = (dateTime: string) => formatDateWIB(dateTime)
 
   function KegiatanCard({ kegiatan }: { kegiatan: typeof kegiatans[0] }) {
+    const [refreshKey, setRefreshKey] = useState(0)
     const isTahap1 = kegiatan.tahap === 1
-    const { asesiList } = useListAsesi(isTahap1 ? kegiatan.jadwal_id : '')
+    const { asesiList, refetch } = useListAsesi(isTahap1 ? kegiatan.jadwal_id : '')
     const asesiIds = asesiList.map(a => a.id_izin)
-    const { absenData } = useBatchAbsenData(asesiIds, isTahap1 && asesiIds.length > 0)
+    const { absenData } = useBatchAbsenData(asesiIds, isTahap1 && asesiIds.length > 0, refreshKey)
     const allAbsenDone = isTahap1 && asesiIds.length > 0 && asesiIds.every(id => {
       const absen = absenData[id]
       return absen?.url_absen_asesi_pra_akhir && absen?.url_absen_asesor1_pra_akhir
@@ -106,7 +107,10 @@ export default function DashboardAdminTUK() {
     // Realtime: refetch when asesi completes absen akhir pra
     useRealtimeSync({
       channelName: `jadwal:${kegiatan.jadwal_id}`,
-      onUpdate: () => window.location.reload(),
+      onUpdate: () => {
+        refetch()
+        setRefreshKey(k => k + 1)
+      },
     })
 
     const handleStartAsesmen = async (e: React.MouseEvent) => {
