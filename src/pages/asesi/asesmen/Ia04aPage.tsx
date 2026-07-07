@@ -101,7 +101,8 @@ export default function Ia04aPage() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   // Get dynamic steps based on asesor role

@@ -86,6 +86,7 @@ export default function Ia09Page() {
     checkOnMount: true,
     idIzin: id,
     asesorList,
+    tahap,
   })
 
   const [dokumenId, setDokumenId] = useState<number | null>(null)

@@ -76,7 +76,8 @@ export default function Ia08Page() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   const [wawancaraItems, setWawancaraItems] = useState<WawancaraItem[]>([

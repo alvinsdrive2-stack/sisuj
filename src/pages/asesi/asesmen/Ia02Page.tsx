@@ -159,7 +159,8 @@ export default function Ia02Page() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   const [questions, setQuestions] = useState<Questions | null>(null)

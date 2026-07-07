@@ -93,7 +93,8 @@ export default function Ia04bPage() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   const fetchData = useCallback(async () => {

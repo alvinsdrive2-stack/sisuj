@@ -105,7 +105,8 @@ export default function Ia03Page() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   const [barcodes, setBarcodes] = useState<{

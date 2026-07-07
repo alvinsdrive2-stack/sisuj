@@ -98,7 +98,8 @@ export default function Ia05Page() {
     role: 'auto',
     checkOnMount: true,
     idIzin: id,
-    asesorList
+    asesorList,
+    tahap,
   })
 
   const [ia05Data, setIa05Data] = useState<Ia05Response["data"] | null>(null)
