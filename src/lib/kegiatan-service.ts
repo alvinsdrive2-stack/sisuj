@@ -534,6 +534,26 @@ class KegiatanService {
     return response.json()
   }
 
+  // Get single kegiatan detail by jadwal ID
+  async getKegiatanDetail(jadwalId: string): Promise<{ message: string; data: KegiatanAsesor }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan detail" }))
+      throw new Error(error.message || "Failed to fetch kegiatan detail")
+    }
+
+    return response.json()
+  }
+
   // Generate QR for Ujian
   async generateQRUjian(idIzin: string, jadwalId: string): Promise<{ message: string }> {
     const token = this.getToken()
