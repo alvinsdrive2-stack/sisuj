@@ -229,6 +229,39 @@ export function useKegiatanAdminTUK() {
   return { kegiatans, isLoading, error, refetch: fetchKegiatanAdminTUK }
 }
 
+export function useKegiatanHistoryAdminTUK(page: number = 1) {
+  const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
+
+  const fetchHistory = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await kegiatanService.getKegiatanHistoryAdminTUK(page)
+      setKegiatans(response.data.data)
+      setPagination({
+        currentPage: response.data.current_page,
+        lastPage: response.data.last_page,
+        total: response.data.total,
+        perPage: response.data.per_page,
+      })
+    } catch (err) {
+      console.error('Error fetching history admin TUK:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch history")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [page])
+
+  useEffect(() => {
+    fetchHistory()
+  }, [fetchHistory])
+
+  return { kegiatans, isLoading, error, pagination, refetch: fetchHistory }
+}
+
 export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)

@@ -514,6 +514,26 @@ class KegiatanService {
     return response.json()
   }
 
+  // Get history/riwayat kegiatan for admin TUK (paginated)
+  async getKegiatanHistoryAdminTUK(page: number = 1): Promise<PaginatedKegiatanResponse> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/kegiatan/admin-tuk?page=${page}`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Failed to fetch history" }))
+      throw new Error(error.message || "Failed to fetch history")
+    }
+
+    return response.json()
+  }
+
   // Generate QR for Ujian
   async generateQRUjian(idIzin: string, jadwalId: string): Promise<{ message: string }> {
     const token = this.getToken()

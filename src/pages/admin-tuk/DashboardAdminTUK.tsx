@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft, Play } from "lucide-react"
+import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft, Play, History } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-import { useKegiatanAdminTUK, useListAsesi } from "@/hooks/useKegiatan"
+import { useKegiatanAdminTUK, useListAsesi, useKegiatanHistoryAdminTUK } from "@/hooks/useKegiatan"
 import { useBatchAbsenData } from "@/hooks/useAbsenData"
 import { formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
@@ -15,8 +15,16 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'jadwal' | 'riwayat'>('jadwal')
   const { kegiatans, isLoading, error, refetch: refetchKegiatan } = useKegiatanAdminTUK()
   const [currentPage, setCurrentPage] = useState(1)
+  const [historyPage, setHistoryPage] = useState(1)
+  const {
+    kegiatans: historyKegiatans,
+    isLoading: historyLoading,
+    error: historyError,
+    pagination: historyPagination,
+  } = useKegiatanHistoryAdminTUK(historyPage)
   const itemsPerPage = 10
 
   // Pagination logic
@@ -92,7 +100,7 @@ export default function DashboardAdminTUK() {
 
   const formatDateString = (dateTime: string) => formatDateWIB(dateTime)
 
-  function KegiatanCard({ kegiatan }: { kegiatan: typeof kegiatans[0] }) {
+  function KegiatanCard({ kegiatan, isHistory }: { kegiatan: typeof kegiatans[0]; isHistory?: boolean }) {
     const [refreshKey, setRefreshKey] = useState(0)
     const isTahap1 = kegiatan.tahap === 1
     const { asesiList, refetch } = useListAsesi(isTahap1 ? kegiatan.jadwal_id : '')
@@ -144,7 +152,13 @@ export default function DashboardAdminTUK() {
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
           </div>
           <div className="flex items-center gap-2">
-            {getStatusBadge(kegiatan.is_started, kegiatan.tahap)}
+          {isHistory ? (
+            <Badge className="bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-300">
+              Selesai
+            </Badge>
+          ) : (
+            getStatusBadge(kegiatan.is_started, kegiatan.tahap)
+          )}
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </div>
         </div>
@@ -163,7 +177,7 @@ export default function DashboardAdminTUK() {
               {jenisKelasLabel(kegiatan.jenis_kelas)}
             </span>
           </div>
-          {isTahap1 && (
+          {!isHistory && isTahap1 && (
             <div className="flex flex-col items-end gap-1">
               <Button
                 size="sm"
@@ -192,96 +206,202 @@ export default function DashboardAdminTUK() {
 
   return (
     <div className="space-y-6">
-      {/* Page Title */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">Dashboard Admin TUK</h2>
-        <p className="text-slate-600">Kelola verifikasi asesi dan kegiatan asesmen</p>
+      {/* Page Title + Tab Nav */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Dashboard Admin TUK</h2>
+          <p className="text-slate-600">Kelola verifikasi asesi dan kegiatan asesmen</p>
+        </div>
+        <div className="flex bg-slate-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('jadwal')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === 'jadwal'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Jadwal Mendatang
+          </button>
+          <button
+            onClick={() => setActiveTab('riwayat')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+              activeTab === 'riwayat'
+                ? 'bg-white text-primary shadow-sm'
+                : 'text-slate-600 hover:text-slate-800'
+            }`}
+          >
+            <History className="w-4 h-4" />
+            Riwayat
+          </button>
+        </div>
       </div>
 
-      {/* Admin TUK Stats */}
-      
+      {/* Jadwal Mendatang Tab */}
+      {activeTab === 'jadwal' && (
         <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
-            Jadwal Mendatang
-            {isLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 border border-slate-200 rounded-lg animate-pulse">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="h-5 bg-slate-200 rounded w-48 mb-2"></div>
-                      <div className="h-4 bg-slate-200 rounded w-64 mb-1"></div>
-                      <div className="h-3 bg-slate-200 rounded w-96"></div>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              Jadwal Mendatang
+              {isLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 border border-slate-200 rounded-lg animate-pulse">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="h-5 bg-slate-200 rounded w-48 mb-2"></div>
+                        <div className="h-4 bg-slate-200 rounded w-64 mb-1"></div>
+                        <div className="h-3 bg-slate-200 rounded w-96"></div>
+                      </div>
+                      <div className="h-6 bg-slate-200 rounded w-20"></div>
                     </div>
-                    <div className="h-6 bg-slate-200 rounded w-20"></div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="h-4 bg-slate-200 rounded w-16"></div>
-                      <div className="h-4 bg-slate-200 rounded w-24"></div>
-                      <div className="h-4 bg-slate-200 rounded w-16"></div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="h-4 bg-slate-200 rounded w-16"></div>
+                        <div className="h-4 bg-slate-200 rounded w-24"></div>
+                        <div className="h-4 bg-slate-200 rounded w-16"></div>
+                      </div>
+                      <div className="h-9 bg-slate-200 rounded w-28"></div>
                     </div>
-                    <div className="h-9 bg-slate-200 rounded w-28"></div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">
-              Gagal memuat jadwal: {error}
-            </div>
-          ) : kegiatans.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              Tidak ada jadwal mendatang
-            </div>
-          ) : (
-            <>
-            <div className="space-y-3">
-              {paginatedKegiatans.map((kegiatan) => (
-                <KegiatanCard key={kegiatan.jadwal_id} kegiatan={kegiatan} />
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-                <div className="text-sm text-slate-600">
-                  Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm text-slate-600">
-                    Halaman {currentPage} dari {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
+                ))}
               </div>
-            )}
-          </>
-          )}
-        </CardContent>
-      </Card>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">
+                Gagal memuat jadwal: {error}
+              </div>
+            ) : kegiatans.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                Tidak ada jadwal mendatang
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {paginatedKegiatans.map((kegiatan) => (
+                    <KegiatanCard key={kegiatan.jadwal_id} kegiatan={kegiatan} />
+                  ))}
+                </div>
 
-      {/* Upcoming Schedule */}
-      
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                    <div className="text-sm text-slate-600">
+                      Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        Halaman {currentPage} dari {totalPages}
+                      </span>
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Riwayat Tab */}
+      {activeTab === 'riwayat' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <History className="w-5 h-5 text-primary" />
+              Riwayat Kegiatan
+              {historyLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {historyLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 border border-slate-200 rounded-lg animate-pulse">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <div className="h-5 bg-slate-200 rounded w-48 mb-2"></div>
+                        <div className="h-4 bg-slate-200 rounded w-64 mb-1"></div>
+                        <div className="h-3 bg-slate-200 rounded w-96"></div>
+                      </div>
+                      <div className="h-6 bg-slate-200 rounded w-20"></div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="h-4 bg-slate-200 rounded w-16"></div>
+                        <div className="h-4 bg-slate-200 rounded w-24"></div>
+                        <div className="h-4 bg-slate-200 rounded w-16"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : historyError ? (
+              <div className="text-center py-8 text-red-500">
+                Gagal memuat riwayat: {historyError}
+              </div>
+            ) : historyKegiatans.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                Belum ada riwayat kegiatan
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3">
+                  {historyKegiatans.map((kegiatan) => (
+                    <KegiatanCard key={kegiatan.jadwal_id} kegiatan={kegiatan} isHistory />
+                  ))}
+                </div>
+
+                {/* History Pagination */}
+                {historyPagination.lastPage > 1 && (
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                    <div className="text-sm text-slate-600">
+                      Halaman {historyPagination.currentPage} dari {historyPagination.lastPage} ({historyPagination.total} kegiatan)
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                        disabled={historyPage === 1}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-sm text-slate-600">
+                        {historyPagination.currentPage} / {historyPagination.lastPage}
+                      </span>
+                      <button
+                        onClick={() => setHistoryPage(p => Math.min(historyPagination.lastPage, p + 1))}
+                        disabled={historyPage === historyPagination.lastPage}
+                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
