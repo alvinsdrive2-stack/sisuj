@@ -152,13 +152,7 @@ export default function DashboardAdminTUK() {
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">{kegiatan.tuk?.alamat || ''}</p>
           </div>
           <div className="flex items-center gap-2">
-          {isHistory ? (
-            <Badge className="bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-slate-600 dark:text-slate-300">
-              Selesai
-            </Badge>
-          ) : (
-            getStatusBadge(kegiatan.is_started, kegiatan.tahap)
-          )}
+            {getStatusBadge(kegiatan.is_started, kegiatan.tahap)}
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </div>
         </div>

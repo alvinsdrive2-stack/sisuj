@@ -136,14 +136,21 @@ export default function ListAsesiAdminTUK() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Fetch kegiatan detail
+  // Fetch kegiatan detail (today first, fallback to history)
   useEffect(() => {
     const fetchKegiatan = async () => {
       try {
         const wibParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date())
         const todayWIB = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
         const response = await kegiatanService.getKegiatanAdminTUK(todayWIB)
-        const found = response.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === jadwalId)
+        let found = response.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === jadwalId)
+
+        // Fallback to history if not found in today's schedule
+        if (!found) {
+          const historyResponse = await kegiatanService.getKegiatanHistoryAdminTUK(1)
+          found = historyResponse.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === jadwalId)
+        }
+
         if (found) {
           setKegiatan(found)
         }
