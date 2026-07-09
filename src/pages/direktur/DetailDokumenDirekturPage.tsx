@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, Check, ExternalLink } from "lucide-react"
-import { useListAsesi } from "@/hooks/useKegiatan"
+import { useListAsesi, useAbsenData } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { useToast } from "@/contexts/ToastContext"
@@ -64,6 +64,11 @@ export default function DetailDokumenDirekturPage() {
   const backPath = isSudah ? '/direktur/sudah-ditandatangani' : '/direktur/belum-ditandatangani'
   const { showError, showSuccess } = useToast()
   const { asesiList, isLoading: asesiLoading, error } = useListAsesi(id || "")
+  const asesiIds = asesiList.map(a => a.id_izin)
+  const { absenData } = useAbsenData(asesiIds, asesiIds.length > 0)
+  const allAbsenAkhirFilled = asesiIds.length > 0 && asesiIds.every(
+    id => absenData[id]?.url_absen_asesi_akhir != null
+  )
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [dokumenDirektur, setDokumenDirektur] = useState<DokumenDirekturResponse['data'] | null>(null)
   const [selectedDokumen, setSelectedDokumen] = useState<SelectedDokumen | null>(null)
@@ -505,6 +510,8 @@ export default function DetailDokumenDirekturPage() {
                             : 'border-amber-300 bg-amber-50 hover:bg-amber-100'
                           : alreadyApproved || baAllApproved
                           ? 'border-emerald-300 bg-emerald-50 hover:bg-emerald-100'
+                          : hasDocument && hasApproveEndpoint && !allAbsenAkhirFilled
+                          ? 'border-amber-300 bg-amber-50 hover:bg-amber-100'
                           : 'border-red-300 bg-red-50 hover:bg-red-100 hover:border-red-400'
                     }`}
                     disabled={!hasDocument}
@@ -514,7 +521,7 @@ export default function DetailDokumenDirekturPage() {
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <FileText className={`w-5 h-5 ${isSkKomtek ? 'text-slate-400' : isSkPenetapan ? (skPenAllApproved ? 'text-emerald-500' : 'text-amber-500') : alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
+                      <FileText className={`w-5 h-5 ${isSkKomtek ? 'text-slate-400' : isSkPenetapan ? (skPenAllApproved ? 'text-emerald-500' : 'text-amber-500') : alreadyApproved || baAllApproved ? 'text-emerald-500' : hasDocument && !allAbsenAkhirFilled ? 'text-amber-500' : hasDocument ? 'text-red-500' : 'text-slate-400'}`} />
                       <div className="text-left">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-semibold block">{doc.label}</span>
@@ -533,6 +540,8 @@ export default function DetailDokumenDirekturPage() {
                                 ? 'Sudah ditandatangani'
                                 : isBaKomtek && baPending.length > 0
                                   ? `Belum diapprove: ${baPending.join(', ')}`
+                                : hasDocument && !allAbsenAkhirFilled
+                                  ? 'Menunggu absen asesi'
                                 : hasDocument
                                   ? 'Klik untuk tanda tangan'
                                   : 'Belum tersedia'
@@ -544,8 +553,12 @@ export default function DetailDokumenDirekturPage() {
                       <ExternalLink className="w-5 h-5 text-slate-400" />
                     )}
                     {hasDocument && !alreadyApproved && !baAllApproved && !skPenAllApproved && hasApproveEndpoint && !isSkKomtek && !isSkPenetapan && (
-                      <span className="text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
-                        Perlu TTD
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${
+                        allAbsenAkhirFilled
+                          ? 'text-red-600 bg-red-100'
+                          : 'text-amber-600 bg-amber-100'
+                      }`}>
+                        {allAbsenAkhirFilled ? 'Perlu TTD' : 'Menunggu Absen'}
                       </span>
                     )}
                   </Button>
@@ -564,7 +577,7 @@ export default function DetailDokumenDirekturPage() {
         }}
         url={selectedDokumen?.url || null}
         title={selectedDokumen?.title || ''}
-        onSign={selectedDokumen?.key && DOKUMEN_DIREKTUR_CONFIG.find(c => c.key === selectedDokumen.key)?.approveEndpoint && !isDocApproved(selectedDokumen.key)
+        onSign={selectedDokumen?.key && DOKUMEN_DIREKTUR_CONFIG.find(c => c.key === selectedDokumen.key)?.approveEndpoint && !isDocApproved(selectedDokumen.key) && allAbsenAkhirFilled
           ? () => handleSignDokumen(selectedDokumen.key!)
           : undefined
         }
