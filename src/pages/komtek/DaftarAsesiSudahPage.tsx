@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Users, Calendar, Clock, MapPin, FileText, ExternalLink, AlertCircle, Check } from "lucide-react"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
@@ -332,15 +334,19 @@ export default function DaftarAsesiSudahPage() {
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="text-center py-8 text-red-500">
-                Gagal memuat daftar asesi: {error}
-              </div>
+              <ErrorState
+                title="Gagal memuat daftar asesi"
+                message={error}
+                onRetry={() => window.location.reload()}
+              />
             )}
 
             {!asesiLoading && !error && asesiList.length === 0 && (
-              <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                Tidak ada asesi untuk jadwal ini
-              </div>
+              <EmptyState
+                icon={Users}
+                title="Tidak ada asesi"
+                message="Tidak ada asesi untuk jadwal ini"
+              />
             )}
 
             <div className="space-y-4 max-h-[400px] overflow-y-auto">

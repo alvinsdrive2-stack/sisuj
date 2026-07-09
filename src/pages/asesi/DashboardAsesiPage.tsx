@@ -15,8 +15,10 @@ import {
   Award,
   Timer,
   ChevronRight,
-  FileCheck
+  FileCheck,
+  Users
 } from "lucide-react"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { PulsingIcon } from "@/components/ui/PulsingIcon"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
@@ -593,7 +595,7 @@ export default function DashboardAsesiPage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">Belum ada informasi asesor</p>
+                  <EmptyState icon={Users} title="Belum ada informasi asesor" message="Data asesor akan muncul setelah ditugaskan" />
                 )}
 
               </CardContent>

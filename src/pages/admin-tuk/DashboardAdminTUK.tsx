@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft, Play, History } from "lucide-react"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK, useListAsesi, useKegiatanHistoryAdminTUK } from "@/hooks/useKegiatan"
 import { useBatchAbsenData } from "@/hooks/useAbsenData"
 import { formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import React, { useState } from "react"
+import React, { memo, useState } from "react"
 import { jenisKelasLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { kegiatanService } from "@/lib/kegiatan-service"
@@ -100,7 +102,7 @@ export default function DashboardAdminTUK() {
 
   const formatDateString = (dateTime: string) => formatDateWIB(dateTime)
 
-  function KegiatanCard({ kegiatan, isHistory }: { kegiatan: typeof kegiatans[0]; isHistory?: boolean }) {
+  const KegiatanCard = memo(function KegiatanCard({ kegiatan, isHistory }: { kegiatan: typeof kegiatans[0]; isHistory?: boolean }) {
     const [refreshKey, setRefreshKey] = useState(0)
     const isTahap1 = kegiatan.tahap === 1
     const { asesiList, refetch } = useListAsesi(isTahap1 ? kegiatan.jadwal_id : '')
@@ -196,7 +198,7 @@ export default function DashboardAdminTUK() {
         </div>
       </div>
     )
-  }
+  })
 
   return (
     <div className="space-y-6">
@@ -267,13 +269,9 @@ export default function DashboardAdminTUK() {
                 ))}
               </div>
             ) : error ? (
-              <div className="text-center py-8 text-red-500">
-                Gagal memuat jadwal: {error}
-              </div>
+              <ErrorState title="Gagal memuat jadwal" message={error} onRetry={() => window.location.reload()} />
             ) : kegiatans.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                Tidak ada jadwal mendatang
-              </div>
+              <EmptyState icon={Calendar} title="Tidak ada jadwal mendatang" message="Belum ada kegiatan yang dijadwalkan" />
             ) : (
               <>
                 <div className="space-y-3">
@@ -349,13 +347,9 @@ export default function DashboardAdminTUK() {
                 ))}
               </div>
             ) : historyError ? (
-              <div className="text-center py-8 text-red-500">
-                Gagal memuat riwayat: {historyError}
-              </div>
+              <ErrorState title="Gagal memuat riwayat" message={historyError} onRetry={() => window.location.reload()} />
             ) : historyKegiatans.length === 0 ? (
-              <div className="text-center py-8 text-slate-500">
-                Belum ada riwayat kegiatan
-              </div>
+              <EmptyState icon={History} title="Belum ada riwayat kegiatan" message="Riwayat kegiatan akan muncul setelah asesmen selesai" />
             ) : (
               <>
                 <div className="space-y-3">

@@ -90,7 +90,7 @@ export default function LoginPage() {
       <button
         onClick={() => { const next = !videoOff; setVideoOff(next); setVideoBgOff(next) }}
         className="fixed top-4 right-4 z-50 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition-colors"
-        title={videoOff ? "Hidupkan background video" : "Matikan background video"}
+        aria-label={videoOff ? "Hidupkan background video" : "Matikan background video"}
       >
         {videoOff ? <Video className="w-5 h-5 text-white" /> : <VideoOff className="w-5 h-5 text-white" />}
       </button>
@@ -160,6 +160,7 @@ export default function LoginPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+                    aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>

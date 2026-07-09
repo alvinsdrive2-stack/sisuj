@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
 import { Calendar, Users, Clock, ChevronRight, Search, AlertCircle, UserCheck } from "lucide-react"
 import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
@@ -60,14 +62,18 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
         </CardHeader>
         <CardContent>
           {error && (
-            <div className="text-center py-8 text-red-500">
-              Gagal memuat kegiatan: {error}
-            </div>
+            <ErrorState
+              title="Gagal memuat kegiatan"
+              message={error}
+              onRetry={() => window.location.reload()}
+            />
           )}
           {!isLoading && !error && kegiatans.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              Tidak ada kegiatan di tahap {config.title.toLowerCase()}
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="Tidak ada kegiatan"
+              message={`Tidak ada kegiatan di tahap ${config.title.toLowerCase()}`}
+            />
           )}
           {kegiatans.length > 0 && (
             <>

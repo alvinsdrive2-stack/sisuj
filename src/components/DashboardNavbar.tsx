@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { memo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { LogOut, Bell, Menu, X } from "lucide-react"
@@ -19,7 +19,7 @@ interface DashboardNavbarProps {
   timerNode?: React.ReactNode
 }
 
-export default function DashboardNavbar({ userName = "User", timerNode }: DashboardNavbarProps) {
+const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timerNode }: DashboardNavbarProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { showSuccess } = useToast()
@@ -175,7 +175,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
               variant="ghost"
               size="icon"
               onClick={() => { const next = !videoOff; setVideoOff(next); setVideoBgOff(next) }}
-              title={videoOff ? "Hidupkan background video" : "Matikan background video"}
+              aria-label={videoOff ? "Hidupkan background video" : "Matikan background video"}
               className="text-slate-600 hover:bg-slate-100"
             >
               {videoOff ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
@@ -190,7 +190,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
               size="icon"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              title="Logout"
+              aria-label="Logout"
               className="text-red-800 hover:bg-red-50 hover:text-red-600"
             >
               {isLoggingOut ? <SimpleSpinner size="sm" className="text-primary" /> : <LogOut className="w-5 h-5" />}
@@ -201,6 +201,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
           <button
             className="md:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Tutup menu" : "Buka menu"}
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -242,7 +243,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
                   {videoOff ? <Video className="w-4 h-4 mr-2" /> : <VideoOff className="w-4 h-4 mr-2" />}
                   {videoOff ? "Video On" : "Video Off"}
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 relative">
+                <Button variant="outline" size="sm" className="flex-1 relative" aria-label="Notifikasi">
                   <Bell className="w-4 h-4 mr-2" />
                   Notifikasi
                   <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full" />
@@ -253,6 +254,7 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
                   className="flex-1 hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
+                  aria-label="Logout"
                 >
                   {isLoggingOut ? (
                     <div className="flex items-center justify-center gap-2">
@@ -272,4 +274,6 @@ export default function DashboardNavbar({ userName = "User", timerNode }: Dashbo
       </div>
     </header>
   )
-}
+})
+
+export default DashboardNavbar

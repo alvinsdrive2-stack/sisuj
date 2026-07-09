@@ -4,6 +4,7 @@ import { User, FileCheck, Calendar, Clock, Upload, AlertCircle, CheckCircle2, Pl
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
+import { EmptyState } from "@/components/ui/EmptyState"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState } from "react"
 import { formatShortDateWIB, formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
@@ -187,9 +188,11 @@ export default function DashboardAsesi() {
             </div>
           )}
           {!isLoading && !error && !currentAssessment && (
-            <div className="text-center py-8 text-slate-500">
-              Tidak ada sertifikasi aktif
-            </div>
+            <EmptyState
+              icon={FileCheck}
+              title="Tidak ada sertifikasi aktif"
+              message="Belum ada skema sertifikasi yang sedang berjalan"
+            />
           )}
           {currentAssessment && (
             <div className="space-y-4">

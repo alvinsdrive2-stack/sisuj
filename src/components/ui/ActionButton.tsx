@@ -1,70 +1,48 @@
-import React from 'react'
+import React from "react"
+import { SimpleSpinner } from "./loading-spinner"
 
 interface ActionButtonProps {
   children: React.ReactNode
   variant?: 'primary' | 'secondary'
   disabled?: boolean
+  loading?: boolean
   onClick?: () => void
   type?: 'button' | 'submit'
+  className?: string
   style?: React.CSSProperties
 }
 
-export const ActionButton = React.memo(function ActionButton({
+export function ActionButton({
   children,
   variant = 'primary',
   disabled = false,
+  loading = false,
   onClick,
   type = 'button',
-  style
+  className = '',
+  style,
 }: ActionButtonProps) {
   const isPrimary = variant === 'primary'
+  const isDisabled = disabled || loading
 
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
-      style={{
-        padding: '10px 20px',
-        border: isPrimary ? 'none' : '1px solid #e2e8f0',
-        backgroundColor: disabled
-          ? '#cbd5e1'
-          : isPrimary
-            ? '#00488f'
-            : '#fff',
-        color: disabled
-          ? '#000'
-          : isPrimary
-            ? '#fff'
-            : '#64748b',
-        fontSize: '14px',
-        fontWeight: '600',
-        borderRadius: '8px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        transition: 'all 0.2s',
-        opacity: disabled ? 0.5 : 1,
-        ...style,
-      }}
-      onMouseEnter={(e) => {
-        if (disabled) return
-        if (isPrimary) {
-          e.currentTarget.style.backgroundColor = '#0066cc'
-        } else {
-          e.currentTarget.style.backgroundColor = '#f8fafc'
-          e.currentTarget.style.borderColor = '#cbd5e1'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (disabled) return
-        if (isPrimary) {
-          e.currentTarget.style.backgroundColor = '#00488f'
-        } else {
-          e.currentTarget.style.backgroundColor = '#fff'
-          e.currentTarget.style.borderColor = '#e2e8f0'
-        }
-      }}
+      disabled={isDisabled}
+      className={`
+        px-5 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200
+        inline-flex items-center justify-center gap-2
+        ${isPrimary
+          ? 'bg-primary text-white hover:bg-primary/90 active:bg-primary/80'
+          : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 active:bg-slate-100'}
+        ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        ${className}
+      `}
+      style={style}
     >
+      {loading && <SimpleSpinner size="sm" className={isPrimary ? 'text-white' : 'text-primary'} />}
       {children}
     </button>
   )
-})
+}

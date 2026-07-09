@@ -5,6 +5,8 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { API_BASE_URL } from "@/config/api"
 import { Search, Users, Link, X, ChevronDown, ChevronRight, ExternalLink, FileText, Download } from "lucide-react"
+import { EmptyState } from "@/components/ui/EmptyState"
+import { ErrorState } from "@/components/ui/ErrorState"
 
 interface AsesiItem {
   id_izin: string
@@ -263,14 +265,20 @@ export default function DaftarAsesiAll() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {error && <div className="text-center py-8 text-red-500">{error}</div>}
+          {error && (
+            <ErrorState
+              title="Gagal memuat data"
+              message={error}
+              onRetry={() => window.location.reload()}
+            />
+          )}
 
           {!isLoading && !error && data.length === 0 && (
-            <div className="text-center py-8 text-slate-500">
-              <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p className="font-medium">Tidak ada data asesi</p>
-              <p className="text-sm">Coba ubah filter pencarian</p>
-            </div>
+            <EmptyState
+              icon={Users}
+              title="Tidak ada data asesi"
+              message="Coba ubah filter pencarian"
+            />
           )}
 
           {/* Desktop Table */}

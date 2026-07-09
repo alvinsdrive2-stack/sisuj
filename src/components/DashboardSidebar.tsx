@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import { getFilteredMenus, resolveUserRole, RoleId } from "@/lib/rbac-config"
 import { ChevronRight, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { memo, useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
 import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
 
@@ -11,7 +11,7 @@ interface DashboardSidebarProps {
   onToggle?: () => void
 }
 
-export default function DashboardSidebar({ isCollapsed = false }: DashboardSidebarProps) {
+const DashboardSidebar = memo(function DashboardSidebar({ isCollapsed = false }: DashboardSidebarProps) {
   const { user } = useAuth()
   const location = useLocation()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -43,6 +43,7 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         className="lg:hidden fixed top-20 left-4 z-50 p-2 bg-white rounded-lg shadow-lg"
+        aria-label={isMobileMenuOpen ? "Tutup sidebar" : "Buka sidebar"}
       >
         {isMobileMenuOpen ? <X className="w-6 h-6 text-slate-800" /> : <Menu className="w-6 h-6 text-slate-800" />}
       </button>
@@ -143,4 +144,6 @@ export default function DashboardSidebar({ isCollapsed = false }: DashboardSideb
       )}
     </>
   )
-}
+})
+
+export default DashboardSidebar
