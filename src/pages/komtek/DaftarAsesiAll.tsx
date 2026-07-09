@@ -338,25 +338,35 @@ export default function DaftarAsesiAll() {
                                 <p className="text-sm text-slate-400 py-1">Tidak ada dokumen</p>
                               )}
                               {!isLoadingThis && docs && hasDocs && (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {DOC_GROUPS.map((group) =>
-                                    group.keys
+                                <div className="space-y-3">
+                                  {DOC_GROUPS.map((group) => {
+                                    const groupDocs = group.keys
                                       .map((key) => ({ key, label: DOC_LABELS[key] || key.toUpperCase(), url: docs[key] }))
                                       .filter((d) => d.url !== null)
-                                      .map((doc) => (
-                                        <a
-                                          key={doc.key}
-                                          href={doc.url!}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-blue-200 rounded-md text-xs text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                                        >
-                                          <FileText className="w-3 h-3 flex-shrink-0" />
-                                          {doc.label}
-                                          <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 text-blue-400" />
-                                        </a>
-                                      ))
-                                  )}
+
+                                    if (groupDocs.length === 0) return null
+
+                                    return (
+                                      <div key={group.title}>
+                                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">{group.title}</p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {groupDocs.map((doc) => (
+                                            <a
+                                              key={doc.key}
+                                              href={doc.url!}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-blue-200 rounded-md text-xs text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                            >
+                                              <FileText className="w-3 h-3 flex-shrink-0" />
+                                              {doc.label}
+                                              <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 text-blue-400" />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )
+                                  })}
                                   <button
                                     onClick={() => handleDownloadAllDocs(item.id_izin)}
                                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-md text-xs text-emerald-700 hover:bg-emerald-100 transition-colors"
