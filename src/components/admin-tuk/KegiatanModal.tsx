@@ -340,7 +340,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                   flexDirection: 'column',
                 }}>
                   {selectedUrl ? (
-                    <>
+                    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                       {isPdf ? (
                         // PDF Preview
                         <>
@@ -455,9 +455,59 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             </a>
                           </div>
                         </div>
-                      )
-                    )}
-                  </>
+                      )}
+
+                      {/* Ganti button overlay */}
+                      <label
+                        style={{
+                          position: 'absolute',
+                          bottom: '16px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '10px 20px',
+                          background: '#fff',
+                          color: '#059669',
+                          border: '2px solid #10b981',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                          transition: 'all 0.2s',
+                          zIndex: 20,
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#ecfdf5'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                      >
+                        {isUploading === selectedField.key ? (
+                          <>
+                            <SimpleSpinner size="sm" className="text-emerald-600" />
+                            <span>Mengupload...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FontAwesomeIcon icon={faCamera} style={{ fontSize: '14px' }} />
+                            <span>Ganti</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          style={{ display: 'none' }}
+                          disabled={!!isUploading}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file && selectedField) {
+                              handleUpload(selectedField.key, file)
+                              e.target.value = ''
+                            }
+                          }}
+                        />
+                      </label>
+                    </div>
                   ) : (
                     <div style={{
                       display: 'flex',
