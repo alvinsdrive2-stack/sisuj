@@ -121,9 +121,9 @@ export async function findFolder(name: string, parentId?: string): Promise<strin
   let query = `name='${name.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`
   if (parentId) query += ` and '${parentId}' in parents`
 
-  const params = parentId ? '&supportsAllDrives=true' : ''
+  const drivesParam = '&supportsAllDrives=true&includeItemsFromAllDrives=true'
   const q = encodeURIComponent(query)
-  const data = await driveFetch(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=10${params}`)
+  const data = await driveFetch(`${DRIVE_API}/files?q=${q}&fields=files(id,name)&pageSize=10${drivesParam}`)
   return data?.files?.[0]?.id ?? null
 }
 
@@ -135,8 +135,8 @@ export async function createFolder(name: string, parentId?: string): Promise<str
   }
   if (parentId) body.parents = [parentId]
 
-  const params = parentId ? '?supportsAllDrives=true' : ''
-  const data = await driveFetch(`${DRIVE_API}/files${params}`, {
+  const drivesParam = '?supportsAllDrives=true&includeItemsFromAllDrives=true'
+  const data = await driveFetch(`${DRIVE_API}/files${drivesParam}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -157,7 +157,7 @@ export async function uploadFileToDrive(
   folderId: string,
   onProgress?: (pct: number) => void
 ): Promise<DriveFileResult> {
-  const drivesParam = '?supportsAllDrives=true'
+  const drivesParam = '?supportsAllDrives=true&includeItemsFromAllDrives=true'
 
   // Step 1: Create file metadata
   const token = await getAccessToken()
@@ -228,7 +228,7 @@ function uploadContentWithProgress(
 
 /** Set file to "Anyone with link can view". Returns file accessible without Google login. */
 async function setFilePermission(fileId: string): Promise<void> {
-  await driveFetch(`${DRIVE_API}/files/${fileId}/permissions?supportsAllDrives=true`, {
+  await driveFetch(`${DRIVE_API}/files/${fileId}/permissions?supportsAllDrives=true&includeItemsFromAllDrives=true`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
