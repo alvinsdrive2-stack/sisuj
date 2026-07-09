@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { Fragment, useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
@@ -287,11 +287,11 @@ export default function DaftarAsesiAll() {
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="w-10 py-3 px-3" />
-                  <th className="text-left py-3 px-3 font-semibold text-slate-600">No</th>
+                  <th className="w-8 text-left py-3 px-3 font-semibold text-slate-600">No</th>
                   <th className="text-left py-3 px-3 font-semibold text-slate-600">Nama</th>
-                  <th className="text-left py-3 px-3 font-semibold text-slate-600">ID Izin</th>
-                  <th className="text-left py-3 px-3 font-semibold text-slate-600">Jadwal ID</th>
-                  <th className="text-left py-3 px-3 font-semibold text-slate-600">Tanggal Uji</th>
+                  <th className="hidden lg:table-cell text-left py-3 px-3 font-semibold text-slate-600">ID Izin</th>
+                  <th className="w-20 text-left py-3 px-3 font-semibold text-slate-600">Jadwal ID</th>
+                  <th className="w-36 text-left py-3 px-3 font-semibold text-slate-600">Tanggal Uji</th>
                 </tr>
               </thead>
               <tbody>
@@ -303,30 +303,31 @@ export default function DaftarAsesiAll() {
                   const hasDocs = docs && Object.values(docs).some((v) => v !== null)
 
                   return (
-                    <tr key={item.id_izin} className="border-b border-slate-100">
-                      <td colSpan={6} className="py-2 px-3">
-                        <div className="flex flex-col">
-                          {/* Main row data */}
-                          <div className="flex items-center gap-3 min-h-[40px]">
-                            <button
-                              onClick={() => toggleExpand(item.id_izin)}
-                              className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors flex-shrink-0"
-                            >
-                              {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                            </button>
-                            <span className="w-8 text-slate-500 flex-shrink-0">{rowNum}</span>
-                            <span className="flex-1 font-medium text-slate-800 min-w-0 truncate">{item.nama}</span>
-                            <code className="flex-shrink-0 text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 hidden lg:inline">{item.id_izin}</code>
-                            <span className="w-20 text-slate-600 flex-shrink-0">{item.jadwal_id}</span>
-                            <span className="w-36 text-slate-600 flex-shrink-0 text-right">
-                              <span className="block text-xs leading-tight">{formatDate(item.tanggal_uji)}</span>
-                              <span className="block text-[11px] text-slate-400 leading-tight">{formatTime(item.tanggal_uji)}</span>
-                            </span>
-                          </div>
-
-                          {/* Expanded docs inline */}
-                          {isExpanded && (
-                            <div className="ml-9 mt-1 mb-1">
+                    <Fragment key={item.id_izin}>
+                      <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                        <td className="py-2 px-3">
+                          <button
+                            onClick={() => toggleExpand(item.id_izin)}
+                            className="p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                          >
+                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          </button>
+                        </td>
+                        <td className="py-2 px-3 text-slate-500">{rowNum}</td>
+                        <td className="py-2 px-3 font-medium text-slate-800 truncate">{item.nama}</td>
+                        <td className="hidden lg:table-cell py-2 px-3">
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700">{item.id_izin}</code>
+                        </td>
+                        <td className="py-2 px-3 text-slate-600">{item.jadwal_id}</td>
+                        <td className="py-2 px-3 text-slate-600 text-right">
+                          <span className="block text-xs leading-tight">{formatDate(item.tanggal_uji)}</span>
+                          <span className="block text-[11px] text-slate-400 leading-tight">{formatTime(item.tanggal_uji)}</span>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr key={`${item.id_izin}-expanded`} className="border-b border-slate-100 bg-slate-50">
+                          <td colSpan={6} className="py-2 px-3">
+                            <div className="ml-9">
                               {isLoadingThis && (
                                 <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
                                   <SimpleSpinner size="sm" />
@@ -366,10 +367,10 @@ export default function DaftarAsesiAll() {
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   )
                 })}
               </tbody>
