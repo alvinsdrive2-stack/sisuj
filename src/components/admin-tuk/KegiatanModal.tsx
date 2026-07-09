@@ -455,7 +455,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                             </a>
                           </div>
                         </div>
-                      )}
+                      ))}
 
                       {/* Ganti button overlay */}
                       <label
