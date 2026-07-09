@@ -180,6 +180,9 @@ export default function Ak06Page() {
 
           // Set video AJJ link
           setVideoAjj(result.data.video_ajj || '')
+
+          // Also fetch from dedicated link-video endpoint
+          fetchLinkVideo()
         }
       } else {
         console.warn(`AK06 API returned ${response.status}`)
@@ -190,6 +193,28 @@ export default function Ak06Page() {
   }, [id, authLoading])
 
   useEffect(() => { fetchAk06Data() }, [fetchAk06Data])
+
+  // Fetch saved link video from dedicated endpoint
+  const fetchLinkVideo = useCallback(async () => {
+    if (!jadwalId) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/jadwal/${jadwalId}/link-video`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.data?.link_video) {
+          setVideoAjj(data.data.link_video)
+        }
+      }
+    } catch {
+      // silent
+    }
+  }, [jadwalId])
 
   // Signing state hook
   const signing = useSigningState({
