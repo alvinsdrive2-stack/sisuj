@@ -534,31 +534,23 @@ class KegiatanService {
     return response.json()
   }
 
-  // Get single kegiatan detail by jadwal ID (loops through pages)
+  // Get single kegiatan detail by jadwal ID
   async getKegiatanDetail(jadwalId: string): Promise<{ message: string; data: KegiatanAsesor }> {
     const token = this.getToken()
 
-    for (let page = 1; page <= 50; page++) {
-      const response = await fetch(`${this.baseUrl}/kegiatan/admin-tuk?page=${page}`, {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
+    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}/detail`, {
+      method: "GET",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
 
-      if (!response.ok) break
-
-      const result: PaginatedKegiatanResponse = await response.json()
-      const found = result.data.data.find(k => String(k.jadwal_id) === jadwalId)
-      if (found) {
-        return { message: "Success", data: found }
-      }
-
-      if (page >= result.data.last_page) break
+    if (!response.ok) {
+      throw new Error("Kegiatan tidak ditemukan")
     }
 
-    throw new Error("Kegiatan tidak ditemukan")
+    return response.json()
   }
 
   // Generate QR for Ujian

@@ -84,27 +84,8 @@ export default function DetailDokumenDirekturPage() {
       if (!id) return
 
       try {
-        // Search all pages for both ttd states
-        for (const ttd of [false, true]) {
-          let page = 1
-          let found = false
-
-          while (!found) {
-            const response = await kegiatanService.getKegiatanDirektur(ttd, page)
-            const match = response.data.data.find((k: KegiatanAsesor) => String(k.jadwal_id) === id)
-
-            if (match) {
-              setKegiatan(match)
-              found = true
-              break
-            }
-
-            if (page >= response.data.last_page) break
-            page++
-          }
-
-          if (found) break
-        }
+        const response = await kegiatanService.getKegiatanDetail(id)
+        setKegiatan(response.data)
       } catch (err) {
         console.error('Error fetching kegiatan:', err)
       }
