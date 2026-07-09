@@ -22,22 +22,11 @@ export default function EditJadwalPage() {
       if (!jadwalId) return
 
       try {
-        // Fetch dari yang belum ditandatangani
-        const responseFalse = await kegiatanService.getKegiatanKomtek(false)
-        let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
-
-        // Kalau ga ketemu, cari dari yang sudah ditandatangani
-        if (!found) {
-          const responseTrue = await kegiatanService.getKegiatanKomtek(true)
-          found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === jadwalId)
-        }
-
-        if (found) {
-          setKegiatan(found)
-          // Set initial date value from kegiatan
-          const date = new Date(found.tanggal_uji)
-          setTanggalUji(date.toISOString().split("T")[0])
-        }
+        const response = await kegiatanService.getKegiatanDetail(jadwalId)
+        const found = response.data
+        setKegiatan(found)
+        const date = new Date(found.tanggal_uji)
+        setTanggalUji(date.toISOString().split("T")[0])
       } catch (err) {
         console.error("Error fetching kegiatan:", err)
         setError("Gagal memuat data jadwal")

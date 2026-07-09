@@ -111,19 +111,11 @@ export default function DetailDokumenAsesiPage() {
       if (!id) return
 
       try {
-        const responseFalse = await kegiatanService.getKegiatanKomtek(false)
-        let found = responseFalse.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
-
-        if (!found) {
-          const responseTrue = await kegiatanService.getKegiatanKomtek(true)
-          found = responseTrue.data.data.find((k: KegiatanAsesor) => k.jadwal_id === id)
-        }
-
-        if (found) {
-          console.log('Kegiatan data:', found)
-          console.log('asesor2:', found.asesor2)
-          setKegiatan(found)
-        }
+        const response = await kegiatanService.getKegiatanDetail(id)
+        const found = response.data
+        console.log('Kegiatan data:', found)
+        console.log('asesor2:', found.asesor2)
+        setKegiatan(found)
       } catch (err) {
         console.error('Error fetching kegiatan:', err)
       }
