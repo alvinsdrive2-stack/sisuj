@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { API_BASE_URL } from "@/config/api"
-import { Search, Users, Link, X, ChevronDown, ChevronRight, ExternalLink, FileText, Download } from "lucide-react"
+import { Search, Users, ChevronDown, ChevronRight, ExternalLink, FileText, Download } from "lucide-react"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 
@@ -83,7 +83,6 @@ export default function DaftarAsesiAll() {
   const [pagination, setPagination] = useState<PaginationMeta>({ current_page: 1, last_page: 1, per_page: 20, total: 0 })
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
-  const [linkVideo, setLinkVideo] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -100,11 +99,10 @@ export default function DaftarAsesiAll() {
       const params = new URLSearchParams()
       params.set("page", String(page))
       params.set("per_page", "20")
-      if (search) params.set("nama", search)
-      if (linkVideo) params.set("link_video", linkVideo)
+      if (search) params.set("search", search)
 
       const token = localStorage.getItem("access_token")
-      const res = await fetch(`${API_BASE_URL}/asesi-jadwal/id-izins?${params}`, {
+      const res = await fetch(`${API_BASE_URL}/dokumen-asesi?${params}`, {
         headers: {
           "Accept": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -230,22 +228,6 @@ export default function DaftarAsesiAll() {
             onChange={handleSearch}
             className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
-        </div>
-
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Link className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Filter link video..."
-            value={linkVideo}
-            onChange={(e) => setLinkVideo(e.target.value)}
-            className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-          />
-          {linkVideo && (
-            <button onClick={() => setLinkVideo("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-              <X className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
         <button
