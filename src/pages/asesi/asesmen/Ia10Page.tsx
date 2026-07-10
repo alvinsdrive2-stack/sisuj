@@ -32,8 +32,7 @@ interface BarcodeData {
 interface PertanyaanYaTidak {
   id: number
   pertanyaan: string
-  ya: boolean
-  tidak: boolean
+  jawaban: boolean | null
 }
 
 interface EssayQuestion {
@@ -140,8 +139,7 @@ export default function Ia10Page() {
             const savedAnswers = result.data.answers || {}
             setPertanyaanYaTidakList(result.data.referensi_form["2"].map((item: any) => ({
               id: item.id, pertanyaan: item.nama,
-              ya: savedAnswers[String(item.id)] === true,
-              tidak: savedAnswers[String(item.id)] === false,
+              jawaban: savedAnswers[String(item.id)] ?? null,
             })))
           }
           if (result.data.referensi_form?.["3"]) {
@@ -198,12 +196,12 @@ export default function Ia10Page() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleYaChange = (id: number, value: boolean) => {
-    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, ya: value, tidak: value ? false : p.tidak } : p))
+  const handleYaChange = (id: number) => {
+    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, jawaban: p.jawaban === true ? null : true } : p))
   }
 
-  const handleTidakChange = (id: number, value: boolean) => {
-    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, tidak: value, ya: value ? false : p.ya } : p))
+  const handleTidakChange = (id: number) => {
+    setPertanyaanYaTidakList(prev => prev.map(p => p.id === id ? { ...p, jawaban: p.jawaban === false ? null : false } : p))
   }
 
   const handleEssayChange = (id: number, value: string) => {
@@ -253,7 +251,7 @@ export default function Ia10Page() {
         dokumen_id: dokumenId,
         answers: pertanyaanYaTidakList.map(p => ({
           referensi_id: p.id,
-          answer: p.ya,
+          answer: p.jawaban,
         })),
         essay_answers: [
           ...essayList.map(e => ({
@@ -482,10 +480,10 @@ export default function Ia10Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.ya} onChange={() => isAsesor && handleYaChange(p.id, !p.ya)} disabled={!isAsesor || signing.allSigned} />
+                  <CustomCheckbox checked={p.jawaban === true} onChange={() => isAsesor && handleYaChange(p.id)} disabled={!isAsesor || signing.allSigned} />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.tidak} onChange={() => isAsesor && handleTidakChange(p.id, !p.tidak)} disabled={!isAsesor || signing.allSigned} />
+                  <CustomCheckbox checked={p.jawaban === false} onChange={() => isAsesor && handleTidakChange(p.id)} disabled={!isAsesor || signing.allSigned} />
                 </td>
               </tr>
             ))}
