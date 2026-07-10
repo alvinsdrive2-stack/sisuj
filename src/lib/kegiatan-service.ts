@@ -64,6 +64,7 @@ export interface KegiatanAsesor {
   is_started_praasesmen: string
   jenis_kelas: string
   tahap: number
+  status: string
   tuk: {
     id: string
     nama: string
