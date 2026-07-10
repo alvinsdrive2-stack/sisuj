@@ -63,6 +63,8 @@ const DOC_LABELS: Record<string, string> = {
   sk_komtek: "SK Komtek",
   sk_pelaksanaan_uji: "SK Pelaksanaan Uji",
   sk_penetapan: "SK Penetapan",
+  sk_direktur: "SK Direktur",
+  ba_komtek: "BA Komtek",
 }
 
 const DOC_GROUPS: { title: string; keys: string[] }[] = [
@@ -72,7 +74,8 @@ const DOC_GROUPS: { title: string; keys: string[] }[] = [
   { title: "Foto Dokumentasi", keys: ["foto_foto_bersama", "foto_ttd_asesi_asesmen", "foto_ttd_asesi_pra", "foto_ttd_asesor_asesmen", "foto_ttd_asesor_pra"] },
   { title: "Surat Verifikasi TUK", keys: ["surat_verifikasi_tuk"] },
   { title: "SPT", keys: ["spt_asesor", "spt_komtek"] },
-  { title: "SK", keys: ["sk_komtek", "sk_pelaksanaan_uji", "sk_penetapan"] },
+  { title: "SK", keys: ["sk_komtek", "sk_pelaksanaan_uji", "sk_penetapan", "sk_direktur"] },
+  { title: "BA", keys: ["ba_komtek"] },
 ]
 
 export default function DaftarAsesiAll() {
