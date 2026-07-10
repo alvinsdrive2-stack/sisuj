@@ -154,6 +154,13 @@ export default function Ia05Page() {
 
   useEffect(() => { fetchIa05Data() }, [fetchIa05Data])
 
+  // Tahap 0: redirect langsung, skip render
+  useEffect(() => {
+    if (!isLoading && !isDataLoading && tahap === 0) {
+      navigate(`/asesor/asesi/${jadwalId}`, { replace: true })
+    }
+  }, [tahap, isLoading, isDataLoading, jadwalId, navigate])
+
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
 
   // Timer for asesi (1 hour, localStorage - persists across page close)
