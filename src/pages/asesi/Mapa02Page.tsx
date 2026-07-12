@@ -122,7 +122,7 @@ export default function Mapa02Page() {
           result.data.referensi_form.forEach(refForm => {
             if (refForm.kategori === "MAPA02_1") {
               refForm.referensis.forEach(ref => {
-                if (ref.isdefault && ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
+                if (ref.isdefault === 1 && ref.potensi_asesi_index >= 1 && ref.potensi_asesi_index <= 5) {
                   kelompoks.forEach(k => {
                     initialSelected[`${k.id}_${ref.id}`] = ref.potensi_asesi_index
                   })
@@ -370,7 +370,7 @@ export default function Mapa02Page() {
                             style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'not-allowed', userSelect: 'none', background: '#f5f5f5' }}
                           >
                             <CustomCheckbox
-                              checked={ref.potensi_asesi_index === potensi}
+                              checked={ref.isdefault === 1 && ref.potensi_asesi_index === potensi}
                               onChange={() => {}}
                               disabled
                               style={{ pointerEvents: 'none' }}
