@@ -39,7 +39,7 @@ interface Ia08File {
 interface WawancaraItem {
   id: number
   unit_kompetensi: string
-  no_elemen: number
+  no_elemen: string
   materi: string
   checked: boolean
 }
@@ -81,11 +81,11 @@ export default function Ia08Page() {
   })
 
   const [wawancaraItems, setWawancaraItems] = useState<WawancaraItem[]>([
-    { id: 1, unit_kompetensi: 'F.41BPC00.001.2', no_elemen: 1, materi: 'Ketentuan terkait tugas perencanaan', checked: false },
-    { id: 2, unit_kompetensi: 'F.41BPC00.002.2', no_elemen: 2, materi: 'Lokasi kerja dan gambar rencana', checked: false },
-    { id: 3, unit_kompetensi: 'F.41BPC00.003.2', no_elemen: 3, materi: 'Detail sambungan rencana', checked: false },
-    { id: 4, unit_kompetensi: 'F.41BPC00.004.2', no_elemen: 2, materi: 'Produktivitas kerja', checked: false },
-    { id: 5, unit_kompetensi: 'F.41BPC00.005.2', no_elemen: 5, materi: 'Spesifikasi teknis mutu', checked: false },
+    { id: 1, unit_kompetensi: 'F.41BPC00.001.2', no_elemen: '1', materi: 'Ketentuan terkait tugas perencanaan', checked: false },
+    { id: 2, unit_kompetensi: 'F.41BPC00.002.2', no_elemen: '2', materi: 'Lokasi kerja dan gambar rencana', checked: false },
+    { id: 3, unit_kompetensi: 'F.41BPC00.003.2', no_elemen: '3', materi: 'Detail sambungan rencana', checked: false },
+    { id: 4, unit_kompetensi: 'F.41BPC00.004.2', no_elemen: '2', materi: 'Produktivitas kerja', checked: false },
+    { id: 5, unit_kompetensi: 'F.41BPC00.005.2', no_elemen: '5', materi: 'Spesifikasi teknis mutu', checked: false },
   ])
 
   const [buktiTambahan, setBuktiTambahan] = useState('')
@@ -131,8 +131,8 @@ export default function Ia08Page() {
             const wawancaraData = result.data.soal["2"].map((item: any, index: number) => ({
               id: item.id || index + 1,
               unit_kompetensi: item.unit?.kode || "-",
-              no_elemen: parseInt(item.no) || index + 1,
-              materi: item.subunit?.nama || "-",
+              no_elemen: item.subunit?.kode || "-",
+              materi: item.kuk?.nama || item.subunit?.nama || "-",
               checked: savedUnit[String(item.id)] === true,
             }))
             setWawancaraItems(wawancaraData)
