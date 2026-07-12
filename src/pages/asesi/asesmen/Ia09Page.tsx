@@ -117,8 +117,8 @@ export default function Ia09Page() {
             const pertanyaanData = result.data.soal["2"].map((item: any) => {
               const saved = savedAnswers[String(item.id)] || {}
               return {
-                id: item.id, no: item.no || "1", pertanyaan: item.soal || "-",
-                kesimpulan: saved.kesimpulan || "",
+                id: item.id, no: item.no || "1", pertanyaan: (item.soal || "-").replace(/&#039;/g, ' '),
+                kesimpulan: (saved.kesimpulan || "").replace(/&#039;/g, ' '),
                 k: saved.is_kompeten === true,
                 bk: saved.is_kompeten === false,
               }
