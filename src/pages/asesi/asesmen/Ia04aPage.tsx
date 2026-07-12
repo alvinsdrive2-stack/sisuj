@@ -338,8 +338,7 @@ export default function Ia04aPage() {
     }
   }
 
-  const kelompokKerja = ia04aData?.kelompok_kerja?.kelompok_kerja?.[0]
-  const units = kelompokKerja?.units || []
+  const semuaKelompok = ia04aData?.kelompok_kerja?.kelompok_kerja || []
 
   if (!ia04aData) return <FullPageLoader text="Memuat data..." />
 
@@ -427,19 +426,20 @@ export default function Ia04aPage() {
           </tbody>
         </table>
 
-        {/* Kelompok Pekerjaan Table */}
-        {kelompokKerja && (
+        {/* Kelompok Pekerjaan Tables */}
+        {semuaKelompok.map((kelompok) => (
+          <div key={kelompok.id}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
               <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
-                <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
-                  {kelompokKerja.nama}
+                <td rowSpan={kelompok.units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
+                  {kelompok.nama}
                 </td>
                 <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>
                 <td style={{ width: '25%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kode Unit</td>
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Judul Unit</td>
               </tr>
-              {units.map((unit, index) => (
+              {kelompok.units.map((unit, index) => (
                 <tr key={unit.id_unit}>
                   <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{index + 1}</td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.kode_unit}</td>
@@ -448,8 +448,9 @@ export default function Ia04aPage() {
               ))}
             </tbody>
           </table>
-        )}
-        <br />
+          <br />
+          </div>
+        ))}
         {/* Soal Sections */}
         {ia04aData?.soal.map((soalItem) => (
           <table key={soalItem.id} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
