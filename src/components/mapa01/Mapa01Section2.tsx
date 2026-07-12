@@ -84,6 +84,7 @@ export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Se
   };
 
   const isPortofolio = (metode || '').toLowerCase() === 'portofolio'
+  const allUnits = kelompokKerja.flatMap(k => k.units)
 
   return (
     <>
@@ -99,11 +100,12 @@ export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Se
       </table>
 
       {isPortofolio ? (
-        /* Portofolio: flat table, no kelompok grouping */
-        <Mapa01MetodeTable
-          units={kelompokKerja.flatMap(k => k.units)}
-          metodeFlags={metodeFlags}
-        />
+        /* Portofolio: flat unit table (no kelompok column) + metode table */
+        <>
+          <Mapa01PortofolioUnitTable units={allUnits} />
+          <p style={{ padding: '10px 0 0 0', margin: 0 }}><br /></p>
+          <Mapa01MetodeTable units={allUnits} metodeFlags={metodeFlags} />
+        </>
       ) : (
         /* Observasi: grouped by kelompok */
         kelompokKerja.map((kelompok) => (
@@ -343,6 +345,47 @@ interface Mapa01UnitAssessmentProps {
   unit: Unit
   idx: number
   metodeFlags: MetodeFlags
+}
+
+// ============== PORTOFOLIO COMPONENTS ==============
+
+interface Mapa01PortofolioUnitTableProps {
+  units: Unit[]
+}
+
+function Mapa01PortofolioUnitTable({ units }: Mapa01PortofolioUnitTableProps) {
+  const cellStyle = createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin);
+
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse' as const }} cellSpacing="0">
+      <tbody>
+        <tr style={{ height: '37pt' }}>
+          <td style={{ ...cellStyle, background: '#fff', width: '10%' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'center' }}>No.</p>
+          </td>
+          <td style={{ ...cellStyle, background: '#fff', width: '25%' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'center' }}>Kode Unit</p>
+          </td>
+          <td style={{ ...cellStyle, background: '#fff' }}>
+            <p style={{ fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'center' }}>Judul Unit</p>
+          </td>
+        </tr>
+        {units.map((unit, idx) => (
+          <tr key={unit.id_unit} style={{ height: idx === 0 ? '78pt' : '25pt' }}>
+            <td style={{ ...cellStyle, padding: '6px 8px', textAlign: 'center', verticalAlign: 'middle', background: '#fff' }}>
+              <p style={{ margin: 0, fontSize: '12px' }}>{idx + 1}.</p>
+            </td>
+            <td style={{ ...cellStyle, padding: '6px 8px', textAlign: 'center', verticalAlign: 'middle', background: '#fff' }}>
+              <p style={{ margin: 0, fontSize: '12px' }}>{unit.kode_unit}</p>
+            </td>
+            <td style={{ ...cellStyle, padding: '6px 8px', lineHeight: '150%', verticalAlign: 'middle', background: '#fff' }}>
+              <p style={{ margin: 0, lineHeight: '150%', textAlign: 'justify', fontSize: '12px' }}>{unit.nama_unit}</p>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
 }
 
 function Mapa01UnitAssessment({ unit, idx, metodeFlags }: Mapa01UnitAssessmentProps) {
