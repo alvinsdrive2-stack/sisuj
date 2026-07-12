@@ -264,6 +264,8 @@ export default function Mapa02Page() {
 
   const referensiMAPA02 = mapaData?.referensi_form.find(r => r.kategori === "MAPA02_1")
   const keteranganReferensi = mapaData?.referensi_form.find(r => r.kategori === "MAPA02-1")
+  const isPortofolio = (metode || '').toLowerCase() === 'portofolio'
+  const allUnits = mapaData?.kelompok_kerja?.kelompok_kerja?.flatMap(k => k.units) || []
 
   if (isDataLoading) return <FullPageLoader text="Memuat data..." />
 
@@ -307,7 +309,82 @@ export default function Mapa02Page() {
           
 
           {/* Kelompok Pekerjaan Tables with Instrumen Asesmen */}
-          {mapaData?.kelompok_kerja?.kelompok_kerja?.map((kelompok) => (
+          {isPortofolio ? (
+            /* PORTOFOLIO: flat table, no kelompok column, one instrumen table */
+            <>
+              {/* Flat Unit Table */}
+              <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
+                <tbody>
+                  <tr>
+                    <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
+                    <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
+                    <th style={{ border: '1px solid #000', padding: '6px 8px' }}>Judul Unit</th>
+                  </tr>
+                  {allUnits.map((unit, unitIndex) => (
+                    <tr key={unit.id_unit}>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                        {unitIndex + 1}.
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                        {unit.kode_unit}
+                      </td>
+                      <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                        {unit.nama_unit}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <br />
+
+              {/* One Instrumen Asesmen Table */}
+              {referensiMAPA02 && (
+                <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
+                  <tbody>
+                    <tr>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
+                      <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                        Potensi Asesi **
+                      </th>
+                    </tr>
+                    <tr>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>1</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>2</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>3</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>4</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>5</th>
+                    </tr>
+                    {referensiMAPA02.referensis.map((ref, refIndex) => (
+                      <tr key={ref.id}>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                          {refIndex + 1}.
+                        </td>
+                        <td style={{ border: '1px solid #000', padding: '6px 8px' }}>
+                          {ref.nama}
+                        </td>
+                        {[1, 2, 3, 4, 5].map((potensi) => (
+                          <td
+                            key={potensi}
+                            style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', cursor: 'not-allowed', userSelect: 'none', background: '#f5f5f5' }}
+                          >
+                            <CustomCheckbox
+                              checked={ref.potensi_asesi_index === potensi}
+                              onChange={() => {}}
+                              disabled
+                              style={{ pointerEvents: 'none' }}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          ) : (
+            /* OBSERVASI: grouped by kelompok */
+            mapaData?.kelompok_kerja?.kelompok_kerja?.map((kelompok) => (
             <div key={kelompok.id}>
               {/* Kelompok Pekerjaan Table */}
               <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
@@ -382,10 +459,8 @@ export default function Mapa02Page() {
                 </table>
               )}
             </div>
-          ))}
+          )))}
 
-          
-          {/* Keterangan Table */}
           {/* Keterangan */}
           {keteranganReferensi && (
             <div style={{ background: '#ffffff', border: '1px solid #6f6f6f', marginBottom: '16px', padding: '12px', fontSize: '14px' }}>
