@@ -8,6 +8,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
 }
 
@@ -85,6 +86,7 @@ function generateKelompokKerjaHtml(kelompokKerja: KelompokKerja[]): string {
         <tr>
           <td style="width: 20%;" rowspan="${unitsCount + 1}">
             <strong>Kelompok Pekerjaan ${kelompok.urut}</strong>
+            ${kelompok.deskripsi ? `<br/><span style="font-size: 10pt; font-style: italic;">${kelompok.deskripsi}</span>` : ''}
           </td>
           <td style="width: 8%;" align="center"><strong>No.</strong></td>
           <td style="width: 22%;" align="center"><strong>Kode Unit</strong></td>

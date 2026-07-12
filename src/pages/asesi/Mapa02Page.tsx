@@ -24,6 +24,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
 }
 
@@ -392,6 +393,11 @@ export default function Mapa02Page() {
                   <tr>
                     <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
                       {kelompok.nama}
+                      {kelompok.deskripsi && (
+                        <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px' }}>
+                          {kelompok.deskripsi}
+                        </div>
+                      )}
                     </th>
                     <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
                     <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>

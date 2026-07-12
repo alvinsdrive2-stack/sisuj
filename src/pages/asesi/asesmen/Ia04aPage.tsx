@@ -27,6 +27,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
 }
 
@@ -440,6 +441,11 @@ export default function Ia04aPage() {
               <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
                 <td rowSpan={kelompok.units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                   {kelompok.nama}
+                  {kelompok.deskripsi && (
+                    <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>
+                      {kelompok.deskripsi}
+                    </div>
+                  )}
                 </td>
                 <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>
                 <td style={{ width: '25%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kode Unit</td>

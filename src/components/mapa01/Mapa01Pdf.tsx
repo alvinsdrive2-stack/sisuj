@@ -22,6 +22,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
 }
 
@@ -350,7 +351,10 @@ const PdfSection2 = ({ kelompokKerja }: { kelompokKerja: KelompokKerja[] }) => (
       <View key={kelompok.id}>
         {/* Kelompok Header */}
         <View style={styles.row}>
-          <Cell width="25%"><Text style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kelompok.urut}</Text></Cell>
+          <Cell width="25%">
+            <Text style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kelompok.urut}</Text>
+            {kelompok.deskripsi && <Text style={{ fontSize: '10px', fontStyle: 'italic' }}>{kelompok.deskripsi}</Text>}
+          </Cell>
           <Cell width="10%"><Text style={{ fontWeight: 'bold', textAlign: 'center' }}>No.</Text></Cell>
           <Cell width="20%"><Text style={{ fontWeight: 'bold', textAlign: 'center' }}>Kode Unit</Text></Cell>
           <Cell width="45%"><Text style={{ fontWeight: 'bold', textAlign: 'center' }}>Judul Unit</Text></Cell>

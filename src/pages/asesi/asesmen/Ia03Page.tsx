@@ -57,6 +57,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
   soal: Soal[]
 }
@@ -431,7 +432,14 @@ export default function Ia03Page() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
               <thead>
                 <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
-                  <th style={{ width: '18%', border: '1px solid #000', padding: '6px' }}>Kelompok Pekerjaan {kelompok.urut}</th>
+                  <th style={{ width: '18%', border: '1px solid #000', padding: '6px' }}>
+                    Kelompok Pekerjaan {kelompok.urut}
+                    {kelompok.deskripsi && (
+                      <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                        {kelompok.deskripsi}
+                      </div>
+                    )}
+                  </th>
                   <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
                   <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Kode Unit</th>
                   <th style={{ border: '1px solid #000', padding: '6px' }}>Judul Unit</th>

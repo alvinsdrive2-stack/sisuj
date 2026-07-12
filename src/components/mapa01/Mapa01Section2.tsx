@@ -40,6 +40,7 @@ interface KelompokKerja {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   units: Unit[]
 }
 
@@ -153,6 +154,11 @@ function Mapa01KelompokTable({ kelompok }: Mapa01KelompokTableProps) {
               <p style={{ fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'left' }}>
                 Kelompok Pekerjaan {kelompok.urut}
               </p>
+              {kelompok.deskripsi && (
+                <p style={{ fontSize: '11px', padding: '0 8px 6px 8px', margin: 0, textAlign: 'left', fontStyle: 'italic' }}>
+                  {kelompok.deskripsi}
+                </p>
+              )}
             </td>
             <td style={{ ...headerCellStyle, background: '#fff' }}>
               <p style={{ padding: '6px 8px', margin: 0 }}><br /></p>

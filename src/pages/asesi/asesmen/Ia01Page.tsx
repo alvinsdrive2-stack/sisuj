@@ -51,6 +51,7 @@ interface KelompokKerjaItem {
   id: number
   nama: string
   urut: string
+  deskripsi?: string
   umpan_balik: string | null
   units: Unit[]
 }
@@ -384,7 +385,14 @@ export default function Ia01Page() {
                 userSelect: 'none'
               }}
             >
-              <span>Kelompok Pekerjaan {kelompok.urut}</span>
+              <div>
+                <span>Kelompok Pekerjaan {kelompok.urut}</span>
+                {kelompok.deskripsi && (
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                    {kelompok.deskripsi}
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: '16px' }}>{expandedKelompok.has(kelompok.id) ? '▼' : '▶'}</span>
             </div>
 
@@ -395,7 +403,14 @@ export default function Ia01Page() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000', borderTop: 'none' }}>
                   <thead>
                     <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
-                      <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Kelompok Pekerjaan {kelompok.urut}</th>
+                      <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>
+                        Kelompok Pekerjaan {kelompok.urut}
+                        {kelompok.deskripsi && (
+                          <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                            {kelompok.deskripsi}
+                          </div>
+                        )}
+                      </th>
                       <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
                       <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Kode Unit</th>
                       <th style={{ border: '1px solid #000', padding: '6px' }}>Judul Unit</th>
@@ -409,6 +424,11 @@ export default function Ia01Page() {
                         {index === 0 && (
                           <td rowSpan={kelompok.units.filter((u) => u.subunits.some((s) => s.soal.length > 0)).length} style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
                             {kelompok.nama}
+                            {kelompok.deskripsi && (
+                              <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>
+                                {kelompok.deskripsi}
+                              </div>
+                            )}
                           </td>
                         )}
                         <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>

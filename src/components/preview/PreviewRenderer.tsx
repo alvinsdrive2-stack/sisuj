@@ -243,9 +243,12 @@ export function Mapa01Preview({ data }: { data: any }) {
       <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Kelompok Kerja</h3>
       {kelompoks.map((k: any, i: number) => (
         <div key={k.id || i} style={{ marginBottom: '15px' }}>
-          <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
-            {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
-          </p>
+          <div style={{ marginBottom: '4px' }}>
+            <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
+              {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
+            </p>
+            {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0' }}>{k.deskripsi}</p>}
+          </div>
           {(k.units || []).length > 0 && (
             <table style={tableStyle()}>
               <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
@@ -298,9 +301,12 @@ export function Mapa02Preview({ data }: { data: any }) {
       <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Kelompok Kerja</h3>
       {kelompoks.map((k: any, i: number) => (
         <div key={k.id || i} style={{ marginBottom: '15px' }}>
-          <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
-            {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
-          </p>
+          <div style={{ marginBottom: '4px' }}>
+            <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
+              {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
+            </p>
+            {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0' }}>{k.deskripsi}</p>}
+          </div>
           {(k.units || []).length > 0 && (
             <table style={tableStyle()}>
               <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
@@ -378,8 +384,9 @@ export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
       {kelompoks.map((kel: any, i: number) => (
         <div key={kel.id || i} style={{ marginBottom: '20px' }}>
           {/* Red header */}
-          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
-            Kelompok Pekerjaan {kel.urut || i + 1}
+          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontSize: '13px', marginBottom: '10px' }}>
+            <div style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kel.urut || i + 1}</div>
+            {kel.deskripsi && <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>{kel.deskripsi}</div>}
           </div>
 
           {(kel.units || []).map((unit: any, ui: number) => (
@@ -513,6 +520,9 @@ export function Ia04aPreview({ data }: { data: any }) {
             <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
               <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                 {kelompoks[0]?.nama || 'Kelompok Pekerjaan'}
+                {kelompoks[0]?.deskripsi && (
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>{kelompoks[0].deskripsi}</div>
+                )}
               </td>
               <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>
               <td style={{ width: '25%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kode Unit</td>
