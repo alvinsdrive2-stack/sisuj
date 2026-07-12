@@ -339,6 +339,12 @@ export default function Ia04aPage() {
   }
 
   const semuaKelompok = ia04aData?.kelompok_kerja?.kelompok_kerja || []
+  const kelompokPertama = semuaKelompok[0]
+  const semuaKelompokIncludeKP1 = semuaKelompok.map(k =>
+    k.id === kelompokPertama?.id
+      ? k
+      : { ...k, units: [...(kelompokPertama?.units || []), ...k.units] }
+  )
 
   if (!ia04aData) return <FullPageLoader text="Memuat data..." />
 
@@ -426,8 +432,8 @@ export default function Ia04aPage() {
           </tbody>
         </table>
 
-        {/* Kelompok Pekerjaan Tables */}
-        {semuaKelompok.map((kelompok) => (
+        {/* Kelompok Pekerjaan Tables (KP1 units included in all) */}
+        {semuaKelompokIncludeKP1.map((kelompok) => (
           <div key={kelompok.id}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
