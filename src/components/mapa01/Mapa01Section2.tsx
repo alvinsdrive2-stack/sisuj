@@ -83,6 +83,8 @@ export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Se
     textAlign: 'left' as const,
   };
 
+  const isPortofolio = (metode || '').toLowerCase() === 'portofolio'
+
   return (
     <>
       {/* Section 2 Header */}
@@ -96,10 +98,18 @@ export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Se
         </tbody>
       </table>
 
-      {/* Loop Kelompok Kerja */}
-      {kelompokKerja.map((kelompok) => (
-        <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} metodeFlags={metodeFlags} />
-      ))}
+      {isPortofolio ? (
+        /* Portofolio: flat table, no kelompok grouping */
+        <Mapa01MetodeTable
+          units={kelompokKerja.flatMap(k => k.units)}
+          metodeFlags={metodeFlags}
+        />
+      ) : (
+        /* Observasi: grouped by kelompok */
+        kelompokKerja.map((kelompok) => (
+          <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} metodeFlags={metodeFlags} />
+        ))
+      )}
     </>
   )
 }
