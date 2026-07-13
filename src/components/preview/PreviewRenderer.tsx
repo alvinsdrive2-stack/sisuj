@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 // ── Helpers ──
 
 const tableStyle = (borderW?: string) => ({
@@ -222,8 +224,37 @@ export function Apl02Preview({ data }: { data: any }) {
 // ── MAPA 01 ──
 
 export function Mapa01Preview({ data }: { data: any }) {
+  const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
   const kelompoks = data?.kelompok_kerja || []
+  const allUnits = kelompoks.flatMap((k: any) => k.units || [])
   const referensi = data?.referensi_form || []
+
+  if (!viewMode) {
+    return (
+      <div>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
+          {DOC_TITLES.mapa01}
+        </h1>
+        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
+          <button onClick={() => setViewMode('portofolio')} style={{
+            padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
+            background: '#c00000', color: '#fff', border: 'none', borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+            Tampilan Portofolio
+          </button>
+          <button onClick={() => setViewMode('observasi')} style={{
+            padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
+            background: '#333', color: '#fff', border: 'none', borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+            Tampilan Observasi
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -231,6 +262,15 @@ export function Mapa01Preview({ data }: { data: any }) {
         {DOC_TITLES.mapa01}
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => setViewMode(null)} style={{
+          padding: '4px 12px', fontSize: '12px', cursor: 'pointer',
+          background: '#f0f0f0', color: '#333', border: '1px solid #999', borderRadius: '4px',
+        }}>
+          &larr; Ganti Tampilan
+        </button>
+      </div>
 
       {data?.skkni && <p style={{ fontSize: '13px', marginBottom: '10px' }}>SKKNI: {data.skkni}</p>}
       {data?.metode && <p style={{ fontSize: '13px', marginBottom: '10px' }}>Metode Asesmen: {data.metode}</p>}
@@ -240,27 +280,45 @@ export function Mapa01Preview({ data }: { data: any }) {
         </p>
       )}
 
-      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Kelompok Kerja</h3>
-      {kelompoks.map((k: any, i: number) => (
-        <div key={k.id || i} style={{ marginBottom: '15px' }}>
-          <div style={{ marginBottom: '4px' }}>
-            <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
-              {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
-            </p>
-            {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0' }}>{k.deskripsi}</p>}
-          </div>
-          {(k.units || []).length > 0 && (
-            <table style={tableStyle()}>
-              <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
-              <tbody>
-                {k.units.map((u: any, ui: number) => (
-                  <tr key={u.id_unit || ui}><td style={cell('10%')}>{ui + 1}</td><td style={cell('35%')}>{u.kode_unit || '-'}</td><td style={cell()}>{u.nama_unit || '-'}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ))}
+      {viewMode === 'portofolio' ? (
+        /* PORTOFOLIO: flat unit list */
+        <>
+          <table style={tableStyle()}>
+            <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
+            <tbody>
+              {allUnits.length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
+              {allUnits.map((unit: any, i: number) => (
+                <tr key={unit.id_unit || i}><td style={cell('10%')}>{i + 1}</td><td style={cell('35%')}>{unit.kode_unit || '-'}</td><td style={cell()}>{unit.nama_unit || '-'}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : (
+        /* OBSERVASI: grouped by kelompok */
+        <>
+          {kelompoks.map((k: any, i: number) => (
+            <div key={k.id || i} style={{ marginBottom: '15px' }}>
+              <div style={{ marginBottom: '4px' }}>
+                <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
+                  {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
+                </p>
+                {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0', whiteSpace: 'pre-line' }}>{k.deskripsi}</p>}
+              </div>
+              {(k.units || []).length > 0 && (
+                <table style={tableStyle()}>
+                  <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
+                  <tbody>
+                    {k.units.map((u: any, ui: number) => (
+                      <tr key={u.id_unit || ui}><td style={cell('10%')}>{ui + 1}</td><td style={cell('35%')}>{u.kode_unit || '-'}</td><td style={cell()}>{u.nama_unit || '-'}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
       {kelompoks.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data</p>}
 
       {referensi.length > 0 && (
@@ -283,9 +341,82 @@ export function Mapa01Preview({ data }: { data: any }) {
 // ── MAPA 02 ──
 
 export function Mapa02Preview({ data }: { data: any }) {
-  const kelompoks = data?.kelompok_kerja || []
-  const referensi = data?.referensi_form || []
-  const referensiGlobal = data?.referensi_form_global || []
+  const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
+  const referensiMAPA02 = data?.referensi_form?.find((r: any) => r.kategori === "MAPA02_1")
+  const kelompoks = data?.kelompok_kerja?.kelompok_kerja || []
+  const allUnits = kelompoks.flatMap((k: any) => k.units || [])
+
+  const renderCheckbox = (checked: boolean) => (
+    <span style={{
+      display: 'inline-block', width: '16px', height: '16px',
+      border: '1px solid #666', background: checked ? '#c00000' : '#fff',
+      color: '#fff', fontSize: '12px', lineHeight: '16px', textAlign: 'center',
+      fontWeight: 'bold',
+    }}>
+      {checked ? '✓' : ''}
+    </span>
+  )
+
+  const renderInstrumentTable = () => {
+    if (!referensiMAPA02) return null
+    return (
+      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
+        <tbody>
+          <tr>
+            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
+            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
+            <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+              Potensi Asesi **
+            </th>
+          </tr>
+          <tr>
+            {[1, 2, 3, 4, 5].map(p => (
+              <th key={p} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>{p}</th>
+            ))}
+          </tr>
+          {referensiMAPA02.referensis.map((ref: any, refIndex: number) => (
+            <tr key={ref.id}>
+              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{refIndex + 1}.</td>
+              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{ref.nama}</td>
+              {[1, 2, 3, 4, 5].map(potensi => (
+                <td key={potensi} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
+                  {renderCheckbox(ref.isdefault === 1 && ref.potensi_asesi_index === potensi)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )
+  }
+
+  // Selection screen
+  if (!viewMode) {
+    return (
+      <div>
+        <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
+          {DOC_TITLES.mapa02}
+        </h1>
+        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
+          <button onClick={() => setViewMode('portofolio')} style={{
+            padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
+            background: '#c00000', color: '#fff', border: 'none', borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+            Tampilan Portofolio
+          </button>
+          <button onClick={() => setViewMode('observasi')} style={{
+            padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
+            background: '#333', color: '#fff', border: 'none', borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}>
+            Tampilan Observasi
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -294,59 +425,101 @@ export function Mapa02Preview({ data }: { data: any }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      {data?.potensi_asesi_index && (
-        <p style={{ fontSize: '13px', marginBottom: '10px' }}>Potensi Asesi Index: {data.potensi_asesi_index}</p>
-      )}
+      {/* Ganti tampilan button */}
+      <div style={{ marginBottom: '16px' }}>
+        <button onClick={() => setViewMode(null)} style={{
+          padding: '4px 12px', fontSize: '12px', cursor: 'pointer',
+          background: '#f0f0f0', color: '#333', border: '1px solid #999', borderRadius: '4px',
+        }}>
+          &larr; Ganti Tampilan
+        </button>
+      </div>
 
-      <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Kelompok Kerja</h3>
-      {kelompoks.map((k: any, i: number) => (
-        <div key={k.id || i} style={{ marginBottom: '15px' }}>
-          <div style={{ marginBottom: '4px' }}>
-            <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
-              {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
-            </p>
-            {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0' }}>{k.deskripsi}</p>}
-          </div>
-          {(k.units || []).length > 0 && (
-            <table style={tableStyle()}>
-              <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
+      {/* Skema Sertifikasi */}
+      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '13px', background: '#fff' }}>
+        <tbody>
+          <tr>
+            <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold' }}>
+              Skema Sertifikasi<br />(KKNI/Okupasi/Klaster)
+            </td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Judul</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
+              {(data?.data_sertifikasi?.nama_jabatan || data?.nama_jabatan_kerja || '').toUpperCase()}
+            </td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Nomor</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
+              {data?.kelompok_kerja?.kode || data?.data_sertifikasi?.no_skema || ''}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {viewMode === 'portofolio' ? (
+        /* ── PORTOFOLIO ── */
+        <>
+          <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
+            <thead>
+              <tr>
+                <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
+                <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
+                <th style={{ border: '1px solid #000', padding: '6px 8px' }}>Judul Unit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {allUnits.length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
+              {allUnits.map((unit: any, i: number) => (
+                <tr key={unit.id_unit || i}>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{i + 1}.</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.kode_unit}</td>
+                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.nama_unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <br />
+          {renderInstrumentTable()}
+        </>
+      ) : (
+        /* ── OBSERVASI ── */
+        kelompoks.map((kelompok: any) => (
+          <div key={kelompok.id}>
+            <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
+              <thead>
+                <tr>
+                  <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
+                    {kelompok.nama}
+                    {kelompok.deskripsi && (
+                      <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px', whiteSpace: 'pre-line' }}>{kelompok.deskripsi}</div>
+                    )}
+                  </th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px' }}>Judul Unit</th>
+                </tr>
+              </thead>
               <tbody>
-                {k.units.map((u: any, ui: number) => (
-                  <tr key={u.id_unit || ui}><td style={cell('10%')}>{ui + 1}</td><td style={cell('35%')}>{u.kode_unit || '-'}</td><td style={cell()}>{u.nama_unit || '-'}</td></tr>
+                {(kelompok.units || []).length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
+                {(kelompok.units || []).map((unit: any, i: number) => (
+                  <tr key={unit.id_unit || i}>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{i + 1}.</td>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.kode_unit}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.nama_unit}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-      ))}
-      {kelompoks.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data</p>}
-
-      {referensi.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th('50%')}>Referensi</th><th style={th()}>Keterangan</th></tr></thead>
-            <tbody>
-              {referensi.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell('50%')}>{r.nama || '-'}</td><td style={cell()}>{r.keterangan1 || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+            <br />
+            {renderInstrumentTable()}
+          </div>
+        ))
       )}
 
-      {referensiGlobal.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi Global</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th()}>Nama</th></tr></thead>
-            <tbody>
-              {referensiGlobal.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell()}>{r.nama || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
+      {kelompoks.length === 0 && viewMode === 'observasi' && (
+        <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data kelompok kerja</p>
       )}
     </div>
   )
@@ -386,7 +559,7 @@ export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
           {/* Red header */}
           <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontSize: '13px', marginBottom: '10px' }}>
             <div style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kel.urut || i + 1}</div>
-            {kel.deskripsi && <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>{kel.deskripsi}</div>}
+            {kel.deskripsi && <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>{kel.deskripsi}</div>}
           </div>
 
           {(kel.units || []).map((unit: any, ui: number) => (
@@ -521,7 +694,7 @@ export function Ia04aPreview({ data }: { data: any }) {
               <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                 {kelompoks[0]?.nama || 'Kelompok Pekerjaan'}
                 {kelompoks[0]?.deskripsi && (
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>{kelompoks[0].deskripsi}</div>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px', whiteSpace: 'pre-line' }}>{kelompoks[0].deskripsi}</div>
                 )}
               </td>
               <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>

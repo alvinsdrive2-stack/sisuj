@@ -442,7 +442,7 @@ export default function Ia04aPage() {
                 <td rowSpan={kelompok.units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                   {kelompok.nama}
                   {kelompok.deskripsi && (
-                    <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px', whiteSpace: 'pre-line' }}>
                       {kelompok.deskripsi}
                     </div>
                   )}

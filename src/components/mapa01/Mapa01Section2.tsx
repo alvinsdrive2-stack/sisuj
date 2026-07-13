@@ -155,7 +155,7 @@ function Mapa01KelompokTable({ kelompok }: Mapa01KelompokTableProps) {
                 Kelompok Pekerjaan {kelompok.urut}
               </p>
               {kelompok.deskripsi && (
-                <p style={{ fontSize: '11px', padding: '0 8px 6px 8px', margin: 0, textAlign: 'left', fontStyle: 'italic' }}>
+                <p style={{ fontSize: '11px', padding: '0 8px 6px 8px', margin: 0, textAlign: 'left', fontStyle: 'italic', whiteSpace: 'pre-line' }}>
                   {kelompok.deskripsi}
                 </p>
               )}

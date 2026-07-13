@@ -388,7 +388,7 @@ export default function Ia01Page() {
               <div>
                 <span>Kelompok Pekerjaan {kelompok.urut}</span>
                 {kelompok.deskripsi && (
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>
                     {kelompok.deskripsi}
                   </div>
                 )}
@@ -406,7 +406,7 @@ export default function Ia01Page() {
                       <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>
                         Kelompok Pekerjaan {kelompok.urut}
                         {kelompok.deskripsi && (
-                          <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                          <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>
                             {kelompok.deskripsi}
                           </div>
                         )}
@@ -425,7 +425,7 @@ export default function Ia01Page() {
                           <td rowSpan={kelompok.units.filter((u) => u.subunits.some((s) => s.soal.length > 0)).length} style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
                             {kelompok.nama}
                             {kelompok.deskripsi && (
-                              <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px' }}>
+                              <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px', whiteSpace: 'pre-line' }}>
                                 {kelompok.deskripsi}
                               </div>
                             )}

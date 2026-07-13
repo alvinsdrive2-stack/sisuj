@@ -435,7 +435,7 @@ export default function Ia03Page() {
                   <th style={{ width: '18%', border: '1px solid #000', padding: '6px' }}>
                     Kelompok Pekerjaan {kelompok.urut}
                     {kelompok.deskripsi && (
-                      <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>
                         {kelompok.deskripsi}
                       </div>
                     )}

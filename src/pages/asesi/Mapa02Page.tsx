@@ -394,7 +394,7 @@ export default function Mapa02Page() {
                     <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
                       {kelompok.nama}
                       {kelompok.deskripsi && (
-                        <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px' }}>
+                        <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px', whiteSpace: 'pre-line' }}>
                           {kelompok.deskripsi}
                         </div>
                       )}
