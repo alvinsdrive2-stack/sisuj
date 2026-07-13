@@ -372,11 +372,6 @@ export function Ia02Preview({ data }: { data: any }) {
 // ── IA 04.A ──
 
 export function Ia04aPreview({ data }: { data: any }) {
-  const kelompoks = data?.kelompok_kerja || []
-  const units = (kelompoks[0]?.units || [])
-  const soalList = data?.soal || []
-  const referensi = data?.referensi_form || []
-
   return (
     <div>
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
@@ -403,20 +398,6 @@ export function Ia04aPreview({ data }: { data: any }) {
       </table>
 
       <Ia04aView data={data} />
-
-      {referensi.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th()}>Nama Referensi</th></tr></thead>
-            <tbody>
-              {referensi.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell()}>{r.nama || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
     </div>
   )
 }
