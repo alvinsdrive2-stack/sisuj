@@ -492,7 +492,7 @@ export function Mapa02Preview({ data }: { data: any }) {
             <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
               <thead>
                 <tr>
-                  <th rowSpan={kelompok.units.length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
+                  <th rowSpan={(kelompok.units || []).length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
                     {kelompok.nama}
                     {kelompok.deskripsi && (
                       <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px', whiteSpace: 'pre-line' }}>{kelompok.deskripsi}</div>
@@ -723,11 +723,11 @@ export function Ia04aPreview({ data }: { data: any }) {
               <tbody>
                 <tr>
                   <td style={{ width: '28%', fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>
-                    {decodeHtmlEntities(soalItem.soal || '-')}
+                    <div dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(soalItem.soal || '-') }} />
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>
                     {soalItem.jawaban ? (
-                      <div style={{ margin: '5px 0', lineHeight: '1.6' }}>{soalItem.jawaban}</div>
+                      <div style={{ margin: '5px 0', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(soalItem.jawaban) }} />
                     ) : (
                       <div style={{ height: '40px' }}></div>
                     )}
