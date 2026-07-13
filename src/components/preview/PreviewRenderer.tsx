@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Mapa01View, Mapa02View, Ia04aView, Ia01View, Ia03View, Ak02View } from "./asesi-views"
 
 // ── Helpers ──
 
@@ -144,7 +145,7 @@ export function Apl01Preview({ data }: { data: any }) {
             <thead><tr><th style={th('8%')}>No</th><th style={th()}>Persyaratan</th><th style={th('15%')}>Status</th></tr></thead>
             <tbody>
               {persyaratan.map((p: any, i: number) => (
-                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? '✔' : '-'}</td></tr>
+                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? '✓' : '-'}</td></tr>
               ))}
             </tbody>
           </table>
@@ -225,10 +226,6 @@ export function Apl02Preview({ data }: { data: any }) {
 
 export function Mapa01Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
-  const rawKelompokKerja = data?.kelompok_kerja
-  const kelompoks = Array.isArray(rawKelompokKerja) ? rawKelompokKerja : rawKelompokKerja?.kelompok_kerja || []
-  const allUnits = kelompoks.flatMap((k: any) => k.units || [])
-  const referensi = data?.referensi_form || []
 
   if (!viewMode) {
     return (
@@ -273,68 +270,7 @@ export function Mapa01Preview({ data }: { data: any }) {
         </button>
       </div>
 
-      {data?.skkni && <p style={{ fontSize: '13px', marginBottom: '10px' }}>SKKNI: {data.skkni}</p>}
-      {data?.metode && <p style={{ fontSize: '13px', marginBottom: '10px' }}>Metode Asesmen: {data.metode}</p>}
-      {data?.nama_jabatan_kerja && (
-        <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px', textTransform: 'uppercase' }}>
-          Jabatan: {data.nama_jabatan_kerja}
-        </p>
-      )}
-
-      {viewMode === 'portofolio' ? (
-        /* PORTOFOLIO: flat unit list */
-        <>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
-            <tbody>
-              {allUnits.length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
-              {allUnits.map((unit: any, i: number) => (
-                <tr key={unit.id_unit || i}><td style={cell('10%')}>{i + 1}</td><td style={cell('35%')}>{unit.kode_unit || '-'}</td><td style={cell()}>{unit.nama_unit || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      ) : (
-        /* OBSERVASI: grouped by kelompok */
-        <>
-          {kelompoks.map((k: any, i: number) => (
-            <div key={k.id || i} style={{ marginBottom: '15px' }}>
-              <div style={{ marginBottom: '4px' }}>
-                <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px' }}>
-                  {k.urut ? `Kelompok Pekerjaan ${k.urut}. ` : ''}{k.nama || '-'}
-                </p>
-                {k.deskripsi && <p style={{ fontSize: '12px', fontStyle: 'italic', margin: '0 0 4px 0', whiteSpace: 'pre-line' }}>{k.deskripsi}</p>}
-              </div>
-              {(k.units || []).length > 0 && (
-                <table style={tableStyle()}>
-                  <thead><tr><th style={th('10%')}>No</th><th style={th('35%')}>Kode Unit</th><th style={th()}>Nama Unit</th></tr></thead>
-                  <tbody>
-                    {k.units.map((u: any, ui: number) => (
-                      <tr key={u.id_unit || ui}><td style={cell('10%')}>{ui + 1}</td><td style={cell('35%')}>{u.kode_unit || '-'}</td><td style={cell()}>{u.nama_unit || '-'}</td></tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
-          ))}
-        </>
-      )}
-
-      {kelompoks.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data</p>}
-
-      {referensi.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th()}>Nama Referensi</th></tr></thead>
-            <tbody>
-              {referensi.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell()}>{r.nama || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      <Mapa01View data={data} mode={viewMode} />
     </div>
   )
 }
@@ -343,56 +279,7 @@ export function Mapa01Preview({ data }: { data: any }) {
 
 export function Mapa02Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
-  const referensiMAPA02 = data?.referensi_form?.find((r: any) => r.kategori === "MAPA02_1")
-  const rawKelompokKerja = data?.kelompok_kerja
-  const kelompoks = Array.isArray(rawKelompokKerja) ? rawKelompokKerja : rawKelompokKerja?.kelompok_kerja || []
-  const allUnits = kelompoks.flatMap((k: any) => k.units || [])
 
-  const renderCheckbox = (checked: boolean) => (
-    <span style={{
-      display: 'inline-block', width: '16px', height: '16px',
-      border: '1px solid #666', background: checked ? '#c00000' : '#fff',
-      color: '#fff', fontSize: '12px', lineHeight: '16px', textAlign: 'center',
-      fontWeight: 'bold',
-    }}>
-      {checked ? '✓' : ''}
-    </span>
-  )
-
-  const renderInstrumentTable = () => {
-    if (!referensiMAPA02) return null
-    return (
-      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
-        <tbody>
-          <tr>
-            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
-            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
-            <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
-              Potensi Asesi **
-            </th>
-          </tr>
-          <tr>
-            {[1, 2, 3, 4, 5].map(p => (
-              <th key={p} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>{p}</th>
-            ))}
-          </tr>
-          {referensiMAPA02.referensis.map((ref: any, refIndex: number) => (
-            <tr key={ref.id}>
-              <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{refIndex + 1}.</td>
-              <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{ref.nama}</td>
-              {[1, 2, 3, 4, 5].map(potensi => (
-                <td key={potensi} style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>
-                  {renderCheckbox(ref.isdefault === 1 && ref.potensi_asesi_index === potensi)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )
-  }
-
-  // Selection screen
   if (!viewMode) {
     return (
       <div>
@@ -427,7 +314,6 @@ export function Mapa02Preview({ data }: { data: any }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      {/* Ganti tampilan button */}
       <div style={{ marginBottom: '16px' }}>
         <button onClick={() => setViewMode(null)} style={{
           padding: '4px 12px', fontSize: '12px', cursor: 'pointer',
@@ -437,92 +323,7 @@ export function Mapa02Preview({ data }: { data: any }) {
         </button>
       </div>
 
-      {/* Skema Sertifikasi */}
-      <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '13px', background: '#fff' }}>
-        <tbody>
-          <tr>
-            <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold' }}>
-              Skema Sertifikasi<br />(KKNI/Okupasi/Klaster)
-            </td>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Judul</td>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
-              {(data?.data_sertifikasi?.nama_jabatan || data?.nama_jabatan_kerja || '').toUpperCase()}
-            </td>
-          </tr>
-          <tr>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Nomor</td>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
-            <td style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'bold' }}>
-              {data?.kelompok_kerja?.kode || data?.data_sertifikasi?.no_skema || ''}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      {viewMode === 'portofolio' ? (
-        /* ── PORTOFOLIO ── */
-        <>
-          <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
-            <thead>
-              <tr>
-                <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
-                <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
-                <th style={{ border: '1px solid #000', padding: '6px 8px' }}>Judul Unit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allUnits.length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
-              {allUnits.map((unit: any, i: number) => (
-                <tr key={unit.id_unit || i}>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{i + 1}.</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.kode_unit}</td>
-                  <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.nama_unit}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <br />
-          {renderInstrumentTable()}
-        </>
-      ) : (
-        /* ── OBSERVASI ── */
-        kelompoks.map((kelompok: any) => (
-          <div key={kelompok.id}>
-            <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '0', fontSize: '13px', background: '#fff' }}>
-              <thead>
-                <tr>
-                  <th rowSpan={(kelompok.units || []).length + 1} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', verticalAlign: 'top', textAlign: 'left' }}>
-                    {kelompok.nama}
-                    {kelompok.deskripsi && (
-                      <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '4px', whiteSpace: 'pre-line' }}>{kelompok.deskripsi}</div>
-                    )}
-                  </th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%' }}>No.</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '20%' }}>Kode Unit</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px' }}>Judul Unit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(kelompok.units || []).length === 0 && <tr><td colSpan={3} style={{ padding: '12px', textAlign: 'center', color: '#999' }}>Tidak ada data</td></tr>}
-                {(kelompok.units || []).map((unit: any, i: number) => (
-                  <tr key={unit.id_unit || i}>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center' }}>{i + 1}.</td>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.kode_unit}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px 8px' }}>{unit.nama_unit}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <br />
-            {renderInstrumentTable()}
-          </div>
-        ))
-      )}
-
-      {kelompoks.length === 0 && viewMode === 'observasi' && (
-        <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data kelompok kerja</p>
-      )}
+      <Mapa02View data={data} mode={viewMode} />
     </div>
   )
 }
@@ -530,8 +331,7 @@ export function Mapa02Preview({ data }: { data: any }) {
 // ── IA 01 / IA 03 ──
 
 export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
-  const kelompoks = data?.kelompok_kerja || []
-  const referensi = data?.referensi_form || []
+  const isIa03 = docType === 'ia03'
 
   return (
     <div>
@@ -540,93 +340,7 @@ export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      {/* Panduan */}
-      <div style={{ marginBottom: '15px', border: '1px solid #000', background: '#fff' }}>
-        <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
-          PANDUAN BAGI ASESOR
-        </div>
-        <div style={{ padding: '10px', fontSize: '12px' }}>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
-            <li>Isi standar industri atau tempat kerja.</li>
-            <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
-            <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
-            <li>Isi kolom KUK sesuai SKKNI.</li>
-          </ul>
-        </div>
-      </div>
-
-      {kelompoks.map((kel: any, i: number) => (
-        <div key={kel.id || i} style={{ marginBottom: '20px' }}>
-          {/* Red header */}
-          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontSize: '13px', marginBottom: '10px' }}>
-            <div style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kel.urut || i + 1}</div>
-            {kel.deskripsi && <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>{kel.deskripsi}</div>}
-          </div>
-
-          {(kel.units || []).map((unit: any, ui: number) => (
-            <div key={unit.id || ui} style={{ marginLeft: '10px', marginBottom: '12px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000', marginBottom: '8px' }}>
-                <tbody>
-                  <tr>
-                    <td style={{ width: '20%', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Unit Kompetensi</td>
-                    <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.unit?.kode || unit.kode_unit || '-'}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Judul Unit</td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.unit?.nama || unit.nama_unit || '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {(unit.questions || []).length > 0 && (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000' }}>
-                  <thead>
-                    <tr style={{ background: '#c40000', color: '#fff' }}>
-                      <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
-                      <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>KUK</th>
-                      <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Sub Unit</th>
-                      <th style={{ border: '1px solid #000', padding: '6px' }}>Soal / Pertanyaan</th>
-                      <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Jenis</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {unit.questions.map((q: any, qi: number) => (
-                      <tr key={q.id || qi}>
-                        <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{q.no || qi + 1}</td>
-                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.kode || q.id_kuk || '-'}</td>
-                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.subunitkompetensi?.kode || '-'}</td>
-                        <td style={{ border: '1px solid #000', padding: '6px' }}>{q.soal || '-'}</td>
-                        <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{q.jenis || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-              {(unit.questions || []).length === 0 && (
-                <p style={{ fontSize: '12px', color: '#999', marginLeft: '10px' }}>Tidak ada soal</p>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
-      {kelompoks.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data</p>}
-
-      {referensi.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th()}>Nama Referensi</th></tr></thead>
-            <tbody>
-              {referensi.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell()}>{r.nama || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      {isIa03 ? <Ia03View data={data} /> : <Ia01View data={data} />}
     </div>
   )
 }
@@ -688,70 +402,7 @@ export function Ia04aPreview({ data }: { data: any }) {
         </tbody>
       </table>
 
-      {/* Kelompok Kerja */}
-      {kelompoks.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
-          <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
-              <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
-                {kelompoks[0]?.nama || 'Kelompok Pekerjaan'}
-                {kelompoks[0]?.deskripsi && (
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', marginTop: '4px', whiteSpace: 'pre-line' }}>{kelompoks[0].deskripsi}</div>
-                )}
-              </td>
-              <td style={{ width: '8%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>No.</td>
-              <td style={{ width: '25%', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kode Unit</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Judul Unit</td>
-            </tr>
-            {units.map((unit: any, index: number) => (
-              <tr key={unit.id_unit || index}>
-                <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{index + 1}</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.kode_unit}</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>{unit.nama_unit}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-
-      {/* Soal Sections */}
-      {soalList.length > 0 && (
-        <>
-          <br />
-          {soalList.map((soalItem: any, i: number) => (
-            <table key={soalItem.id || i} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', background: '#fff', border: '1px solid #000', marginTop: '14px' }}>
-              <tbody>
-                <tr>
-                  <td style={{ width: '28%', fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>
-                    <div dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(soalItem.soal || '-') }} />
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px' }}>
-                    {soalItem.jawaban ? (
-                      <div style={{ margin: '5px 0', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: decodeHtmlEntities(soalItem.jawaban) }} />
-                    ) : (
-                      <div style={{ height: '40px' }}></div>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          ))}
-        </>
-      )}
-
-      {data?.persiapan_kegiatan && (
-        <div style={{ marginBottom: '15px', marginTop: '14px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Persiapan Kegiatan</h3>
-          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #000' }}>{data.persiapan_kegiatan}</p>
-        </div>
-      )}
-
-      {data?.hal_demonstrasi && (
-        <div style={{ marginBottom: '15px', marginTop: '14px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Hal yang Didemonstrasikan</h3>
-          <p style={{ fontSize: '13px', padding: '10px', border: '1px solid #000' }}>{data.hal_demonstrasi}</p>
-        </div>
-      )}
+      <Ia04aView data={data} />
 
       {referensi.length > 0 && (
         <>
@@ -941,77 +592,13 @@ export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
 // ── AK 02 ──
 
 export function Ak02Preview({ data }: { data: any }) {
-  const units = data?.data_unit_kompetensi || []
-
-  const methods = [
-    'Observasi Demonstrasi',
-    'Portofolio',
-    'Pertanyaan Wawancara',
-    'Pertanyaan Lisan',
-    'Pertanyaan Tertulis',
-    'Proyek Kerja',
-    'Lainnya',
-  ]
-
-  const getMethodKey = (label: string) => {
-    const map: Record<string, string> = {
-      'Observasi Demonstrasi': 'observasi',
-      'Portofolio': 'portofolio',
-      'Pertanyaan Wawancara': 'pertanyaan_wawancara',
-      'Pertanyaan Lisan': 'pertanyaan_lisan',
-      'Pertanyaan Tertulis': 'pertanyaan_tertulis',
-      'Proyek Kerja': 'proyek_kerja',
-      'Lainnya': 'lainnya',
-    }
-    return map[label] || ''
-  }
-
   return (
     <div>
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ak02}
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
-
-      <p style={{ fontSize: '13px', marginBottom: '15px' }}>
-        Beri tanda centang (√) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
-      </p>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
-        <tbody>
-          <tr style={{ color: '#000', fontWeight: 'bold', textAlign: 'center' }}>
-            <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Unit kompetensi</th>
-            {methods.map((m) => (
-              <th key={m} style={{ border: '1px solid #000', padding: '8px 4px', width: '20px', textAlign: 'center', verticalAlign: 'middle', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ transform: 'rotate(-90deg)', whiteSpace: 'nowrap', fontSize: '12px', lineHeight: '1.3' }}>
-                    {m}
-                  </div>
-                </div>
-              </th>
-            ))}
-          </tr>
-          {units.length === 0 && (
-            <tr><td colSpan={8} style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>Tidak ada data</td></tr>
-          )}
-          {units.map((u: any, i: number) => (
-            <tr key={u.id || i}>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>
-                {u.kode || '-'}<br />{u.nama || '-'}
-              </td>
-              {methods.map((m) => {
-                const key = getMethodKey(m)
-                const val = u[key]
-                return (
-                  <td key={m} style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>
-                    {val ? '✓' : ''}
-                  </td>
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <Ak02View data={data} />
     </div>
   )
 }
