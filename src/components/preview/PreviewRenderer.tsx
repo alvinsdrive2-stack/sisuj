@@ -225,7 +225,8 @@ export function Apl02Preview({ data }: { data: any }) {
 
 export function Mapa01Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
-  const kelompoks = data?.kelompok_kerja || []
+  const rawKelompokKerja = data?.kelompok_kerja
+  const kelompoks = Array.isArray(rawKelompokKerja) ? rawKelompokKerja : rawKelompokKerja?.kelompok_kerja || []
   const allUnits = kelompoks.flatMap((k: any) => k.units || [])
   const referensi = data?.referensi_form || []
 
@@ -343,7 +344,8 @@ export function Mapa01Preview({ data }: { data: any }) {
 export function Mapa02Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
   const referensiMAPA02 = data?.referensi_form?.find((r: any) => r.kategori === "MAPA02_1")
-  const kelompoks = data?.kelompok_kerja?.kelompok_kerja || []
+  const rawKelompokKerja = data?.kelompok_kerja
+  const kelompoks = Array.isArray(rawKelompokKerja) ? rawKelompokKerja : rawKelompokKerja?.kelompok_kerja || []
   const allUnits = kelompoks.flatMap((k: any) => k.units || [])
 
   const renderCheckbox = (checked: boolean) => (
