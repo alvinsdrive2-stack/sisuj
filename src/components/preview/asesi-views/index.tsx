@@ -1107,7 +1107,7 @@ export function Ak02View({ data }: { data: any }) {
 // ============================================================
 
 export function Ia08View({ data }: { data: any }) {
-  const soalList = data?.soal || []
+  const soalList = data?.soal?.filter((s: any) => s.id_kelompok === 2) || []
 
   return (
     <div>
@@ -1165,17 +1165,8 @@ export function Ia08View({ data }: { data: any }) {
 
       {/* Soal / Wawancara table */}
       {soalList.length > 0 ? (
-        soalList.map((kel: any, i: number) => (
-          <div key={kel.id_kelompok || i} style={{ marginBottom: '20px' }}>
-            <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
-              {kel.nama_kelompok || `Kelompok ${i + 1}`}
-            </div>
-
-            {/* Dokumen Portofolio placeholder */}
-            <div style={{ marginBottom: '15px', padding: '12px', border: '1px solid #ccc', fontSize: '12px', fontStyle: 'italic', color: '#666' }}>
-              Data portofolio tidak tersedia di preview
-            </div>
-
+        soalList.map((kel: any) => (
+          <div key={kel.id_kelompok} style={{ marginBottom: '20px' }}>
             {(kel.questions || []).length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
                 <tbody>
@@ -1192,7 +1183,7 @@ export function Ia08View({ data }: { data: any }) {
                       <td style={{ border: '1px solid #000', padding: '6px' }}>{q.unitkompetensi?.kode || '-'}</td>
                       <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.kode || '-'}</td>
                       <td style={{ border: '1px solid #000', padding: '6px' }}>{q.subunitkompetensi?.kode || '-'}</td>
-                      <td style={{ border: '1px solid #000', padding: '6px' }}>{q.soal || '-'}</td>
+                      <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.nama || q.nama_kuk || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1249,7 +1240,7 @@ export function Ia08View({ data }: { data: any }) {
 // ============================================================
 
 export function Ia09View({ data }: { data: any }) {
-  const soalList = data?.soal || []
+  const soalList = data?.soal?.filter((s: any) => s.id_kelompok === 2) || []
 
   return (
     <div>
@@ -1312,18 +1303,10 @@ export function Ia09View({ data }: { data: any }) {
         </tbody>
       </table>
 
-      {/* Bukti placeholder */}
-      <div style={{ marginBottom: '15px', padding: '12px', border: '1px solid #ccc', fontSize: '12px', fontStyle: 'italic', color: '#666' }}>
-        Data bukti portofolio tidak tersedia di preview
-      </div>
-
       {/* Pertanyaan Table */}
       {soalList.length > 0 ? (
-        soalList.map((kel: any, i: number) => (
-          <div key={kel.id_kelompok || i} style={{ marginBottom: '20px' }}>
-            <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
-              {kel.nama_kelompok || `Kelompok ${i + 1}`}
-            </div>
+        soalList.map((kel: any) => (
+          <div key={kel.id_kelompok} style={{ marginBottom: '20px' }}>
             {(kel.questions || []).length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
                 <tbody>
@@ -1337,7 +1320,7 @@ export function Ia09View({ data }: { data: any }) {
                     <tr key={q.id || qi}>
                       <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{q.no || qi + 1}</td>
                       <td style={{ border: '1px solid #000', padding: '6px', whiteSpace: 'pre-line' }}>
-                        {q.soal || '-'}
+                        {q.kuk?.nama || q.nama_kuk || q.soal || '-'}
                         {q.unitkompetensi?.kode && (
                           <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
                             Unit: {q.unitkompetensi?.kode} | KUK: {q.kuk?.kode || '-'} | Sub: {q.subunitkompetensi?.kode || '-'}
