@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Mapa01View, Mapa02View, Ia04aView, Ia01View, Ia03View, Ak02View } from "./asesi-views"
+import { Mapa01View, Mapa02View, Ia04aView, Ia01View, Ia03View, Ak02View, Ia08View, Ia09View } from "./asesi-views"
 
 // ── Helpers ──
 
@@ -507,8 +507,7 @@ export function Ia05Preview({ data }: { data: any }) {
 // ── IA 08 / IA 09 ──
 
 export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
-  const soalList = data?.soal || []
-  const referensi = data?.referensi || []
+  const isIa09 = docType === 'ia09'
 
   return (
     <div>
@@ -517,55 +516,7 @@ export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
       </h1>
       <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
 
-      {soalList.map((kel: any, i: number) => (
-        <div key={kel.id_kelompok || i} style={{ marginBottom: '20px' }}>
-          {/* Red header */}
-          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontWeight: 'bold', fontSize: '13px', marginBottom: '10px' }}>
-            {kel.nama_kelompok || `Kelompok ${i + 1}`}
-          </div>
-          {(kel.questions || []).length > 0 && (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '1px solid #000' }}>
-              <thead>
-                <tr style={{ background: '#c40000', color: '#fff' }}>
-                  <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
-                  <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Unit</th>
-                  <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>KUK</th>
-                  <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Sub Unit</th>
-                  <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan</th>
-                  <th style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Jenis</th>
-                </tr>
-              </thead>
-              <tbody>
-                {kel.questions.map((q: any, qi: number) => (
-                  <tr key={q.id || qi}>
-                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>{q.no || qi + 1}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.unitkompetensi?.kode || '-'}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.kuk?.kode || '-'}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.subunitkompetensi?.kode || '-'}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px' }}>{q.soal || '-'}</td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{q.jenis || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      ))}
-      {soalList.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data</p>}
-
-      {referensi.length > 0 && (
-        <>
-          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Referensi</h3>
-          <table style={tableStyle()}>
-            <thead><tr><th style={th('10%')}>No</th><th style={th()}>Nama Referensi</th></tr></thead>
-            <tbody>
-              {referensi.map((r: any, i: number) => (
-                <tr key={r.id || i}><td style={cell('10%')}>{i + 1}</td><td style={cell()}>{r.nama || '-'}</td></tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      {isIa09 ? <Ia09View data={data} /> : <Ia08View data={data} />}
     </div>
   )
 }
