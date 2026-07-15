@@ -42,6 +42,7 @@ export const RoleId = {
   KETUA_TUK: 11,
   VERIFIKATOR_TUK: 12,
   MANAGER_MUTU: 13,
+  ADMIN_TUK: 14,
 } as const
 
 export type RoleIdValue = typeof RoleId[keyof typeof RoleId]
@@ -57,6 +58,7 @@ export const RoleIdToUserRole: Record<number, UserRole> = {
   [RoleId.DIREKTUR_LSP]: "Direktur LSP",
   [RoleId.MANAJER_SERTIFIKASI]: "Manajer Sertifikasi",
   [RoleId.ASESI]: "Asesi",
+  [RoleId.ADMIN_TUK]: "Admin TUK",
 }
 
 // Customizable UI display labels keyed by role.id.
@@ -75,6 +77,7 @@ export const RoleDisplayName: Record<number, string> = {
   [RoleId.KETUA_TUK]: "Ketua TUK",
   [RoleId.VERIFIKATOR_TUK]: "Verifikator TUK",
   [RoleId.MANAGER_MUTU]: "Manager Mutu",
+  [RoleId.ADMIN_TUK]: "Admin TUK",
 }
 
 interface RoleLike {
