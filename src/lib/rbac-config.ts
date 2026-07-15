@@ -77,7 +77,7 @@ export const RoleDisplayName: Record<number, string> = {
   [RoleId.KETUA_TUK]: "Ketua TUK",
   [RoleId.VERIFIKATOR_TUK]: "Verifikator TUK",
   [RoleId.MANAGER_MUTU]: "Manager Mutu",
-  [RoleId.ADMIN_TUK]: "Admin TUK",
+  [RoleId.ADMIN_TUK]: "Admin Kegiatan",
 }
 
 interface RoleLike {
