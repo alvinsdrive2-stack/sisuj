@@ -71,7 +71,7 @@ export default function DetailDokumenDirekturPage() {
   const [approvedDocs, setApprovedDocs] = useState<Set<string>>(new Set())
 
   // Modal context
-  const { openModal: openDokumenModal } = useDokumenModal()
+  const { openModal: openDokumenModal, setOnPenilaianSuccess } = useDokumenModal()
 
   // Fetch dokumen direktur — extracted so it can be called after sign + on focus
   const fetchDokumenDirektur = useCallback(async () => {
@@ -113,6 +113,16 @@ export default function DetailDokumenDirekturPage() {
   useEffect(() => {
     fetchDokumenDirektur()
   }, [fetchDokumenDirektur])
+
+  // Register penilaian success callback so modal rating triggers refetch
+  // Double-wrap: setOnPenilaianSuccess comes from useState, so passing a fn
+  // makes React treat it as a state updater. Outer fn = updater, inner = state.
+  useEffect(() => {
+    setOnPenilaianSuccess(() => () => {
+      fetchDokumenDirektur()
+    })
+    return () => setOnPenilaianSuccess(null)
+  }, [fetchDokumenDirektur, setOnPenilaianSuccess])
 
   // Auto-refetch on window focus (realtime-ish when user returns to tab)
   useEffect(() => {
