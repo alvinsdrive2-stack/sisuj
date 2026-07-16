@@ -7,6 +7,14 @@ interface DocumentInfo {
   value: string
 }
 
+export type DokumenStatusState = 'approved' | 'pending' | 'not-generated'
+
+export interface DokumenStatusItem {
+  key: string
+  label: string
+  state: DokumenStatusState
+}
+
 interface DocumentCardProps {
   nomorKegiatan: string
   skemaSertifikasi: string
@@ -14,6 +22,7 @@ interface DocumentCardProps {
   jenisAsesmen: string
   badges?: ReactNode[]
   actions?: ReactNode[]
+  dokumenStatus?: DokumenStatusItem[]
   cardClassName?: string
   onClick?: () => void
 }
@@ -25,6 +34,7 @@ export function DocumentCard({
   jenisAsesmen,
   badges = [],
   actions = [],
+  dokumenStatus,
   cardClassName = "",
   onClick
 }: DocumentCardProps) {
@@ -52,6 +62,43 @@ export function DocumentCard({
             })}
           </div>
           <p className="text-xs text-slate-500 mt-2">Jenis Asesmen: {jenisAsesmen}</p>
+
+          {dokumenStatus && dokumenStatus.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-slate-100">
+              <span className="text-xs text-slate-500 mr-1">Dokumen:</span>
+              {dokumenStatus.map((d) => {
+                const styles =
+                  d.state === 'approved'
+                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                    : d.state === 'pending'
+                      ? 'bg-red-100 text-red-700 border-red-200'
+                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                const dot =
+                  d.state === 'approved'
+                    ? 'bg-emerald-500'
+                    : d.state === 'pending'
+                      ? 'bg-red-500'
+                      : 'bg-slate-400'
+                const suffix =
+                  d.state === 'approved'
+                    ? '✓'
+                    : d.state === 'pending'
+                      ? '!'
+                      : '–'
+                return (
+                  <span
+                    key={d.key}
+                    title={`${d.label}: ${d.state === 'approved' ? 'Sudah TTD' : d.state === 'pending' ? 'Belum TTD' : 'Belum tersedia'}`}
+                    className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border ${styles}`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+                    {d.label}
+                    <span className="font-bold">{suffix}</span>
+                  </span>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
       {actions.length > 0 && (

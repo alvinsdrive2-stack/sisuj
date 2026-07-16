@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -73,6 +73,27 @@ export default function DetailDokumenDirekturPage() {
   // Modal context
   const { openModal: openDokumenModal } = useDokumenModal()
 
+  // Fetch dokumen direktur — extracted so it can be called after sign + on focus
+  const fetchDokumenDirektur = useCallback(async () => {
+    if (!id) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/direktur/files/${id}`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const result: DokumenDirekturResponse = await response.json()
+        setDokumenDirektur(result.data)
+      }
+    } catch (error) {
+      console.error("Error fetching dokumen direktur:", error)
+    }
+  }, [id])
+
   // Fetch kegiatan detail
   useEffect(() => {
     const fetchKegiatan = async () => {
@@ -88,35 +109,23 @@ export default function DetailDokumenDirekturPage() {
     fetchKegiatan()
   }, [id])
 
-  // Fetch dokumen direktur
+  // Initial fetch dokumen direktur
   useEffect(() => {
-    const fetchDokumenDirektur = async () => {
-      if (!id) return
-
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`${API_BASE_URL}/direktur/files/${id}`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-
-        if (response.ok) {
-          const result: DokumenDirekturResponse = await response.json()
-          setDokumenDirektur(result.data)
-        } else {
-          const msg = await extractApiError(response, 'Gagal memuat dokumen direktur')
-          showError(msg)
-        }
-      } catch (error) {
-        console.error("Error fetching dokumen direktur:", error)
-        showError(extractErrorMessage(error, 'Terjadi kesalahan saat memuat dokumen'))
-      }
-    }
-
     fetchDokumenDirektur()
-  }, [id])
+  }, [fetchDokumenDirektur])
+
+  // Auto-refetch on window focus (realtime-ish when user returns to tab)
+  useEffect(() => {
+    const onFocus = () => fetchDokumenDirektur()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
+  }, [fetchDokumenDirektur])
+
+  // Polling fallback every 30s while page open
+  useEffect(() => {
+    const interval = setInterval(() => fetchDokumenDirektur(), 30000)
+    return () => clearInterval(interval)
+  }, [fetchDokumenDirektur])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -162,7 +171,7 @@ export default function DetailDokumenDirekturPage() {
         setApprovedDocs(prev => new Set(prev).add(docKey))
         setSelectedDokumen(null)
 
-        // Update approval_status locally
+        // Update approval_status locally for instant UI feedback
         setDokumenDirektur(prev => {
           if (!prev) return prev
           const status = prev.approval_status
@@ -173,6 +182,9 @@ export default function DetailDokumenDirekturPage() {
         })
 
         showSuccess(`${config.label} berhasil ditandatangani!`)
+
+        // Refetch from server to sync latest state (other docs may have changed too)
+        fetchDokumenDirektur()
       } else {
         const msg = await extractApiError(response, `Gagal menandatangani ${config.label}`)
         showError(msg)

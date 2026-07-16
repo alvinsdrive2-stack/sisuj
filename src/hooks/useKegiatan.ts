@@ -675,3 +675,68 @@ export function useBaKomtekProgress(kegiatans: KegiatanAsesor[], enabled = true)
 
   return { baProgress, isLoading }
 }
+
+export interface DirekturDokumenStatus {
+  sk_pelaksanaan_uji: string | null
+  spt_asesor: string | null
+  sk_komtek: string | null
+  spt_komtek: string | null
+  ba_komtek: string | null
+  sk_penetapan: string | null
+  approval_status: {
+    sk_pelaksanaan_uji: boolean
+    spt_asesor: boolean
+    spt_komtek: boolean
+    sk_komtek: boolean
+    ba_komtek: { komtek1: boolean; komtek2: boolean; komtek3: boolean }
+    sk_penetapan?: { asesi_status: Record<string, boolean> }
+  }
+}
+
+// Fetch direktur dokumen approval status for multiple jadwals in parallel
+// Returns map: jadwal_id -> dokumen status. Pass refreshKey to manually refetch.
+export function useDirekturDokumenStatus(jadwalIds: string[], refreshKey = 0) {
+  const [statusMap, setStatusMap] = useState<Record<string, DirekturDokumenStatus>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (jadwalIds.length === 0) {
+      setStatusMap({})
+      return
+    }
+
+    const fetchAll = async () => {
+      setIsLoading(true)
+      const token = localStorage.getItem("access_token")
+
+      const results = await Promise.all(
+        jadwalIds.map(async (id) => {
+          try {
+            const res = await fetch(`${API_BASE_URL}/direktur/files/${id}`, {
+              headers: {
+                Accept: "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            })
+            if (!res.ok) return [id, null] as const
+            const json = await res.json()
+            return [id, json.data ?? null] as const
+          } catch {
+            return [id, null] as const
+          }
+        })
+      )
+
+      const map: Record<string, DirekturDokumenStatus> = {}
+      for (const [id, data] of results) {
+        if (data) map[id] = data as DirekturDokumenStatus
+      }
+      setStatusMap(map)
+      setIsLoading(false)
+    }
+
+    fetchAll()
+  }, [jadwalIds.join(','), refreshKey])
+
+  return { statusMap, isLoading }
+}
