@@ -22,6 +22,7 @@ export interface CurrentUser {
   email: string
   phone: string
   avatar: string | null
+  avatar_url?: string
   role_id: string
   fcm_token: string | null
   address: string | null

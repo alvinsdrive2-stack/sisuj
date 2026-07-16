@@ -48,11 +48,14 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
     navigate(dashboardRoute)
   }
 
-  // Fetch pas_foto from SIKI API
+  // If user has avatar_url from auth, use it directly
+  // Otherwise fetch pas_foto from SIKI API for asesi with id_izin
   useEffect(() => {
-    const fetchPasFoto = async () => {
-      if (!user?.id_izin) return
+    // Already have avatar_url, no need to fetch from SIKI
+    if (user?.avatar_url) return
+    if (!user?.id_izin) return
 
+    const fetchPasFoto = async () => {
       // Check cache validity (cache for 1 hour)
       try {
         const cached = localStorage.getItem(PAS_FOTO_CACHE_KEY)
@@ -101,7 +104,7 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
     }
 
     fetchPasFoto()
-  }, [user?.id_izin])
+  }, [user?.id_izin, user?.avatar_url])
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -153,8 +156,8 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
             {/* Avatar with online indicator */}
             <div className="relative">
               <Avatar className="w-10 h-10 border-2 border-slate-200">
-                {pasFoto && (
-                  <AvatarImage src={pasFoto} alt={userName} className="object-cover" />
+                {(user?.avatar_url || pasFoto) && (
+                  <AvatarImage src={user?.avatar_url || pasFoto} alt={userName} className="object-cover" />
                 )}
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                   {userInitials}
@@ -215,8 +218,8 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
               <div className="flex items-center gap-3 px-4 py-2">
                 <div className="relative">
                   <Avatar className="w-10 h-10 border-2 border-slate-200">
-                    {pasFoto && (
-                      <AvatarImage src={pasFoto} alt={userName} className="object-cover" />
+                    {(user?.avatar_url || pasFoto) && (
+                      <AvatarImage src={user?.avatar_url || pasFoto} alt={userName} className="object-cover" />
                     )}
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                       {userInitials}
