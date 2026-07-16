@@ -157,7 +157,7 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
             <div className="relative">
               <Avatar className="w-10 h-10 border-2 border-slate-200">
                 {(user?.avatar_url || pasFoto) && (
-                  <AvatarImage src={user?.avatar_url || pasFoto} alt={userName} className="object-cover" />
+                  <AvatarImage src={user?.avatar_url || pasFoto || undefined} alt={userName} className="object-cover" />
                 )}
                 <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                   {userInitials}
@@ -219,7 +219,7 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
                 <div className="relative">
                   <Avatar className="w-10 h-10 border-2 border-slate-200">
                     {(user?.avatar_url || pasFoto) && (
-                      <AvatarImage src={user?.avatar_url || pasFoto} alt={userName} className="object-cover" />
+                      <AvatarImage src={user?.avatar_url || pasFoto || undefined} alt={userName} className="object-cover" />
                     )}
                     <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                       {userInitials}
