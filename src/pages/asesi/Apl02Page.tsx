@@ -1608,43 +1608,39 @@ export default function Apl02Page() {
     })
   }, []) // No dependencies - uses ref instead
 
-  const handleBuktiChange = useCallback((kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
+  const handleBuktiChange = useCallback((kukId: string, fileId: number) => {
     setKukBukti(prev => {
       const currentFiles = prev[kukId] || []
       const isRemoving = currentFiles.includes(fileId)
 
+      // Collect all KUK IDs across all units/subunits
+      const allKukIds: string[] = []
+      if (apl02DataRef.current) {
+        apl02DataRef.current.units.forEach(unit => {
+          unit.subunits.forEach(subunit => {
+            subunit.kuk_list.forEach(kuk => {
+              allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+            })
+          })
+        })
+      }
+
       if (isRemoving) {
-        // Remove file from this KUK only
-        return {
-          ...prev,
-          [kukId]: currentFiles.filter(f => f !== fileId)
-        }
+        // Remove file from ALL KUKs (every element)
+        const updated = { ...prev }
+        allKukIds.forEach(kid => {
+          updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
+        })
+        return updated
       } else {
-        // Add file to this KUK and all KUKs in the same element
-        const updated = {
-          ...prev,
-          [kukId]: [...currentFiles, fileId]
-        }
-
-        // Auto-assign to all KUKs in the same element
-        if (unitId && subunitId && apl02DataRef.current) {
-          const unit = apl02DataRef.current.units.find(u => u.id === unitId)
-          if (unit) {
-            const subunit = unit.subunits.find(s => s.id === subunitId)
-            if (subunit) {
-              subunit.kuk_list.forEach(kuk => {
-                const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
-                if (otherKukId !== kukId) {
-                  const otherFiles = updated[otherKukId] || []
-                  if (!otherFiles.includes(fileId)) {
-                    updated[otherKukId] = [...otherFiles, fileId]
-                  }
-                }
-              })
-            }
+        // Add file to ALL KUKs across all elements
+        const updated = { ...prev }
+        allKukIds.forEach(kid => {
+          const files = updated[kid] || []
+          if (!files.includes(fileId)) {
+            updated[kid] = [...files, fileId]
           }
-        }
-
+        })
         return updated
       }
     })
@@ -1655,35 +1651,31 @@ export default function Apl02Page() {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
 
-  const handleRemoveBukti = useCallback((kukId: string, fileId: number, unitId?: string, subunitId?: string) => {
+  const handleRemoveBukti = useCallback((_kukId: string, fileId: number) => {
     setKukBukti(prev => {
-      const updated = { ...prev }
-
-      // Remove from this KUK first
-      updated[kukId] = (prev[kukId] || []).filter(f => f !== fileId)
-
-      // Also remove from all KUKs in the same element
-      if (unitId && subunitId && apl02DataRef.current) {
-        const unit = apl02DataRef.current.units.find(u => u.id === unitId)
-        if (unit) {
-          const subunit = unit.subunits.find(s => s.id === subunitId)
-          if (subunit) {
+      // Collect all KUK IDs across all units/subunits
+      const allKukIds: string[] = []
+      if (apl02DataRef.current) {
+        apl02DataRef.current.units.forEach(unit => {
+          unit.subunits.forEach(subunit => {
             subunit.kuk_list.forEach(kuk => {
-              const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
-              if (otherKukId !== kukId) {
-                updated[otherKukId] = (prev[otherKukId] || []).filter(f => f !== fileId)
-              }
+              allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
             })
-          }
-        }
+          })
+        })
       }
 
+      // Remove file from ALL KUKs
+      const updated = { ...prev }
+      allKukIds.forEach(kid => {
+        updated[kid] = (prev[kid] || []).filter(f => f !== fileId)
+      })
       return updated
     })
   }, [])
 
-  const handleSelectBukti = useCallback((kukId: string, fileId: number, unitId: string, subunitId: string) => {
-    handleBuktiChange(kukId, fileId, unitId, subunitId)
+  const handleSelectBukti = useCallback((kukId: string, fileId: number) => {
+    handleBuktiChange(kukId, fileId)
   }, [handleBuktiChange])
 
   const deleteFile = async (fileId: number) => {
