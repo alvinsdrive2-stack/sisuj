@@ -7,7 +7,7 @@ Primary is deep navy. Backgrounds are white, tinted faintly toward the navy hue 
 ### CSS Variables (current — HSL format via shadcn)
 
 ```
---primary: 222 80% 25%          /* LSP LSP LPK GATAKSINDOnavy */
+--primary: 222 80% 25%          /* LSP LPK GATAKSINDOnavy */
 --primary-foreground: 210 40% 98%
 --background: 0 0% 100%
 --foreground: 222 84% 4.9%

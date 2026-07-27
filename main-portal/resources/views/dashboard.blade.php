@@ -578,7 +578,7 @@
                     Analytics Dashboard
                 </h1>
                 <p class="text-xl text-gray-600">
-                    Real-time insights from all LSP LSP LPK GATAKSINDOdatabases
+                    Real-time insights from all LSP LPK GATAKSINDOdatabases
                 </p>
             </div>
 
