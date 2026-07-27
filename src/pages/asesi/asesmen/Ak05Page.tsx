@@ -1,4 +1,4 @@
-import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
+﻿import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import React, { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -18,6 +18,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 type BarcodeData = {
   url: string
@@ -60,7 +61,7 @@ export default function Ak05Page() {
   // Asesi dapat lihat AK05 (K/BK disabled, dari AK02)
 
   // All asesor can edit (removed restriction to asesor_1 only)
-  // K/BK selalu disabled — nilainya dari AK02
+  // K/BK selalu disabled â€” nilainya dari AK02
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
@@ -183,7 +184,7 @@ export default function Ak05Page() {
 
           setAsesiList(filteredItems)
 
-          // Fetch AK05 data per asesi — kompeten dari AK02, keterangan dari AK05
+          // Fetch AK05 data per asesi â€” kompeten dari AK02, keterangan dari AK05
           const dataMap: Record<string, Ak05PerAsesi> = {}
           const fetches = filteredItems.map(async (asesi) => {
             try {
@@ -229,7 +230,7 @@ export default function Ak05Page() {
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak05')) + 1]?.label
 
-  // Signing state hook — used for signing checks, button state, and realtime sync
+  // Signing state hook â€” used for signing checks, button state, and realtime sync
   const signing = useSigningState({
     pageKey: 'ak05',
     isAsesor,
@@ -257,7 +258,7 @@ export default function Ak05Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If user already signed → navigate to next page
+    // If user already signed â†’ navigate to next page
     if (hasSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak05'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -279,7 +280,7 @@ export default function Ak05Page() {
     try {
       const token = localStorage.getItem("access_token")
 
-      // POST AK05 data — cuma untuk id_izin di URL
+      // POST AK05 data â€” cuma untuk id_izin di URL
       const perAsesi = ak05DataMap[id] || { kompeten: false, keterangan: '' }
       const saveRes = await fetch(`${API_BASE_URL}/asesmen/${id}/ak05`, {
         method: 'POST',
@@ -305,7 +306,7 @@ export default function Ak05Page() {
 
       showSuccess('AK 05 berhasil disimpan!')
 
-      // POST QR — cuma untuk id_izin di URL
+      // POST QR â€” cuma untuk id_izin di URL
       if (jadwalId) {
         try {
           const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak05`, {
@@ -400,13 +401,13 @@ export default function Ak05Page() {
         {/* TABEL ASESI - Multiple rows from kegiatan */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }} rowSpan={2}>No.</th>
               <th style={{ width: '35%', border: '1px solid #000', padding: '6px' }} rowSpan={2}>Nama Asesi</th>
               <th colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Rekomendasi</th>
               <th style={{ width: '30%', border: '1px solid #000', padding: '6px' }} rowSpan={2}>Keterangan**</th>
             </tr>
-            <tr style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>K</th>
               <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>BK</th>
             </tr>
@@ -650,3 +651,4 @@ export default function Ak05Page() {
     </div>
   )
 }
+

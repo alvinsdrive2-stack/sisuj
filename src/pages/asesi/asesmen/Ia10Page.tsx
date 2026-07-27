@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
+import { BRANDING } from "@/config/branding"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -402,7 +403,7 @@ export default function Ia10Page() {
 
         {/* Panduan */}
         <div style={{ border: "2px solid #000", marginBottom: "15px" }}>
-          <div style={{ background: "#c00000", color: "#000", fontWeight: "bold", padding: "6px" }}>
+          <div style={{ background: BRANDING.primaryColor, color: "#000", fontWeight: "bold", padding: "6px" }}>
             PANDUAN BAGI ASESOR
           </div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>

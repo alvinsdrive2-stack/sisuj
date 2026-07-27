@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mapa01Section1.tsx
  * Section 1: Pendekatan Asesmen - All 100% width with thin borders
  */
@@ -51,7 +51,7 @@ interface Mapa01Section1Props {
 const COLORS = {
   BLACK: '#000',
   WHITE: '#FFF',
-  RED: '#C00000',
+  RED: BRANDING.primaryColor,
 } as const;
 
 const BORDER = {
@@ -569,3 +569,4 @@ export function Mapa01Section1({ referensiForm, isAsesor = false, disabled = fal
     </>
   );
 }
+

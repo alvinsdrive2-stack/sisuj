@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mapa01TandaTangan.tsx
  * Tanda Tangan & Konfirmasi section - 100% width with thin borders
  */
@@ -61,7 +61,7 @@ interface Mapa01TandaTanganProps {
 const COLORS = {
   BLACK: '#000',
   WHITE: '#FFF',
-  RED: '#C00000',
+  RED: BRANDING.primaryColor,
 } as const;
 
 const BORDER = {
@@ -359,3 +359,4 @@ export function Mapa01TandaTangan({
     </>
   )
 }
+

@@ -26,7 +26,7 @@ const cell = (w?: string) => ({
 const th = (w?: string) => ({
   ...cell(w),
   fontWeight: 'bold' as const,
-  background: '#c00000' as const,
+  background: BRANDING.primaryColor,
   color: '#fff' as const,
   textAlign: 'center' as const,
 })
@@ -105,15 +105,15 @@ export function Mapa02View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
         <tbody>
           <tr>
-            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
-            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
-            <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: BRANDING.primaryColor, color: '#fff' }}>No.</th>
+            <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff' }}>Instrumen Asesmen</th>
+            <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               Potensi Asesi **
             </th>
           </tr>
           <tr>
             {[1, 2, 3, 4, 5].map(p => (
-              <th key={p} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>{p}</th>
+              <th key={p} style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>{p}</th>
             ))}
           </tr>
           {referensiMAPA02.referensis.map((ref: any, refIndex: number) => (
@@ -230,11 +230,11 @@ export function Mapa02View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '28pt' }}>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
           </tr>
           <tr style={{ height: '91pt' }}>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '15px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '15px' }}>Penyusun</span></td>
@@ -321,7 +321,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '23pt' }}>
-            <td style={{ borderTop: '1px solid #000', borderLeft: '1px solid #000', borderBottom: '1px solid #000', borderRight: '1px solid #000', backgroundColor: '#C00000' }} colSpan={5}>
+            <td style={{ borderTop: '1px solid #000', borderLeft: '1px solid #000', borderBottom: '1px solid #000', borderRight: '1px solid #000', backgroundColor: BRANDING.primaryColor }} colSpan={5}>
               <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'left' }}>1. Pendekatan Asesmen</p>
             </td>
           </tr>
@@ -357,7 +357,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '23pt' }}>
-            <td style={{ border: '1px solid #000', backgroundColor: '#C00000' }} colSpan={4}>
+            <td style={{ border: '1px solid #000', backgroundColor: BRANDING.primaryColor }} colSpan={4}>
               <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'left' }}>2. Mempersiapkan Rencana Asesmen</p>
             </td>
           </tr>
@@ -449,7 +449,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '26pt' }}>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }} colSpan={2}>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }} colSpan={2}>
               <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'left' }}>
                 3. Modifikasi dan Kontekstualisasi:
               </p>
@@ -509,11 +509,11 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '28pt' }}>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px' }}>Status</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
-            <td style={{ backgroundColor: '#C00000', border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px' }}>Status</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
           </tr>
           <tr style={{ height: '91pt' }}>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '15px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '15px' }}>Penyusun</span></td>
@@ -563,7 +563,7 @@ export function Ia04aView({ data }: { data: any }) {
       {kelompoks.length > 0 && (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c00000', color: '#fff', fontWeight: 'bold' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
               <td rowSpan={units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                 {kelompoks[0]?.nama || 'Kelompok Pekerjaan'}
                 {kelompoks[0]?.deskripsi && (
@@ -1380,4 +1380,5 @@ export function Ia09View({ data }: { data: any }) {
     </div>
   )
 }
+
 

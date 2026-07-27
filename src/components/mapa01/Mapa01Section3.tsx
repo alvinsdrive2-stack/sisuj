@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react"
+﻿import { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { CustomRadio } from "@/components/ui/Radio"
+import { BRANDING } from "@/config/branding"
 
 interface Referensi {
   id: number
@@ -155,7 +156,7 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false,
       <table style={{ width: '100%', borderCollapse: 'collapse' as const }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '26pt' }}>
-            <td style={{ backgroundColor: '#C00000', border: BORDER_THIN }} colSpan={2}>
+            <td style={{ backgroundColor: BRANDING.primaryColor, border: BORDER_THIN }} colSpan={2}>
               <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', padding: '6px 8px', margin: 0, textAlign: 'left' }}>
                 3. Modifikasi dan Kontekstualisasi:
               </p>
@@ -224,3 +225,4 @@ export function Mapa01Section3({ referensiForm, kelompokKerja, isAsesor = false,
     </>
   )
 }
+

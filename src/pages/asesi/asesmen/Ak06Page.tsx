@@ -1,4 +1,4 @@
-import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
+﻿import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -19,6 +19,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import GoogleDriveUploader from "@/components/GoogleDriveUploader"
+import { BRANDING } from "@/config/branding"
 
 interface AspekAPI {
   aspek_id: string
@@ -270,11 +271,11 @@ export default function Ak06Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If user already signed → check absen akhir before navigate
+    // If user already signed â†’ check absen akhir before navigate
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
-        // If luring, no video, and no one signed yet → require upload
+        // If luring, no video, and no one signed yet â†’ require upload
         if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
           setPendingAfterAbsen(true)
           setShowDriveUploader(true)
@@ -350,7 +351,7 @@ export default function Ak06Page() {
           signing.publishUpdate()
         }
 
-        // Auto-check absen akhir setelah save pertama — biar ga kelewat
+        // Auto-check absen akhir setelah save pertama â€” biar ga kelewat
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
           if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
@@ -426,10 +427,10 @@ export default function Ak06Page() {
         setShowDriveUploader(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
-        // Re-upload mode (already signed) — just close and stay
+        // Re-upload mode (already signed) â€” just close and stay
         if (signing.allSigned) return
 
-        // First-time upload flow — proceed to absen akhir
+        // First-time upload flow â€” proceed to absen akhir
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
           setShowAkhirModal(true)
@@ -526,7 +527,7 @@ export default function Ak06Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             <tr>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'left', border: '1px solid #000', padding: '6px' }}>Penjelasan:</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'left', border: '1px solid #000', padding: '6px' }}>Penjelasan:</th>
             </tr>
             <tr>
               <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>
@@ -542,18 +543,18 @@ export default function Ak06Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             <tr>
-              <th rowSpan={2} style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Aspek yang ditinjau</th>
-              <th colSpan={4} style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan prinsip asesmen</th>
+              <th rowSpan={2} style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Aspek yang ditinjau</th>
+              <th colSpan={4} style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan prinsip asesmen</th>
             </tr>
             <tr>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Validitas</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Reliabel</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Fleksibel</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Adil</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Validitas</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Reliabel</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Fleksibel</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Adil</th>
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Prosedur asesmen:<br />• Rencana asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Prosedur asesmen:<br />â€¢ Rencana asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -569,7 +570,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Persiapan asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Persiapan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -585,7 +586,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Implementasi asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Implementasi asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -601,7 +602,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Keputusan asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Keputusan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -615,7 +616,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Umpan balik asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Umpan balik asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -655,15 +656,15 @@ export default function Ak06Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             <tr>
-              <th rowSpan={2} style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Aspek yang ditinjau</th>
-              <th colSpan={5} style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Pemenuhan dimensi kompetensi</th>
+              <th rowSpan={2} style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Aspek yang ditinjau</th>
+              <th colSpan={5} style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Pemenuhan dimensi kompetensi</th>
             </tr>
             <tr>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Task Skills</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Task Management Skills</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Contingency Management Skills</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Job Role/Environment Skills</th>
-              <th style={{ background: '#cc0000', color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Transfer Skills</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Task Skills</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Task Management Skills</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Contingency Management Skills</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Job Role/Environment Skills</th>
+              <th style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', fontStyle: 'italic', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>Transfer Skills</th>
             </tr>
 
             <tr>
@@ -803,7 +804,7 @@ export default function Ak06Page() {
               </ActionButton>
             )}
 
-            {/* Re-upload video button — visible after all signed */}
+            {/* Re-upload video button â€” visible after all signed */}
             {signing.allSigned && isAsesor1 && (
               <ActionButton
                 variant="secondary"
@@ -831,7 +832,7 @@ export default function Ak06Page() {
           onUploadSuccess={handleDriveUploadSuccess}
           onClose={() => {
             setShowDriveUploader(false)
-            // Reset pending absen — user cancel upload, biar ga stuck
+            // Reset pending absen â€” user cancel upload, biar ga stuck
             setPendingAfterAbsen(false)
           }}
         />

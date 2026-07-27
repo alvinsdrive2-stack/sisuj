@@ -1,6 +1,7 @@
-import { useEffect } from "react"
+﻿import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 function clearSession() {
   const token = localStorage.getItem("access_token")
@@ -77,7 +78,7 @@ export default function Apl02FailedPage() {
               onClick={() => navigate('/login')}
               style={{
                 padding: '12px 32px',
-                background: '#cc0000',
+                background: BRANDING.primaryColor,
                 color: '#fff',
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -94,7 +95,7 @@ export default function Apl02FailedPage() {
                 e.currentTarget.style.boxShadow = '0 4px 12px rgba(204,0,0,0.3)'
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#cc0000'
+                e.currentTarget.style.background = BRANDING.primaryColor
                 e.currentTarget.style.transform = 'translateY(0)'
                 e.currentTarget.style.boxShadow = 'none'
               }}
@@ -107,3 +108,4 @@ export default function Apl02FailedPage() {
     </div>
   )
 }
+

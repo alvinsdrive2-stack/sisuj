@@ -29,7 +29,7 @@ interface SoalKAN {
 const td = { border: '0.2px solid black', padding: '4px 6px' }
 const hdDok = { backgroundColor: BRANDING.primaryColor, color: '#fff' }
 const hdDokB = { backgroundColor: '#d58a94', color: '#000' }
-const panduanTitle = { backgroundColor: '#c00000', color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
+const panduanTitle = { backgroundColor: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
 
 const formatter = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -177,10 +177,10 @@ export default function Ia05KANPage() {
         <table style={{ border: '2px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
           <thead>
             <tr>
-              <Td style={{ textAlign: 'center', fontWeight: 'bold', width: '100px', color: '#fff', backgroundColor: '#c00000' }}>
+              <Td style={{ textAlign: 'center', fontWeight: 'bold', width: '100px', color: '#fff', backgroundColor: BRANDING.primaryColor }}>
                 KUK
               </Td>
-              <Td colSpan={2} style={{ fontWeight: 'bold', color: '#fff', backgroundColor: '#c00000' }}>
+              <Td colSpan={2} style={{ fontWeight: 'bold', color: '#fff', backgroundColor: BRANDING.primaryColor }}>
                 SOAL, Pilih Jawaban semua pertanyaan berikut (A / B / C / D) :
               </Td>
             </tr>
@@ -509,5 +509,6 @@ function TTDTable({ title, nama, noReg, barcode }: {
     </table>
   )
 }
+
 
 

@@ -25,7 +25,7 @@ interface SoalEsai {
 
 const td = { border: '0.2px solid black', padding: '4px 6px' }
 const hdDok = { backgroundColor: BRANDING.primaryColor, color: '#fff' }
-const panduanTitle = { backgroundColor: '#c00000', color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
+const panduanTitle = { backgroundColor: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
 const fontS = { fontFamily: '"Arial Narrow", Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif', fontSize: '12pt' }
 const formatter = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
 
@@ -488,5 +488,6 @@ export default function Ia06Page() {
     </ModularAsesiLayout>
   )
 }
+
 
 

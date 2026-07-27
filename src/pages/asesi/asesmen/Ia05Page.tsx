@@ -566,8 +566,8 @@ export default function Ia05Page() {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#f8f8f8' }}>
               <tbody>
                 <tr>
-                  <th colSpan={2} style={{ background: '#c00000', color: 'white', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '5px' }}>Lembar Jawaban</th>
-                  <th colSpan={2} style={{ background: '#c00000', color: 'white', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '5px' }}>Rekomendasi</th>
+                  <th colSpan={2} style={{ background: BRANDING.primaryColor, color: 'white', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '5px' }}>Lembar Jawaban</th>
+                  <th colSpan={2} style={{ background: BRANDING.primaryColor, color: 'white', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '5px' }}>Rekomendasi</th>
                 </tr>
                 <tr>
                   <th style={{ background: '#c28ea0', fontWeight: 'bold', textAlign: 'center', border: '1px solid #000', padding: '5px' }}>No.</th>
@@ -621,7 +621,7 @@ export default function Ia05Page() {
           <h2 style={{ fontSize: '16px', marginBottom: '10px', fontWeight: 'bold' }}>FR. IA.05.B. LEMBAR KUNCI JAWABAN PERTANYAAN TERTULIS PILIHAN GANDA</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
             <thead>
-              <tr style={{ background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+              <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                 <th colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Lembar Jawaban</th>
               </tr>
               <tr style={{ background: '#c28ea0', fontWeight: 'bold', textAlign: 'center' }}>
@@ -797,5 +797,6 @@ export default function Ia05Page() {
     </div>
   )
 }
+
 
 

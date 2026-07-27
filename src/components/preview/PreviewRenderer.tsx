@@ -238,7 +238,7 @@ export function Mapa01Preview({ data }: { data: any }) {
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
           <button onClick={() => setViewMode('portofolio')} style={{
             padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
-            background: '#c00000', color: '#fff', border: 'none', borderRadius: '8px',
+            background: BRANDING.primaryColor, color: '#fff', border: 'none', borderRadius: '8px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
             Tampilan Portofolio
@@ -291,7 +291,7 @@ export function Mapa02Preview({ data }: { data: any }) {
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
           <button onClick={() => setViewMode('portofolio')} style={{
             padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
-            background: '#c00000', color: '#fff', border: 'none', borderRadius: '8px',
+            background: BRANDING.primaryColor, color: '#fff', border: 'none', borderRadius: '8px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
             Tampilan Portofolio

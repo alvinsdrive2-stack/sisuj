@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mapa01Section2.tsx
  * Section 2: Mempersiapkan Rencana Asesmen - 100% width with thin borders
  */
@@ -7,7 +7,7 @@
 const COLORS = {
   BLACK: '#000',
   WHITE: '#FFF',
-  RED: '#C00000',
+  RED: BRANDING.primaryColor,
 } as const;
 
 const BORDER = {
@@ -458,3 +458,4 @@ function Mapa01UnitAssessment({ unit, idx, metodeFlags }: Mapa01UnitAssessmentPr
     </tr>
   )
 }
+

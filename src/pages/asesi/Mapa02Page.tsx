@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+﻿import { useState, useEffect, useCallback } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
@@ -13,6 +13,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { BRANDING } from "@/config/branding"
 
 interface Unit {
   id_unit: number
@@ -192,13 +193,13 @@ export default function Mapa02Page() {
       return
     }
 
-    // Jika semua sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
+    // Jika semua sudah ttd â†’ redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
       return
     }
 
-    // Jika asesor sudah ttd → redirect (skip untuk tahap 0)
+    // Jika asesor sudah ttd â†’ redirect (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
       return
@@ -292,7 +293,7 @@ export default function Mapa02Page() {
                 <tr>
                   <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold' }}>
                     Skema Sertifikasi<br />
-                    (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
+                    (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Judul</td>
                   <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
@@ -343,18 +344,18 @@ export default function Mapa02Page() {
                 <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
                   <tbody>
                     <tr>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
-                      <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: BRANDING.primaryColor, color: '#fff' }}>No.</th>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: BRANDING.primaryColor, color: '#fff' }}>Instrumen Asesmen</th>
+                      <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                         Potensi Asesi **
                       </th>
                     </tr>
                     <tr>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>1</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>2</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>3</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>4</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>5</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>1</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>2</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>3</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>4</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>5</th>
                     </tr>
                     {referensiMAPA02.referensis.map((ref, refIndex) => (
                       <tr key={ref.id}>
@@ -425,18 +426,18 @@ export default function Mapa02Page() {
                 <table style={{ borderCollapse: 'collapse', width: '100%', marginBottom: '16px', fontSize: '12px', background: '#fff' }}>
                   <tbody>
                     <tr>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff' }}>No.</th>
-                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: '#c00000', color: '#fff' }}>Instrumen Asesmen</th>
-                      <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: BRANDING.primaryColor, color: '#fff' }}>No.</th>
+                      <th rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px',background: BRANDING.primaryColor, color: '#fff' }}>Instrumen Asesmen</th>
+                      <th colSpan={5} style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                         Potensi Asesi **
                       </th>
                     </tr>
                     <tr>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>1</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>2</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>3</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>4</th>
-                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>5</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>1</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>2</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>3</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>4</th>
+                      <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center', width: '8%' }}>5</th>
                     </tr>
                     {referensiMAPA02.referensis.map((ref, refIndex) => (
                       <tr key={ref.id}>
@@ -479,11 +480,11 @@ export default function Mapa02Page() {
           <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }} cellSpacing="0">
             <tbody>
               <tr style={{ height: '28pt' }}>
-                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
-                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
-                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
-                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
-                <td style={{ backgroundColor: '#C00000', border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
+                <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Status</span></td>
+                <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>No</span></td>
+                <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px', textAlign: 'center' }}>Nama</span></td>
+                <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Nomor MET</span></td>
+                <td style={{ backgroundColor: BRANDING.primaryColor, border: '1px solid #000', padding: '6px 8px' }}><span style={{ color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>Tanda Tangan dan Tanggal</span></td>
               </tr>
               <tr style={{ height: '91pt' }}>
                 <td rowSpan={2} style={{ border: '1px solid #000', padding: '15px 0 0 0', background: '#fff' }}><span style={{ fontSize: '12px', paddingLeft: '15px' }}>Penyusun</span></td>
@@ -572,3 +573,4 @@ export default function Mapa02Page() {
     </div>
   )
 }
+

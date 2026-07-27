@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Mapa01Pdf.tsx
  * PDF Document for MAPA01 - FR. MAPA.01 MERENCANAKAN AKTIVITAS DAN PROSES ASESMEN
  * Recreated to match the HTML component 1:1
@@ -78,7 +78,7 @@ interface Mapa01PdfProps {
 
 // ============== STYLES ==============
 const BORDER_COLOR = '#000';
-const HEADER_BG = '#C00000';
+const HEADER_BG = BRANDING.primaryColor;
 
 const styles = StyleSheet.create({
   page: {
@@ -586,3 +586,4 @@ export function Mapa01Pdf({ judul = '', nomor = '', mapaData }: Mapa01PdfProps) 
 }
 
 export default Mapa01Pdf;
+

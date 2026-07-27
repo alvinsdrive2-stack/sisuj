@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+﻿import { useState, useEffect, useCallback, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import MukLayout from "@/components/MukLayout"
@@ -13,6 +13,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { BRANDING } from "@/config/branding"
 
 interface Referensi {
   id: number
@@ -220,7 +221,7 @@ export default function FrAk07Page() {
                 } else if (ref.jawaban === true || ref.jawaban === false) {
                   newSelectedReferences[key] = ref.jawaban
                 }
-                // null/undefined → leave unset (default null = unanswered)
+                // null/undefined â†’ leave unset (default null = unanswered)
               })
             })
           })
@@ -290,7 +291,7 @@ export default function FrAk07Page() {
   }
 
   const getReferenceState = (kategoriId: number | null, kelompokId: number, refId: number): boolean | null => {
-    // Cek dari selectedReferences dulu (user input) — per-ref key
+    // Cek dari selectedReferences dulu (user input) â€” per-ref key
     const key = `${refId}_${kategoriId}_${kelompokId}`
     if (key in selectedReferences) {
       return selectedReferences[key] // null, true, or false
@@ -303,7 +304,7 @@ export default function FrAk07Page() {
       .find(k => k.id === kategoriId)
       ?.referensis.find(r => r.id === refId)
 
-    // Handle null/undefined jawaban → belum dijawab
+    // Handle null/undefined jawaban â†’ belum dijawab
     if (ref?.jawaban === null || ref?.jawaban === undefined) return null
 
     // Handle object jawaban format: { bool: boolean, text: string }
@@ -512,7 +513,7 @@ export default function FrAk07Page() {
               <tr>
                 <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
                   Skema Sertifikasi<br />
-                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</span>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>
@@ -570,13 +571,13 @@ export default function FrAk07Page() {
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '8px', lineHeight: '1.6' }}>
-                  • Formulir ini digunakan pada saat pelaksanaan pra asesmen<br />
-                  • Formulir ini terdiri dari dua bagian yaitu A dan B<br />
-                  • Coretlah pada tanda * yang tidak sesuai<br />
-                  • Berilah tanda √ Ya atau Tidak pada tanda ** sesuai pilihan<br />
-                  • Berilah tanda √ pada kotak ☐ pada kolom potensi asesi<br />
-                  • Formulir ini juga digunakan untuk bagian B<br />
-                  • Berilah tanda √ Ya atau Tidak pada tanda *** sesuai pilihan
+                  â€¢ Formulir ini digunakan pada saat pelaksanaan pra asesmen<br />
+                  â€¢ Formulir ini terdiri dari dua bagian yaitu A dan B<br />
+                  â€¢ Coretlah pada tanda * yang tidak sesuai<br />
+                  â€¢ Berilah tanda âˆš Ya atau Tidak pada tanda ** sesuai pilihan<br />
+                  â€¢ Berilah tanda âˆš pada kotak â˜ pada kolom potensi asesi<br />
+                  â€¢ Formulir ini juga digunakan untuk bagian B<br />
+                  â€¢ Berilah tanda âˆš Ya atau Tidak pada tanda *** sesuai pilihan
                 </td>
               </tr>
             </tbody>
@@ -618,11 +619,11 @@ export default function FrAk07Page() {
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '12px', fontSize: '14px', background: '#fff' }}>
               <tbody>
                 <tr>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: '#c00000', color: '#fff', fontSize: '14px' }}>No</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', background: '#c00000', color: '#fff', fontSize: '14px' }}>Mengidentifikasi Persyaratan Modifikasi dan Kontekstualisasi</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Ya</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: '#c00000', color: '#fff', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
-                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: '#c00000', color: '#fff', fontSize: '14px' }}>Keterangan</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', background: BRANDING.primaryColor, color: '#fff', fontSize: '14px' }}>No</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', background: BRANDING.primaryColor, color: '#fff', fontSize: '14px' }}>Mengidentifikasi Persyaratan Modifikasi dan Kontekstualisasi</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: BRANDING.primaryColor, color: '#fff', textAlign: 'center', fontSize: '14px' }}>Ya</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', width: '60px', background: BRANDING.primaryColor, color: '#fff', textAlign: 'center', fontSize: '14px' }}>Tidak</th>
+                  <th style={{ border: '1px solid #000', padding: '6px 8px', background: BRANDING.primaryColor, color: '#fff', fontSize: '14px' }}>Keterangan</th>
                 </tr>
 
                 {modifikasiData.kategoris.map((kategori, kategoriIndex) => {
@@ -940,3 +941,4 @@ export default function FrAk07Page() {
     </div>
   )
 }
+

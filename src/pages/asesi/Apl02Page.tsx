@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
@@ -19,6 +19,7 @@ import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { BRANDING } from "@/config/branding"
 
 // ============== LAYOUT COMPONENT ==============
 
@@ -290,7 +291,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
           <tr>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
               Skema Sertifikasi<br />
-              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</span>
+              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</span>
             </td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>
@@ -325,7 +326,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
       </table>
 
       {/* Panduan */}
-      <div style={{ background: '#c00000', color: '#fff', padding: '6px 8px', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', marginBottom: '10px' }}>
+      <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px 8px', fontWeight: 'bold', fontSize: '12px', textTransform: 'uppercase', marginBottom: '10px' }}>
         Panduan Asesmen Mandiri
       </div>
       <div style={{ background: '#fff', border: '1px solid #000', marginBottom: '20px', fontSize: '11px' }}>
@@ -915,7 +916,7 @@ function BuktiDropdown({ kukId, uploadedFiles, selectedFileIds, onSelectFile, di
           display: 'inline-block',
           transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
         }}>
-          ▼
+          â–¼
         </span>
       </button>
 
@@ -1433,7 +1434,7 @@ function FileTypeModal({
   )
 }
 
-// Memoized KUK row � only re-renders when its own state changes
+// Memoized KUK row ï¿½ only re-renders when its own state changes
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
   const h: Record<string, string> = { "Accept": "application/json" }
@@ -1466,7 +1467,7 @@ export default function Apl02Page() {
   const [filePanelRefreshKey, setFilePanelRefreshKey] = useState(0)
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
   const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
-  const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<string>>(new Set()) // API files excluded from POST — composite key `${unitId}-${subunitId}-${fileId}`
+  const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<string>>(new Set()) // API files excluded from POST â€” composite key `${unitId}-${subunitId}-${fileId}`
   // metodeAsesmen moved to RekomendasiAsesiSection - use ref for POST value
   const metodeAsesmenRef = useRef<'observasi' | 'portofolio' | null>(null)
   // savedMetodeRef: nyimpen metode dari API, gak kena interaksi checkbox.
@@ -1485,7 +1486,7 @@ export default function Apl02Page() {
     document.body.style.overflowY = 'scroll'
     return () => { document.body.style.overflowY = prev }
   }, [])
-  // stagingFiles holds raw File objects from client � no upload until user confirms
+  // stagingFiles holds raw File objects from client ï¿½ no upload until user confirms
   const [stagingFiles, setStagingFiles] = useState<ServerFile[]>([])
   const [fileDocTypes, setFileDocTypes] = useState<Record<string, string>>({}) // client index -> doc type
   const [fileCustomTypes, setFileCustomTypes] = useState<Record<string, string>>({}) // client index -> custom text for "Lainnya"
@@ -1646,7 +1647,7 @@ export default function Apl02Page() {
     })
   }, []) // No dependencies - uses ref instead
 
-  // Stable callbacks for KukRow � defined after handleCheckboxChange & handleBuktiChange
+  // Stable callbacks for KukRow ï¿½ defined after handleCheckboxChange & handleBuktiChange
   const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
@@ -2115,7 +2116,7 @@ export default function Apl02Page() {
     })
   }, [])
 
-  // Signing state hook � provides realtime sync (publishUpdate) and agreedChecklist state
+  // Signing state hook ï¿½ provides realtime sync (publishUpdate) and agreedChecklist state
   const signing = useSigningState({
     pageKey: 'apl02',
     isAsesor,
@@ -2766,3 +2767,4 @@ export default function Apl02Page() {
     </div>
   )
 }
+
