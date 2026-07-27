@@ -291,7 +291,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
           <tr>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '25%', fontWeight: 'bold', verticalAlign: 'top', textTransform: 'uppercase' }}>
               Skema Sertifikasi<br />
-              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(Skema Sertifikasi/Okupasi/Klaster)</span>
+              <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(<del>KKNI</del>/Okupasi/<del>Klaster</del>)</span>
             </td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '12%', fontWeight: 'bold', textTransform: 'uppercase' }}>Judul</td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', width: '3%', textAlign: 'center' }}>:</td>

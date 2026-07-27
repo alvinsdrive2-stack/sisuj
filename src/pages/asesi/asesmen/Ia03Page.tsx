@@ -364,7 +364,7 @@ export default function Ia03Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)</td>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (<del>KKNI</del>/Okupasi/<del>Klaster</del>)</td>
               <td style={{ width: '2%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
             </tr>

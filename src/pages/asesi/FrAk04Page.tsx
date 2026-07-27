@@ -411,7 +411,7 @@ export default function FrAk04Page() {
               {/* Skema Sertifikasi Info */}
               <tr>
                 <td colSpan={4} style={{ border: '1px solid #000', padding: '8px' }}>
-                  Banding ini diajukan atas Keputusan Asesmen yang dibuat terhadap Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶ berikut :
+                  Banding ini diajukan atas Keputusan Asesmen yang dibuat terhadap Skema Sertifikasi (<del>KKNI</del>/Okupasi/<del>Klaster</del>) berikut :
                   <br /><br />
                   Skema Sertifikasi : {jabatanKerja?.toUpperCase() || ''}<br />
                   No. Skema Sertifikasi : {nomorSkema?.toUpperCase() || ''}

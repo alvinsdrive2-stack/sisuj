@@ -223,7 +223,7 @@ export default function Ak02Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (<del>KKNI</del>/Okupasi/<del>Klaster</del>)</td>
               <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px',textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>

@@ -513,7 +513,7 @@ export default function FrAk07Page() {
               <tr>
                 <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold', verticalAlign: 'top' }}>
                   Skema Sertifikasi<br />
-                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</span>
+                  <span style={{ fontSize: '11px', fontWeight: 'normal' }}>(<del>KKNI</del>/Okupasi/<del>Klaster</del>)</span>
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '15%', fontWeight: 'bold' }}>Judul</td>
                 <td style={{ border: '1px solid #000', padding: '6px 8px', width: '5%', textAlign: 'center', fontWeight: 'bold' }}>:</td>

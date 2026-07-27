@@ -400,7 +400,7 @@ export default function Ia04bPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', fontSize: '13px', background: '#ffffff', border: '1px solid #000' }}>
           <tbody>
             <tr style={{ background: '#ffffff' }}>
-              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
+              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (<del>KKNI</del>/Okupasi/<del>Klaster</del>)</td>
               <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>{jabatanKerja?.toLocaleUpperCase() || ''}</td>
             </tr>

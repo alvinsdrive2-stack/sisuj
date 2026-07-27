@@ -412,7 +412,7 @@ export default function Ia05Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi<br />(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
+              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi<br />(<del>KKNI</del>/Okupasi/<del>Klaster</del>)</td>
               <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
