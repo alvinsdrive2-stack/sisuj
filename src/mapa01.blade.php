@@ -315,7 +315,7 @@ writing-mode: vertical-rl;
                 <td rowspan="3">Siapa yang melakukan asesmen / RPL</td>
                 <td colspan="2">
                     <span class="checkbox {{ $konteks['lsp_gatensi'] ? 'checked' : '' }}"></span>
-                    LSP LPK GATAKSINDO
+                    LSP Gatensi Karya Konstruksi
                 </td>
             </tr>
             <tr>
@@ -336,7 +336,7 @@ writing-mode: vertical-rl;
                 <td rowspan="4" style="vertical-align: top;">Orang yang relevan untuk dikonfirmasi</td>
                 <td colspan="3">
                     <span class="checkbox {{ $orang_relevan['manajer_sertifikasi_lsp'] ? 'checked' : '' }}"></span>
-                    Manajer sertifikasi LSP LPK GATAKSINDO
+                    Manajer sertifikasi LSP Gatensi Karya Konstruksi
                 </td>
             </tr>
             <tr>

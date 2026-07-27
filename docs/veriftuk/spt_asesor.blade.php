@@ -27,7 +27,7 @@
                   font-weight: bold;
                   padding: 5px;
                 ">
-                            LEMBAGA SERTIFIKASI PROFESI LSP LPK GATAKSINDO
+                            LEMBAGA SERTIFIKASI PROFESI GATENSI KARYA KONSTRUKSI
                         </td>
                         <td style="width: 10%px"></td>
                     </tr>
@@ -176,7 +176,7 @@
                     </tr>
                     <tr>
                         <td style="font-weight: 700; margin: 0; padding: 0">
-                            Lembaga Sertifikasi Profesi LSP LPK GATAKSINDO
+                            Lembaga Sertifikasi Profesi Gatensi Karya Konstruksi
                         </td>
                     </tr>
                     <tr>

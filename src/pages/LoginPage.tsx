@@ -102,7 +102,7 @@ export default function LoginPage() {
           <div className="relative w-32 h-32">
             {/* Circular Logo */}
             <div className="w-full h-full bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg overflow-hidden relative z-20">
-              <img src={favicon} alt="LSP LPK GATAKSINDOLogo" className="w-32 h-32 object-contain" />
+              <img src={favicon} alt="LSP Gatensi Logo" className="w-28 h-28 object-contain translate-x-[4px]" />
             </div>
 
           </div>

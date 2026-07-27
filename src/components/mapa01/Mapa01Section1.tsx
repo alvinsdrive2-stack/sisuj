@@ -434,8 +434,8 @@ export function Mapa01Section1({ referensiForm, isAsesor = false, disabled = fal
             </TableCell>
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
-                text="LSP LPK GATAKSINDO"
-                checked={getCheckedState("Konteks Asesmen", "LSP LPK GATAKSINDO", "lsp_gatensi")}
+                text="LSP Gatensi Karya Konstruksi"
+                checked={getCheckedState("Konteks Asesmen", "LSP Gatensi Karya Konstruksi", "lsp_gatensi")}
                 onToggle={isAsesor && !disabled ? () => toggleCheckbox("lsp_gatensi") : undefined}
               />
             </TableCell>
@@ -468,8 +468,8 @@ export function Mapa01Section1({ referensiForm, isAsesor = false, disabled = fal
             </TableCell>
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
-                text="Manajer sertifikasi LSP LPK GATAKSINDO"
-                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP LPK GATAKSINDO", "manajer_sertifikasi_lsp")}
+                text="Manajer sertifikasi LSP Gatensi Karya Konstruksi"
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP Gatensi Karya Konstruksi", "manajer_sertifikasi_lsp")}
                 onToggle={isAsesor && !disabled ? () => toggleCheckbox("manajer_sertifikasi_lsp") : undefined}
               />
             </TableCell>

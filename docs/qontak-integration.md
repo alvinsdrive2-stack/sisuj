@@ -33,7 +33,7 @@ Template harus disubmit dan di-approve di Qontak Dashboard sebelum bisa dipakai 
 Yth. *{{1}}*,
 Dengan hormat,
 
-Bersama pesan ini, kami dari *Lembaga Sertifikasi Profesi LSP LPK GATAKSINDO* memberitahukan bahwa Bapak/Ibu telah terdaftar sebagai peserta *Uji Kompetensi* dengan rincian sebagai berikut:
+Bersama pesan ini, kami dari *Lembaga Sertifikasi Profesi Gatensi Karya Konstruksi* memberitahukan bahwa Bapak/Ibu telah terdaftar sebagai peserta *Uji Kompetensi* dengan rincian sebagai berikut:
 
 - Tanggal Uji : *{{2}}*
 - Tempat/TUK : *{{3}}*
