@@ -4,6 +4,7 @@
  */
 import { useState, useMemo, useEffect } from "react"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { BRANDING } from "@/config/branding"
 
 // ============== TYPES ==============
 interface Referensi {
@@ -434,8 +435,8 @@ export function Mapa01Section1({ referensiForm, isAsesor = false, disabled = fal
             </TableCell>
             <TableCell style={cellStyles.contentMiddle2col} colSpan={2}>
               <CheckboxItem
-                text="LSP LPK GATAKSINDO"
-                checked={getCheckedState("Konteks Asesmen", "LSP LPK GATAKSINDO", "lsp_gatensi")}
+                text={BRANDING.asesmenKonsteks}
+                checked={getCheckedState("Konteks Asesmen", BRANDING.asesmenKonsteks, "lsp_gatensi")}
                 onToggle={isAsesor && !disabled ? () => toggleCheckbox("lsp_gatensi") : undefined}
               />
             </TableCell>
@@ -468,8 +469,8 @@ export function Mapa01Section1({ referensiForm, isAsesor = false, disabled = fal
             </TableCell>
             <TableCell style={cellStyles.contentMiddle} colSpan={3}>
               <CheckboxItem
-                text="Manajer sertifikasi LSP LPK GATAKSINDO"
-                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP LPK GATAKSINDO", "manajer_sertifikasi_lsp")}
+                text={BRANDING.asesmenManajer}
+                checked={getCheckedState("Orang yang relevan untuk dikonfirmasi", BRANDING.asesmenManajer, "manajer_sertifikasi_lsp")}
                 onToggle={isAsesor && !disabled ? () => toggleCheckbox("manajer_sertifikasi_lsp") : undefined}
               />
             </TableCell>

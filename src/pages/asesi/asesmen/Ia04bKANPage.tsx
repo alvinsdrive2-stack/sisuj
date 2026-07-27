@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -15,6 +15,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface SoalKAN {
   id: number; no: string; soal: string; soal1: string; soal2: string | null
@@ -153,13 +154,13 @@ export default function Ia04bKANPage() {
 
           {/* Panduan Asesor */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
-            <tr><td style={{ fontWeight: 'bold', background: '#c40000', color: '#fff', border: '1px solid #000' }}>PANDUAN BAGI ASESOR</td></tr>
+            <tr><td style={{ fontWeight: 'bold', background: BRANDING.primaryColor, color: '#fff', border: '1px solid #000' }}>PANDUAN BAGI ASESOR</td></tr>
             <tr><td style={{ border: '1px solid #000', padding: '8px', fontSize: '12px' }}>
               <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
                 <li style={{ marginBottom: '4px' }}>Lakukan penilaian pencapaian hasil proyek singkat atau kegiatan terstruktur lainnya melalui presentasi.</li>
                 <li style={{ marginBottom: '4px' }}>Penilaian dapat dilakukan untuk keseluruhan unit kompetensi dalam skema sertifikasi atau dapat pula dilakukan untuk masing-masing kelompok pekerjaan.</li>
                 <li style={{ marginBottom: '4px' }}>Pertanyaan disampaikan oleh asesor pada saat asesi melakukan presentasi kegiatan terstruktur.</li>
-                <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
+                <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (âœ“) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
                   <br/>0 = Jawaban tidak sesuai, keliru, atau tidak menjawab
                   <br/>1 = Jawaban sebagian benar, namun tidak lengkap/kurang tepat.
                   <br/>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.
@@ -175,12 +176,12 @@ export default function Ia04bKANPage() {
 
           {/* Soal Table */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
-            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: '#c40000', color: '#fff' }}>
+            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: BRANDING.primaryColor, color: '#fff' }}>
               <td rowSpan={2} style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</td>
               <td colSpan={3} style={{ width: '14%', border: '1px solid #000', padding: '6px' }}>Aspek Penilaian</td>
               <td colSpan={4} style={{ width: '14%', border: '1px solid #000', padding: '6px' }}>Pencapaian</td>
             </tr>
-            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: '#c40000', color: '#fff' }}>
+            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: BRANDING.primaryColor, color: '#fff' }}>
               <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Lingkup Penyajian Proyek atau Kegiatan Terstruktur Lainnya</td>
               <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan</td>
               <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan standar kompetensi kerja</td>
@@ -256,7 +257,7 @@ export default function Ia04bKANPage() {
 
           {/* Rekapitulasi */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
-            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: '#c40000', color: '#fff' }}>
+            <tr style={{ fontWeight: 'bold', textAlign: 'center', background: BRANDING.primaryColor, color: '#fff' }}>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Rekapitulasi Skor Penilaian Pertanyaan IA04B <span style={{ fontWeight: 'normal' }}><br/>(Penilaian = Jumlah skor seluruh butir soal)</span></td>
             </tr>
             <tr style={{ textAlign: 'center' }}>
@@ -293,7 +294,7 @@ export default function Ia04bKANPage() {
             <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: …</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: â€¦</td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesi :</td></tr>
             <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>
@@ -363,3 +364,5 @@ export default function Ia04bKANPage() {
     </ModularAsesiLayout>
   )
 }
+
+

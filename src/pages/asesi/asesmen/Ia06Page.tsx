@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -16,6 +16,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface SoalEsai {
   id: number; no: string; unit_kode: string; kuk_kode: string; soal: string
@@ -23,7 +24,7 @@ interface SoalEsai {
 }
 
 const td = { border: '0.2px solid black', padding: '4px 6px' }
-const hdDok = { backgroundColor: '#c40000', color: '#fff' }
+const hdDok = { backgroundColor: BRANDING.primaryColor, color: '#fff' }
 const panduanTitle = { backgroundColor: '#c00000', color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
 const fontS = { fontFamily: '"Arial Narrow", Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif', fontSize: '12pt' }
 const formatter = new Intl.DateTimeFormat('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -297,7 +298,7 @@ export default function Ia06Page() {
           <b>Instruksi:</b>
           <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
             <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
-            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (âœ“) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
               <br/>0 = Jawaban tidak sesuai, keliru atau tidak menjawab.
               <br/>1 = Jawaban sebagian benar, namun tidak lengkap/ kurang tepat.
               <br/>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.
@@ -405,7 +406,7 @@ export default function Ia06Page() {
         {/* REKAPITULASI */}
         <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
           <tbody>
-            <tr style={{ fontWeight: 'bold', backgroundColor: '#c40000', color: '#fff' }}>
+            <tr style={{ fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>
               <Td colSpan={2} style={{ textAlign: 'center' }}>
                 Rekapitulasi Skor Penilaian Pertanyaan IA06<br />
                 <span style={{ fontWeight: 'normal' }}>( Penilaian = Jumlah skor seluruh butir soal)</span>
@@ -426,7 +427,7 @@ export default function Ia06Page() {
               <Td style={{ fontWeight: 'bold', width: '20%' }}>Umpan balik untuk asesi:</Td>
               <Td style={{ width: '5%' }}>:</Td>
               <Td>
-                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: â€¦
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
@@ -487,3 +488,5 @@ export default function Ia06Page() {
     </ModularAsesiLayout>
   )
 }
+
+

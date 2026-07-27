@@ -1,4 +1,4 @@
-# LSP LPK GATAKSINDO— Sistem Uji Kompetensi (SISUJ)
+# LSP Gatensi — Sistem Uji Kompetensi (SISUJ)
 
 ## Product Purpose
 
@@ -48,7 +48,7 @@ product
 
 ## Brand
 
-LSP LPK GATAKSINDO— a professional competency certification body. Institutional, credible, precise. Indonesian government-adjacent authority. Visual identity uses deep navy blue with a red accent (referencing the Indonesian flag colors: merah-putih). Not a startup. Not a consumer product. This should feel like a serious professional tool that also respects the user's time.
+LSP Gatensi — a professional competency certification body. Institutional, credible, precise. Indonesian government-adjacent authority. Visual identity uses deep navy blue with a red accent (referencing the Indonesian flag colors: merah-putih). Not a startup. Not a consumer product. This should feel like a serious professional tool that also respects the user's time.
 
 ## Tone
 

@@ -5,6 +5,7 @@ import { ChevronRight, Menu, X } from "lucide-react"
 import { memo, useState } from "react"
 import { useAsesorAbsenPending } from "@/hooks/useAsesorAbsenPending"
 import { useAsesorPersiapanPending } from "@/hooks/useAsesorPersiapanPending"
+import { BRANDING } from "@/config/branding"
 
 interface DashboardSidebarProps {
   isCollapsed?: boolean
@@ -128,7 +129,7 @@ const DashboardSidebar = memo(function DashboardSidebar({ isCollapsed = false }:
             {!isCollapsed && (
               <div className="px-2 py-2 space-y-1">
                 <p className="text-xs font-semibold text-slate-600">Version 1.0</p>
-                <p className="text-[10px] text-slate-400">Copyright © 2026 LSP Gatensi</p>
+                <p className="text-[10px] text-slate-400">Copyright © 2026 {BRANDING.copyright}</p>
               </div>
             )}
           </div>

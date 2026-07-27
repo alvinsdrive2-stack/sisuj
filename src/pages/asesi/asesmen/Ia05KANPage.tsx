@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -17,6 +17,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface SoalKAN {
   id: number; no: string; soal: string
@@ -26,7 +27,7 @@ interface SoalKAN {
 }
 
 const td = { border: '0.2px solid black', padding: '4px 6px' }
-const hdDok = { backgroundColor: '#c40000', color: '#fff' }
+const hdDok = { backgroundColor: BRANDING.primaryColor, color: '#fff' }
 const hdDokB = { backgroundColor: '#d58a94', color: '#000' }
 const panduanTitle = { backgroundColor: '#c00000', color: '#fff', fontWeight: 'bold' as const, padding: '4px 8px', fontSize: '11pt' }
 
@@ -154,7 +155,7 @@ export default function Ia05KANPage() {
           <b>Instruksi:</b>
           <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
             <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
-            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (✓) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (âœ“) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:
               <br/>0 = Jawaban Salah
               <br/>1 = Jawaban Benar
             </li>
@@ -270,12 +271,12 @@ export default function Ia05KANPage() {
         {/* ==================== REKAPITULASI ==================== */}
         <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
           <tbody>
-            <tr style={{ fontWeight: 'bold', backgroundColor: '#c40000', color: '#fff' }}>
+            <tr style={{ fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>
               <td colSpan={2} style={{ ...td, textAlign: 'center' }}>Rekapitulasi Penilaian Pertanyaan Pilihan Ganda</td>
             </tr>
             <tr>
-              <td style={{ ...td, fontWeight: 'bold', backgroundColor: '#c40000', color: '#fff' }}>Benar</td>
-              <td style={{ ...td, fontWeight: 'bold', backgroundColor: '#c40000', color: '#fff' }}>Salah</td>
+              <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Benar</td>
+              <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Salah</td>
             </tr>
             <tr>
               <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahBenar}</td>
@@ -292,7 +293,7 @@ export default function Ia05KANPage() {
               <td style={{ fontWeight: 'bold', width: '20%', ...td }}>Umpan balik untuk asesi:</td>
               <td style={{ width: '5%', ...td }}>:</td>
               <td style={td}>
-                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: …
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: â€¦
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
@@ -508,3 +509,5 @@ function TTDTable({ title, nama, noReg, barcode }: {
     </table>
   )
 }
+
+

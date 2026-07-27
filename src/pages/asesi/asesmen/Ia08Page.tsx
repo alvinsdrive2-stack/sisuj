@@ -16,6 +16,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface BarcodeData {
   url: string
@@ -383,7 +384,7 @@ export default function Ia08Page() {
 
         {/* Panduan Bagi Asesor */}
         <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-          <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+          <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
             PANDUAN BAGI ASESOR
           </div>
           <div style={{ padding: '10px', fontSize: '12px' }}>
@@ -400,17 +401,17 @@ export default function Ia08Page() {
         {/* Dokumen Portofolio Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td rowSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Dokumen Portofolio</td>
               <td colSpan={8} style={{ border: '1px solid #000', padding: '6px' }}>Aturan Bukti</td>
             </tr>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Valid</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Asli</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Terkini</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Memadai</td>
             </tr>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
@@ -457,7 +458,7 @@ export default function Ia08Page() {
         {/* Cek List Wawancara Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td style={{ border: '1px solid #000', padding: '6px', width: '5%' }}>Cek List</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '25%' }}>No. Unit Kompetensi</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '10%' }}>No. Elemen</td>
@@ -510,7 +511,7 @@ export default function Ia08Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td style={{ background: '#c40000', color: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Rekomendasi Asesor</td>
+              <td style={{ background: BRANDING.primaryColor, color: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Rekomendasi Asesor</td>
               <td style={{ border: '1px solid #000', padding: '6px', width: '80%' }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
@@ -752,3 +753,5 @@ export default function Ia08Page() {
     </div>
   )
 }
+
+

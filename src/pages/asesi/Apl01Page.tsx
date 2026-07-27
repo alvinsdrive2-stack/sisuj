@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react"
+﻿import { useState, useEffect, useCallback, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import AsesiLayout from "@/components/AsesiLayout"
@@ -16,6 +16,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { BRANDING } from "@/config/branding"
 
 const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem("access_token")
@@ -372,7 +373,7 @@ export default function Apl01Page() {
       return
     }
 
-    // Asesor — asesor route, asesor navbar
+    // Asesor â€” asesor route, asesor navbar
     if (isAsesor) {
       navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
       return
@@ -771,7 +772,7 @@ anda pada saat ini.</span>
 
         <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
-            <tr style={{ background: '#c40000', color: '#fff' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff' }}>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', textTransform: 'uppercase' }}>No</th>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '150px', textTransform: 'uppercase' }}>Kode Unit</th>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', textTransform: 'uppercase' }}>Judul Unit</th>
@@ -809,13 +810,13 @@ anda pada saat ini.</span>
 
         <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
-            <tr style={{ background: '#c40000', color: '#fff' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff' }}>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', verticalAlign: 'middle', textTransform: 'uppercase' }}>No</th>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', verticalAlign: 'middle', textTransform: 'uppercase' }}>Bukti Persyaratan Dasar</th>
               <th colSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', textTransform: 'uppercase' }}>Ada</th>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Tidak Ada</th>
             </tr>
-            <tr style={{ background: '#c40000', color: '#fff' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff' }}>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', textTransform: 'uppercase' }}>Memenuhi Syarat</th>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', textTransform: 'uppercase' }}>Tidak Memenuhi</th>
             </tr>
@@ -866,13 +867,13 @@ anda pada saat ini.</span>
 
         <table style={{ width: '100%', maxWidth: '100%', background: '#fff', border: '1px solid #000', borderCollapse: 'collapse', fontSize: '13px', color: '#000', marginBottom: '20px' }}>
           <thead>
-            <tr style={{ background: '#c40000', color: '#fff' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff' }}>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '50px', verticalAlign: 'middle', textTransform: 'uppercase' }}>No</th>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', verticalAlign: 'middle', textTransform: 'uppercase' }}>Bukti Administratif</th>
               <th colSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', textTransform: 'uppercase' }}>Ada</th>
               <th rowSpan={2} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', verticalAlign: 'middle', textTransform: 'uppercase' }}>Tidak Ada</th>
             </tr>
-            <tr style={{ background: '#c40000', color: '#fff' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff' }}>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', textTransform: 'uppercase' }}>Memenuhi Syarat</th>
               <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', width: '100px', textTransform: 'uppercase' }}>Tidak Memenuhi</th>
             </tr>
@@ -1047,3 +1048,5 @@ anda pada saat ini.</span>
     </div>
   )
 }
+
+

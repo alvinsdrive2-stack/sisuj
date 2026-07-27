@@ -16,6 +16,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface SurveyItem {
   id: number
@@ -28,7 +29,7 @@ interface SurveyItem {
 
 const REFERRAL_SOURCES = [
   'Rekomendasi Teman/ Organisasi Profesi',
-  'Mitra TUK LSP LPK GATAKSINDO',
+  `Mitra TUK ${BRANDING.asesmenKonsteks}`,
   'Website Resmi LSP',
   'LinkedIn',
   'Tiktok',

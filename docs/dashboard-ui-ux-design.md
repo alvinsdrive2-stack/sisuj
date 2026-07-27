@@ -651,7 +651,7 @@ src/
 │   └── utils.ts                       cn() helper
 │
 └── assets/
-    ├── logo.png                       LSP LPK GATAKSINDOlogo
+    ├── logo.png                       LSP Gatensi logo
     ├── favicon.png                    Favicon (also used in loaders)
     └── Sequence 01.mp4                Background video
 ```

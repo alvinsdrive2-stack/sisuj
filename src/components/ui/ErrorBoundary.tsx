@@ -1,4 +1,5 @@
-import { Component, type ReactNode } from "react"
+﻿import { Component, type ReactNode } from "react"
+import { BRANDING } from "@/config/branding"
 
 interface Props {
   children: ReactNode
@@ -33,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
           padding: '24px',
           gap: '16px'
         }}>
-          <h2 style={{ fontSize: '18px', color: '#c40000', margin: 0 }}>Terjadi Kesalahan</h2>
+          <h2 style={{ fontSize: '18px', color: BRANDING.primaryColor, margin: 0 }}>Terjadi Kesalahan</h2>
           <p style={{ fontSize: '14px', color: '#666', margin: 0, textAlign: 'center' }}>
             Halaman tidak dapat ditampilkan. Silakan muat ulang halaman.
           </p>
@@ -51,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
             onClick={() => window.location.reload()}
             style={{
               padding: '10px 24px',
-              background: '#c40000',
+              background: BRANDING.primaryColor,
               color: '#fff',
               border: 'none',
               borderRadius: '4px',
@@ -69,3 +70,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
+
+

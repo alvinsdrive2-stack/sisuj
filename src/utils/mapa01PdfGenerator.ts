@@ -1,3 +1,5 @@
+import { BRANDING } from "@/config/branding"
+
 interface Unit {
   id_unit: number
   nama_unit: string
@@ -251,7 +253,7 @@ export function generateMapa01Pdf(
     bukti_asesmen_rpl: getCheckedState(referensiForm, 'Konteks Asesmen', 'Bukti untuk mendukung asesmen'),
     aktivitas_kerja: getCheckedState(referensiForm, 'Konteks Asesmen', 'Aktivitas kerja di tempat kerja'),
     kegiatan_pembelajaran: getCheckedState(referensiForm, 'Konteks Asesmen', 'Kegiatan Pembelajaran'),
-    lsp_gatensi: getCheckedState(referensiForm, 'Konteks Asesmen', 'LSP LPK GATAKSINDO'),
+    lsp_gatensi: getCheckedState(referensiForm, 'Konteks Asesmen', BRANDING.asesmenKonsteks),
     organisasi_pelatihan: getCheckedState(referensiForm, 'Konteks Asesmen', 'Organisasi Pelatihan'),
     asesor_perusahaan: getCheckedState(referensiForm, 'Konteks Asesmen', 'asesor perusahaan'),
   }
@@ -506,8 +508,8 @@ export function generateMapa01Pdf(
         <tr>
             <td rowspan="3">Siapa yang melakukan asesmen / RPL</td>
             <td colspan="2">
-                <span class="checkbox ${konteks.lsp_LSP LPK GATAKSINDO? 'checked' : ''}"></span>
-                LSP LPK GATAKSINDO
+                <span class="checkbox ${konteks.lsp_gatensi ? 'checked' : ''}"></span>
+                ${BRANDING.asesmenKonsteks}
             </td>
         </tr>
         <tr>
@@ -528,7 +530,7 @@ export function generateMapa01Pdf(
             <td rowspan="4" style="vertical-align: top;">Orang yang relevan untuk dikonfirmasi</td>
             <td colspan="3">
                 <span class="checkbox ${orang_relevan.manajer_sertifikasi_lsp ? 'checked' : ''}"></span>
-                Manajer sertifikasi LSP LPK GATAKSINDO
+                ${BRANDING.asesmenManajer}
             </td>
         </tr>
         <tr>

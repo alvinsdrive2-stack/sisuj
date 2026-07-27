@@ -26,6 +26,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import logo from "@/assets/logo.png"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
+import { BRANDING } from "@/config/branding"
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -88,7 +89,7 @@ export default function DashboardPage() {
     schedule: {
       date: "Senin, 20 Januari 2025",
       time: "08:00 - 16:00 WIB",
-      venue: "TUK LSP LPK GATAKSINDO- Gedung A Lt. 3",
+      venue: BRANDING.venue,
       address: "Jl. Teknologi No. 123, Jakarta Selatan"
     },
     assessor: {
@@ -355,15 +356,15 @@ export default function DashboardPage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                <img src={logo} alt="LSP LPK GATAKSINDOLogo" className="w-8 h-8 object-contain" />
+                <img src={logo} alt={BRANDING.logoAlt} className="w-8 h-8 object-contain" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-800">LSP Gatensi</p>
+                <p className="text-sm font-semibold text-slate-800">{BRANDING.short}</p>
                 <p className="text-xs text-muted-foreground">Lembaga Sertifikasi Profesi</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2025 LSP Gatensi. All rights reserved.
+              © {BRANDING.year} {BRANDING.copyright}. All rights reserved.
             </p>
           </div>
         </div>

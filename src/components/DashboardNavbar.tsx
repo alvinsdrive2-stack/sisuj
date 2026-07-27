@@ -8,6 +8,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
+import { BRANDING } from "@/config/branding"
 import { VideoOff, Video } from "lucide-react"
 import logo from "@/assets/logo.png"
 import { getRoleDisplayName } from "@/lib/rbac-config"
@@ -141,7 +142,7 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
               className="w-[230px] h-[110px] flex items-center justify-center overflow-hidden cursor-pointer transition-transform duration-20"
               title={`Kembali ke Dashboard ${getRoleDisplayName(user?.role)}`}
             >
-              <img src={logo} alt="LSP LPK GATAKSINDOLogo" className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
+              <img src={logo} alt={BRANDING.logoAlt} className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
             </button>
           </div>
 

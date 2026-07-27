@@ -1,7 +1,8 @@
-import { useState } from "react"
+﻿import { useState } from "react"
 import { Mapa01View, Mapa02View, Ia04aView, Ia01View, Ia03View, Ak02View, Ia08View, Ia09View } from "./asesi-views"
+import { BRANDING } from "@/config/branding"
 
-// ── Helpers ──
+// â”€â”€ Helpers â”€â”€
 
 const tableStyle = (borderW?: string) => ({
   width: '100%' as const,
@@ -34,7 +35,7 @@ const dividerCell = () => ({
 const th = (w?: string) => ({
   ...cell(w),
   fontWeight: 'bold' as const,
-  background: '#c40000' as const,
+  background: BRANDING.primaryColor,
   color: '#fff' as const,
   textAlign: 'center' as const,
 })
@@ -45,7 +46,7 @@ const decodeHtmlEntities = (html: string) => {
   return textArea.value
 }
 
-// ── Document Titles ──
+// â”€â”€ Document Titles â”€â”€
 
 export const DOC_TITLES: Record<string, string> = {
   apl01: 'FR.APL.01. ASESMEN MANDIRI',
@@ -64,7 +65,7 @@ export const DOC_TITLES: Record<string, string> = {
   ak03: 'FR.AK.03. PENETAPAN KOMPETENSI',
 }
 
-// ── Shared Identity Table ──
+// â”€â”€ Shared Identity Table â”€â”€
 
 function IdentityTable({ items }: { items: { label: string; value?: string }[] }) {
   const filtered = items.filter(i => i.value)
@@ -85,7 +86,7 @@ function IdentityTable({ items }: { items: { label: string; value?: string }[] }
   )
 }
 
-// ── APL 01 ──
+// â”€â”€ APL 01 â”€â”€
 
 export function Apl01Preview({ data }: { data: any }) {
   const s = data?.data_sertifikasi || {}
@@ -98,7 +99,7 @@ export function Apl01Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.apl01}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {/* Identity Table */}
       <IdentityTable items={[
@@ -145,7 +146,7 @@ export function Apl01Preview({ data }: { data: any }) {
             <thead><tr><th style={th('8%')}>No</th><th style={th()}>Persyaratan</th><th style={th('15%')}>Status</th></tr></thead>
             <tbody>
               {persyaratan.map((p: any, i: number) => (
-                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? '✓' : '-'}</td></tr>
+                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? 'âœ“' : '-'}</td></tr>
               ))}
             </tbody>
           </table>
@@ -174,7 +175,7 @@ export function Apl01Preview({ data }: { data: any }) {
   )
 }
 
-// ── APL 02 ──
+// â”€â”€ APL 02 â”€â”€
 
 export function Apl02Preview({ data }: { data: any }) {
   const units = data?.data_unit || []
@@ -184,7 +185,7 @@ export function Apl02Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.apl02}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Unit Kompetensi</h3>
       {units.map((unit: any, idx: number) => (
@@ -222,7 +223,7 @@ export function Apl02Preview({ data }: { data: any }) {
   )
 }
 
-// ── MAPA 01 ──
+// â”€â”€ MAPA 01 â”€â”€
 
 export function Mapa01Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
@@ -233,7 +234,7 @@ export function Mapa01Preview({ data }: { data: any }) {
         <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
           {DOC_TITLES.mapa01}
         </h1>
-        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
           <button onClick={() => setViewMode('portofolio')} style={{
             padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
@@ -259,7 +260,7 @@ export function Mapa01Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.mapa01}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       <div style={{ marginBottom: '16px' }}>
         <button onClick={() => setViewMode(null)} style={{
@@ -275,7 +276,7 @@ export function Mapa01Preview({ data }: { data: any }) {
   )
 }
 
-// ── MAPA 02 ──
+// â”€â”€ MAPA 02 â”€â”€
 
 export function Mapa02Preview({ data }: { data: any }) {
   const [viewMode, setViewMode] = useState<'portofolio' | 'observasi' | null>(null)
@@ -286,7 +287,7 @@ export function Mapa02Preview({ data }: { data: any }) {
         <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
           {DOC_TITLES.mapa02}
         </h1>
-        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+        <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
         <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '40px', marginBottom: '40px' }}>
           <button onClick={() => setViewMode('portofolio')} style={{
             padding: '16px 40px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer',
@@ -312,7 +313,7 @@ export function Mapa02Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.mapa02}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       <div style={{ marginBottom: '16px' }}>
         <button onClick={() => setViewMode(null)} style={{
@@ -328,7 +329,7 @@ export function Mapa02Preview({ data }: { data: any }) {
   )
 }
 
-// ── IA 01 / IA 03 ──
+// â”€â”€ IA 01 / IA 03 â”€â”€
 
 export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
   const isIa03 = docType === 'ia03'
@@ -338,14 +339,14 @@ export function Ia01Preview({ data, docType }: { data: any; docType: string }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES[docType] || DOC_TITLES.ia01}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {isIa03 ? <Ia03View data={data} /> : <Ia01View data={data} />}
     </div>
   )
 }
 
-// ── IA 02 (HTML content) ──
+// â”€â”€ IA 02 (HTML content) â”€â”€
 
 export function Ia02Preview({ data }: { data: any }) {
   const questions = data?.questions
@@ -355,7 +356,7 @@ export function Ia02Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ia02}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {questions?.isi_nonsoal ? (
         <div
@@ -369,7 +370,7 @@ export function Ia02Preview({ data }: { data: any }) {
   )
 }
 
-// ── IA 04.A ──
+// â”€â”€ IA 04.A â”€â”€
 
 export function Ia04aPreview({ data }: { data: any }) {
   return (
@@ -377,12 +378,12 @@ export function Ia04aPreview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ia04a}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {/* Panduan */}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
         <tbody>
-          <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+          <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
             <td style={{ border: '1px solid #000', padding: '6px' }}>PANDUAN BAGI ASESOR</td>
           </tr>
           <tr>
@@ -402,7 +403,7 @@ export function Ia04aPreview({ data }: { data: any }) {
   )
 }
 
-// ── IA 04.B ──
+// â”€â”€ IA 04.B â”€â”€
 
 export function Ia04bPreview({ data }: { data: any }) {
   const soalList = data?.soal || []
@@ -413,7 +414,7 @@ export function Ia04bPreview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ia04b}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {data?.dokumen?.nama_dokumen && (
         <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>{data.dokumen.nama_dokumen}</p>
@@ -468,7 +469,7 @@ export function Ia04bPreview({ data }: { data: any }) {
   )
 }
 
-// ── IA 05 ──
+// â”€â”€ IA 05 â”€â”€
 
 export function Ia05Preview({ data }: { data: any }) {
   const soalList = data?.soal || []
@@ -478,7 +479,7 @@ export function Ia05Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ia05}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {data?.dokumen?.nama_dokumen && (
         <p style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>{data.dokumen.nama_dokumen}</p>
@@ -504,7 +505,7 @@ export function Ia05Preview({ data }: { data: any }) {
   )
 }
 
-// ── IA 08 / IA 09 ──
+// â”€â”€ IA 08 / IA 09 â”€â”€
 
 export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
   const isIa09 = docType === 'ia09'
@@ -514,14 +515,14 @@ export function Ia08Preview({ data, docType }: { data: any; docType: string }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES[docType] || DOC_TITLES.ia08}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       {isIa09 ? <Ia09View data={data} /> : <Ia08View data={data} />}
     </div>
   )
 }
 
-// ── AK 02 ──
+// â”€â”€ AK 02 â”€â”€
 
 export function Ak02Preview({ data }: { data: any }) {
   return (
@@ -529,13 +530,13 @@ export function Ak02Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ak02}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
       <Ak02View data={data} />
     </div>
   )
 }
 
-// ── AK 03 ──
+// â”€â”€ AK 03 â”€â”€
 
 export function Ak03Preview({ data }: { data: any }) {
   const soalList = data?.soal || []
@@ -545,7 +546,7 @@ export function Ak03Preview({ data }: { data: any }) {
       <h1 style={{ fontSize: '18px', fontWeight: 'bold', color: '#000', marginBottom: '4px', letterSpacing: '1px' }}>
         {DOC_TITLES.ak03}
       </h1>
-      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview — data tidak dapat diedit</p>
+      <p style={{ fontSize: '12px', fontStyle: 'italic', marginBottom: '15px' }}>*Preview â€” data tidak dapat diedit</p>
 
       <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>Penetapan Kompetensi</h3>
       <table style={tableStyle()}>
@@ -572,3 +573,5 @@ export function Ak03Preview({ data }: { data: any }) {
     </div>
   )
 }
+
+

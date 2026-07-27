@@ -5,6 +5,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { CustomCheckbox } from "../ui/Checkbox"
+import { BRANDING } from "@/config/branding"
 
 // ============== TYPES ==============
 interface Referensi {
@@ -215,7 +216,7 @@ export function Mapa01TandaTangan({
 
           {/* Dynamic rows from API */}
           {konfirmasiReferences.map((ref) => {
-            const isManajer = ref.nama === "Manajer sertifikasi LSP LPK GATAKSINDO"
+            const isManajer = ref.nama === BRANDING.asesmenManajer
             return (
             <tr key={ref.id} style={{ height: ref.id === 104 ? '46pt' : '54pt' }}>
               <td style={{
