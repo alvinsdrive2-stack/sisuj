@@ -1,11 +1,12 @@
-/**
+﻿/**
  * Shared pure rendering views for preview (admin-lsp) and asesi pages.
  * NO hooks, NO side effects. Pure presentational.
  */
 
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { BRANDING } from "@/config/branding"
 
-// ── Helpers ──
+// â”€â”€ Helpers â”€â”€
 
 const tableStyle = (borderW?: string) => ({
   width: '100%' as const,
@@ -36,7 +37,7 @@ const decodeHtmlEntities = (html: string) => {
   return textArea.value
 }
 
-// ── Shared helpers for Ia08/Ia09 identity tables ──
+// â”€â”€ Shared helpers for Ia08/Ia09 identity tables â”€â”€
 
 const tableBordered = (borderW = '2px') => ({
   width: '100%' as const,
@@ -63,7 +64,7 @@ function getKelompoks(data: any): any[] {
   return []
 }
 
-// ── DOC TITLES ──
+// â”€â”€ DOC TITLES â”€â”€
 
 export const DOC_TITLES: Record<string, string> = {
   apl01: 'FR.APL.01. ASESMEN MANDIRI',
@@ -143,7 +144,7 @@ export function Mapa02View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
         <tbody>
           <tr>
             <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px 8px', width: '35%', fontWeight: 'bold' }}>
-              Skema Sertifikasi<br />(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶
+              Skema Sertifikasi<br />(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶
             </td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', whiteSpace: 'nowrap', fontWeight: 'bold' }}>Judul</td>
             <td style={{ border: '1px solid #000', padding: '6px 8px', textAlign: 'center', fontWeight: 'bold' }}>:</td>
@@ -278,7 +279,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
 
   return (
     <div>
-      {/* ─── HEADER ─── */}
+      {/* â”€â”€â”€ HEADER â”€â”€â”€ */}
       <div style={{ marginBottom: '16px', marginTop: '20px' }}>
         <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', marginBottom: '8px' }}>
           FR. MAPA.01 MERENCANAKAN AKTIVITAS DAN PROSES ASESMEN
@@ -316,7 +317,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
         </tbody>
       </table>
 
-      {/* ─── SECTION 1: Pendekatan Asesmen ─── */}
+      {/* â”€â”€â”€ SECTION 1: Pendekatan Asesmen â”€â”€â”€ */}
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '23pt' }}>
@@ -352,7 +353,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       </table>
       <p style={{ margin: 0 }}><br /></p>
 
-      {/* ─── SECTION 2: Mempersiapkan Rencana Asesmen ─── */}
+      {/* â”€â”€â”€ SECTION 2: Mempersiapkan Rencana Asesmen â”€â”€â”€ */}
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '23pt' }}>
@@ -444,7 +445,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
 
       {kelompoks.length === 0 && <p style={{ fontSize: '13px', color: '#666' }}>Tidak ada data kelompok kerja</p>}
 
-      {/* ─── SECTION 3: Modifikasi ─── */}
+      {/* â”€â”€â”€ SECTION 3: Modifikasi â”€â”€â”€ */}
       <table style={{ width: '100%', borderCollapse: 'collapse' }} cellSpacing="0">
         <tbody>
           <tr style={{ height: '26pt' }}>
@@ -499,7 +500,7 @@ export function Mapa01View({ data, mode }: { data: any; mode: 'portofolio' | 'ob
       <p style={{ padding: '0 0 0 14px', margin: 0, fontSize: '12px', textAlign: 'left' }}>*Pilih salah satu opsi</p>
       <p style={{ padding: '5px 0 0 0', margin: 0 }}><br /></p>
 
-      {/* ─── TANDA TANGAN ─── */}
+      {/* â”€â”€â”€ TANDA TANGAN â”€â”€â”€ */}
       <p style={{ margin: 0, fontSize: '12px', fontWeight: 'bold', paddingLeft: '13px' }}>
         Konfirmasi dengan orang yang relevan:
       </p>
@@ -652,14 +653,14 @@ export function Ia01View({ data }: { data: any }) {
     <div>
       {/* Panduan */}
       <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-        <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+        <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
           PANDUAN BAGI ASESOR
         </div>
         <div style={{ padding: '10px', fontSize: '12px' }}>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
             <li>Isi standar industri atau tempat kerja.</li>
-            <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
+            <li>Beri tanda centang (âœ“) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
             <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
             <li>Isi kolom KUK sesuai SKKNI.</li>
           </ul>
@@ -669,7 +670,7 @@ export function Ia01View({ data }: { data: any }) {
       {kelompoks.map((kel: any) => (
         <div key={kel.id} style={{ marginBottom: '20px' }}>
           {/* Red header */}
-          <div style={{ background: '#c40000', color: '#fff', padding: '10px 12px', fontSize: '13px', marginBottom: '10px' }}>
+          <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '10px 12px', fontSize: '13px', marginBottom: '10px' }}>
             <div style={{ fontWeight: 'bold' }}>Kelompok Pekerjaan {kel.urut || ''}</div>
             {kel.deskripsi && <div style={{ fontSize: '11px', fontStyle: 'italic', fontWeight: 'normal', marginTop: '2px', whiteSpace: 'pre-line' }}>{kel.deskripsi}</div>}
           </div>
@@ -677,7 +678,7 @@ export function Ia01View({ data }: { data: any }) {
           {/* Units table */}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
             <thead>
-              <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+              <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                 <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>
                   Kelompok Pekerjaan {kel.urut || ''}
                 </th>
@@ -728,7 +729,7 @@ export function Ia01View({ data }: { data: any }) {
                 <br />
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
                   <thead>
-                    <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                    <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                       <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
                       <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>KUK</th>
                       <th style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Sub Unit</th>
@@ -785,7 +786,7 @@ export function Ia03View({ data }: { data: any }) {
     <div>
       {/* Panduan */}
       <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-        <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+        <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
           PANDUAN BAGI ASESOR
         </div>
         <div style={{ padding: '10px', fontSize: '12px' }}>
@@ -804,7 +805,7 @@ export function Ia03View({ data }: { data: any }) {
           {/* Units table with kelompok header */}
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
             <thead>
-              <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+              <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                 <th style={{ width: '18%', border: '1px solid #000', padding: '6px' }}>
                   Kelompok Pekerjaan {kel.urut || ''}
                   {kel.deskripsi && (
@@ -838,7 +839,7 @@ export function Ia03View({ data }: { data: any }) {
           {(kel.soal || kel.units?.flatMap((u: any) => u.questions || []) || []).length > 0 && (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
               <thead>
-                <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                   <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan</th>
                   <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>Ya</th>
                   <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>Tidak</th>
@@ -977,7 +978,7 @@ export function Ak02View({ data }: { data: any }) {
       </table>
 
       <p style={{ fontSize: '13px', marginBottom: '15px' }}>
-        Beri tanda centang (√) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
+        Beri tanda centang (âˆš) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
       </p>
 
       {/* MATRIKS KOMPETENSI Table */}
@@ -1149,7 +1150,7 @@ export function Ia08View({ data }: { data: any }) {
 
       {/* Panduan */}
       <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-        <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+        <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
           PANDUAN BAGI ASESOR
         </div>
         <div style={{ padding: '10px', fontSize: '12px' }}>
@@ -1157,7 +1158,7 @@ export function Ia08View({ data }: { data: any }) {
             <li>Verifikasi portofolio dapat dilakukan untuk keseluruhan unit kompetensi dalam skema sertifikasi atau dilakukan untuk masing-masing kelompok pekerjaan dalam satu skema sertifikasi.</li>
             <li>Isilah bukti portofolio sesuai ketentuan bukti berkualitas dan relevan dengan standar kompetensi kerja.</li>
             <li>Lakukan verifikasi portofolio berdasarkan aturan bukti.</li>
-            <li>Berikan hasil verifikasi portofolio dengan memberi centang (√).</li>
+            <li>Berikan hasil verifikasi portofolio dengan memberi centang (âˆš).</li>
             <li>Jika belum memenuhi aturan bukti maka lanjutkan wawancara.</li>
           </ul>
         </div>
@@ -1170,7 +1171,7 @@ export function Ia08View({ data }: { data: any }) {
             {(kel.questions || []).length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
                 <tbody>
-                  <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                  <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                     <td style={{ border: '1px solid #000', padding: '6px', width: '5%' }}>No</td>
                     <td style={{ border: '1px solid #000', padding: '6px', width: '18%' }}>Unit Kompetensi</td>
                     <td style={{ border: '1px solid #000', padding: '6px', width: '12%' }}>KUK</td>
@@ -1284,7 +1285,7 @@ export function Ia09View({ data }: { data: any }) {
       <table style={tableBordered()}>
         <tbody>
           <tr>
-            <td style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px', textAlign: 'left' }}>
+            <td style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px', textAlign: 'left' }}>
               PANDUAN BAGI ASESOR
             </td>
           </tr>
@@ -1296,7 +1297,7 @@ export function Ia09View({ data }: { data: any }) {
                 <li>Ajukan pertanyaan verifikasi portofolio untuk semua unit kompetensi.</li>
                 <li>Ajukan pertanyaan kepada asesi sebagai tindak lanjut verifikasi portofolio.</li>
                 <li>Jika hasil verifikasi belum memadai, ajukan pertanyaan tambahan.</li>
-                <li>Tuliskan pencapaian dengan mencentang (√) "Ya" atau "Tidak".</li>
+                <li>Tuliskan pencapaian dengan mencentang (âˆš) "Ya" atau "Tidak".</li>
               </ul>
             </td>
           </tr>
@@ -1310,7 +1311,7 @@ export function Ia09View({ data }: { data: any }) {
             {(kel.questions || []).length > 0 && (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
                 <tbody>
-                  <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                  <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                     <td style={{ border: '1px solid #000', padding: '6px', width: '5%' }}>No.</td>
                     <td style={{ border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan Wawancara</td>
                     <td style={{ border: '1px solid #000', padding: '6px', width: '10%' }}>K</td>
@@ -1379,3 +1380,4 @@ export function Ia09View({ data }: { data: any }) {
     </div>
   )
 }
+

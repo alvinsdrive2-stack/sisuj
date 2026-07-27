@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+﻿import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -18,6 +18,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface Soal {
   id: number
@@ -265,7 +266,7 @@ export default function Ia04bPage() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If all signed → redirect
+    // If all signed â†’ redirect
     if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -278,7 +279,7 @@ export default function Ia04bPage() {
       return
     }
 
-    // If current user already signed but others haven't → redirect (prevent re-generate QR)
+    // If current user already signed but others haven't â†’ redirect (prevent re-generate QR)
     if (!isAsesor && signing.asesiHasSigned) {
       const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
       const next = asesmenSteps[stepIdx + 1]
@@ -399,7 +400,7 @@ export default function Ia04bPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', fontSize: '13px', background: '#ffffff', border: '1px solid #000' }}>
           <tbody>
             <tr style={{ background: '#ffffff' }}>
-              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
               <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>{jabatanKerja?.toLocaleUpperCase() || ''}</td>
             </tr>
@@ -450,7 +451,7 @@ export default function Ia04bPage() {
         {/* Panduan Bagi Asesor */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
               <td>PANDUAN BAGI ASESOR</td>
             </tr>
             <tr>
@@ -472,13 +473,13 @@ export default function Ia04bPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             {/* Header Row 1 */}
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td rowSpan={2} style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</td>
               <td colSpan={3} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Aspek Penilaian</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Pencapaian</td>
             </tr>
             {/* Header Row 2 */}
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
               <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Lingkup Penyajian proyek atau kegiatan terstruktur lainnya</td>
               <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan</td>
               <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Kesesuaian dengan standar kompetensi kerja</td>
@@ -729,3 +730,5 @@ export default function Ia04bPage() {
     </div>
   )
 }
+
+

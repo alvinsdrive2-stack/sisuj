@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+﻿import React, { useState, useEffect, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -17,6 +17,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface Kuk {
   id: number
@@ -299,7 +300,7 @@ export default function Ia01Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
               <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
@@ -352,14 +353,14 @@ export default function Ia01Page() {
 
         {/* PANDUAN BAGI ASESOR */}
         <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-          <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+          <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
             PANDUAN BAGI ASESOR
           </div>
           <div style={{ padding: '10px', fontSize: '12px' }}>
             <ul style={{ margin: 0, paddingLeft: '20px' }}>
               <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
               <li>Isi standar industri atau tempat kerja.</li>
-              <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
+              <li>Beri tanda centang (âœ“) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
               <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
               <li>Isi kolom KUK sesuai SKKNI.</li>
             </ul>
@@ -373,7 +374,7 @@ export default function Ia01Page() {
             <div
               onClick={() => toggleKelompok(kelompok.id)}
               style={{
-                background: '#c40000',
+                background: BRANDING.primaryColor,
                 color: '#fff',
                 padding: '10px 12px',
                 fontWeight: 'bold',
@@ -393,7 +394,7 @@ export default function Ia01Page() {
                   </div>
                 )}
               </div>
-              <span style={{ fontSize: '16px' }}>{expandedKelompok.has(kelompok.id) ? '▼' : '▶'}</span>
+              <span style={{ fontSize: '16px' }}>{expandedKelompok.has(kelompok.id) ? 'â–¼' : 'â–¶'}</span>
             </div>
 
             {expandedKelompok.has(kelompok.id) && (
@@ -402,7 +403,7 @@ export default function Ia01Page() {
                 {/* Units Table - Header */}
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000', borderTop: 'none' }}>
                   <thead>
-                    <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                    <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                       <th style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>
                         Kelompok Pekerjaan {kelompok.urut}
                         {kelompok.deskripsi && (
@@ -464,7 +465,7 @@ export default function Ia01Page() {
                     {/* Soal Table */}
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: '#fff', border: '2px solid #000', borderTop: 'none' }}>
                       <thead>
-                        <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                        <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                           <th rowSpan={2} style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No</th>
                           <th rowSpan={2} style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Elemen</th>
                           <th rowSpan={2} style={{ width: '35%', border: '1px solid #000', padding: '6px' }}>Kriteria Unjuk Kerja</th>
@@ -472,7 +473,7 @@ export default function Ia01Page() {
                           <th colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Pencapaian</th>
                           <th rowSpan={2} style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Penilaian Lanjut</th>
                         </tr>
-                        <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                        <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                           <th style={{ width: '5%', border: '1px solid #000', padding: '4px' }}>Ya</th>
                           <th style={{ width: '5%', border: '1px solid #000', padding: '4px' }}>Tidak</th>
                         </tr>
@@ -794,3 +795,5 @@ export default function Ia01Page() {
     </div>
   )
 }
+
+

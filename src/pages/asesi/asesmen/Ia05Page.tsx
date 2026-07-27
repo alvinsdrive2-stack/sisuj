@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react"
+﻿import React, { useState, useEffect, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -23,6 +23,7 @@ import { API_BASE_URL } from "@/config/api"
 import { useIa05Timer } from "@/hooks/useIa05Timer"
 import { useMissingStepsRedirect } from "@/hooks/useAsesmenStepQrStatus"
 import { setNavbarTimer } from "@/lib/navbar-timer"
+import { BRANDING } from "@/config/branding"
 
 interface Unit {
   id: number
@@ -192,7 +193,7 @@ export default function Ia05Page() {
       navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard')
       return
     }
-    // If asesi already signed → redirect (prevent re-generate QR)
+    // If asesi already signed â†’ redirect (prevent re-generate QR)
     if (isAsesi && signing.asesiHasSigned) {
       const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
       const next = asesmenSteps[idx + 1]
@@ -243,21 +244,21 @@ export default function Ia05Page() {
         signing.publishUpdate()
 
         // Generate QR after successful save
-        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+        console.log('ðŸ” QR Generation Check - jadwalId:', jadwalId, 'id:', id)
         try {
           if (jadwalId) {
             console.log('Generating QR for IA05...', { id, jadwalId })
             await kegiatanService.generateQRIa05(id, jadwalId)
-            console.log('✅ QR IA05 successfully generated!')
+            console.log('âœ… QR IA05 successfully generated!')
           } else {
-            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+            console.warn('âš ï¸ jadwalId is null/undefined, skipping QR generation')
           }
         } catch (qrError) {
-          console.error('❌ Failed to generate QR IA05:', qrError)
+          console.error('âŒ Failed to generate QR IA05:', qrError)
           // Don't block navigation on QR failure
         }
 
-        // Tahap 0 → dashboard asesor
+        // Tahap 0 â†’ dashboard asesor
         if (_kegiatan?.tahap === 0) {
           setTimeout(() => navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard'), 500)
           return
@@ -294,7 +295,7 @@ export default function Ia05Page() {
 
   // Handler for asesor to save umpan_balik
   const handleSaveUmpanBalik = async () => {
-    // If asesor already signed → redirect
+    // If asesor already signed â†’ redirect
     if (isAsesor && signing.asesorHasSigned) {
       const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
       const next = asesmenSteps[idx + 1]
@@ -337,21 +338,21 @@ export default function Ia05Page() {
         signing.publishUpdate()
 
         // Generate QR after successful save
-        console.log('🔍 QR Generation Check - jadwalId:', jadwalId, 'id:', id)
+        console.log('ðŸ” QR Generation Check - jadwalId:', jadwalId, 'id:', id)
         try {
           if (jadwalId) {
             console.log('Generating QR for IA05...', { id, jadwalId })
             await kegiatanService.generateQRIa05(id, jadwalId)
-            console.log('✅ QR IA05 successfully generated!')
+            console.log('âœ… QR IA05 successfully generated!')
           } else {
-            console.warn('⚠️ jadwalId is null/undefined, skipping QR generation')
+            console.warn('âš ï¸ jadwalId is null/undefined, skipping QR generation')
           }
         } catch (qrError) {
-          console.error('❌ Failed to generate QR IA05:', qrError)
+          console.error('âŒ Failed to generate QR IA05:', qrError)
           // Don't block navigation on QR failure
         }
 
-        // Tahap 0 → dashboard asesor
+        // Tahap 0 â†’ dashboard asesor
         if (_kegiatan?.tahap === 0) {
           setTimeout(() => navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard'), 500)
           return
@@ -411,7 +412,7 @@ export default function Ia05Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi<br />(̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td rowSpan={2} style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi<br />(Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
               <td style={{ width: '12%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
@@ -465,7 +466,7 @@ export default function Ia05Page() {
         {/* SOAL Table */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '14px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
               <td style={{ width: '160', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>KUK</td>
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>SOAL, Pilih Jawaban semua pertanyaan berikut (A / B / C / D) :</td>
             </tr>
@@ -796,3 +797,5 @@ export default function Ia05Page() {
     </div>
   )
 }
+
+

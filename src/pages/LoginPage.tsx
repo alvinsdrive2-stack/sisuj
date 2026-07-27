@@ -8,6 +8,7 @@ import { useToast } from "@/contexts/ToastContext"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { getRoleConfig, resolveUserRole, getRoleDisplayName } from "@/lib/rbac-config"
 import favicon from "@/assets/favicon.png"
+import { BRANDING } from "@/config/branding"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { LoopingVideoBackground, isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
 
@@ -102,7 +103,7 @@ export default function LoginPage() {
           <div className="relative w-32 h-32">
             {/* Circular Logo */}
             <div className="w-full h-full bg-white backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg overflow-hidden relative z-20">
-              <img src={favicon} alt="LSP Gatensi Logo" className="w-28 h-28 object-contain translate-x-[4px]" />
+              <img src={favicon} alt={BRANDING.logoAlt} className="w-28 h-28 object-contain translate-x-[4px]" />
             </div>
 
           </div>

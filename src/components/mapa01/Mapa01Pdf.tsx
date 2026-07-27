@@ -10,6 +10,7 @@ import {
   View,
   StyleSheet,
 } from '@react-pdf/renderer';
+import { BRANDING } from '@/config/branding';
 
 // ============== TYPES ==============
 interface Unit {
@@ -304,7 +305,7 @@ const PdfSection1 = ({ referensiForm }: { referensiForm?: ReferensiFormItem[] })
         <Cell width="15%"><Text></Text></Cell>
         <Cell width="12%"><Text style={{ fontSize: 8 }}>Siapa yang melakukan asesmen / RPL</Text></Cell>
         <Cell width="65%">
-          <Checkbox checked={getChecked("Konteks Asesmen", "LSP Gatensi Karya Konstruksi")} label="LSP Gatensi Karya Konstruksi" />
+          <Checkbox checked={getChecked("Konteks Asesmen", BRANDING.asesmenKonsteks)} label={BRANDING.asesmenKonsteks} />
           <Checkbox checked={getChecked("Konteks Asesmen", "Organisasi Pelatihan")} label="Organisasi Pelatihan" />
           <Checkbox checked={getChecked("Konteks Asesmen", "asesor perusahaan")} label="asesor perusahaan" />
         </Cell>
@@ -315,7 +316,7 @@ const PdfSection1 = ({ referensiForm }: { referensiForm?: ReferensiFormItem[] })
         <Cell width="8%"><Text></Text></Cell>
         <Cell width="15%"><Text style={{ fontSize: 9 }}>Orang yang relevan untuk dikonfirmasi</Text></Cell>
         <Cell width="77%">
-          <Checkbox checked={getChecked("Orang yang relevan untuk dikonfirmasi", "Manajer sertifikasi LSP Gatensi Karya Konstruksi")} label="Manajer sertifikasi LSP Gatensi Karya Konstruksi" />
+          <Checkbox checked={getChecked("Orang yang relevan untuk dikonfirmasi", BRANDING.asesmenManajer)} label={BRANDING.asesmenManajer} />
           <Checkbox checked={getChecked("Orang yang relevan untuk dikonfirmasi", "Master Assessor / Master Trainer / Asesor Utama kompetensi")} label="Master Assessor / Master Trainer / Asesor Utama kompetensi" />
           <Checkbox checked={getChecked("Orang yang relevan untuk dikonfirmasi", "Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar")} label="Manajer pelatihan Lembaga Training terakreditasi / Lembaga Training terdaftar" />
           <Checkbox checked={getChecked("Orang yang relevan untuk dikonfirmasi", "Lainnya")} label="Lainnya" />

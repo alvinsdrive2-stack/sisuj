@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -16,6 +16,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface Unit {
   id_unit: number
@@ -207,7 +208,7 @@ export default function Ia04aPage() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If all signed → redirect
+    // If all signed â†’ redirect
     if (signing.allSigned) {
       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
       const nextStep = asesmenSteps[currentStepIndex + 1]
@@ -220,7 +221,7 @@ export default function Ia04aPage() {
       return
     }
 
-    // If current user already signed but others haven't → redirect (prevent re-generate QR)
+    // If current user already signed but others haven't â†’ redirect (prevent re-generate QR)
     if (!isAsesor && signing.asesiHasSigned) {
       const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
       const next = asesmenSteps[stepIdx + 1]
@@ -367,7 +368,7 @@ export default function Ia04aPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
             <tr style={{ background: '#e9e9e9e' }}>
-              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)̶</td>
+              <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)Ì¶</td>
               <td style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>Judul</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>{jabatanKerja?.toLocaleUpperCase() || ''}</td>
             </tr>
@@ -418,7 +419,7 @@ export default function Ia04aPage() {
         {/* Panduan Bagi Asesor */}
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
           <tbody>
-            <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+            <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
               <td>PANDUAN BAGI ASESOR</td>
             </tr>
             <tr>
@@ -438,7 +439,7 @@ export default function Ia04aPage() {
           <div key={kelompok.id}>
           <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '14px', fontSize: '14px', background: '#fff', border: '1px solid #000' }}>
             <tbody>
-              <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold' }}>
+              <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold' }}>
                 <td rowSpan={kelompok.units.length + 1} style={{ width: '20%', textAlign: 'center', verticalAlign: 'middle', border: '1px solid #000', padding: '6px' }}>
                   {kelompok.nama}
                   {kelompok.deskripsi && (
@@ -688,3 +689,5 @@ export default function Ia04aPage() {
     </div>
   )
 }
+
+

@@ -1,4 +1,4 @@
-import { useState, useEffect, Fragment, useCallback, useMemo, useRef } from "react"
+﻿import { useState, useEffect, Fragment, useCallback, useMemo, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -17,6 +17,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface BarcodeData {
   url: string
@@ -363,7 +364,7 @@ export default function Ia03Page() {
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
           <tbody>
             <tr>
-              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (̶𝙺̶𝙺̶𝙽̶𝙸̶/Okupasi/̶𝙺̶𝚕̶𝚊̶𝚜̶𝚝̶𝚎̶𝚛̶)</td>
+              <td style={{ width: '25%', border: '1px solid #000', padding: '6px' }}>Skema Sertifikasi (Ì¶ð™ºÌ¶ð™ºÌ¶ð™½Ì¶ð™¸Ì¶/Okupasi/Ì¶ð™ºÌ¶ðš•Ì¶ðšŠÌ¶ðšœÌ¶ðšÌ¶ðšŽÌ¶ðš›Ì¶)</td>
               <td style={{ width: '2%', border: '1px solid #000', padding: '6px', textAlign: 'end' }}>:</td>
               <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{jabatanKerja || '-'}</td>
             </tr>
@@ -411,7 +412,7 @@ export default function Ia03Page() {
 
         {/* PANDUAN BAGI ASESOR */}
         <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
-          <div style={{ background: '#c40000', color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+          <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
             PANDUAN BAGI ASESOR
           </div>
           <div style={{ padding: '10px', fontSize: '12px' }}>
@@ -431,7 +432,7 @@ export default function Ia03Page() {
             {/* Units Table */}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
               <thead>
-                <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                   <th style={{ width: '18%', border: '1px solid #000', padding: '6px' }}>
                     Kelompok Pekerjaan {kelompok.urut}
                     {kelompok.deskripsi && (
@@ -462,7 +463,7 @@ export default function Ia03Page() {
             {/* Questions Table */}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '-1px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
               <thead>
-                <tr style={{ background: '#c40000', color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
                   <th style={{ border: '1px solid #000', padding: '6px' }}>Pertanyaan</th>
                   <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>Ya</th>
                   <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>Tidak</th>
@@ -734,3 +735,5 @@ export default function Ia03Page() {
     </div>
   )
 }
+
+

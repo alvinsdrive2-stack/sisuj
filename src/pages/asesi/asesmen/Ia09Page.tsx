@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -14,6 +14,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
+import { BRANDING } from "@/config/branding"
 
 interface BarcodeData {
   url: string
@@ -347,7 +348,7 @@ export default function Ia09Page() {
             <tr>
               <td
                 style={{
-                  background: "#c40000",
+                  background: BRANDING.primaryColor,
                   color: "#fff",
                   padding: "6px",
                   fontWeight: "bold",
@@ -366,7 +367,7 @@ export default function Ia09Page() {
                   <li>Ajukan pertanyaan verifikasi portofolio untuk semua unit kompetensi.</li>
                   <li>Ajukan pertanyaan kepada asesi sebagai tindak lanjut verifikasi portofolio.</li>
                   <li>Jika hasil verifikasi belum memadai, ajukan pertanyaan tambahan.</li>
-                  <li>Tuliskan pencapaian dengan mencentang (√) "Ya" atau "Tidak".</li>
+                  <li>Tuliskan pencapaian dengan mencentang (âˆš) "Ya" atau "Tidak".</li>
                 </ul>
               </td>
             </tr>
@@ -385,7 +386,7 @@ export default function Ia09Page() {
           }}
         >
           <thead>
-            <tr style={{ background: "#c40000", color: "#fff", fontWeight: "bold", textAlign: "center" }}>
+            <tr style={{ background: BRANDING.primaryColor, color: "#fff", fontWeight: "bold", textAlign: "center" }}>
               <th style={{ width: "5%", border: "1px solid #000", padding: "6px" }}>No.</th>
               <th style={{ border: "1px solid #000", padding: "6px" }}>Bukti - Bukti Kompetensi</th>
             </tr>
@@ -414,7 +415,7 @@ export default function Ia09Page() {
           }}
         >
           <thead>
-            <tr style={{ background: "#c40000", color: "#fff", fontWeight: "bold", textAlign: "center" }}>
+            <tr style={{ background: BRANDING.primaryColor, color: "#fff", fontWeight: "bold", textAlign: "center" }}>
               <th style={{ width: "5%", border: "1px solid #000", padding: "6px" }}>No.</th>
               <th style={{ width: "40%", border: "1px solid #000", padding: "6px" }}>Daftar Pertanyaan Wawancara</th>
               <th style={{ width: "35%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
@@ -640,3 +641,5 @@ export default function Ia09Page() {
     </div>
   )
 }
+
+
