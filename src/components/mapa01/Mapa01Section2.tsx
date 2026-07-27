@@ -3,12 +3,14 @@
  * Section 2: Mempersiapkan Rencana Asesmen - 100% width with thin borders
  */
 
+import { BRANDING } from "@/config/branding"
+
 // ============== CONSTANTS ==============
 const COLORS = {
   BLACK: '#000',
   WHITE: '#FFF',
   RED: BRANDING.primaryColor,
-} as const;
+};
 
 const BORDER = {
   thin: '1px solid #000',
