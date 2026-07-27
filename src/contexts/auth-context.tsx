@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { authService, LoginRequest, CurrentUser } from "@/lib/auth-service"
 import { RoleId } from "@/lib/rbac-config"
+import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive"
 
 export type { CurrentUser }
 
@@ -167,10 +168,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const isAuthenticated = !!user
+  useSessionKeepAlive(isAuthenticated)
+
   const value: AuthContextType = {
     user,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated,
     login,
     logout,
     refreshUser,
