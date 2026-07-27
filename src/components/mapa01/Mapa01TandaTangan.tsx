@@ -215,7 +215,7 @@ export function Mapa01TandaTangan({
 
           {/* Dynamic rows from API */}
           {konfirmasiReferences.map((ref) => {
-            const isManajer = ref.nama === "Manajer sertifikasi LSP Gatensi Karya Konstruksi"
+            const isManajer = ref.nama === "Manajer sertifikasi LSP LSP LPK GATAKSINDO"
             return (
             <tr key={ref.id} style={{ height: ref.id === 104 ? '46pt' : '54pt' }}>
               <td style={{

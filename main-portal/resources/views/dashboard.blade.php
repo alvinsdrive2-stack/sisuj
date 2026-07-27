@@ -578,7 +578,7 @@
                     Analytics Dashboard
                 </h1>
                 <p class="text-xl text-gray-600">
-                    Real-time insights from all LSP Gatensi databases
+                    Real-time insights from all LSP LSP LPK GATAKSINDOdatabases
                 </p>
             </div>
 
@@ -1647,7 +1647,7 @@
                                 capBezierPoints: true
                             }
                         },
-                        
+
                         animation: {
                             duration: 800,
                             easing: 'easeOutCubic'

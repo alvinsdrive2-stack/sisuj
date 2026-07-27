@@ -28,7 +28,7 @@ interface SurveyItem {
 
 const REFERRAL_SOURCES = [
   'Rekomendasi Teman/ Organisasi Profesi',
-  'Mitra TUK LSP Gatensi Karya Konstruksi',
+  'Mitra TUK LSP LSP LPK GATAKSINDO',
   'Website Resmi LSP',
   'LinkedIn',
   'Tiktok',

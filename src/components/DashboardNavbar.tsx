@@ -141,7 +141,7 @@ const DashboardNavbar = memo(function DashboardNavbar({ userName = "User", timer
               className="w-[230px] h-[110px] flex items-center justify-center overflow-hidden cursor-pointer transition-transform duration-20"
               title={`Kembali ke Dashboard ${getRoleDisplayName(user?.role)}`}
             >
-              <img src={logo} alt="LSP Gatensi Logo" className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
+              <img src={logo} alt="LSP LSP LPK GATAKSINDOLogo" className=" hover:scale-105 -translate-x-4 w-[170px] h-[150px] object-contain " />
             </button>
           </div>
 
