@@ -96,8 +96,6 @@ export default function Ia04aPage() {
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
-  const [persiapanKegiatan, setPersiapanKegiatan] = useState('')
-  const [halDemonstrasi, setHalDemonstrasi] = useState('')
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData
     asesor1?: BarcodeData | null
@@ -172,11 +170,6 @@ export default function Ia04aPage() {
                 asesor2: apiBarcodes.asesor2,
               })
             }
-
-            // Initialize persiapan_kegiatan & hal_demonstrasi
-            setPersiapanKegiatan(result.data.persiapan_kegiatan || '')
-            setHalDemonstrasi(result.data.hal_demonstrasi || '')
-
 
           }
         } else {
@@ -306,18 +299,9 @@ export default function Ia04aPage() {
         return
       }
 
-      // Asesor_1: simpan persiapan_kegiatan, hal_demonstrasi & umpan balik, lalu generate QR
-      if (isAsesor && isAsesor1) {
+      // Asesor_1: simpan umpan balik, lalu generate QR
+      if (isAsesor && isAsesor1 && umpanBalikSoalId) {
         try {
-          const body: Record<string, any> = {
-            persiapan_kegiatan: persiapanKegiatan,
-            hal_demonstrasi: halDemonstrasi,
-          }
-          if (umpanBalikSoalId) {
-            body.soal_id = umpanBalikSoalId
-            body.jawaban = umpanBalikValue
-          }
-
           const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
             method: 'POST',
             headers: {
@@ -325,18 +309,35 @@ export default function Ia04aPage() {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify({
+              soal_id: umpanBalikSoalId,
+              jawaban: umpanBalikValue,
+            }),
           })
 
           if (response.ok) {
             await response.json()
           } else {
-            console.error('Failed to save IA04A:', response.status)
+            console.error('Failed to save umpan balik:', response.status)
           }
         } catch (err) {
           console.error('Error saving IA04A:', err)
         }
 
+        if (!jadwalId) {
+          showError('Jadwal tidak ditemukan')
+          return
+        }
+
+        await signing.generateQR()
+        publishUpdate()
+
+        showSuccess('IA 04.A berhasil disimpan!')
+        return
+      }
+
+      // Asesor_1 tanpa umpan balik: langsung QR
+      if (isAsesor && isAsesor1) {
         if (!jadwalId) {
           showError('Jadwal tidak ditemukan')
           return
@@ -508,23 +509,10 @@ export default function Ia04aPage() {
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
                     )
                   ) : soalItem.jenis === '1' ? (
-                    isAsesor && isAsesor1 ? (
-                      <textarea
-                        value={soalItem.urut === '1' ? persiapanKegiatan : halDemonstrasi}
-                        onChange={(e) =>
-                          soalItem.urut === '1'
-                            ? setPersiapanKegiatan(e.target.value)
-                            : setHalDemonstrasi(e.target.value)
-                        }
-                        style={{ width: '100%', height: '120px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
-                        placeholder={soalItem.urut === '1' ? 'Tulis catatan persiapan kegiatan...' : 'Tulis catatan demonstrasi...'}
-                      />
-                    ) : (
-                      <div
-                        style={{ margin: '5px 0', lineHeight: '1.6' }}
-                        dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
-                      />
-                    )
+                    <div
+                      style={{ margin: '5px 0', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
+                    />
                   ) : (
                     <div style={{ height: '60px' }}></div>
                   )}
