@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle"
 import { isVideoBgOff, setVideoBgOff } from "@/components/ui/LoopingVideoBackground"
 import { BRANDING } from "@/config/branding"
 import { VideoOff, Video } from "lucide-react"
-import logo from "@/assets/logo.png"
+import { logo } from "@/config/brand"
 import { getRoleDisplayName } from "@/lib/rbac-config"
 
 const PAS_FOTO_CACHE_KEY = "pas_foto_cache"

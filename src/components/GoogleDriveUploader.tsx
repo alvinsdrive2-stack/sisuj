@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react"
-import favicon from "@/assets/favicon.png"
+import { favicon } from "@/config/brand"
 
 interface DriveUploaderProps {
   googleClientId: string | undefined

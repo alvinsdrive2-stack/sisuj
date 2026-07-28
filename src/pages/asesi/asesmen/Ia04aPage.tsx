@@ -50,8 +50,10 @@ interface Soal {
   jenis: string
   soal: string
   jawaban: string
-  is_komentar: string | null
+  is_komentar: string | boolean | null
 }
+
+const isUmpanBalik = (soal: Soal) => soal.is_komentar === "2" || soal.is_komentar === true
 
 interface Ia04aResponse {
   message: string
@@ -142,10 +144,10 @@ export default function Ia04aPage() {
           if (result.message === "Success") {
             setIa04aData(result.data)
 
-            // Initialize umpan balik map from soal with is_komentar === "2"
+            // Initialize umpan balik map from soal
             const umpanBalikInit: Record<number, string> = {}
             result.data.soal.forEach(soal => {
-              if (soal.is_komentar === "2" && soal.jawaban) {
+              if (isUmpanBalik(soal) && soal.jawaban) {
                 umpanBalikInit[soal.id] = soal.jawaban
               }
             })
@@ -248,7 +250,7 @@ export default function Ia04aPage() {
     }
 
     // Asesor 1 wajib isi umpan balik (cari soal dengan is_komentar === "2")
-    const umpanBalikSoal = ia04aData?.soal.find(s => s.is_komentar === "2")
+    const umpanBalikSoal = ia04aData?.soal.find(s => isUmpanBalik(s))
     if (isAsesor && isAsesor1 && umpanBalikSoal) {
       const umpanBalikValue = umpanBalikMap[umpanBalikSoal.id] || ''
       const trimmed = umpanBalikValue.trim()
@@ -322,6 +324,20 @@ export default function Ia04aPage() {
         } catch (err) {
           console.error('Error in asesor_1 flow:', err)
         }
+
+        showSuccess('IA 04.A berhasil disimpan!')
+        return
+      }
+
+      // Asesor_1 tanpa umpan balik: langsung generate QR
+      if (isAsesor && isAsesor1) {
+        if (!jadwalId) {
+          showError('Jadwal tidak ditemukan')
+          return
+        }
+
+        await signing.generateQR()
+        publishUpdate()
 
         showSuccess('IA 04.A berhasil disimpan!')
         return
@@ -473,7 +489,7 @@ export default function Ia04aPage() {
                   {soalItem.soal}
                 </td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  {soalItem.is_komentar === "2" ? (
+                  {isUmpanBalik(soalItem) ? (
                     // Umpan balik - editable for asesor_1
                     isAsesor && isAsesor1 ? (
                       <textarea

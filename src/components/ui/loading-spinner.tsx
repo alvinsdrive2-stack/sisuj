@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import logo from "@/assets/favicon.png"
+import { favicon as logo } from "@/config/brand"
 
 // Preload logo immediately when module loads
 const logoImg = new Image()

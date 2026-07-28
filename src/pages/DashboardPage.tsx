@@ -23,7 +23,7 @@ import {
 import { PulsingIcon } from "@/components/ui/PulsingIcon"
 import { LoopingVideoBackground } from "@/components/ui/LoopingVideoBackground"
 import DashboardNavbar from "@/components/DashboardNavbar"
-import logo from "@/assets/logo.png"
+import { logo } from "@/config/brand"
 import loopVideo from "@/assets/Sequence 01.mp4"
 import { useAuth } from "@/contexts/auth-context"
 import { BRANDING } from "@/config/branding"
