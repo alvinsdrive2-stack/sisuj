@@ -4,11 +4,12 @@ import { PenTool, FileText, Calendar, User, Clock, CheckCircle2, Search } from "
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
-import { useKegiatanDirektur } from "@/hooks/useKegiatan"
+import { useKegiatanDirektur, useDirekturDokumenStatus } from "@/hooks/useKegiatan"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 import { jenisKelasLabel } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useMemo } from "react"
+import { buildDokumenStatus } from "@/lib/direktur-dokumen-status"
 
 export default function TandatanganDirektur() {
   const navigate = useNavigate()
@@ -16,6 +17,9 @@ export default function TandatanganDirektur() {
   const [search, setSearch] = useState('')
   const { kegiatans: pendingDocs, isLoading: isLoadingPending, pagination } = useKegiatanDirektur(false, page, search)
   const { isLoading: isLoadingSigned } = useKegiatanDirektur(true)
+
+  const jadwalIds = useMemo(() => pendingDocs.map(k => k.jadwal_id), [pendingDocs])
+  const { statusMap } = useDirekturDokumenStatus(jadwalIds)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -81,6 +85,7 @@ export default function TandatanganDirektur() {
                     { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                   ]}
                   badges={[<Badge key="status" className="bg-amber-100 text-amber-700">Menunggu</Badge>]}
+                  dokumenStatus={buildDokumenStatus(statusMap[doc.jadwal_id])}
                   onClick={() => navigate(`/direktur/belum-ditandatangani/${doc.jadwal_id}`)}
                 />
               ))}

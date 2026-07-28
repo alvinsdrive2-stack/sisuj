@@ -2,41 +2,14 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Calendar, User, CheckCircle2, Search } from "lucide-react"
-import { DocumentCard, EmptyState, DokumenStatusItem } from "@/components/direktur"
-import { useKegiatanDirektur, useDirekturDokumenStatus, DirekturDokumenStatus } from "@/hooks/useKegiatan"
+import { DocumentCard, EmptyState } from "@/components/direktur"
+import { useKegiatanDirektur, useDirekturDokumenStatus } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 import { jenisKelasLabel } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
-
-function buildDokumenStatus(ds: DirekturDokumenStatus | undefined): DokumenStatusItem[] {
-  if (!ds) return []
-  const items: DokumenStatusItem[] = []
-  const approval = ds.approval_status
-
-  const pushDoc = (key: string, label: string, url: string | null, approved: boolean) => {
-    if (!url) {
-      items.push({ key, label, state: 'not-generated' })
-    } else {
-      items.push({ key, label, state: approved ? 'approved' : 'pending' })
-    }
-  }
-
-  pushDoc('sk_pelaksanaan_uji', 'SK Pel. Uji', ds.sk_pelaksanaan_uji, approval.sk_pelaksanaan_uji)
-  pushDoc('spt_asesor', 'SPT Asesor', ds.spt_asesor, approval.spt_asesor)
-  pushDoc('spt_komtek', 'SPT Komtek', ds.spt_komtek, approval.spt_komtek)
-
-  const ba = approval.ba_komtek
-  const baAllApproved = ba && ba.komtek1 && ba.komtek2 && ba.komtek3
-  if (!ds.ba_komtek) {
-    items.push({ key: 'ba_komtek', label: 'BA Komtek', state: 'not-generated' })
-  } else {
-    items.push({ key: 'ba_komtek', label: 'BA Komtek', state: baAllApproved ? 'approved' : 'pending' })
-  }
-
-  return items
-}
+import { buildDokumenStatus } from "@/lib/direktur-dokumen-status"
 
 export default function SudahDitandatangani() {
   const navigate = useNavigate()
