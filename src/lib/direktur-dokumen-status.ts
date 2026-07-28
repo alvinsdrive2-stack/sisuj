@@ -16,7 +16,6 @@ export function buildDokumenStatus(ds: DirekturDokumenStatus | undefined): Dokum
 
   pushDoc('sk_pelaksanaan_uji', 'SK Pel. Uji', ds.sk_pelaksanaan_uji, approval.sk_pelaksanaan_uji)
   pushDoc('spt_asesor', 'SPT Asesor', ds.spt_asesor, approval.spt_asesor)
-  pushDoc('sk_komtek', 'SK Komtek', ds.sk_komtek, approval.sk_komtek)
   pushDoc('spt_komtek', 'SPT Komtek', ds.spt_komtek, approval.spt_komtek)
 
   const ba = approval.ba_komtek
@@ -31,16 +30,12 @@ export function buildDokumenStatus(ds: DirekturDokumenStatus | undefined): Dokum
   const asesiValues = Object.values(penetapanStatus)
   const total = asesiValues.length
   const approvedCount = asesiValues.filter(Boolean).length
-  if (!ds.sk_penetapan || total === 0) {
-    items.push({ key: 'sk_penetapan', label: 'SK Penetapan', state: 'not-generated' })
-  } else {
-    const label = `SK Penetapan ${approvedCount}/${total}`
-    items.push({
-      key: 'sk_penetapan',
-      label,
-      state: approvedCount === total ? 'approved' : 'pending',
-    })
-  }
+  const label = `SK Penetapan ${approvedCount}/${total}`
+  items.push({
+    key: 'sk_penetapan',
+    label,
+    state: approvedCount === total && total > 0 ? 'approved' : 'pending',
+  })
 
   return items
 }
