@@ -147,6 +147,12 @@ export default function Ak03Page() {
     nextPageName: nextStepLabel,
   })
 
+  // Setiap pertanyaan wajib Ya/Tidak. Catatan/komentar asesi opsional.
+  const feedbackValid = feedbackItems.length > 0 && feedbackItems.every(item => item.ya || item.tidak)
+  const submitDisabled = signing.buttonDisabled || (!signing.allSigned && !feedbackValid)
+  const submitText = (!signing.allSigned && !feedbackValid)
+    ? 'Mohon untuk melengkapi semua pernyataan'
+    : signing.buttonText
 
   const handleFeedbackChange = (id: number, field: 'ya' | 'tidak') => {
     setFeedbackItems(prev => prev.map(item => {
@@ -411,8 +417,8 @@ export default function Ak03Page() {
                 Kembali
               </ActionButton>
             )}
-            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : signing.buttonText}
+            <ActionButton variant="primary" disabled={submitDisabled} onClick={handleSave}>
+              {isSaving ? "Menyimpan..." : submitText}
             </ActionButton>
           </div>
         </div>
