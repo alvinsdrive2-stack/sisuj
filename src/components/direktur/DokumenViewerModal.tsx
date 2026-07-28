@@ -70,7 +70,7 @@ export function DokumenViewerModal({ isOpen, onClose, url, title, onSign, isSign
           ) : hasUrl ? (
             <img
               key={cacheBuster.current}
-              src={src}
+              src={src!}
               alt={title}
               className="w-full h-full object-contain"
             />
