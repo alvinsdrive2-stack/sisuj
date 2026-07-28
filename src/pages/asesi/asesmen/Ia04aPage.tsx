@@ -508,24 +508,23 @@ export default function Ia04aPage() {
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
                     )
                   ) : soalItem.jenis === '1' ? (
-                    <>
+                    isAsesor && isAsesor1 ? (
+                      <textarea
+                        value={soalItem.urut === '1' ? persiapanKegiatan : halDemonstrasi}
+                        onChange={(e) =>
+                          soalItem.urut === '1'
+                            ? setPersiapanKegiatan(e.target.value)
+                            : setHalDemonstrasi(e.target.value)
+                        }
+                        style={{ width: '100%', height: '120px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        placeholder={soalItem.urut === '1' ? 'Tulis catatan persiapan kegiatan...' : 'Tulis catatan demonstrasi...'}
+                      />
+                    ) : (
                       <div
                         style={{ margin: '5px 0', lineHeight: '1.6' }}
                         dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
                       />
-                      {isAsesor && isAsesor1 && (
-                        <textarea
-                          value={soalItem.urut === '1' ? persiapanKegiatan : halDemonstrasi}
-                          onChange={(e) =>
-                            soalItem.urut === '1'
-                              ? setPersiapanKegiatan(e.target.value)
-                              : setHalDemonstrasi(e.target.value)
-                          }
-                          style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', marginTop: '8px' }}
-                          placeholder={soalItem.urut === '1' ? 'Catatan persiapan kegiatan...' : 'Catatan demonstrasi...'}
-                        />
-                      )}
-                    </>
+                    )
                   ) : (
                     <div style={{ height: '60px' }}></div>
                   )}
