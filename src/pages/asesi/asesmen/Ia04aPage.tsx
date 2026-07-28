@@ -508,13 +508,8 @@ export default function Ia04aPage() {
                     ) : (
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
                     )
-                  ) : soalItem.jenis === '1' ? (
-                    <div
-                      style={{ margin: '5px 0', lineHeight: '1.6' }}
-                      dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
-                    />
                   ) : (
-                    <div style={{ height: '60px' }}></div>
+                    <div style={{ margin: '5px 0', lineHeight: '1.6' }}>{soalItem.jawaban || '-'}</div>
                   )}
                 </td>
               </tr>
