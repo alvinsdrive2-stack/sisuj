@@ -61,6 +61,9 @@ interface Ia04aResponse {
     kelompok_kerja: KelompokKerjaData
     referensi_form: ReferensiForm[]
     soal: Soal[]
+    persiapan_kegiatan?: string
+    hal_demonstrasi?: string
+    umpan_balik?: string
     barcodes?: {
       asesi?: { url: string; tanggal: string; nombre: string }
       asesor1?: { url: string; tanggal: string; nombre: string } | null
@@ -93,6 +96,8 @@ export default function Ia04aPage() {
   const [ia04aData, setIa04aData] = useState<Ia04aResponse["data"] | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [umpanBalikMap, setUmpanBalikMap] = useState<Record<number, string>>({})
+  const [persiapanKegiatan, setPersiapanKegiatan] = useState('')
+  const [halDemonstrasi, setHalDemonstrasi] = useState('')
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData
     asesor1?: BarcodeData | null
@@ -168,7 +173,11 @@ export default function Ia04aPage() {
               })
             }
 
-            
+            // Initialize persiapan_kegiatan & hal_demonstrasi
+            setPersiapanKegiatan(result.data.persiapan_kegiatan || '')
+            setHalDemonstrasi(result.data.hal_demonstrasi || '')
+
+
           }
         } else {
           console.warn(`IA04A API returned ${response.status}`)
@@ -298,9 +307,18 @@ export default function Ia04aPage() {
         return
       }
 
-      // Asesor_1: simpan umpan balik, lalu generate QR
-      if (isAsesor1WithUmpan && umpanBalikSoalId) {
+      // Asesor_1: simpan persiapan_kegiatan, hal_demonstrasi & umpan balik, lalu generate QR
+      if (isAsesor && isAsesor1) {
         try {
+          const body: Record<string, any> = {
+            persiapan_kegiatan: persiapanKegiatan,
+            hal_demonstrasi: halDemonstrasi,
+          }
+          if (umpanBalikSoalId) {
+            body.soal_id = umpanBalikSoalId
+            body.jawaban = umpanBalikValue
+          }
+
           const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
             method: 'POST',
             headers: {
@@ -308,29 +326,18 @@ export default function Ia04aPage() {
               "Authorization": `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              soal_id: umpanBalikSoalId,
-              jawaban: umpanBalikValue,
-            }),
+            body: JSON.stringify(body),
           })
 
           if (response.ok) {
             await response.json()
-            await signing.generateQR()
-            publishUpdate()
           } else {
-            console.error('Failed to save umpan balik:', response.status)
+            console.error('Failed to save IA04A:', response.status)
           }
         } catch (err) {
-          console.error('Error in asesor_1 flow:', err)
+          console.error('Error saving IA04A:', err)
         }
 
-        showSuccess('IA 04.A berhasil disimpan!')
-        return
-      }
-
-      // Asesor_1 tanpa umpan balik: langsung generate QR
-      if (isAsesor && isAsesor1) {
         if (!jadwalId) {
           showError('Jadwal tidak ditemukan')
           return
@@ -502,10 +509,24 @@ export default function Ia04aPage() {
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
                     )
                   ) : soalItem.jenis === '1' ? (
-                    <div
-                      style={{ margin: '5px 0', lineHeight: '1.6' }}
-                      dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
-                    />
+                    <>
+                      <div
+                        style={{ margin: '5px 0', lineHeight: '1.6' }}
+                        dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
+                      />
+                      {isAsesor && isAsesor1 && (
+                        <textarea
+                          value={soalItem.urut === '1' ? persiapanKegiatan : halDemonstrasi}
+                          onChange={(e) =>
+                            soalItem.urut === '1'
+                              ? setPersiapanKegiatan(e.target.value)
+                              : setHalDemonstrasi(e.target.value)
+                          }
+                          style={{ width: '100%', height: '80px', border: '1px solid #ccc', padding: '8px', fontSize: '13px', resize: 'none', fontFamily: 'Arial, Helvetica, sans-serif', marginTop: '8px' }}
+                          placeholder={soalItem.urut === '1' ? 'Catatan persiapan kegiatan...' : 'Catatan demonstrasi...'}
+                        />
+                      )}
+                    </>
                   ) : (
                     <div style={{ height: '60px' }}></div>
                   )}
