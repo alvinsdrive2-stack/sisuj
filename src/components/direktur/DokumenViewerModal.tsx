@@ -1,6 +1,6 @@
 import { createPortal } from "react-dom"
 import { X, Download, ExternalLink, FileText, Check } from "lucide-react"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 interface DokumenViewerModalProps {
   isOpen: boolean
@@ -12,8 +12,11 @@ interface DokumenViewerModalProps {
 }
 
 export function DokumenViewerModal({ isOpen, onClose, url, title, onSign, isSigning }: DokumenViewerModalProps) {
+  const cacheBuster = useRef(Date.now())
+
   useEffect(() => {
     if (isOpen) {
+      cacheBuster.current = Date.now()
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -27,6 +30,7 @@ export function DokumenViewerModal({ isOpen, onClose, url, title, onSign, isSign
 
   const isPdf = typeof url === 'string' && url.endsWith('.pdf')
   const hasUrl = typeof url === 'string'
+  const src = hasUrl ? `${url}${url.includes('?') ? '&' : '?'}_t=${cacheBuster.current}` : url
 
   const content = (
     <div
@@ -58,13 +62,15 @@ export function DokumenViewerModal({ isOpen, onClose, url, title, onSign, isSign
         <div className="flex-1 overflow-hidden">
           {isPdf ? (
             <iframe
-              src={url + '#toolbar=0&navpanes=0'}
+              key={cacheBuster.current}
+              src={src + '#toolbar=0&navpanes=0'}
               className="w-full h-full border-0"
               title={title}
             />
           ) : hasUrl ? (
             <img
-              src={url}
+              key={cacheBuster.current}
+              src={src}
               alt={title}
               className="w-full h-full object-contain"
             />
