@@ -157,7 +157,7 @@ export default function UploadTugasPage() {
       const formData = new FormData()
       formData.append('file', selectedFile)
 
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/upload-tugas`, {
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/tugas`, {
         method: 'POST',
         headers: {
           "Authorization": `Bearer ${token}`,
