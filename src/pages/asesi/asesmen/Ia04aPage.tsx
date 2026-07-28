@@ -287,7 +287,6 @@ export default function Ia04aPage() {
     const isAsesor2 = isAsesor && !isAsesor1
     const umpanBalikSoalId = umpanBalikSoal?.id
     const umpanBalikValue = umpanBalikSoalId ? (umpanBalikMap[umpanBalikSoalId] || '') : ''
-    const isAsesor1WithUmpan = isAsesor && isAsesor1 && umpanBalikValue.trim()
     const token = localStorage.getItem("access_token")
 
     setIsSaving(true)
