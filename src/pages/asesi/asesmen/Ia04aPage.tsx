@@ -47,7 +47,7 @@ interface ReferensiForm {
 interface Soal {
   id: number
   urut: string
-  jenis: string
+  jenis: string | number
   soal: string
   jawaban: string
   is_komentar: string | boolean | null
@@ -507,9 +507,12 @@ export default function Ia04aPage() {
                       />
                     ) : (
                       <p style={{ margin: '5px 0' }}>{umpanBalikMap[soalItem.id] || soalItem.jawaban || '-'}</p>
-                    )
+                    )                  
                   ) : (
-                    <div style={{ margin: '5px 0', lineHeight: '1.6' }}>{soalItem.jawaban || '-'}</div>
+                    <div
+                      style={{ margin: '5px 0', lineHeight: '1.6' }}
+                      dangerouslySetInnerHTML={{ __html: soalItem.jawaban }}
+                    />
                   )}
                 </td>
               </tr>
