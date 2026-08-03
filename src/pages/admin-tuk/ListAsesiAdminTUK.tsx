@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText, ChevronDown, Camera } from "lucide-react"
+import { ArrowLeft, Users, Clock, Calendar, MapPin, Play, UserCheck, FileText, ChevronDown, Camera, RotateCcw } from "lucide-react"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useListAsesi } from "@/hooks/useKegiatan"
@@ -11,6 +11,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState, useRef } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
@@ -107,6 +108,9 @@ export default function ListAsesiAdminTUK() {
   const [startingAsesmen, setStartingAsesmen] = useState(false)
   const [showDaftarHadirMenu, setShowDaftarHadirMenu] = useState(false)
   const daftarHadirMenuRef = useRef<HTMLDivElement>(null)
+  const [resettingJadwal, setResettingJadwal] = useState(false)
+  const [resettingAsesi, setResettingAsesi] = useState<string | null>(null)
+  const [resetConfirm, setResetConfirm] = useState<null | 'jadwal' | { id_izin: string; nama: string }>(null)
   const { openDetailModal, openKegiatanModal } = useDaftarHadirModal()
 
   // Group asesi by skema
@@ -191,6 +195,40 @@ export default function ListAsesiAdminTUK() {
       console.error('Error starting asesmen:', error)
       toast(error instanceof Error ? error.message : "Gagal memulai asesmen", "error")
       setStartingAsesmen(false)
+    }
+  }
+
+  const handleResetJadwal = async () => {
+    if (!jadwalId) return
+    setResettingJadwal(true)
+    try {
+      await kegiatanService.resetJadwalKeTahapSatu(jadwalId)
+      toast("Jadwal kembali ke tahap pra-asesmen", "success")
+      setKegiatan(prev => prev ? { ...prev, tahap: 1, is_started: "0" } : prev)
+      setKegiatanRefreshKey(k => k + 1)
+      publishJadwalUpdate({ type: 'tahap-update', action: 'reset-ke-tahap-1', jadwalId })
+      refetch()
+    } catch (error) {
+      console.error('Error resetting jadwal ke tahap 1:', error)
+      toast(error instanceof Error ? error.message : "Gagal reset jadwal", "error")
+    } finally {
+      setResettingJadwal(false)
+      setResetConfirm(null)
+    }
+  }
+
+  const handleResetJawabanAsesi = async (idIzin: string) => {
+    setResettingAsesi(idIzin)
+    try {
+      await kegiatanService.resetJawabanAsesi(idIzin)
+      toast("Jawaban asesi berhasil direset", "success")
+      refetch()
+    } catch (error) {
+      console.error('Error resetting jawaban asesi:', error)
+      toast(error instanceof Error ? error.message : "Gagal reset jawaban asesi", "error")
+    } finally {
+      setResettingAsesi(null)
+      setResetConfirm(null)
     }
   }
 
@@ -322,7 +360,33 @@ export default function ListAsesiAdminTUK() {
                     </div>
                   </div>
                 </div>
-              )}      
+              )}
+              {/* Reset ke tahap 1 — hanya saat tahap 2 (Asesmen) */}
+              {kegiatan?.tahap === 2 && (
+                <div className="w-full space-y-1">
+                  <Button
+                    variant="outline"
+                    onClick={() => setResetConfirm('jadwal')}
+                    disabled={resettingJadwal}
+                    className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20"
+                  >
+                    {resettingJadwal ? (
+                      <>
+                        <SimpleSpinner size="sm" className="mr-2" />
+                        Mereset...
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Kembali ke Pra-Asesmen
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-[11px] text-amber-600 text-center leading-tight">
+                    Reset seluruh jadwal ke tahap pra-asesmen & hapus jawaban asesmen
+                  </p>
+                </div>
+              )}
               {/* Start Button - based on is_started and is_started_praasesmen */}
               {kegiatan?.tahap === 0 && (
                 <Button
@@ -434,6 +498,19 @@ export default function ListAsesiAdminTUK() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
                           <div className="flex items-center gap-2">
+                            {kegiatan?.tahap === 2 && (
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setResetConfirm({ id_izin: asesi.id_izin, nama: asesi.nama }) }}
+                                disabled={resettingAsesi === asesi.id_izin}
+                                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                                title="Reset jawaban asesi ini"
+                              >
+                                {resettingAsesi === asesi.id_izin
+                                  ? <SimpleSpinner size="sm" />
+                                  : <RotateCcw className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
                             <span className={`w-2.5 h-2.5 rounded-full ${asesiSudah ? 'bg-emerald-500' : 'bg-slate-300'}`} title={`Asesi: ${asesiSudah ? 'sudah absen akhir' : 'belum absen akhir'}`} />
                             <span className={`w-2.5 h-2.5 rounded-full ${asesor1Sudah ? 'bg-emerald-500' : 'bg-slate-300'}`} title={`Asesor 1: ${asesor1Sudah ? 'sudah absen akhir' : 'belum absen akhir'}`} />
                           </div>
@@ -524,6 +601,24 @@ export default function ListAsesiAdminTUK() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Konfirmasi Reset */}
+      <ConfirmDialog
+        isOpen={resetConfirm !== null}
+        title={resetConfirm === 'jadwal' ? 'Kembali ke Pra-Asesmen' : 'Reset Jawaban Asesi'}
+        message={
+          resetConfirm === 'jadwal'
+            ? 'Seluruh progres asesmen pada jadwal ini akan direset. Semua asesi kembali ke tahap pra-asesmen dan jawaban asesmen dihapus. Lanjutkan?'
+            : `Jawaban asesmen "${resetConfirm?.nama}" akan dihapus dan asesi ini kembali ke tahap pra-asesmen. Lanjutkan?`
+        }
+        confirmText="Ya, reset"
+        confirmColor="#d97706"
+        onConfirm={() => {
+          if (resetConfirm === 'jadwal') handleResetJadwal()
+          else if (resetConfirm) handleResetJawabanAsesi(resetConfirm.id_izin)
+        }}
+        onCancel={() => setResetConfirm(null)}
+      />
     </div>
   )
 }

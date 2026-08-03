@@ -362,6 +362,46 @@ class KegiatanService {
     return response.json()
   }
 
+  // Reset jadwal ke tahap 1 (pra-asesmen) — khusus admin TUK
+  async resetJadwalKeTahapSatu(jadwalId: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/jadwal/${jadwalId}/reset-ke-tahap-1`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Gagal reset jadwal ke tahap 1" }))
+      throw new Error(error.message || "Gagal reset jadwal ke tahap 1")
+    }
+
+    return response.json()
+  }
+
+  // Reset jawaban asesi tertentu — khusus admin TUK
+  async resetJawabanAsesi(idIzin: string): Promise<{ message: string }> {
+    const token = this.getToken()
+
+    const response = await fetch(`${this.baseUrl}/asesi-jadwal/${idIzin}/reset-jawaban`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: "Gagal reset jawaban asesi" }))
+      throw new Error(error.message || "Gagal reset jawaban asesi")
+    }
+
+    return response.json()
+  }
+
   // Get list asesi by jadwal ID
   async getListAsesi(jadwalId: string): Promise<ListAsesiResponse> {
     const token = this.getToken()

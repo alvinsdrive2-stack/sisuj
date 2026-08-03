@@ -276,7 +276,7 @@ export default function Ak06Page() {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
         // If daring, no video, and no one signed yet â†’ require upload
-        if (jenisKelas === ‘2’ && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
+        if (jenisKelas === '2' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
           setPendingAfterAbsen(true)
           setShowDriveUploader(true)
           return
