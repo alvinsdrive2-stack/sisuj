@@ -6,10 +6,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const JENIS_KELAS_LABEL: Record<string, string> = {
-  '2': 'Luring',
-  '3': 'Daring',
+  '1': 'Luring',
+  '2': 'Daring',
+  '3': 'Hybrid',
   '4': 'Onsite',
-  '5': 'Hybrid',
 }
 
 export function jenisKelasLabel(id: string | undefined | null): string {

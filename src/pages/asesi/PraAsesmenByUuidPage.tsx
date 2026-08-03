@@ -47,8 +47,8 @@ export default function PraAsesmenByUuidPage() {
         // Sync UUID user ke auth context biar isAsesor dll akurat
         setUuidUser()
 
-        // Redirect ke verifikasi TUK AJJ jika jenis kelas 3
-        if (Number(jenis_kelas_id) === 3) {
+        // Redirect ke verifikasi TUK AJJ jika jenis kelas 2 (Daring)
+        if (Number(jenis_kelas_id) === 2) {
           navigate(`/praasesmen/${id_izin}/verifikasi-tuk`, { replace: true })
         } else {
           navigate(`/praasesmen/${id_izin}/konfirmasi`, { replace: true })

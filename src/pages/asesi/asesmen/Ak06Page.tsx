@@ -275,8 +275,8 @@ export default function Ak06Page() {
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
-        // If luring, no video, and no one signed yet â†’ require upload
-        if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
+        // If daring, no video, and no one signed yet â†’ require upload
+        if (jenisKelas === ‘2’ && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
           setPendingAfterAbsen(true)
           setShowDriveUploader(true)
           return
@@ -354,7 +354,7 @@ export default function Ak06Page() {
         // Auto-check absen akhir setelah save pertama â€” biar ga kelewat
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
-          if (jenisKelas === '3' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
+          if (jenisKelas === '2' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
             setShowDriveUploader(true)
             return
           }
