@@ -498,7 +498,7 @@ export default function ListAsesiAdminTUK() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            {kegiatan?.tahap === 2 && (
+                            {(kegiatan?.tahap === 1 || kegiatan?.tahap === 2) && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setResetConfirm({ id_izin: asesi.id_izin, nama: asesi.nama }) }}
@@ -609,7 +609,9 @@ export default function ListAsesiAdminTUK() {
         message={
           resetConfirm === 'jadwal'
             ? 'Seluruh progres asesmen pada jadwal ini akan direset. Semua asesi kembali ke tahap pra-asesmen dan jawaban asesmen dihapus. Lanjutkan?'
-            : `Jawaban asesmen "${resetConfirm?.nama}" akan dihapus dan asesi ini kembali ke tahap pra-asesmen. Lanjutkan?`
+            : kegiatan?.tahap === 2
+              ? `Jawaban asesmen "${resetConfirm?.nama}" akan dihapus dan asesi ini kembali ke tahap pra-asesmen. Lanjutkan?`
+              : `Jawaban pra-asesmen "${resetConfirm?.nama}" akan dihapus. Lanjutkan?`
         }
         confirmText="Ya, reset"
         confirmColor="#d97706"
