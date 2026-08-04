@@ -2,7 +2,8 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, FileText, Calendar, User, Clock, Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { CheckCircle2, FileText, Calendar, User, Clock, Search, Crown } from "lucide-react"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
@@ -19,6 +20,8 @@ export default function BelumDitandatangani() {
   const { kegiatans: pendingDocs, isLoading: isLoadingDocs, error, pagination } = useKegiatanKomtek(false, page, search)
   const { baProgress, isLoading: isLoadingProgress } = useBaKomtekProgress(pendingDocs, pendingDocs.length > 0)
   const isLoading = isLoadingDocs || isLoadingProgress
+  const [ketuaOnly, setKetuaOnly] = useState(false)
+  const filteredDocs = ketuaOnly ? pendingDocs.filter(doc => baProgress[doc.jadwal_id]?.my_position === 1) : pendingDocs
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -49,16 +52,26 @@ export default function BelumDitandatangani() {
         <p className="text-slate-600">Daftar dokumen yang belum ditandatangani</p>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari kegiatan..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        />
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari kegiatan..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          />
+        </div>
+        <Button
+          variant={ketuaOnly ? "default" : "outline"}
+          onClick={() => setKetuaOnly(v => !v)}
+          className="whitespace-nowrap"
+        >
+          <Crown className="w-4 h-4" />
+          {ketuaOnly ? "Semua Kegiatan" : "Ketua Saya"}
+        </Button>
       </div>
 
       {/* Unsigned Documents List */}
@@ -76,16 +89,16 @@ export default function BelumDitandatangani() {
               Gagal memuat data: {error}
             </div>
           )}
-          {!isLoading && !error && pendingDocs.length === 0 && (
+          {!isLoading && !error && filteredDocs.length === 0 && (
             <EmptyState
-              icon={CheckCircle2}
-              title="Semua dokumen telah ditandatangani"
-              description="Tidak ada dokumen yang menunggu tandatangan"
-              iconClassName="text-emerald-500"
+              icon={ketuaOnly ? Crown : CheckCircle2}
+              title={ketuaOnly ? "Tidak ada kegiatan ketua" : "Semua dokumen telah ditandatangani"}
+              description={ketuaOnly ? "Tidak ada kegiatan yang ketua komteknya Anda" : "Tidak ada dokumen yang menunggu tandatangan"}
+              iconClassName={ketuaOnly ? "text-amber-500" : "text-emerald-500"}
             />
           )}
           <div className="space-y-4">
-            {pendingDocs.map((doc) => {
+            {filteredDocs.map((doc) => {
               const progress = baProgress[doc.jadwal_id]
               const isKetua = progress?.my_position === 1
               return (
