@@ -7,14 +7,18 @@ import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { useKegiatanKomtek } from "@/hooks/useKegiatan"
+import { useBaKomtekProgress } from "@/hooks/useBaKomtekProgress"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 import { jenisKelasLabel } from "@/lib/utils"
+import { KetuaKomtekIcon } from "@/components/komtek/KetuaKomtekIcon"
 
 export default function SudahDitandatangani() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const { kegiatans: signedDocs, isLoading, error, pagination } = useKegiatanKomtek(true, page, search)
+  const { kegiatans: signedDocs, isLoading: isLoadingDocs, error, pagination } = useKegiatanKomtek(true, page, search)
+  const { baProgress, isLoading: isLoadingProgress } = useBaKomtekProgress(signedDocs, signedDocs.length > 0)
+  const isLoading = isLoadingDocs || isLoadingProgress
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -70,22 +74,27 @@ export default function SudahDitandatangani() {
             />
           ) : (
             <div className="space-y-4">
-              {signedDocs.map((doc) => (
-                <DocumentCard
-                  key={doc.jadwal_id}
-                  nomorKegiatan={doc.nama_kegiatan}
-                  skemaSertifikasi={getUniqueSkemaNames(doc)}
-                  jenisAsesmen={jenisKelasLabel(doc.jenis_kelas)}
-                  documentInfo={[
-                    { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
-                    { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '' },
-                    { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
-                    { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
-                  ]}
-                  badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
-                  onClick={() => navigate(`/komtek/sudah-ditandatangani/${doc.jadwal_id}`)}
-                />
-              ))}
+              {signedDocs.map((doc) => {
+                const progress = baProgress[doc.jadwal_id]
+                const isKetua = progress?.my_position === 1
+                return (
+                  <DocumentCard
+                    key={doc.jadwal_id}
+                    nomorKegiatan={doc.nama_kegiatan}
+                    skemaSertifikasi={getUniqueSkemaNames(doc)}
+                    jenisAsesmen={jenisKelasLabel(doc.jenis_kelas)}
+                    documentInfo={[
+                      { icon: User, label: "Asesor", value: `${doc.asesor?.nama?.toUpperCase() || ''}${doc.asesor2 ? ` & ${doc.asesor2.nama?.toUpperCase() || ''}` : ''}` || '-' },
+                      { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '' },
+                      { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
+                      { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
+                    ]}
+                    badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
+                    cornerElement={isKetua ? <KetuaKomtekIcon signed={!!progress?.my_ttd_signed} /> : undefined}
+                    onClick={() => navigate(`/komtek/sudah-ditandatangani/${doc.jadwal_id}`)}
+                  />
+                )
+              })}
             </div>
           )}
 

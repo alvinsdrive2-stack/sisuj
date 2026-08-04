@@ -24,6 +24,7 @@ interface DocumentCardProps {
   actions?: ReactNode[]
   dokumenStatus?: DokumenStatusItem[]
   cardClassName?: string
+  cornerElement?: ReactNode
   onClick?: () => void
 }
 
@@ -36,13 +37,17 @@ export function DocumentCard({
   actions = [],
   dokumenStatus,
   cardClassName = "",
+  cornerElement,
   onClick
 }: DocumentCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`p-5 border border-slate-200 rounded-lg transition-all ${onClick ? 'cursor-pointer hover:border-primary hover:shadow-md' : ''} ${cardClassName}`}
+      className={`relative p-5 border border-slate-200 rounded-lg transition-all ${onClick ? 'cursor-pointer hover:border-primary hover:shadow-md' : ''} ${cardClassName}`}
     >
+      {cornerElement && (
+        <div className="absolute top-3 right-3 z-10">{cornerElement}</div>
+      )}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">

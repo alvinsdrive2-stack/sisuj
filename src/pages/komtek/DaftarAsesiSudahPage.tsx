@@ -21,6 +21,7 @@ interface KomtekFiles {
   ba_komtek_ttd_progress?: { komtek1: boolean; komtek2: boolean; komtek3: boolean }
   my_ttd_signed?: boolean
   my_position?: number
+  nama_komtek1?: string
   spt_komtek?: string
   sk_komtek?: string
 }
@@ -465,7 +466,7 @@ export default function DaftarAsesiSudahPage() {
                         return
                       }
                     } else if (!rapatSudahMulai) {
-                      showWarning('Rapat belum dimulai oleh ketua komtek')
+                      showWarning(`Rapat belum dimulai oleh ${komtekFiles.nama_komtek1 || 'ketua komtek'}`)
                       return
                     }
                     setSelectedDokumen({
@@ -483,7 +484,13 @@ export default function DaftarAsesiSudahPage() {
                         {isGreen && <Check className="w-4 h-4 text-emerald-500" />}
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {!hasDoc ? 'Belum tersedia' : mySigned ? 'Sudah Anda tandatangani' : 'Anda belum tanda tangan'}
+                        {!hasDoc
+                          ? 'Belum tersedia'
+                          : mySigned
+                            ? 'Sudah Anda tandatangani'
+                            : !progress?.komtek1
+                              ? `Rapat belum dimulai ${komtekFiles.nama_komtek1 || 'oleh ketua komtek'}`
+                              : 'Anda belum tanda tangan'}
                       </span>
                     </div>
                   </div>
