@@ -14,7 +14,7 @@ export function KetuaKomtekIcon({ signed = false, className = "" }: KetuaKomtekI
       className={`flex flex-col items-center gap-0.5 ${className}`}
     >
       <span
-        className="inline-block w-8 h-8"
+        className="inline-block w-12 h-12"
         style={{
           backgroundColor: color,
           WebkitMaskImage: `url(${ketuaIcon})`,
@@ -28,7 +28,7 @@ export function KetuaKomtekIcon({ signed = false, className = "" }: KetuaKomtekI
         }}
       />
       <span
-        className="text-[9px] font-bold tracking-wider uppercase leading-none"
+        className="text-[10px] font-bold tracking-wider uppercase leading-none"
         style={{ color }}
       >
         Ketua
