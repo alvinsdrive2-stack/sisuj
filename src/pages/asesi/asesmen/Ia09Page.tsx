@@ -15,6 +15,7 @@ import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { API_BASE_URL } from "@/config/api"
 import { BRANDING } from "@/config/branding"
+import { useToast } from "@/contexts/ToastContext"
 
 interface BarcodeData {
   url: string
@@ -58,6 +59,7 @@ interface Ia09Response {
 
 export default function Ia09Page() {
   const navigate = useNavigate()
+  const { showError } = useToast()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const {
@@ -192,6 +194,11 @@ export default function Ia09Page() {
     }
 
     if (!signing.agreedChecklist) {
+      return
+    }
+
+    if (pertanyaanList.some(p => !p.kesimpulan?.trim())) {
+      showError("Tidak dapat merekam hasil, mohon isi semua jawaban atau segarkan laman jika partner asesor sudah mengisi")
       return
     }
 
