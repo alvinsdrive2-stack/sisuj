@@ -195,6 +195,7 @@ export default function Apl01Page() {
   const fetchData = useCallback(async () => {
     try {
       if (!idIzin) {
+        setIsDataLoading(false)
         return
       }
 
@@ -231,7 +232,6 @@ export default function Apl01Page() {
           if (result.data.barcodes) {
             setBarcodes(result.data.barcodes)
           }
-          setIsDataLoading(false)
         }
       }
 
@@ -263,6 +263,7 @@ export default function Apl01Page() {
 
     } catch (error) {
       // Continue with empty form
+    } finally {
       setIsDataLoading(false)
     }
   }, [idIzin])
