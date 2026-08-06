@@ -10,15 +10,21 @@ import { RoleId } from "@/lib/rbac-config"
  * - Jika role asesi (atau lainnya): menggunakan useKegiatanAsesi
  *
  * Hanya fetch data untuk role yang sesuai, menghindari 403 error.
+ * Tidak akan fetch jika user belum tersedia (misalnya no token, UUID flow, dsb).
  */
 export function useKegiatanByRole() {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
+  // Only enable API calls when auth is settled AND we have a user.
+  // When user is null (no token / UUID not yet resolved), skip entirely
+  // to avoid 401 on endpoints like /api/kegiatan/asesi that the UUID token
+  // cannot access.
+  const ready = !isAuthLoading && !!user
+
   // Hooks harus dipanggil unconditionally, tapi kita kontrol enabled-nya
-  // Hanya fetch untuk role yang sesuai
-  const { kegiatan: kegiatanAsesi, isLoading: isLoadingAsesi } = useKegiatanAsesi(!isAsesor)
-  const { kegiatan: kegiatanAsesor, isLoading: isLoadingAsesor } = useKegiatanAsesor(isAsesor)
+  const { kegiatan: kegiatanAsesi, isLoading: isLoadingAsesi } = useKegiatanAsesi(ready && !isAsesor)
+  const { kegiatan: kegiatanAsesor, isLoading: isLoadingAsesor } = useKegiatanAsesor(ready && isAsesor)
 
   // Return data berdasarkan role
   return {

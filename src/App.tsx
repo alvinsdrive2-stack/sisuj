@@ -143,8 +143,8 @@ function App() {
           <Route path="/persiapan-asesmen/:uuid" element={<PraAsesmenByUuidPage />} />
           <Route path="/praasesmen/:idIzin/verifikasi-tuk" element={<VerifikasiTukAjjPage />} />
           <Route path="/praasesmen/:idIzin/konfirmasi" element={<KonfirmasiDataPage />} />
-          <Route path="/praasesmen/:idIzin/apl01" element={<Apl01Page />} />
-          <Route path="/praasesmen/:idIzin/apl02" element={<Apl02Page />} />
+          <Route path="/praasesmen/:idIzin/apl01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
+          <Route path="/praasesmen/:idIzin/apl02" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
           <Route path="/praasesmen/:idIzin/apl02/success" element={<Apl02SuccessPage />} />
           <Route path="/praasesmen/:idIzin/apl02/failed" element={<Apl02FailedPage />} />
           <Route
