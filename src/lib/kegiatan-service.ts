@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/config/api"
+import { apiFetch, apiFetchJson } from "@/lib/api-fetch"
 
 // Kegiatan / Jadwal Types
 export interface Kegiatan {
@@ -131,10 +132,6 @@ class KegiatanService {
     this.baseUrl = baseUrl
   }
 
-  private getToken(): string | null {
-    return localStorage.getItem("access_token")
-  }
-
   private isCacheValid(): boolean {
     return this.kegiatanCache.data !== null && Date.now() < this.kegiatanCache.expiry
   }
@@ -144,15 +141,7 @@ class KegiatanService {
       return this.kegiatanCache.data!
     }
 
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
+    const response = await apiFetch(`${this.baseUrl}/kegiatan`)
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan" }))
@@ -216,210 +205,61 @@ class KegiatanService {
 
   // Get kegiatan asesi (single object)
   async getKegiatanAsesi(): Promise<KegiatanAsesorResponse> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/asesi`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesi" }))
-      throw new Error(error.message || "Failed to fetch kegiatan asesi")
-    }
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/asesi`)
   }
 
   // Get kegiatan for admin TUK (paginated, by date)
   async getKegiatanAdminTUK(tanggalUji: string): Promise<PaginatedKegiatanResponse> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/admin-tuk?tanggal_uji=${tanggalUji}`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan admin TUK" }))
-      throw new Error(error.message || "Failed to fetch kegiatan admin TUK")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?tanggal_uji=${tanggalUji}`)
   }
 
   // Get kegiatan for direktur (paginated, by ttd status)
   async getKegiatanDirektur(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
-    const token = this.getToken()
     const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
     if (search) params.set('search', search)
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/direktur?${params}`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan direktur" }))
-      throw new Error(error.message || "Failed to fetch kegiatan direktur")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/direktur?${params}`)
   }
 
   // Get kegiatan for komtek (paginated, by ttd status)
   async getKegiatanKomtek(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
-    const token = this.getToken()
     const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
     if (search) params.set('search', search)
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/komtek?${params}`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan komtek" }))
-      throw new Error(error.message || "Failed to fetch kegiatan komtek")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/komtek?${params}`)
   }
 
   // Get kegiatan asesor (paginated)
   async getKegiatanAsesor(page: number = 1, search: string = '', tahap?: number): Promise<KegiatanAsesorResponse> {
-    const token = this.getToken()
     const params = new URLSearchParams({ page: String(page) })
     if (search) params.set('search', search)
     if (tahap !== undefined) params.set('tahap', String(tahap))
 
     const url = `${this.baseUrl}/kegiatan/asesor?${params}`
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch kegiatan asesor" }))
-      throw new Error(error.message || "Failed to fetch kegiatan asesor")
-    }
-
-    const result = await response.json()
-    return result
+    return apiFetchJson(url)
   }
 
   // Start assessment
   async startAssessment(jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}/start`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to start assessment" }))
-      throw new Error(error.message || "Failed to start assessment")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/${jadwalId}/start`, { method: "POST" })
   }
 
   // Start pra-asesmen
   async startPraAsesmen(jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}/start-praasesmen`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to start pra-asesmen" }))
-      throw new Error(error.message || "Failed to start pra-asesmen")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/${jadwalId}/start-praasesmen`, { method: "POST" })
   }
 
   // Reset jadwal ke tahap 1 (pra-asesmen) — khusus admin TUK
   async resetJadwalKeTahapSatu(jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/jadwal/${jadwalId}/reset-ke-tahap-1`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Gagal reset jadwal ke tahap 1" }))
-      throw new Error(error.message || "Gagal reset jadwal ke tahap 1")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/jadwal/${jadwalId}/reset-ke-tahap-1`, { method: "POST" })
   }
 
   // Reset jawaban asesi tertentu — khusus admin TUK
   async resetJawabanAsesi(idIzin: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/asesi-jadwal/${idIzin}/reset-jawaban`, {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Gagal reset jawaban asesi" }))
-      throw new Error(error.message || "Gagal reset jawaban asesi")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/asesi-jadwal/${idIzin}/reset-jawaban`, { method: "POST" })
   }
 
   // Get list asesi by jadwal ID
   async getListAsesi(jadwalId: string): Promise<ListAsesiResponse> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}/list-asesi`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch list asesi" }))
-      throw new Error(error.message || "Failed to fetch list asesi")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/${jadwalId}/list-asesi`)
   }
 
   // Save APL 01 data pekerjaan (khusus asesi)
@@ -435,27 +275,11 @@ class KegiatanService {
       email_kantor: string | null
     }
   ): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    // Temporarily skip email_kantor due to backend column type issue (set as integer instead of varchar)
-
-
-    const response = await fetch(`${this.baseUrl}/praasesmen/${idIzin}/apl01`, {
+    return apiFetchJson(`${this.baseUrl}/praasesmen/${idIzin}/apl01`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(dataPekerjaan),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to save APL 01 data pekerjaan" }))
-      throw new Error(error.message || "Failed to save APL 01 data pekerjaan")
-    }
-
-    return response.json()
   }
 
   // Save APL 02 (khusus asesi)
@@ -467,155 +291,57 @@ class KegiatanService {
       answers: Array<{ subunit_id: number; kompeten: boolean }>
     }
   ): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/praasesmen/${idIzin}/apl02`, {
+    return apiFetchJson(`${this.baseUrl}/praasesmen/${idIzin}/apl02`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to save APL 02" }))
-      throw new Error(error.message || "Failed to save APL 02")
-    }
-
-    return response.json()
   }
 
   // Generate QR for APL 01
   async generateQRApl01(jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/qr/apl02`, {
+    return apiFetchJson(`${this.baseUrl}/qr/apl02`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id_jadwal: jadwalId }),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to generate QR APL 01" }))
-      throw new Error(error.message || "Failed to generate QR APL 01")
-    }
-
-    return response.json()
   }
 
   // Generate QR for IA05
   async generateQRIa05(idIzin: string, jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/qr/${idIzin}/ia05`, {
+    return apiFetchJson(`${this.baseUrl}/qr/${idIzin}/ia05`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id_jadwal: jadwalId
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_jadwal: jadwalId }),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to generate QR IA05" }))
-      throw new Error(error.message || "Failed to generate QR IA05")
-    }
-
-    return response.json()
   }
 
   // Update jadwal tanggal_uji
   async updateJadwal(idJadwal: string, tanggalUji: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/jadwal/${idJadwal}`, {
+    return apiFetchJson(`${this.baseUrl}/jadwal/${idJadwal}`, {
       method: "PUT",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tanggal_uji: tanggalUji }),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to update jadwal" }))
-      throw new Error(error.message || "Failed to update jadwal")
-    }
-
-    return response.json()
   }
 
   // Get history/riwayat kegiatan for admin TUK (paginated)
   async getKegiatanHistoryAdminTUK(page: number = 1): Promise<PaginatedKegiatanResponse> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/admin-tuk?page=${page}`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to fetch history" }))
-      throw new Error(error.message || "Failed to fetch history")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?page=${page}`)
   }
 
   // Get single kegiatan detail by jadwal ID
   async getKegiatanDetail(jadwalId: string): Promise<{ message: string; data: KegiatanAsesor }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/kegiatan/${jadwalId}/detail`, {
-      method: "GET",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error("Kegiatan tidak ditemukan")
-    }
-
-    return response.json()
+    return apiFetchJson(`${this.baseUrl}/kegiatan/${jadwalId}/detail`)
   }
 
   // Generate QR for Ujian
   async generateQRUjian(idIzin: string, jadwalId: string): Promise<{ message: string }> {
-    const token = this.getToken()
-
-    const response = await fetch(`${this.baseUrl}/qr/${idIzin}/ia05`, {
+    return apiFetchJson(`${this.baseUrl}/qr/${idIzin}/ia05`, {
       method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        id_jadwal: jadwalId
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id_jadwal: jadwalId }),
     })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: "Failed to generate QR Ujian" }))
-      throw new Error(error.message || "Failed to generate QR Ujian")
-    }
-
-    return response.json()
   }
 }
 

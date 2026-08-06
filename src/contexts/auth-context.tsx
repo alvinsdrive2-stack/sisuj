@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react"
 import { authService, LoginRequest, CurrentUser } from "@/lib/auth-service"
+import { onUnauthorized } from "@/lib/api-fetch"
 import { RoleId } from "@/lib/rbac-config"
 import { useSessionKeepAlive } from "@/hooks/useSessionKeepAlive"
 
@@ -20,6 +21,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // Listen for 401 unauthorized events from api-fetch — clear user state
+  // so ProtectedRoute redirects to /login instead of sitting on a broken page.
+  useEffect(() => {
+    return onUnauthorized(() => {
+      console.log('[AuthContext] Unauthorized event received — clearing user state')
+      setUser(null)
+      setIsLoading(false)
+    })
+  }, [])
 
   // Cek auth status saat mount
   useEffect(() => {

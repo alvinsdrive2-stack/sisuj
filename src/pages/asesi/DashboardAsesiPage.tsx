@@ -28,11 +28,12 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
 import { API_BASE_URL } from "@/config/api"
+import { apiFetch } from "@/lib/api-fetch"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
-  const { kegiatan, isLoading: _isLoading, error: _error, refetch } = useKegiatanAsesi()
+  const { kegiatan, isLoading, error, refetch } = useKegiatanAsesi()
   const navigate = useNavigate()
 
   // Realtime: refetch when admin TUK changes tahap
@@ -53,13 +54,7 @@ export default function DashboardAsesiPage() {
       if (!kegiatan?.jadwal_id || !user?.name) return
 
       try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
+        const response = await apiFetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`)
 
         if (response.ok) {
           const result = await response.json()
@@ -277,12 +272,32 @@ export default function DashboardAsesiPage() {
     }
   }, [countdown, isButtonLocked, kegiatan?.is_started, kegiatan?.tahap])
 
-  // Show loading overlay
-  if (isPageLoading) {
+  // Show loading overlay while page initializes or API is fetching
+  if (isPageLoading || isLoading) {
     return (
       <>
         <LoopingVideoBackground videoSrc={loopVideo} />
         <FullPageLoader text="Memuat dashboard..." />
+      </>
+    )
+  }
+
+  // Show error state when API fails (e.g. network error, server 500)
+  // Note: 401 is handled globally by api-fetch → clears token → redirects to /login
+  if (error && !kegiatan) {
+    return (
+      <>
+        <LoopingVideoBackground videoSrc={loopVideo} />
+        <div className="min-h-screen relative flex items-center justify-center">
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-8 text-center shadow-lg max-w-md mx-4">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-slate-800 mb-2">Gagal Memuat Data</h2>
+            <p className="text-slate-600 mb-4">{error}</p>
+            <Button onClick={() => refetch()} variant="default">
+              Coba Lagi
+            </Button>
+          </div>
+        </div>
       </>
     )
   }
