@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { getSigningConfig, SigningOrder } from '@/lib/signing-config'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
+import { apiFetch } from '@/lib/api-fetch'
 import { API_BASE_URL } from '@/config/api'
 
 export interface BarcodeState {
@@ -141,13 +142,9 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (!token) return false
 
     try {
-      const response = await fetch(`${API_BASE_URL}/qr/${idIzin}/${config.qrEndpoint}`, {
+      const response = await apiFetch(`${API_BASE_URL}/qr/${idIzin}/${config.qrEndpoint}`, {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_jadwal: jadwalId }),
       })
 

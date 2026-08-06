@@ -14,16 +14,10 @@ import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { apiFetch } from "@/lib/api-fetch"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
-
-const authHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("access_token")
-  const h: Record<string, string> = { "Accept": "application/json" }
-  if (token) h["Authorization"] = `Bearer ${token}`
-  return h
-}
 
 interface DataPribadi {
   nama: string
@@ -200,18 +194,11 @@ export default function Apl01Page() {
 
   const fetchData = useCallback(async () => {
     try {
-      const token = localStorage.getItem("access_token")
-
       if (!idIzin) {
         return
       }
 
-      const apl01Response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`, {
-        headers: isUuidFlow ? authHeaders() : {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
+      const apl01Response = await apiFetch(`${API_BASE_URL}/praasesmen/${idIzin}/apl01`)
 
       if (apl01Response.ok) {
         const result: ApiResponse = await apl01Response.json()
@@ -251,12 +238,7 @@ export default function Apl01Page() {
       // fetch dokumen file URLs for bukti persyaratan
       let dokumenMap: Record<string, string> = {}
       try {
-        const docRes = await fetch(`${API_BASE_URL}/kegiatan/${idIzin}/dokumen-asesi`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-          },
-        })
+        const docRes = await apiFetch(`${API_BASE_URL}/kegiatan/${idIzin}/dokumen-asesi`)
         if (docRes.ok) {
           const docJson = await docRes.json()
           if (docJson.message === "Success" && docJson.data) {
@@ -267,12 +249,7 @@ export default function Apl01Page() {
 
       // fetch kebenaran-data for pas_foto (used by bukti administratif)
       try {
-        const kebRes = await fetch(`${API_BASE_URL}/praasesmen/kebenaran-data/${idIzin}`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-          },
-        })
+        const kebRes = await apiFetch(`${API_BASE_URL}/praasesmen/kebenaran-data/${idIzin}`)
         if (kebRes.ok) {
           const kebJson = await kebRes.json()
           if (kebJson.success && kebJson.data) {
@@ -341,18 +318,18 @@ export default function Apl01Page() {
       if (!signing.agreedChecklist) { showWarning('Silakan centang pernyataan terlebih dahulu'); return }
       setIsSaving(true)
       try {
-        const res = await fetch(`${API_BASE_URL}/praasesmen/${targetIdIzin}/apl01`, {
+        const res = await apiFetch(`${API_BASE_URL}/praasesmen/${targetIdIzin}/apl01`, {
           method: "POST",
-          headers: { ...authHeaders(), "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formDataPekerjaan),
         })
         if (!res.ok) throw new Error("Gagal menyimpan")
 
         // Generate QR for UUID flow
         try {
-          await fetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
+          await apiFetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
             method: 'POST',
-            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_jadwal: jadwalId ?? "" }),
           })
         } catch (qrErr) {

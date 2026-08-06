@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { toast } from "@/components/ui/toast"
 import { RoleId } from "@/lib/rbac-config"
 
+import { apiFetch } from "@/lib/api-fetch"
 import { API_BASE_URL } from "@/config/api"
 
 interface AbsenData {
@@ -128,14 +129,7 @@ export function useAbsenCheck({
     }
 
     try {
-      const token = localStorage.getItem("access_token")
-
-      const response = await fetch(`${API_BASE_URL}/dokumen/absen/${finalIdIzin}`, {
-        headers: {
-          "Accept": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-      })
+      const response = await apiFetch(`${API_BASE_URL}/dokumen/absen/${finalIdIzin}`)
 
       if (response.ok) {
         const result = await response.json()
@@ -206,17 +200,13 @@ export function useAbsenCheck({
   const submitAbsenAwal = useCallback(async (imageBlob: Blob) => {
     if (!finalIdIzin) throw new Error("ID Izin tidak ditemukan")
 
-    const token = localStorage.getItem("access_token")
     const formData = new FormData()
     formData.append("image", imageBlob, "absen-awal.jpg")
 
     const endpoint = getEndpoint()
 
-    const response = await fetch(`${API_BASE_URL}/${endpoint}-awal`, {
+    const response = await apiFetch(`${API_BASE_URL}/${endpoint}-awal`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
       body: formData,
     })
 
@@ -241,17 +231,13 @@ export function useAbsenCheck({
   const submitAbsenAkhir = useCallback(async (imageBlob: Blob) => {
     if (!finalIdIzin) throw new Error("ID Izin tidak ditemukan")
 
-    const token = localStorage.getItem("access_token")
     const formData = new FormData()
     formData.append("image", imageBlob, "absen-akhir.jpg")
 
     const endpoint = getEndpoint()
 
-    const response = await fetch(`${API_BASE_URL}/${endpoint}-akhir`, {
+    const response = await apiFetch(`${API_BASE_URL}/${endpoint}-akhir`, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
       body: formData,
     })
 

@@ -1,14 +1,8 @@
 import { useState, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { useDokumenPraAsesmenCtx } from "@/contexts/AsesmenDataContext"
+import { apiFetch } from "@/lib/api-fetch"
 import { API_BASE_URL } from "@/config/api"
-
-const authHeaders = (): Record<string, string> => {
-  const token = localStorage.getItem("access_token")
-  const h: Record<string, string> = { "Accept": "application/json" }
-  if (token) h["Authorization"] = `Bearer ${token}`
-  return h
-}
 
 interface Asesor {
   id: number
@@ -151,8 +145,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
 
       setIsLoading(true)
       try {
-        const response = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
-          headers: authHeaders(),
+        const response = await apiFetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
           signal: controller.signal,
         })
 
