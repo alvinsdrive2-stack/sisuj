@@ -275,12 +275,6 @@ export default function Ak06Page() {
     if (hasSigned) {
       const needsAbsenAkhir = await shouldShowAkhirModal()
       if (needsAbsenAkhir) {
-        // If daring, no video, and no one signed yet â†’ require upload
-        if (jenisKelas === '2' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
-          setPendingAfterAbsen(true)
-          setShowDriveUploader(true)
-          return
-        }
         setPendingAfterAbsen(true)
         setShowAkhirModal(true)
         return
@@ -345,19 +339,22 @@ export default function Ak06Page() {
       if (response.ok) {
         showSuccess('AK 06 berhasil disimpan!')
 
-        // Generate QR via hook
+        // Auto-check absen akhir setelah save pertama — biar ga kelewat
+        const needsAbsenAkhir = await shouldShowAkhirModal()
+
+        // Daring class: require video upload before signing
+        if (needsAbsenAkhir && jenisKelas === '2' && !videoAjj) {
+          setShowDriveUploader(true)
+          return
+        }
+
+        // Generate QR via hook (only after video check passes)
         if (isAsesor) {
           await signing.generateQR()
           signing.publishUpdate()
         }
 
-        // Auto-check absen akhir setelah save pertama â€” biar ga kelewat
-        const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
-          if (jenisKelas === '2' && !videoAjj && !signing.asesorHasSigned && !signing.asesiHasSigned) {
-            setShowDriveUploader(true)
-            return
-          }
           setShowAkhirModal(true)
         } else {
           const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
@@ -427,10 +424,15 @@ export default function Ak06Page() {
         setShowDriveUploader(false)
         showSuccess('Video AJJ berhasil diupload ke Google Drive!')
 
-        // Re-upload mode (already signed) â€” just close and stay
+        // Re-upload mode (already signed) — just close and stay
         if (signing.allSigned) return
 
-        // First-time upload flow â€” proceed to absen akhir
+        // First-time upload flow — generate QR then proceed to absen akhir
+        if (isAsesor) {
+          await signing.generateQR()
+          signing.publishUpdate()
+        }
+
         const needsAbsenAkhir = await shouldShowAkhirModal()
         if (needsAbsenAkhir) {
           setShowAkhirModal(true)
@@ -450,7 +452,7 @@ export default function Ak06Page() {
     } catch (err) {
       showError(extractErrorMessage(err, 'Gagal menyimpan tautan video'))
     }
-  }, [jadwalId, signing.allSigned, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowAkhirModal, setPendingAfterAbsen])
+  }, [jadwalId, signing.allSigned, signing.generateQR, signing.publishUpdate, isAsesor, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowAkhirModal, setPendingAfterAbsen])
 
   const handleAkhirModalClose = () => {
     _handleAkhirModalClose()
