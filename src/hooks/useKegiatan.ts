@@ -194,7 +194,7 @@ export function useVideoStatusByJadwal(jadwalIds: string[]) {
 }
 
 // New hook for getting all kegiatan asesor (full array)
-export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tahap?: number) {
+export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tahap?: number, all = false) {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
@@ -209,7 +209,7 @@ export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tah
     setIsLoading(true)
     setError(null)
     try {
-      const response = await kegiatanService.getKegiatanAsesor(page, search, tahap)
+      const response = await kegiatanService.getKegiatanAsesor(page, search, tahap, all)
       setKegiatans(response.data || [])
       if ('current_page' in response) {
         const pr = response as any
@@ -221,7 +221,7 @@ export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tah
     } finally {
       setIsLoading(false)
     }
-  }, [enabled, page, search, tahap])
+  }, [enabled, page, search, tahap, all])
 
   useEffect(() => {
     fetchKegiatanAsesor()

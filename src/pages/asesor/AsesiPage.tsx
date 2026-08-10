@@ -74,7 +74,7 @@ export default function AsesiPage() {
   // Debug logging
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
 
-  const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError, refetch: refetchKegiatan } = useKegiatanAsesorList()
+  const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError, refetch: refetchKegiatan } = useKegiatanAsesorList(true, 1, '', undefined, true)
   const [allKegiatans, setAllKegiatans] = useState<KegiatanAsesor[]>(kegiatans)
   const currentKegiatan = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId)) || allKegiatans[0]
   const { asesiList, isLoading: asesiLoading, error: asesiError, refetch: refetchAsesi } = useListAsesi(jadwalId || "")
@@ -104,7 +104,7 @@ export default function AsesiPage() {
       let all = [...allKegiatans]
       while (true) {
         try {
-          const response = await kegiatanService.getKegiatanAsesor(page)
+          const response = await kegiatanService.getKegiatanAsesor(page, '', undefined, true)
           if (!response.data || response.data.length === 0) break
           all = [...all, ...response.data]
           const found = all.find(k => String(k.jadwal_id) === String(jadwalId))
