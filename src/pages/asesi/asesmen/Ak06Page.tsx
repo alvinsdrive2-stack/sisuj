@@ -19,6 +19,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import GoogleDriveUploader from "@/components/GoogleDriveUploader"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { BRANDING } from "@/config/branding"
 
 interface AspekAPI {
@@ -130,6 +131,7 @@ export default function Ak06Page() {
   const [pendingAfterAbsen, setPendingAfterAbsen] = useState(false)
   const [videoAjj, setVideoAjj] = useState('')
   const [showDriveUploader, setShowDriveUploader] = useState(false)
+  const [showVideoChoice, setShowVideoChoice] = useState(false)
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
   const driveParentFolderId = import.meta.env.VITE_GOOGLE_DRIVE_FOLDER_ID as string | undefined
 
@@ -252,6 +254,28 @@ export default function Ak06Page() {
   // Keep hasSigned derived from hook
   const hasSigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
+  // Shared flow after save: generate QR, then absen akhir or navigate next
+  const continueAfterSave = useCallback(async () => {
+    if (isAsesor) {
+      await signing.generateQR()
+      signing.publishUpdate()
+    }
+
+    const needsAbsenAkhir = await shouldShowAkhirModal()
+    if (needsAbsenAkhir) {
+      setShowAkhirModal(true)
+    } else {
+      setPendingAfterAbsen(false)
+      const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+      const nextStep = asesmenSteps[currentIdx + 1]
+      if (nextStep) {
+        navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+    }
+  }, [isAsesor, signing.generateQR, signing.publishUpdate, shouldShowAkhirModal, setShowAkhirModal, setPendingAfterAbsen, asesmenSteps, id, navigate])
+
 
   const handleAspekChange = (id: string, field: keyof Pick<AspekItem, 'validitas' | 'reliabel' | 'fleksibel' | 'adil'>) => {
     if (isFormDisabled || signing.allSigned) return
@@ -342,29 +366,13 @@ export default function Ak06Page() {
         // Auto-check absen akhir setelah save pertama — biar ga kelewat
         const needsAbsenAkhir = await shouldShowAkhirModal()
 
-        // Daring class: require video upload before signing
+        // Daring class tanpa video: tawarin upload sekarang atau nanti
         if (needsAbsenAkhir && jenisKelas === '2' && !videoAjj) {
-          setShowDriveUploader(true)
+          setShowVideoChoice(true)
           return
         }
 
-        // Generate QR via hook (only after video check passes)
-        if (isAsesor) {
-          await signing.generateQR()
-          signing.publishUpdate()
-        }
-
-        if (needsAbsenAkhir) {
-          setShowAkhirModal(true)
-        } else {
-          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
-          const nextStep = asesmenSteps[currentIdx + 1]
-          if (nextStep) {
-            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
-          } else {
-            navigate(`/asesi/asesmen/${id}/selesai`)
-          }
-        }
+        await continueAfterSave()
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
         showError(msg)
@@ -428,31 +436,14 @@ export default function Ak06Page() {
         if (signing.allSigned) return
 
         // First-time upload flow — generate QR then proceed to absen akhir
-        if (isAsesor) {
-          await signing.generateQR()
-          signing.publishUpdate()
-        }
-
-        const needsAbsenAkhir = await shouldShowAkhirModal()
-        if (needsAbsenAkhir) {
-          setShowAkhirModal(true)
-        } else {
-          setPendingAfterAbsen(false)
-          const currentIdx = asesmenSteps.findIndex(s => s.href.includes('ak06'))
-          const nextStep = asesmenSteps[currentIdx + 1]
-          if (nextStep) {
-            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
-          } else {
-            navigate(`/asesi/asesmen/${id}/selesai`)
-          }
-        }
+        await continueAfterSave()
       } else {
         showWarning('Gagal menyimpan beberapa tautan. Silakan coba upload ulang.')
       }
     } catch (err) {
       showError(extractErrorMessage(err, 'Gagal menyimpan tautan video'))
     }
-  }, [jadwalId, signing.allSigned, signing.generateQR, signing.publishUpdate, isAsesor, shouldShowAkhirModal, showSuccess, showWarning, showError, asesmenSteps, id, navigate, setVideoAjj, setShowAkhirModal, setPendingAfterAbsen])
+  }, [jadwalId, signing.allSigned, continueAfterSave, setVideoAjj, setShowDriveUploader, showSuccess, showWarning, showError])
 
   const handleAkhirModalClose = () => {
     _handleAkhirModalClose()
@@ -823,6 +814,23 @@ export default function Ak06Page() {
         </div>
       </ModularAsesiLayout>
 
+
+      {/* Pilihan upload video — daring class tanpa video */}
+      <ConfirmDialog
+        isOpen={showVideoChoice}
+        title="Upload Video AJJ"
+        message="Anda belum mengupload video pelaksanaan asesmen (kelas daring). Upload sekarang, atau lanjutkan dulu dan upload nanti?"
+        confirmText="Upload Sekarang"
+        cancelText="Nanti"
+        onConfirm={() => {
+          setShowVideoChoice(false)
+          setShowDriveUploader(true)
+        }}
+        onCancel={() => {
+          setShowVideoChoice(false)
+          void continueAfterSave()
+        }}
+      />
 
       {/* Google Drive Uploader */}
       {showDriveUploader && (
