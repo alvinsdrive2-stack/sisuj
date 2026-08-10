@@ -237,6 +237,16 @@ class KegiatanService {
     return apiFetchJson(url)
   }
 
+  // Get riwayat kegiatan asesor (tanpa filter tanggal)
+  async getKegiatanAsesorRiwayat(page: number = 1, search: string = '', tahap?: number): Promise<KegiatanAsesorResponse> {
+    const params = new URLSearchParams({ page: String(page) })
+    if (search) params.set('search', search)
+    if (tahap !== undefined) params.set('tahap', String(tahap))
+
+    const url = `${this.baseUrl}/kegiatan/asesor-riwayat?${params}`
+    return apiFetchJson(url)
+  }
+
   // Start assessment
   async startAssessment(jadwalId: string): Promise<{ message: string }> {
     return apiFetchJson(`${this.baseUrl}/kegiatan/${jadwalId}/start`, { method: "POST" })

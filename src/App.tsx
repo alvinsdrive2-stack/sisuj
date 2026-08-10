@@ -70,6 +70,7 @@ const DashboardAsesor = lazy(() => import('./pages/asesor/DashboardAsesor'))
 const ListAsesiAsesor = lazy(() => import('./pages/asesor/ListAsesiAsesor'))
 const AsesiPage = lazy(() => import('./pages/asesor/AsesiPage'))
 const TahapListPage = lazy(() => import('./pages/asesor/TahapListPage'))
+const RiwayatAsesorPage = lazy(() => import('./pages/asesor/RiwayatAsesorPage'))
 
 // Qontak WhatsApp Pages
 const QontakWhatsAppPage = lazy(() => import('./pages/qontak/QontakWhatsAppPage'))
@@ -293,6 +294,7 @@ function App() {
                       <Route path="persiapan" element={<TahapListPage tahap={0} />} />
                       <Route path="praasesmen" element={<TahapListPage tahap={1} />} />
                       <Route path="asesmen" element={<TahapListPage tahap={2} />} />
+                      <Route path="riwayat" element={<RiwayatAsesorPage />} />
                       <Route path="list-asesi/:jadwalId" element={<ListAsesiAsesor />} />
                       <Route path="asesi/:jadwalId" element={<AsesiPage />} />
                       <Route path="" element={<Navigate to="dashboard" replace />} />

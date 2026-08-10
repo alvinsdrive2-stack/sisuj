@@ -12,7 +12,8 @@ import {
   PenTool,
   ClipboardList,
   Award,
-  Eye
+  Eye,
+  History
 } from "lucide-react"
 
 // Role Types
@@ -277,6 +278,11 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         title: "Asesmen",
         path: "/asesor/asesmen",
         icon: Award
+      },
+      {
+        title: "Riwayat",
+        path: "/asesor/riwayat",
+        icon: History
       }
     ]
   },

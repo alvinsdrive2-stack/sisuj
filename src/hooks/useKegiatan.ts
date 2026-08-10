@@ -117,6 +117,33 @@ export function useKegiatanAsesor(enabled = true) {
   return { kegiatan, isLoading, error }
 }
 
+// Hook riwayat kegiatan asesor (semua tanggal, tanpa filter hari ini)
+export function useKegiatanAsesorRiwayat(search = '') {
+  const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchRiwayat = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const response = await kegiatanService.getKegiatanAsesorRiwayat(1, search)
+      setKegiatans(response.data || [])
+    } catch (err) {
+      console.error('Error fetching riwayat asesor:', err)
+      setError(err instanceof Error ? err.message : "Failed to fetch riwayat asesor")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [search])
+
+  useEffect(() => {
+    fetchRiwayat()
+  }, [fetchRiwayat])
+
+  return { kegiatans, isLoading, error, refetch: fetchRiwayat }
+}
+
 // New hook for getting all kegiatan asesor (full array)
 export function useKegiatanAsesorList(enabled = true, page = 1, search = '', tahap?: number) {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
