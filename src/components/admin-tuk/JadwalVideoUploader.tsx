@@ -4,7 +4,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
 import GoogleDriveUploader from "@/components/GoogleDriveUploader"
 import { kegiatanService } from "@/lib/kegiatan-service"
-import { CheckCircle2, Upload, Video } from "lucide-react"
+import { CheckCircle2, ExternalLink, Upload, Video } from "lucide-react"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
 interface JadwalVideoUploaderProps {
@@ -84,6 +84,16 @@ export default function JadwalVideoUploader({ jadwalId, namaKegiatan, className,
               <CheckCircle2 className="w-4 h-4" />
               VIDEO SUDAH DI UPLOAD
             </span>
+            <a
+              href={linkVideo}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center h-8 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5 mr-1" />
+              Lihat Video
+            </a>
             <Button
               size="sm"
               onClick={(e) => { e.stopPropagation(); setShowUploader(true) }}

@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
-import { Calendar, Users, Clock, ChevronRight, Search, AlertCircle, UserCheck } from "lucide-react"
-import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
+import { Calendar, Users, Clock, ChevronRight, Search, AlertCircle, UserCheck, Video } from "lucide-react"
+import { useKegiatanAsesorList, useVideoStatusByJadwal } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
 import { useNavigate } from "react-router-dom"
@@ -31,6 +31,8 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
   const { kegiatans, isLoading, error, pagination } = useKegiatanAsesorList(true, page, search, tahap)
   const absenPending = useAsesorAbsenPending()
   const persiapanPending = useAsesorPersiapanPending()
+  const videoJadwalIds = kegiatans.filter(k => k.jenis_kelas === '2').map(k => String(k.jadwal_id))
+  const { statusMap: videoStatusMap } = useVideoStatusByJadwal(videoJadwalIds)
 
   return (
     <div className="space-y-6">
@@ -110,6 +112,12 @@ export default function TahapListPage({ tahap }: TahapListPageProps) {
                         <Users className="w-4 h-4" />
                         {jenisKelasLabel(kegiatan.jenis_kelas)}
                       </span>
+                      {kegiatan.jenis_kelas === '2' && videoStatusMap[String(kegiatan.jadwal_id)] === false && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-full whitespace-nowrap">
+                          <Video className="w-3.5 h-3.5" />
+                          Belum Upload Video
+                        </span>
+                      )}
                       {tahap > 0 && absenPending.perKegiatan[kegiatan.jadwal_id] > 0 && (
                         <span className="flex items-center gap-1 text-red-600 font-medium">
                           <AlertCircle className="w-4 h-4" />

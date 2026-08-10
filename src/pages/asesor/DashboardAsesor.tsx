@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, Clock, ChevronRight, ClipboardList, FileCheck, Award } from "lucide-react"
-import { useKegiatanAsesorList } from "@/hooks/useKegiatan"
+import { Calendar, Users, Clock, ChevronRight, ClipboardList, FileCheck, Award, Video } from "lucide-react"
+import { useKegiatanAsesorList, useVideoStatusByJadwal } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useNavigate } from "react-router-dom"
 import { useMemo } from "react"
@@ -17,6 +17,8 @@ const TAHAP_CARDS = [
 export default function DashboardAsesor() {
   const navigate = useNavigate()
   const { kegiatans, isLoading } = useKegiatanAsesorList(true)
+  const videoJadwalIds = kegiatans.filter(k => k.jenis_kelas === '2').map(k => String(k.jadwal_id))
+  const { statusMap: videoStatusMap } = useVideoStatusByJadwal(videoJadwalIds)
 
   const counts = useMemo(() => ({
     0: kegiatans.filter(k => Number(k.tahap) === 0).length,
@@ -97,6 +99,12 @@ export default function DashboardAsesor() {
                         <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{formatShortDateWIB(kegiatan.tanggal_uji || '')}</span>
                         <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{formatTimeWIB(kegiatan.tanggal_uji || '')}</span>
                         <span className="flex items-center gap-1"><Users className="w-4 h-4" />{jenisKelasLabel(kegiatan.jenis_kelas)}</span>
+                        {kegiatan.jenis_kelas === '2' && videoStatusMap[String(kegiatan.jadwal_id)] === false && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-full whitespace-nowrap">
+                            <Video className="w-3.5 h-3.5" />
+                            Belum Upload Video
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

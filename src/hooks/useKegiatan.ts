@@ -118,30 +118,79 @@ export function useKegiatanAsesor(enabled = true) {
 }
 
 // Hook riwayat kegiatan asesor (semua tanggal, tanpa filter hari ini)
-export function useKegiatanAsesorRiwayat(search = '') {
+export function useKegiatanAsesorRiwayat(search = '', page = 1) {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
 
   const fetchRiwayat = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await kegiatanService.getKegiatanAsesorRiwayat(1, search)
+      const response = await kegiatanService.getKegiatanAsesorRiwayat(page, search)
       setKegiatans(response.data || [])
+      if ('current_page' in response) {
+        const pr = response as any
+        setPagination({ currentPage: pr.current_page || page, lastPage: pr.last_page || 1, total: pr.total || 0, perPage: pr.per_page || 10 })
+      }
     } catch (err) {
       console.error('Error fetching riwayat asesor:', err)
       setError(err instanceof Error ? err.message : "Failed to fetch riwayat asesor")
     } finally {
       setIsLoading(false)
     }
-  }, [search])
+  }, [page, search])
 
   useEffect(() => {
     fetchRiwayat()
   }, [fetchRiwayat])
 
-  return { kegiatans, isLoading, error, refetch: fetchRiwayat }
+  return { kegiatans, isLoading, error, pagination, refetch: fetchRiwayat }
+}
+
+// Hook status video per jadwal (link-video) — buat tandain yang belum upload
+export function useVideoStatusByJadwal(jadwalIds: string[]) {
+  const [statusMap, setStatusMap] = useState<Record<string, boolean>>({})
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const unique = [...new Set(jadwalIds.filter(Boolean))]
+    if (unique.length === 0) {
+      setStatusMap({})
+      setIsLoading(false)
+      return
+    }
+
+    let cancelled = false
+    setIsLoading(true)
+    const token = localStorage.getItem("access_token")
+
+    Promise.all(
+      unique.map(async (id) => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/jadwal/${id}/link-video`, {
+            headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+          })
+          if (!res.ok) return [id, false] as const
+          const json = await res.json()
+          return [id, !!json.data?.link_video] as const
+        } catch {
+          return [id, false] as const
+        }
+      })
+    ).then(results => {
+      if (cancelled) return
+      const map: Record<string, boolean> = {}
+      for (const [id, has] of results) map[id] = has
+      setStatusMap(map)
+      setIsLoading(false)
+    })
+
+    return () => { cancelled = true }
+  }, [jadwalIds.join(',')])
+
+  return { statusMap, isLoading }
 }
 
 // New hook for getting all kegiatan asesor (full array)

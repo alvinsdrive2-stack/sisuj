@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
+import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
 
 interface CountdownTime {
   days: number
@@ -462,6 +463,15 @@ export default function AsesiPage() {
                       {currentKegiatan.tuk?.alamat}
                     </div>
                   </div>
+
+                  {currentKegiatan.jenis_kelas === '2' && (
+                    <div className="mt-4 pt-4 border-t border-slate-100">
+                      <JadwalVideoUploader
+                        jadwalId={String(currentKegiatan.jadwal_id)}
+                        namaKegiatan={currentKegiatan.nama_kegiatan}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: Countdown */}
