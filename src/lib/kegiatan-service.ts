@@ -343,6 +343,20 @@ class KegiatanService {
       body: JSON.stringify({ id_jadwal: jadwalId }),
     })
   }
+
+  // Get link video asesmen (per jadwal)
+  async getLinkVideo(jadwalId: string): Promise<{ data: { link_video: string | null } }> {
+    return apiFetchJson(`${this.baseUrl}/jadwal/${jadwalId}/link-video`)
+  }
+
+  // Update link video asesmen (per jadwal)
+  async updateLinkVideo(jadwalId: string, linkVideo: string): Promise<{ data: { link_video: string } }> {
+    return apiFetchJson(`${this.baseUrl}/jadwal/${jadwalId}/link-video`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ link_video: linkVideo }),
+    })
+  }
 }
 
 // List Asesi Types

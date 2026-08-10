@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, Clock, Calendar, MapPin } from "lucide-react"
+import { ArrowLeft, Users, Clock, Calendar, MapPin, Video } from "lucide-react"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useListAsesi } from "@/hooks/useKegiatan"
@@ -12,6 +12,7 @@ import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
 
 interface CountdownTime {
   days: number
@@ -98,6 +99,7 @@ export default function ListAsesiAsesor() {
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [jenjang, setJenjang] = useState<string>('0')
   const [asesiMeta, setAsesiMeta] = useState<Record<string, { jenjang: string; metode: string }>>({})
+  const [videoUploaded, setVideoUploaded] = useState<boolean | null>(null)
 
   // Fetch kegiatan detail — loop through pages until found
   useEffect(() => {
@@ -259,6 +261,16 @@ export default function ListAsesiAsesor() {
                   {kegiatan.tuk.alamat}
                 </div>
               </div>
+
+              {kegiatan.jenis_kelas === '2' && (
+                <div className="mt-3">
+                  <JadwalVideoUploader
+                    jadwalId={jadwalId || ''}
+                    namaKegiatan={kegiatan.nama_kegiatan}
+                    onStatusChange={setVideoUploaded}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Right: Countdown (30%) */}
@@ -441,6 +453,14 @@ export default function ListAsesiAsesor() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
                         </div>
+
+                        {/* Belum Kirim Video — khusus kelas daring (2) */}
+                        {kegiatan?.jenis_kelas === '2' && videoUploaded === false && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-1 rounded-full whitespace-nowrap">
+                            <Video className="w-3.5 h-3.5" />
+                            Belum Kirim Video
+                          </span>
+                        )}
 
                         {/* Kompeten Indicator Only - Glowing Green */}
                         {asesi.kompeten === "K" && (

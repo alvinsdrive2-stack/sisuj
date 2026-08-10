@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -29,7 +29,7 @@ interface KomtekFiles {
 export default function DaftarAsesiSudahPage() {
   const { jadwalId } = useParams<{ jadwalId: string }>()
   const navigate = useNavigate()
-  const { asesiList, isLoading: asesiLoading, error } = useListAsesi(jadwalId || "")
+  const { asesiList, isLoading: asesiLoading, error, refetch: refetchAsesiList } = useListAsesi(jadwalId || "")
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
   const [komtekFiles, setKomtekFiles] = useState<KomtekFiles>({})
@@ -40,71 +40,84 @@ export default function DaftarAsesiSudahPage() {
   const [showRapatConfirm, setShowRapatConfirm] = useState(false)
 
   // Modal context
-  const { openModal: openDokumenModal } = useDokumenModal()
+  const { openModal: openDokumenModal, setOnPenilaianSuccess } = useDokumenModal()
   const { showError, showSuccess, showWarning } = useToast()
 
   // Fetch rekomendasi status for all asesi to mark signed ones
-  useEffect(() => {
+  const fetchSignedStatus = useCallback(async () => {
     if (asesiList.length === 0) return
 
-    const fetchSignedStatus = async () => {
-      const token = localStorage.getItem("access_token")
-      const userData = localStorage.getItem("user_data")
-      const currentUserId = userData ? JSON.parse(userData)?.id?.toString() : null
-      if (!currentUserId || !token) return
+    const token = localStorage.getItem("access_token")
+    const userData = localStorage.getItem("user_data")
+    const currentUserId = userData ? JSON.parse(userData)?.id?.toString() : null
+    if (!currentUserId || !token) return
 
-      const results = await Promise.all(
-        asesiList.map(async (asesi) => {
-          try {
-            const res = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesi.id_izin}`, {
-              headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-            })
-            if (!res.ok) return null
-            const data = await res.json()
-            for (const key of ['komtek1', 'komtek2', 'komtek3']) {
-              if (data[key]?.id === currentUserId && data[key]?.rekomendasi !== null) {
-                return asesi.id_izin
-              }
+    const results = await Promise.all(
+      asesiList.map(async (asesi) => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/komtek/rekomendasi/${asesi.id_izin}`, {
+            headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+          })
+          if (!res.ok) return null
+          const data = await res.json()
+          for (const key of ['komtek1', 'komtek2', 'komtek3']) {
+            if (data[key]?.id === currentUserId && data[key]?.rekomendasi !== null) {
+              return asesi.id_izin
             }
-          } catch (e) {
-            console.error(e)
           }
-          return null
-        })
-      )
+        } catch (e) {
+          console.error(e)
+        }
+        return null
+      })
+    )
 
-      setSignedAsesiIds(new Set(results.filter(Boolean) as string[]))
-    }
-
-    fetchSignedStatus()
+    setSignedAsesiIds(new Set(results.filter(Boolean) as string[]))
   }, [asesiList])
 
-  // Fetch komtek files
   useEffect(() => {
-    const fetchKomtekFiles = async () => {
-      if (!jadwalId) return
+    fetchSignedStatus()
+  }, [fetchSignedStatus])
 
-      setKomtekFilesLoading(true)
-      try {
-        const token = localStorage.getItem("access_token")
-        const response = await fetch(`${API_BASE_URL}/komtek/files/${jadwalId}`, {
-          headers: {
-            "Accept": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setKomtekFiles(data)
-        }
-      } catch (err) {
-        console.error('Error fetching komtek files:', err)
-      } finally {
-        setKomtekFilesLoading(false)
+  // Fetch komtek files — extracted so it can re-run after sign
+  const fetchKomtekFiles = useCallback(async () => {
+    if (!jadwalId) return
+
+    setKomtekFilesLoading(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/komtek/files/${jadwalId}`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setKomtekFiles(data)
       }
+    } catch (err) {
+      console.error('Error fetching komtek files:', err)
+    } finally {
+      setKomtekFilesLoading(false)
     }
-    fetchKomtekFiles()
   }, [jadwalId])
+
+  useEffect(() => {
+    fetchKomtekFiles()
+  }, [fetchKomtekFiles])
+
+  // Register penilaian success callback so modal rekomendasi triggers refetch
+  // Double-wrap: setOnPenilaianSuccess comes from useState, so passing a fn
+  // makes React treat it as a state updater. Outer fn = updater, inner = state.
+  useEffect(() => {
+    setOnPenilaianSuccess(() => () => {
+      fetchSignedStatus()
+      fetchKomtekFiles()
+      refetchAsesiList()
+    })
+    return () => setOnPenilaianSuccess(null)
+  }, [fetchSignedStatus, fetchKomtekFiles, refetchAsesiList, setOnPenilaianSuccess])
 
   // Fetch kegiatan detail
   useEffect(() => {
@@ -152,6 +165,7 @@ export default function DaftarAsesiSudahPage() {
       if (response.ok) {
         setSelectedDokumen(null)
         showSuccess('BA Komtek berhasil ditandatangani!')
+        fetchKomtekFiles()
       } else {
         const msg = await extractApiError(response, 'Gagal menandatangani BA Komtek')
         showError(msg)
