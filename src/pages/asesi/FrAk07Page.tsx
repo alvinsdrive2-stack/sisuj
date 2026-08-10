@@ -359,6 +359,33 @@ export default function FrAk07Page() {
       return
     }
 
+    // Validasi: baris yang punya kolom keterangan (textarea) wajib pilih Ya/Tidak
+    const missingDesc: string[] = []
+
+    const modifData = ak07Data?.find(d => d.urut === 2)
+    modifData?.kategoris.forEach(kategori => {
+      if (!kategori.nama) return
+      const lastRef = kategori.referensis[kategori.referensis.length - 1]
+      if (!lastRef) return
+      if (getReferenceState(kategori.id, modifData.id, lastRef.id) === null) {
+        missingDesc.push(kategori.nama)
+      }
+    })
+
+    const rencanaData = ak07Data?.find(d => d.urut === 3)
+    rencanaData?.kategoris[0]?.referensis.forEach(ref => {
+      if (getReferenceState(rencanaData.kategoris[0].id, rencanaData.id, ref.id) === null) {
+        missingDesc.push(ref.nama || `Pertanyaan ${ref.id}`)
+      }
+    })
+
+    if (missingDesc.length > 0) {
+      const preview = missingDesc.slice(0, 3).join(', ')
+      const extra = missingDesc.length > 3 ? ` (+${missingDesc.length - 3} lainnya)` : ''
+      showWarning(`Masih ada keterangan yang belum dipilih Ya/Tidak: ${preview}${extra}`)
+      return
+    }
+
     // Guard: asesi cannot submit until all asesor have signed
     if (!isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
