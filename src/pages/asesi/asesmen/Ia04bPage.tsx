@@ -315,6 +315,21 @@ export default function Ia04bPage() {
       return
     }
 
+    // Validasi: Asesor wajib pilih Ya/Tidak untuk semua soal
+    if (isAsesor) {
+      const unansweredQuestions = ia04bData.soal.filter(soal => !answers[soal.id])
+      if (unansweredQuestions.length > 0) {
+        showWarning('Silakan pilih Ya/Tidak untuk semua pertanyaan')
+        return
+      }
+
+      // Validasi: Rekomendasi wajib dipilih
+      if (!rekomendasi) {
+        showWarning('Silakan pilih rekomendasi Kompeten/Belum Kompeten')
+        return
+      }
+    }
+
     setIsSaving(true)
 
     try {
