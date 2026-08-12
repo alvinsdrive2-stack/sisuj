@@ -797,16 +797,6 @@ export default function Ak06Page() {
               </ActionButton>
             )}
 
-            {/* Re-upload video button â€” visible after all signed, only for non-daring class */}
-            {signing.allSigned && isAsesor1 && jenisKelas !== '2' && (
-              <ActionButton
-                variant="secondary"
-                onClick={() => setShowDriveUploader(true)}
-              >
-                Upload Ulang Video
-              </ActionButton>
-            )}
-
             <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
               {isSaving ? "Menyimpan..." : signing.buttonText}
             </ActionButton>
