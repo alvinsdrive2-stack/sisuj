@@ -258,13 +258,30 @@ export default function Ia01Page() {
   const isFormDisabled = isFormDisabledBase || signing.allSigned
 
   const handlePencapaianChange = (soalId: number, value: boolean) => {
-    setSoalAnswers(prev => ({
-      ...prev,
-      [soalId]: {
-        ...prev[soalId],
-        pencapaian: value
+    setSoalAnswers(prev => {
+      // Jika sudah ada nilai sebelumnya, update hanya soal yang diklik (toggle behavior)
+      const currentValue = prev[soalId]?.pencapaian
+      if (currentValue === value) {
+        // Uncheck jika klik ulang nilai yang sama
+        return {
+          ...prev,
+          [soalId]: {
+            ...prev[soalId],
+            pencapaian: null
+          }
+        }
       }
-    }))
+      // Isi semua soal dengan nilai yang sama seperti yang diklik
+      const updated: Record<number, SoalAnswer> = {}
+      Object.keys(prev).forEach((key) => {
+        const id = parseInt(key)
+        updated[id] = {
+          ...prev[id],
+          pencapaian: value
+        }
+      })
+      return updated
+    })
   }
 
   const handlePenilaianLanjutChange = (soalId: number, value: string) => {
