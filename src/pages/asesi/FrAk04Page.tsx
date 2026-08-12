@@ -180,8 +180,8 @@ export default function FrAk04Page() {
     onRefresh: fetchAk04Data,
   })
 
-  // Only asesi can edit this form
-  const isFormDisabled = isAsesor || signing.allSigned
+  // Form read-only untuk semua (view only)
+  const isFormDisabled = true
 
   const handleBack = () => {
     navigate(-1)
@@ -483,8 +483,8 @@ export default function FrAk04Page() {
                 type="checkbox"
                 checked={signing.agreedChecklist}
                 onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
-                disabled={signing.allSigned}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
+                disabled={signing.allSigned || isFormDisabled}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: (signing.allSigned || isFormDisabled) ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.
@@ -502,7 +502,7 @@ export default function FrAk04Page() {
             )}
             <ActionButton
               variant="primary"
-              disabled={signing.buttonDisabled}
+              disabled={isFormDisabled || signing.buttonDisabled}
               onClick={handleSave}
             >
               {isSaving ? "Menyimpan..." : signing.buttonText}

@@ -763,7 +763,7 @@ export default function Ia05Page() {
                   Kembali
                 </ActionButton>
                 )}
-                <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && (!signing.agreedChecklist || isExpired))} onClick={tahap === 0 ? () => navigate(`/asesor/asesi/${jadwalId}`) : handleSubmit}>
+                <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && !signing.asesiHasSigned && (!signing.agreedChecklist || isExpired))} onClick={tahap === 0 ? () => navigate(`/asesor/asesi/${jadwalId}`) : handleSubmit}>
                   {isSaving ? "Menyimpan..." : tahap === 0 ? "Lanjut" : isExpired ? "Waktu Habis" : "Lanjut"}
                 </ActionButton>
               </>
@@ -776,7 +776,7 @@ export default function Ia05Page() {
                   Kembali
                 </ActionButton>
                 )}
-                  <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && (!signing.agreedChecklist || (isAsesor && signing.asesorHasSigned)))} onClick={handleSaveUmpanBalik}>
+                  <ActionButton variant="primary" disabled={isSaving || (tahap !== 0 && !signing.asesorHasSigned && !signing.agreedChecklist)} onClick={handleSaveUmpanBalik}>
                     {isSaving ? "Menyimpan..." : signing.asesorHasSigned ? "Lanjut" : "Simpan Umpan Balik"}
                   </ActionButton>
               </>
