@@ -797,8 +797,8 @@ export default function Ak06Page() {
               </ActionButton>
             )}
 
-            {/* Re-upload video button â€” visible after all signed */}
-            {signing.allSigned && isAsesor1 && (
+            {/* Re-upload video button â€” visible after all signed, only for non-daring class */}
+            {signing.allSigned && isAsesor1 && jenisKelas !== '2' && (
               <ActionButton
                 variant="secondary"
                 onClick={() => setShowDriveUploader(true)}

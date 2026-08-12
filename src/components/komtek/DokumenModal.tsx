@@ -572,10 +572,10 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
                             minHeight: '50vh',
                             position: 'relative'
                           }}>
-                          {['pdf', 'ppt', 'pptx'].includes(getFileType(selectedDoc.url || '')) ? (
+                          {getFileType(selectedDoc.url || '') === 'pdf' ? (
                             <object
                               data={getPdfUrl(selectedDoc.url || '')}
-                              type={getFileType(selectedDoc.url || '') === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.presentationml.presentation'}
+                              type="application/pdf"
                               style={{
                                 width: '100%',
                                 height: '100%',
@@ -586,6 +586,17 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
                                 Loading preview...
                               </p>
                             </object>
+                          ) : ['ppt', 'pptx'].includes(getFileType(selectedDoc.url || '')) ? (
+                            <iframe
+                              src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(selectedDoc.url || '')}`}
+                              title={selectedDoc.label}
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none'
+                              }}
+                              allowFullScreen
+                            />
                           ) : selectedDoc.url ? (
                             <img
                               src={selectedDoc.url}
