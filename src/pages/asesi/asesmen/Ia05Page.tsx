@@ -483,7 +483,7 @@ export default function Ia05Page() {
                     padding: '6px',
                     fontWeight: isQuestionAnswered(soal.id) ? 'bold' : 'normal'
                   }}>
-                    {soal.unit.kode}<br />{soal.kuk?.kode || ''}
+                    {soal.unit?.kode || ''}<br />{soal.kuk?.kode || ''}
                   </td>
                   <td style={{ width: '40', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{soal.no}.</td>
                   <td style={{ border: '1px solid #000', padding: '6px' }}>{soal.soal}</td>
