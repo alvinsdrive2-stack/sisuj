@@ -483,8 +483,8 @@ export default function FrAk04Page() {
                 type="checkbox"
                 checked={signing.agreedChecklist}
                 onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
-                disabled={signing.allSigned || isFormDisabled}
-                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: (signing.allSigned || isFormDisabled) ? 'not-allowed' : 'pointer' }}
+                disabled={signing.allSigned}
+                style={{ marginTop: '2px', width: '16px', height: '16px', cursor: signing.allSigned ? 'not-allowed' : 'pointer' }}
               />
               <span style={{ fontSize: '12px', color: '#000', lineHeight: '1.5' }}>
                 <strong style={{ textTransform: 'uppercase' }}>Pernyataan:</strong> Saya menyatakan bahwa saya telah memahami dan memahami dokumen AK 04 (Banding Asesmen) ini dengan sebenar-benarnya.

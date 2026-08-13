@@ -201,7 +201,10 @@ export default function AttendancePage() {
         body: formData,
       })
 
-      if (response.ok) {
+      if (response.redirected) {
+        // Server nge-redirect (302) — file ditolak (kegedean) atau sesi bermasalah
+        setError("Upload gagal: file ditolak server (kemungkinan terlalu besar)")
+      } else if (response.ok) {
         await response.json()
 
         setIsSuccess(true)

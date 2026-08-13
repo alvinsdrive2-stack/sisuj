@@ -361,6 +361,12 @@ export function DaftarHadirModal({
         body: formData,
       })
 
+      if (response.redirected) {
+        // Server nge-redirect (302) — biasanya file ditolak (kegedean) atau sesi bermasalah.
+        toast("Upload gagal: file ditolak server (kemungkinan terlalu besar)", "error")
+        return
+      }
+
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: "Failed to upload file" }))
         throw new Error(error.message || "Failed to upload file")

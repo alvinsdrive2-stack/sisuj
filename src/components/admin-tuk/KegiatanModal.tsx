@@ -225,6 +225,13 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
         body: formData,
       })
 
+      if (response.redirected) {
+        // Server nge-redirect (302) — biasanya file ditolak (kegedean) atau sesi bermasalah.
+        // Jangan ikutin redirect; tunjukin error biar nggak dianggap sukses palsu.
+        toast("Upload gagal: file ditolak server (kemungkinan terlalu besar)", "error")
+        return
+      }
+
       if (response.ok) {
         toast(`${typeInfo.title} berhasil diupload!`, "success")
         fetchData() // Refresh data
