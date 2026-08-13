@@ -30,11 +30,11 @@ interface Ia08File {
   path: string
   filetype: string | null
   answer: {
-    valid: boolean | null
-    asli: boolean | null
-    terkini: boolean | null
-    memadai: boolean | null
-  } | null
+    valid: boolean
+    asli: boolean
+    terkini: boolean
+    memadai: boolean
+  }
 }
 
 interface WawancaraItem {
@@ -262,6 +262,16 @@ export default function Ia08Page() {
         showWarning("Silakan centang pernyataan terlebih dahulu")
         return
       }
+    }
+
+    // Semua jawaban (Valid, Asli, Terkini, Memadai) wajib terisi untuk tiap dokumen
+    const incomplete = ia08Files.filter(f => {
+      const a = f.answer
+      return !a || a.valid == null || a.asli == null || a.terkini == null || a.memadai == null
+    })
+    if (incomplete.length > 0) {
+      showWarning("Semua jawaban (Valid, Asli, Terkini, Memadai) wajib diisi untuk setiap dokumen portofolio.")
+      return
     }
 
     setIsSaving(true)
