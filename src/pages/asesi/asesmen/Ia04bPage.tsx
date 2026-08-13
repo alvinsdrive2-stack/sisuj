@@ -509,7 +509,7 @@ export default function Ia04bPage() {
                 <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{item.no}</td>
                 <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{item.soal}</td>
                 <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
-                  <div>{item.soal1.replace(/\r\n/g, ' ')}</div>
+                  <div>{(item.soal1 ?? '').replace(/\r\n/g, ' ')}</div>
                   <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: 'bold' }}>Jawaban asesi:</p>
                   <textarea
                     data-auto-resize
@@ -536,7 +536,7 @@ export default function Ia04bPage() {
                     }}
                   />
                 </td>
-                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{item.soal2.replace(/\r\n/g, ' ')}</td>
+                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{(item.soal2 ?? '').replace(/\r\n/g, ' ')}</td>
                 <td
                   onClick={() => canEdit && handleAnswerChange(item.id, 'ya')}
                   style={{
