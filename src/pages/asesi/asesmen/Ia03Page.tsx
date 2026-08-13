@@ -85,7 +85,7 @@ export default function Ia03Page() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jadwalId, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
   const { showSuccess, showWarning, showError } = useToast()
@@ -241,6 +241,7 @@ export default function Ia03Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchData,
+    jenisKelas,
   })
 
 

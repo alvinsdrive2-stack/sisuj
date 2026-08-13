@@ -82,6 +82,7 @@ export default function Ia10Page() {
     namaAsesi,
     tanggalUji,
     jadwalId,
+    jenisKelas,
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { tahap } = useDataDokumenPraAsesmen(id)
@@ -188,6 +189,7 @@ export default function Ia10Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchIa10Data,
+    jenisKelas,
   })
 
 

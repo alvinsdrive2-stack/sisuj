@@ -78,7 +78,7 @@ export default function FrAk07Page() {
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
   const [ak07Data, setAk07Data] = useState<Ak07DataItem[] | null>(null)
@@ -258,6 +258,7 @@ export default function FrAk07Page() {
     idIzin,
     jadwalId,
     onRefresh: fetchData,
+    jenisKelas,
   })
 
 

@@ -37,6 +37,8 @@ export interface SigningStateInput {
   onRefresh?: () => void | Promise<void>
   /** Jika true, bypass QR lock untuk testing */
   testingMode?: boolean
+  /** Jenis kelas kegiatan. '2' = Daring (multi-signer). Lainnya = single signer, cukup TTD user yang login lalu lanjut. */
+  jenisKelas?: string
 }
 
 export interface SigningState {
@@ -49,6 +51,7 @@ export interface SigningState {
   setAgreedChecklist: (v: boolean) => void
   buttonText: string
   buttonDisabled: boolean
+  singleSigner: boolean
   order: SigningOrder
   qrEndpoint: string
   generateQR: () => Promise<boolean>
@@ -61,10 +64,14 @@ export function useSigningState(input: SigningStateInput): SigningState {
     pageKey, isAsesor, tahap, barcodes, setBarcodes,
     asesorList, userId, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
-    isUuidFlow = false, testingMode = false,
+    isUuidFlow = false, testingMode = false, jenisKelas,
   } = input
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
+
+  // Kelas non-2 (Luring/Hybrid/Onsite) → single signer: cukup TTD user yang sedang login, langsung bisa lanjut.
+  const singleSigner = jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
+  const order: SigningOrder = singleSigner ? (isAsesor ? 'asesor_only' : 'asesi_only') : config.order
 
   const nextPageName = nextPageNameOverride ?? config.nextPageName
   const lanjutText = nextPageName ? `Lanjut ke ${nextPageName}` : 'Lanjut'
@@ -107,28 +114,30 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
+    if (singleSigner) return true
     if (isUuidFlow) return true
     if (asesorList.length === 0) return false
     if (!barcodes?.asesor1?.url) return false
     if (asesorList.length >= 2 && !barcodes?.asesor2?.url) return false
     return true
-  }, [tahap, isUuidFlow, asesorList, barcodes])
+  }, [tahap, singleSigner, isUuidFlow, asesorList, barcodes])
 
   const allSigned = useMemo(() => {
-    if (config.order === 'asesi_only') return asesiHasSigned
-    if (config.order === 'asesor_only') return asesorHasSigned
+    if (order === 'asesi_only') return asesiHasSigned
+    if (order === 'asesor_only') return asesorHasSigned
     return asesiHasSigned && allAsesorSigned
-  }, [config.order, asesiHasSigned, asesorHasSigned, allAsesorSigned])
+  }, [order, asesiHasSigned, asesorHasSigned, allAsesorSigned])
 
   const missingLabels = useMemo(() => {
     if (tahap === 0) return []
+    if (singleSigner) return []
     if (isUuidFlow) return []
     const labels: string[] = []
     if (!barcodes?.asesor1?.url) labels.push('Asesor 1')
     if (asesorList.length >= 2 && !barcodes?.asesor2?.url) labels.push('Asesor 2')
     if (!asesiHasSigned) labels.push('Asesi')
     return labels
-  }, [tahap, isUuidFlow, barcodes, asesorList])
+  }, [tahap, isUuidFlow, singleSigner, barcodes, asesorList])
 
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)
@@ -193,8 +202,6 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // ── Button state ──
   const { buttonText, buttonDisabled } = useMemo(() => {
     if (tahap === 0) return { buttonText: lanjutText, buttonDisabled: isSaving }
-
-    const order = config.order
 
     if (order === 'asesi_only') {
       if (isAsesor) {
@@ -274,7 +281,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     }
 
     return { buttonText: lanjutText, buttonDisabled: false }
-  }, [config.order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode])
+  }, [order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode])
 
   return {
     asesiHasSigned,
@@ -286,7 +293,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
     setAgreedChecklist,
     buttonText,
     buttonDisabled,
-    order: config.order,
+    singleSigner,
+    order,
     qrEndpoint: config.qrEndpoint,
     generateQR,
     publishUpdate,

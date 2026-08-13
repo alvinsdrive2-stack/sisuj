@@ -66,7 +66,7 @@ export default function UploadTugasPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList, jenjang, jadwalId, metode } = useDataDokumenAsesmen(id)
+  const { asesorList, jenjang, jadwalId, metode, jenisKelas } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Check if user is an asesor (view-only mode)
@@ -137,6 +137,7 @@ export default function UploadTugasPage() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchTugas,
+    jenisKelas,
   })
   const publishUpdate = signing.publishUpdate
 
@@ -605,7 +606,7 @@ export default function UploadTugasPage() {
               if (!signing.asesiHasSigned) {
                 const ok = await signing.generateQR()
                 if (!ok) return
-                showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+                showSuccess(signing.singleSigner ? "Dokumen berhasil ditandatangani!" : "QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
                 signing.publishUpdate()
                 return
               }

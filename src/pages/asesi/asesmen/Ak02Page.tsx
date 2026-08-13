@@ -73,7 +73,7 @@ export default function Ak02Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId, jenisKelas } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { tahap } = useDataDokumenPraAsesmen(id)
@@ -191,6 +191,7 @@ export default function Ak02Page() {
     jadwalId,
     onRefresh: fetchAk02Data,
     nextPageName: nextStepLabel,
+    jenisKelas,
   })
 
   const handleEvidenceChange = (unitId: number, field: keyof EvidenceCheck) => {

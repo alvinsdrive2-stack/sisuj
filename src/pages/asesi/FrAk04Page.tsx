@@ -52,7 +52,7 @@ export default function FrAk04Page() {
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -177,6 +177,7 @@ export default function FrAk04Page() {
     isSaving,
     idIzin: actualIdIzin || idIzin,
     jadwalId,
+    jenisKelas,
     onRefresh: fetchAk04Data,
   })
 
@@ -229,8 +230,8 @@ export default function FrAk04Page() {
       return
     }
 
-    // Asesi already signed & all asesor signed → navigate to K3
-    if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
+    // Asesi already signed (dan semua asesor untuk multi-signer) → navigate to K3
+    if (tahap !== 0 && !isAsesor && signing.allSigned) {
       navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
       return
     }

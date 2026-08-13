@@ -103,6 +103,7 @@ interface ApiResponse {
       checked?: boolean
     }>
     is_diterima?: boolean
+    ref_kerja?: boolean
     catatan?: string | null
     barcodes?: {
       asesi: BarcodeInfo
@@ -134,7 +135,7 @@ export default function Apl01Page() {
   const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
 
   // Get asesor data for absen check
-  const { asesorList, tahap, jadwalId, namaAsesi } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap, jadwalId, namaAsesi, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
 
   // UUID flow only valid at tahap 0
   const isUuidFlow = isUuidSession && (tahap === 0 || tahap === undefined)
@@ -151,6 +152,7 @@ export default function Apl01Page() {
   const [skkni, setSkkni] = useState<string>("")
   const [catatan, setCatatan] = useState<string | null>(null)
   const [isDiterima, setIsDiterima] = useState<boolean | undefined>(undefined)
+  const [refKerja, setRefKerja] = useState<boolean>(false)
   const [barcodes, setBarcodes] = useState<{ asesi: BarcodeInfo; admin: BarcodeInfo } | null>(null)
   const [dokumenAsesi, setDokumenAsesi] = useState<Record<string, string>>({})
   const [isDataLoading, setIsDataLoading] = useState(true)
@@ -229,6 +231,9 @@ export default function Apl01Page() {
           if (result.data.is_diterima !== undefined) {
             setIsDiterima(result.data.is_diterima)
           }
+          if (result.data.ref_kerja !== undefined) {
+            setRefKerja(result.data.ref_kerja)
+          }
           if (result.data.barcodes) {
             setBarcodes(result.data.barcodes)
           }
@@ -295,6 +300,7 @@ export default function Apl01Page() {
     idIzin,
     jadwalId,
     onRefresh: fetchData,
+    jenisKelas,
   })
 
   const initialFetchDone = useRef(false)
@@ -308,6 +314,22 @@ export default function Apl01Page() {
     }
   }, [idIzin, fetchData])
 
+  const validatePekerjaan = (): string[] => {
+    // ref_kerja true → asesi punya data pekerjaan (Proyek), section B wajib lengkap
+    if (!refKerja) return []
+    const required: Array<[keyof DataPekerjaan, string]> = [
+      ['perusahaan', 'perusahaan harus diisi'],
+      ['jabatan', 'jabatan harus diisi'],
+      ['alamat_kantor', 'alamat kantor harus diisi'],
+    ]
+    return required
+      .filter(([key]) => {
+        const v = formDataPekerjaan[key]
+        return v === null || v === undefined || String(v).trim() === ''
+      })
+      .map(([, msg]) => msg)
+  }
+
   const handleSave = async () => {
     const targetIdIzin = idIzin || user?.id_izin
     if (!targetIdIzin) {
@@ -316,6 +338,8 @@ export default function Apl01Page() {
 
     // UUID flow: save, generate QR, then redirect to public route
     if (isUuidFlow) {
+      const errors = validatePekerjaan()
+      if (errors.length > 0) { showError(`Data pekerjaan wajib diisi: ${errors.join(', ')}`); return }
       if (!signing.agreedChecklist) { showWarning('Silakan centang pernyataan terlebih dahulu'); return }
       setIsSaving(true)
       try {
@@ -369,6 +393,9 @@ export default function Apl01Page() {
     }
 
     // Asesi - generate QR dulu kalau belum ada, lalu save data pekerjaan
+    const errors = validatePekerjaan()
+    if (errors.length > 0) { showError(`Data pekerjaan wajib diisi: ${errors.join(', ')}`); return }
+
     try {
       setIsSaving(true)
 

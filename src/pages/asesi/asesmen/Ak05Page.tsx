@@ -50,7 +50,7 @@ export default function Ak05Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
@@ -245,6 +245,7 @@ export default function Ak05Page() {
     jadwalId,
     onRefresh: fetchAk05Data,
     nextPageName: nextStepLabel,
+    jenisKelas,
   })
 
   // Keep derived values for display & multi-asesi logic

@@ -59,7 +59,7 @@ export default function Ak03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList, jadwalId, metode } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, jadwalId, metode, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
@@ -145,6 +145,7 @@ export default function Ak03Page() {
     jadwalId,
     onRefresh: fetchAk03Data,
     nextPageName: nextStepLabel,
+    jenisKelas,
   })
 
   // Setiap pertanyaan wajib Ya/Tidak. Catatan/komentar asesi opsional.

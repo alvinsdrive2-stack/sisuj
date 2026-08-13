@@ -68,7 +68,7 @@ export default function Ia04bPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, tuk, asesorList, namaAsesi, jadwalId, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { role: asesorRole } = useAsesorRole(id)
   const { showSuccess, showError, showWarning } = useToast()
@@ -193,6 +193,7 @@ export default function Ia04bPage() {
     jadwalId,
     nextPageName: nextStepLabel,
     onRefresh: fetchData,
+    jenisKelas,
   })
   const publishUpdate = signing.publishUpdate
 

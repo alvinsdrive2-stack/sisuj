@@ -73,6 +73,7 @@ export default function Ia09Page() {
     namaAsesor: _namaAsesor,
     tanggalUji,
     jadwalId,
+    jenisKelas,
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { tahap } = useDataDokumenPraAsesmen(id)
@@ -160,6 +161,7 @@ export default function Ia09Page() {
     idIzin: id,
     jadwalId,
     onRefresh: fetchIa09Data,
+    jenisKelas,
   })
 
 

@@ -30,7 +30,7 @@ export default function K3AsesmenPage() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { showWarning, showSuccess } = useToast()
-  const { asesorList, tahap, jadwalId, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, tahap, jadwalId, metode, jenjang, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
@@ -79,6 +79,7 @@ export default function K3AsesmenPage() {
     idIzin: idIzin,
     jadwalId: jadwalId,
     onRefresh: fetchK3Data,
+    jenisKelas,
   })
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -119,7 +120,7 @@ export default function K3AsesmenPage() {
       if (!signing.asesiHasSigned) {
         const ok = await signing.generateQR()
         if (!ok) return
-        showSuccess("QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+        showSuccess(signing.singleSigner ? "Dokumen berhasil ditandatangani!" : "QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
         signing.publishUpdate()
         return
       }

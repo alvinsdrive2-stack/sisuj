@@ -234,6 +234,7 @@ export default function Ak06Page() {
     jadwalId,
     nextPageName: nextStepLabel,
     onRefresh: fetchAk06Data,
+    jenisKelas,
   })
 
 

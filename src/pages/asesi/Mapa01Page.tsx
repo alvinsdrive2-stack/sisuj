@@ -95,7 +95,7 @@ export default function Mapa01Page() {
 
   // Use idIzin from URL when accessed by asesor, otherwise use from user context
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId, isLoading: dokumenLoading } = useDataDokumenPraAsesmen(idIzin || "")
+  const { jabatanKerja, nomorSkema, jenjang, metode, tuk: _tuk, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, namaManajer, tanggalManajer, barcodeManajer, asesorList, tahap, jadwalId, jenisKelas, isLoading: dokumenLoading } = useDataDokumenPraAsesmen(idIzin || "")
   const { showSuccess, showWarning, showError } = useToast()
   const [mapaData, setMapaData] = useState<Mapa01Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
@@ -177,6 +177,7 @@ export default function Mapa01Page() {
     idIzin: actualIdIzin || idIzin,
     jadwalId,
     onRefresh: fetchMapa01Data,
+    jenisKelas,
   })
 
 

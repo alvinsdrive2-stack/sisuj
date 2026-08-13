@@ -104,7 +104,7 @@ export default function FrAk01Page() {
   const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
   const [showMasukAsesmenModal, setShowMasukAsesmenModal] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode } = useDataDokumenPraAsesmen(actualIdIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode, jenisKelas } = useDataDokumenPraAsesmen(actualIdIzin)
   const isLowJenjangAsesor = jenjang && parseInt(jenjang) < 4 && isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -236,6 +236,7 @@ export default function FrAk01Page() {
     jadwalId,
     onRefresh: fetchData,
     nextPageName: 'Proses Asesmen',
+    jenisKelas,
   })
 
   const asesmenSteps = useMemo(() => {

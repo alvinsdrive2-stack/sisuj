@@ -1451,7 +1451,7 @@ export default function Apl02Page() {
   const isUuidSession = !!sessionStorage.getItem("praasesmen_uuid_data")
   // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
   const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
-  const { asesorList, namaAsesi, jenjang, tahap, jadwalId } = useDataDokumenPraAsesmen(idIzin)
+  const { asesorList, namaAsesi, jenjang, tahap, jadwalId, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
   // UUID flow only valid at tahap 0
@@ -1910,18 +1910,16 @@ export default function Apl02Page() {
             barcodesFromApi = apl02Result.data.barcodes
             isDilanjutkanFromApi = apl02Result.data.is_dilanjutkan
 
-            // Map subunit.kompeten to kukChecklist
+            // Map subunit.kompeten to kukChecklist — default K kalau belum disimpan
             const newKukChecklist: Record<string, 'K' | 'BK' | null> = {}
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
-                if (subunit.kompeten !== undefined && subunit.kompeten !== null) {
-                  // Set same status for all KUKs in this subunit
-                  subunit.kuk_list.forEach(kuk => {
-                    const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                    newKukChecklist[kukId] = subunit.kompeten ? 'K' : 'BK'
-                  })
-                }
+                // Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
+                subunit.kuk_list.forEach(kuk => {
+                  const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+                  newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
+                })
                 // Store barcodes per subunit (prefer subunit-level barcodes, fallback to API-level)
                 if (subunit.barcodes) {
                   newSubunitBarcodes[subunit.id] = subunit.barcodes
@@ -2132,6 +2130,7 @@ export default function Apl02Page() {
     isUuidFlow,
     testingMode: false,
     onRefresh: fetchData,
+    jenisKelas,
   })
 
   const handleToggleAgreement = useCallback(() => {
