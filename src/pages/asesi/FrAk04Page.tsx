@@ -502,7 +502,7 @@ export default function FrAk04Page() {
             )}
             <ActionButton
               variant="primary"
-              disabled={isFormDisabled || signing.buttonDisabled}
+              disabled={(isFormDisabled && !signing.agreedChecklist) || signing.buttonDisabled}
               onClick={handleSave}
             >
               {isSaving ? "Menyimpan..." : signing.buttonText}
