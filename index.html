@@ -2,8 +2,13 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="/favicon.png" id="app-favicon" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="module">
+      const brand = import.meta.env.VITE_LSP_BRAND || 'gatensi'
+      if (brand !== 'gatensi') document.getElementById('app-favicon').href = `/favicon-${brand}.png`
+      document.title = `Sistem Uji Kompetensi - ${import.meta.env.VITE_LSP_NAME || 'Gatensi Certification Center'}`
+    </script>
     <title>Sistem Uji Kompetensi - Gatensi Certification Center</title>
   </head>
   <body>
