@@ -1,4 +1,4 @@
-const brand = import.meta.env.VITE_LSP_BRAND || 'gatensi'
+export const brand = import.meta.env.VITE_LSP_BRAND || 'gatensi'
 
 const logos = import.meta.glob('@/assets/logo-*.png', { eager: true })
 const favs = import.meta.glob('@/assets/favicon-*.png', { eager: true })
