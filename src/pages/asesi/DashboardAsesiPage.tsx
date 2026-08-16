@@ -46,7 +46,7 @@ export default function DashboardAsesiPage() {
   const [idIzin, setIdIzin] = useState<string | undefined>(undefined)
 
   // Fetch jenjang from data-dokumen API
-  const { jenjang, metode } = useDataDokumenAsesmen(idIzin)
+  const { jenjang, metode, isLoading: isDataDokumenLoading } = useDataDokumenAsesmen(idIzin)
 
   // Fetch id_izin from list-asesi
   useEffect(() => {
@@ -370,7 +370,7 @@ export default function DashboardAsesiPage() {
                 </div>
                 <Button
                   size="lg"
-                  disabled={!idIzin || !kegiatan?.tahap}
+                  disabled={!idIzin || !kegiatan?.tahap || isDataDokumenLoading}
                   className="bg-white text-primary hover:bg-white/90 font-semibold shadow-lg disabled:opacity-50"
                   onClick={async () => {
                     console.log('[Dashboard Button] Clicked - idIzin:', idIzin, 'tahap:', kegiatan?.tahap)
