@@ -2169,6 +2169,13 @@ export default function Apl02Page() {
       return
     }
 
+    // Asesi hanya boleh menyimpan jika belum ada asesor yang menandatangani.
+    // Kalau salah satu asesor udah ttd, asesi ga bisa save lagi.
+    if (!isAsesor && anyAsesorSigned) {
+      showWarning("Dokumen sudah ditandatangani asesor, Anda tidak dapat menyimpan perubahan lagi.")
+      return
+    }
+
     // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
