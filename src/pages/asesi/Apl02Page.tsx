@@ -1837,6 +1837,10 @@ export default function Apl02Page() {
   }
 
   const initialFetchDone = useRef(false)
+  // BK warning: tampil sekali sebelum TTD/simpan. Pakai ref biar ga loop karena handleSubmit dipanggil ulang dari onConfirm.
+  const [showBkConfirm, setShowBkConfirm] = useState(false)
+  const bkConfirmedRef = useRef(false)
+  const bkSaveOnlyRef = useRef(false)
 
   const fetchData = useCallback(async () => {
       try {
@@ -2159,6 +2163,14 @@ export default function Apl02Page() {
       return
     }
 
+    // Ada KUK BK: warning dulu sebelum TTD biar tidak salah tanda tangan.
+    // Salah TTD di jawaban yang ada BK bikin asesi dinilai tidak kompeten.
+    if (!saveOnly && !bkConfirmedRef.current && isAsesiTidakKompeten()) {
+      bkSaveOnlyRef.current = saveOnly
+      setShowBkConfirm(true)
+      return
+    }
+
     // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya
     if (!isUuidFlow && !isAsesor && asesiHasSigned && allAsesorSigned) {
       const finalIdIzin = _idIzin || idIzin
@@ -2166,6 +2178,13 @@ export default function Apl02Page() {
         navigate(getNextRoute(finalIdIzin))
       }
       return
+    }
+
+    // DEBUG BK-TTD: hapus setelah investigasi
+    if (!isAsesor) {
+      console.warn('[APL02-DEBUG] isUuidFlow:', isUuidFlow, 'tahap:', tahap)
+      console.warn('[APL02-DEBUG] anyAsesorSigned:', anyAsesorSigned, '| asesiHasSigned:', asesiHasSigned, '| allAsesorSigned:', allAsesorSigned)
+      console.warn('[APL02-DEBUG] subunitBarcodes:', JSON.stringify(subunitBarcodes, null, 2))
     }
 
     // Asesi hanya boleh menyimpan jika belum ada asesor yang menandatangani.
@@ -2764,6 +2783,21 @@ export default function Apl02Page() {
         </div>
         </div> {/* Close main content wrapper */}
       </Apl02PageLayout>
+
+      <ConfirmDialog
+        isOpen={showBkConfirm}
+        title="Perhatian: Ada Jawaban Belum Kompeten"
+        message="Ada kriteria unjuk kerja yang berstatus BK (Belum Kompeten). Pastikan penilaian sudah benar sebelum tanda tangan, karena jika salah tanda tangan asesi akan dinilai tidak kompeten."
+        confirmText="Ya, Lanjut Tanda Tangan"
+        cancelText="Periksa Lagi"
+        confirmColor="#d97706"
+        onConfirm={async () => {
+          bkConfirmedRef.current = true
+          setShowBkConfirm(false)
+          await handleSubmit(bkSaveOnlyRef.current)
+        }}
+        onCancel={() => setShowBkConfirm(false)}
+      />
 
       {!isUuidFlow && (
         <>

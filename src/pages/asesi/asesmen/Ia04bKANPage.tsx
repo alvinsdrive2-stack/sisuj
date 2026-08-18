@@ -10,6 +10,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useToast } from "@/contexts/ToastContext"
@@ -42,6 +43,7 @@ export default function Ia04bKANPage() {
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [barcodes, setBarcodes] = useState<any>(null)
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
+  const [showBkConfirm, setShowBkConfirm] = useState(false)
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -72,7 +74,7 @@ export default function Ia04bKANPage() {
 
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
 
-  const handleSave = async () => {
+  const doSave = async () => {
     if (!id || !dokumen) return
     setIsSaving(true)
     try {
@@ -110,6 +112,18 @@ export default function Ia04bKANPage() {
     } catch (e) {
       showError(extractErrorMessage(e, 'Gagal menyimpan data'))
     } finally { setIsSaving(false) }
+  }
+
+  const handleSave = async () => {
+    if (!id || !dokumen) return
+
+    // Ada BK: warning dulu sebelum simpan/ttd biar asesor cek ulang
+    if (isAsesor && rekomendasi === 'belum_kompeten') {
+      setShowBkConfirm(true)
+      return
+    }
+
+    await doSave()
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.04.B..." />
@@ -361,6 +375,16 @@ export default function Ia04bKANPage() {
       </div>
       <WebcamModal isOpen={showAwalModal} onClose={handleAwalModalClose} onSubmit={submitAbsenAwal}
         title="Absen Masuk Asesmen" description="Silakan ambil foto wajah Anda untuk absen masuk" canClose={false} />
+      <ConfirmDialog
+        isOpen={showBkConfirm}
+        title="Perhatian: Rekomendasi Belum Kompeten"
+        message="Rekomendasi hasil asesmen adalah Belum Kompeten. Pastikan penilaian sudah benar sebelum tanda tangan, karena jika salah tanda tangan asesi akan dinilai tidak kompeten."
+        confirmText="Ya, Lanjut"
+        cancelText="Periksa Lagi"
+        confirmColor="#d97706"
+        onConfirm={async () => { setShowBkConfirm(false); await doSave() }}
+        onCancel={() => setShowBkConfirm(false)}
+      />
     </ModularAsesiLayout>
   )
 }

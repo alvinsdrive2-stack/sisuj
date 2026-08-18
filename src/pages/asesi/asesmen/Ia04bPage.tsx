@@ -81,6 +81,7 @@ export default function Ia04bPage() {
   const initializedRef = useRef(false)
   const [jawabanAnswers, setJawabanAnswers] = useState<Record<number, string>>({})
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [showBkConfirm, setShowBkConfirm] = useState(false)
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData
     asesor1?: BarcodeData | null
@@ -329,8 +330,19 @@ export default function Ia04bPage() {
         showWarning('Silakan pilih rekomendasi Kompeten/Belum Kompeten')
         return
       }
+
+      // Ada BK: warning dulu sebelum TTD biar asesor cek ulang
+      if (rekomendasi === 'belum_kompeten') {
+        setShowBkConfirm(true)
+        return
+      }
     }
 
+    await doSave()
+  }
+
+  const doSave = async () => {
+    if (!ia04bData || !id) return
     setIsSaving(true)
 
     try {
@@ -732,6 +744,18 @@ export default function Ia04bPage() {
           setTimeout(() => navigate(`/asesi/asesmen/${id}/ia05`), 100)
         }}
         onCancel={() => setShowConfirmDialog(false)}
+      />
+
+      {/* Warning BK sebelum TTD */}
+      <ConfirmDialog
+        isOpen={showBkConfirm}
+        title="Perhatian: Rekomendasi Belum Kompeten"
+        message="Rekomendasi hasil asesmen adalah Belum Kompeten. Pastikan penilaian sudah benar sebelum tanda tangan, karena jika salah tanda tangan asesi akan dinilai tidak kompeten."
+        confirmText="Ya, Lanjut Tanda Tangan"
+        cancelText="Periksa Lagi"
+        confirmColor="#d97706"
+        onConfirm={async () => { setShowBkConfirm(false); await doSave() }}
+        onCancel={() => setShowBkConfirm(false)}
       />
 
       {/* Absen Awal Modal */}
