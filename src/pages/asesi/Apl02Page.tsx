@@ -2170,8 +2170,34 @@ export default function Apl02Page() {
     }
 
     // Asesi hanya boleh menyimpan jika belum ada asesor yang menandatangani.
-    // Kalau salah satu asesor udah ttd, asesi ga bisa save lagi.
+    // Kalau salah satu asesor udah ttd, asesi ga bisa ubah/post ulang jawaban.
+    // Tapi asesi masih boleh TTD (post QR) kalau dia sendiri belum pernah ttd.
     if (!isAsesor && anyAsesorSigned) {
+      if (!asesiHasSigned) {
+        const finalIdIzin = _idIzin || idIzin
+        if (!finalIdIzin) {
+          showWarning("ID Izin tidak ditemukan")
+          return
+        }
+        setIsSaving(true)
+        try {
+          const qrOk = await signing.generateQR()
+          if (qrOk) {
+            showSuccess('APL 02 berhasil ditandatangani!')
+            signing.publishUpdate()
+            if (!saveOnly) {
+              setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+            }
+          } else {
+            showWarning("Gagal membuat tanda tangan digital. Silakan coba lagi.")
+          }
+        } catch (error) {
+          showError(extractErrorMessage(error, 'Gagal menandatangani dokumen'))
+        } finally {
+          setIsSaving(false)
+        }
+        return
+      }
       showWarning("Dokumen sudah ditandatangani asesor, Anda tidak dapat menyimpan perubahan lagi.")
       return
     }
@@ -2728,9 +2754,9 @@ export default function Apl02Page() {
               Kembali
             </ActionButton>
           )}
-          {tahap === 1 && !isAsesor && !anyAsesorSigned && (
+          {tahap === 1 && !isAsesor && (!asesiHasSigned || !anyAsesorSigned) && (
             <ActionButton variant="primary" onClick={() => handleSubmit(true)} disabled={isSaving}>
-              Simpan & Tanda Tangan
+              {anyAsesorSigned ? 'Tanda Tangan' : 'Simpan & Tanda Tangan'}
             </ActionButton>
           )}
           <ActionButton variant="primary" disabled={tahap === 1 && !isAsesor ? !signing.allAsesorSigned : signing.buttonDisabled} onClick={() => handleSubmit(false)}>
