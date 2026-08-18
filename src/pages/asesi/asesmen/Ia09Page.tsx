@@ -10,6 +10,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -102,6 +103,7 @@ export default function Ia09Page() {
     asesor1?: BarcodeData | null
     asesor2?: BarcodeData | null
   } | null>(null)
+  const [showBkConfirm, setShowBkConfirm] = useState(false)
 
   const fetchIa09Data = useCallback(async () => {
     if (!id || authLoading) return
@@ -175,35 +177,7 @@ export default function Ia09Page() {
     setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
   }
 
-  const handleSave = async () => {
-    // Tahap 0: skip save/TTD, langsung navigasi next
-    if (tahap === 0) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-    if (hasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
-
-    if (!signing.agreedChecklist) {
-      return
-    }
-
-    if (pertanyaanList.some(p => !p.kesimpulan?.trim())) {
-      showError("Tidak dapat merekam hasil, mohon isi semua jawaban atau segarkan laman jika partner asesor sudah mengisi")
-      return
-    }
-
+  const doSave = async () => {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
@@ -237,6 +211,45 @@ export default function Ia09Page() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleSave = async () => {
+    // Tahap 0: skip save/TTD, langsung navigasi next
+    if (tahap === 0) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+      return
+    }
+    if (hasSigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+        navigate(nextPath)
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+      return
+    }
+
+    if (!signing.agreedChecklist) {
+      return
+    }
+
+    if (pertanyaanList.some(p => !p.kesimpulan?.trim())) {
+      showError("Tidak dapat merekam hasil, mohon isi semua jawaban atau segarkan laman jika partner asesor sudah mengisi")
+      return
+    }
+
+    // Ada BK: warning dulu sebelum TTD, biar asesor cek ulang penilaian.
+    // Salah TTD di BK bikin asesi dinilai tidak kompeten.
+    if (isAsesor && pertanyaanList.some(p => p.bk)) {
+      setShowBkConfirm(true)
+      return
+    }
+
+    await doSave()
   }
 
   if (!pertanyaanList.length) return <FullPageLoader text="Memuat data..." />
@@ -637,6 +650,17 @@ export default function Ia09Page() {
             </ActionButton>
           </div>
         </div>
+
+        <ConfirmDialog
+          isOpen={showBkConfirm}
+          title="Perhatian: Ada Jawaban Belum Kompeten"
+          message={`Ada ${pertanyaanList.filter(p => p.bk).length} pertanyaan yang berstatus BK (Belum Kompeten). Pastikan penilaian sudah benar sebelum tanda tangan, karena jika salah tanda tangan asesi akan dinilai tidak kompeten.`}
+          confirmText="Ya, Lanjut Tanda Tangan"
+          cancelText="Periksa Lagi"
+          confirmColor="#d97706"
+          onConfirm={async () => { setShowBkConfirm(false); await doSave() }}
+          onCancel={() => setShowBkConfirm(false)}
+        />
       </ModularAsesiLayout>
 
       <WebcamModal
