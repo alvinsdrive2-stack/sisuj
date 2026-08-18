@@ -2066,11 +2066,11 @@ export default function Apl02Page() {
 
   // Check if any asesor has signed (for hiding "Simpan & Tanda Tangan" button)
   const anyAsesorSigned = useMemo(() => {
-    if (tahap === 0 || isUuidFlow || isAsesor) return true
+    if (isUuidFlow || isAsesor) return true
     const subunits = Object.values(subunitBarcodes)
     if (subunits.length === 0) return false
     return subunits.some(sb => sb.asesor1?.url || sb.asesor2?.url)
-  }, [tahap, isUuidFlow, isAsesor, subunitBarcodes])
+  }, [isUuidFlow, isAsesor, subunitBarcodes])
 
   // allSigned & missingLabels now handled by useSigningState hook
 
