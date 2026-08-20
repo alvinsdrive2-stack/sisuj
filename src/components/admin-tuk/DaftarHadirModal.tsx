@@ -37,6 +37,7 @@ export function DaftarHadirModal({
 }: DaftarHadirModalProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [isMobile, setIsMobile] = useState(false)
+  const [isNarrow, setIsNarrow] = useState(false)
   const [selectedNode, setSelectedNode] = useState<AbsenNode | null>(null)
   const [uploadingNode, setUploadingNode] = useState<string | null>(null)
   const documentListRef = useRef<HTMLDivElement>(null)
@@ -254,6 +255,7 @@ export function DaftarHadirModal({
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))
+      setIsNarrow(window.innerWidth < 900)
     }
     checkMobile()
     window.addEventListener('resize', checkMobile)
@@ -455,7 +457,7 @@ export function DaftarHadirModal({
         </div>
       ) : (
         // Desktop - QR Code + Upload dari Komputer
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', width: '100%', maxWidth: '300px', margin: '0 auto' }}>
           {qrDataUrl ? (
             <div style={{
               padding: '16px',
@@ -542,20 +544,20 @@ export function DaftarHadirModal({
       <SimpleSpinner size="lg" />
     </div>
   ) : (
-    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px', width: '100%' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isNarrow ? '1fr' : '300px 1fr', gap: isNarrow ? '16px' : '24px', width: '100%' }}>
       {/* Left - Timeline Nodes */}
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase', marginLeft: '60px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', marginBottom: '16px', textTransform: 'uppercase', marginLeft: isNarrow ? '28px' : '60px' }}>
           Absen {personType === 'asesi' ? 'Asesi' : 'Asesor'}
         </h4>
         <div
           ref={documentListRef}
           style={{
             position: 'relative',
-            marginLeft: '80px',
+            marginLeft: isNarrow ? '48px' : '80px',
             overflowY: 'hidden',
             overflowX: 'hidden',
-            maxHeight: 'calc(90vh - 180px)',
+            maxHeight: isNarrow ? '45vh' : 'calc(90vh - 180px)',
             paddingRight: '10px',
             paddingBottom: '20px'
           }}>
@@ -671,8 +673,8 @@ export function DaftarHadirModal({
       </div>
 
       {/* Right - Image Preview */}
-      <div>
-        <div style={{ borderRadius: '12px', height: '70vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ borderRadius: '12px', height: isNarrow ? '55vh' : '70vh', minHeight: isNarrow ? '320px' : '50vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           {selectedNode ? (
             <>
               {/* Preview Area */}
@@ -827,7 +829,12 @@ export function DaftarHadirModal({
                           fontWeight: '600',
                           cursor: 'pointer',
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                          transition: 'all 0.2s'
+                          transition: 'all 0.2s',
+                          boxSizing: 'border-box',
+                          maxWidth: 'calc(100% - 32px)',
+                          textAlign: 'center',
+                          flexWrap: 'wrap',
+                          justifyContent: 'center'
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.background = '#ecfdf5'}
                         onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
@@ -935,7 +942,7 @@ export function DaftarHadirModal({
                       </div>
                     ) : (
                       // Desktop - QR Code + Upload
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '300px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', width: '100%', maxWidth: '300px', boxSizing: 'border-box', padding: '0 8px' }}>
                         {qrDataUrl ? (
                           <div style={{
                             padding: '12px',
@@ -1074,6 +1081,7 @@ export function DaftarHadirModal({
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
+          position: 'relative',
         }}
       >
         <style>{`
@@ -1145,18 +1153,22 @@ export function DaftarHadirModal({
         {mode === 'detail' && !absenLoading && (
           <div style={{
             position: 'absolute',
-            bottom: '30px',
+            bottom: '16px',
             left: '50%',
-            transform: 'translateX(-8%)',
+            transform: 'translateX(-50%)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
+            flexWrap: 'wrap',
             gap: '12px',
             background: '#fff',
             padding: '8px 16px',
             borderRadius: '50px',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
             border: '1px solid #e5e7eb',
-            zIndex: 10
+            zIndex: 10,
+            maxWidth: 'calc(100% - 32px)',
+            boxSizing: 'border-box'
           }}>
             <button
               onClick={goToPrevNode}
