@@ -434,7 +434,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>1. Nama Pengawas/Penyelia/Atasan/Orang Lain di Perusahaan :</b>
-                  <input type="text" value={formData.nama_pengawas} onChange={e => handleFormDataChange("nama_pengawas", e.target.value)} disabled={!isAsesor || signing.allSigned}
+                  <input type="text" value={formData.nama_pengawas} onChange={e => handleFormDataChange("nama_pengawas", e.target.value)} disabled
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -443,7 +443,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>2. Tempat Kerja :</b>
-                  <input type="text" value={formData.tempat_kerja} onChange={e => handleFormDataChange("tempat_kerja", e.target.value)} disabled={!isAsesor || signing.allSigned}
+                  <input type="text" value={formData.tempat_kerja} onChange={e => handleFormDataChange("tempat_kerja", e.target.value)} disabled
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -452,7 +452,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>3. Alamat :</b>
-                  <input type="text" value={formData.alamat} onChange={e => handleFormDataChange("alamat", e.target.value)} disabled={!isAsesor || signing.allSigned}
+                  <input type="text" value={formData.alamat} onChange={e => handleFormDataChange("alamat", e.target.value)} disabled
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -461,7 +461,7 @@ export default function Ia10Page() {
               <td style={{ border: "1px solid #000", padding: "6px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <b style={{ whiteSpace: "nowrap", minWidth: "180px" }}>4. Telepon :</b>
-                  <input type="text" value={formData.telepon} onChange={e => handleFormDataChange("telepon", e.target.value)} disabled={!isAsesor || signing.allSigned}
+                  <input type="text" value={formData.telepon} onChange={e => handleFormDataChange("telepon", e.target.value)} disabled
                     style={{ flex: 1, padding: "4px", border: "1px solid #ccc", fontSize: "12px" }} />
                 </div>
               </td>
@@ -483,10 +483,10 @@ export default function Ia10Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>- {p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.jawaban === true} onChange={() => isAsesor && handleYaChange(p.id)} disabled={!isAsesor || signing.allSigned} />
+                  <CustomCheckbox checked={p.jawaban === true} onChange={() => isAsesor && handleYaChange(p.id)} disabled />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>
-                  <CustomCheckbox checked={p.jawaban === false} onChange={() => isAsesor && handleTidakChange(p.id)} disabled={!isAsesor || signing.allSigned} />
+                  <CustomCheckbox checked={p.jawaban === false} onChange={() => isAsesor && handleTidakChange(p.id)} disabled />
                 </td>
               </tr>
             ))}
@@ -503,7 +503,7 @@ export default function Ia10Page() {
                   <textarea
                     value={e.jawaban}
                     onChange={(ev) => handleEssayChange(e.id, ev.target.value)}
-                    disabled={!isAsesor || signing.allSigned}
+                    disabled
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
@@ -516,7 +516,7 @@ export default function Ia10Page() {
                   <textarea
                     value={a.jawaban || ""}
                     onChange={(ev) => handleAdditionalChange(a.id, ev.target.value)}
-                    disabled={!isAsesor || signing.allSigned}
+                    disabled
                     style={{ width: "100%", minHeight: "60px", marginTop: "4px", padding: "4px", border: "1px solid #ccc" }}
                   />
                 </td>
