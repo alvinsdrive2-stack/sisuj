@@ -69,9 +69,27 @@ function deriveMetodeFlags(jenjang?: string, metode?: string) {
   return { L: false, TL: false, T: false, CL: false, DIT: false, DPT: false, PW: false, VP: false, VPK: false }
 }
 
+// Derive the Bukti-Bukti label from jenjang + metode
+function deriveBuktiLabel(jenjang?: string, metode?: string): string {
+  const j = parseInt(jenjang || '0', 10)
+  const m = (metode || '').toLowerCase()
+
+  if (j >= 1 && j <= 3) {
+    return 'Hasil observasi langsung dan hasil tanya jawab tentang:'
+  }
+  if (m === 'portofolio') {
+    return 'Hasil verifikasi portfolio dan hasil wawancara tentang:'
+  }
+  if (m === 'observasi') {
+    return 'hasil kegiatan terstruktur dan hasil tanya jawab tentang:'
+  }
+  return 'Hasil tanya jawab tentang:'
+}
+
 // ============== COMPONENTS ==============
 export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Section2Props) {
   const metodeFlags = deriveMetodeFlags(jenjang, metode)
+  const buktiLabel = deriveBuktiLabel(jenjang, metode)
   const headerStyle = {
     ...createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin),
     backgroundColor: COLORS.RED,
@@ -107,12 +125,12 @@ export function Mapa01Section2({ kelompokKerja = [], jenjang, metode }: Mapa01Se
         <>
           <Mapa01PortofolioUnitTable units={allUnits} />
           <p style={{ padding: '10px 0 0 0', margin: 0 }}><br /></p>
-          <Mapa01MetodeTable units={allUnits} metodeFlags={metodeFlags} />
+          <Mapa01MetodeTable units={allUnits} metodeFlags={metodeFlags} buktiLabel={buktiLabel} />
         </>
       ) : (
         /* Observasi: grouped by kelompok */
         kelompokKerja.map((kelompok) => (
-          <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} metodeFlags={metodeFlags} />
+          <Mapa01KelompokPekerja key={kelompok.id} kelompok={kelompok} metodeFlags={metodeFlags} buktiLabel={buktiLabel} />
         ))
       )}
     </>
@@ -127,13 +145,14 @@ interface MetodeFlags {
 interface Mapa01KelompokPekerjaProps {
   kelompok: KelompokKerja
   metodeFlags: MetodeFlags
+  buktiLabel: string
 }
 
-function Mapa01KelompokPekerja({ kelompok, metodeFlags }: Mapa01KelompokPekerjaProps) {
+function Mapa01KelompokPekerja({ kelompok, metodeFlags, buktiLabel }: Mapa01KelompokPekerjaProps) {
   return (
     <>
       <Mapa01KelompokTable kelompok={kelompok} />
-      <Mapa01MetodeTable units={kelompok.units} metodeFlags={metodeFlags} />
+      <Mapa01MetodeTable units={kelompok.units} metodeFlags={metodeFlags} buktiLabel={buktiLabel} />
     </>
   )
 }
@@ -227,9 +246,10 @@ function Mapa01KelompokTable({ kelompok }: Mapa01KelompokTableProps) {
 interface Mapa01MetodeTableProps {
   units: Unit[]
   metodeFlags: MetodeFlags
+  buktiLabel: string
 }
 
-function Mapa01MetodeTable({ units, metodeFlags }: Mapa01MetodeTableProps) {
+function Mapa01MetodeTable({ units, metodeFlags, buktiLabel }: Mapa01MetodeTableProps) {
   const headerCellStyle = createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin);
 
   return (
@@ -339,6 +359,7 @@ function Mapa01MetodeTable({ units, metodeFlags }: Mapa01MetodeTableProps) {
               unit={unit}
               idx={idx}
               metodeFlags={metodeFlags}
+              buktiLabel={buktiLabel}
             />
           ))}
         </tbody>
@@ -353,6 +374,7 @@ interface Mapa01UnitAssessmentProps {
   unit: Unit
   idx: number
   metodeFlags: MetodeFlags
+  buktiLabel: string
 }
 
 // ============== PORTOFOLIO COMPONENTS ==============
@@ -396,7 +418,7 @@ function Mapa01PortofolioUnitTable({ units }: Mapa01PortofolioUnitTableProps) {
   )
 }
 
-function Mapa01UnitAssessment({ unit, idx, metodeFlags }: Mapa01UnitAssessmentProps) {
+function Mapa01UnitAssessment({ unit, idx, metodeFlags, buktiLabel }: Mapa01UnitAssessmentProps) {
   const cellStyle = createCellStyle(BORDER.thin, BORDER.thin, BORDER.thin, BORDER.thin);
   const f = metodeFlags
 
@@ -409,7 +431,7 @@ function Mapa01UnitAssessment({ unit, idx, metodeFlags }: Mapa01UnitAssessmentPr
 
       {/* Bukti-Bukti column */}
       <td style={{ ...cellStyle, padding: '6px 8px', verticalAlign: 'middle', background: '#fff' }}>
-        <p style={{ margin: 0, fontSize: '12px', lineHeight: '12pt' }}>Hasil tanya jawab tentang:</p>
+        <p style={{ margin: 0, fontSize: '12px', lineHeight: '12pt' }}>{buktiLabel}</p>
         <p style={{ margin: '4px 0 0 0', fontSize: '12px', lineHeight: '12pt' }}>{unit.nama_unit}</p>
       </td>
 
