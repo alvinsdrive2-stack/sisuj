@@ -473,7 +473,10 @@ export default function DashboardAsesiPage() {
                           }
                         } catch { /* continue */ }
                       }
-                      // All filled → button already disabled, do nothing
+                      // All filled (ttd semua) → go to last page so asesi can take absen akhir photo
+                      const lastStep = tahap2Steps[tahap2Steps.length - 1]
+                      sessionStorage.setItem('validNavigationEntry', 'true')
+                      navigate(`/asesi${lastStep.path}`, { state: { fromInternal: true } })
                     }
                   }}
                 >
