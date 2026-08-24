@@ -392,20 +392,23 @@ export default function Apl01Page() {
       return
     }
 
-    // Asesi - generate QR dulu kalau belum ada, lalu save data pekerjaan
+    // Asesi - save data pekerjaan DULU, baru generate QR.
+    // Kalau QR/PDF kegenerate duluan, ttdApl01 bikin PDF dari Apl1Answer yang
+    // masih kosong → data_pekerjaan di PDF ilang, dan kejadian sekali doang
+    // (barcode udah ada → generateQR skip terus → PDF kosong nyangkut).
     const errors = validatePekerjaan()
     if (errors.length > 0) { showError(`Data pekerjaan wajib diisi: ${errors.join(', ')}`); return }
 
     try {
       setIsSaving(true)
 
-      // Generate QR jika belum ada (skip untuk tahap 0)
+      // Save data pekerjaan
+      await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
+
+      // Generate QR setelah data tersimpan (skip untuk tahap 0)
       if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
         await signing.generateQR()
       }
-
-      // Save data pekerjaan
-      await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
       showSuccess('APL 01 berhasil disimpan!')
       signing.publishUpdate()
     } catch (error) {
