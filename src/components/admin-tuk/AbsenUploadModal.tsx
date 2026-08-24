@@ -36,12 +36,14 @@ export function AbsenUploadModal({ isOpen, idIzin, nama, existing, onClose, onSu
   const [files, setFiles] = useState<Record<string, File | null>>({})
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const [uploading, setUploading] = useState(false)
+  const [dragKey, setDragKey] = useState<string | null>(null)
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   useEffect(() => {
     if (isOpen) {
       setFiles({})
       setPreviews({})
+      setDragKey(null)
     }
   }, [isOpen, idIzin])
 
@@ -57,6 +59,13 @@ export function AbsenUploadModal({ isOpen, idIzin, nama, existing, onClose, onSu
     const reader = new FileReader()
     reader.onload = () => setPreviews(prev => ({ ...prev, [key]: reader.result as string }))
     reader.readAsDataURL(file)
+  }
+
+  const handleDrop = (e: React.DragEvent, key: string) => {
+    e.preventDefault()
+    setDragKey(null)
+    const file = e.dataTransfer.files?.[0]
+    if (file) handlePick(key, file)
   }
 
   const clearPick = (key: string) => {
@@ -100,6 +109,8 @@ export function AbsenUploadModal({ isOpen, idIzin, nama, existing, onClose, onSu
   return (
     <div
       onClick={onClose}
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => e.preventDefault()}
       style={{
         position: 'fixed',
         inset: 0,
@@ -192,15 +203,25 @@ export function AbsenUploadModal({ isOpen, idIzin, nama, existing, onClose, onSu
                       </div>
                     </div>
                   ) : (
-                    <label style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      height: '100px', borderRadius: '8px',
-                      border: '2px dashed #d1d5db', background: '#fff', cursor: 'pointer',
-                      fontSize: '12px', fontWeight: '500', color: '#6b7280',
-                      flexDirection: 'column',
-                    }}>
+                    <label
+                      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }}
+                      onDragEnter={e => { e.preventDefault(); setDragKey(f.key) }}
+                      onDragLeave={e => { if (e.currentTarget === e.target) setDragKey(null) }}
+                      onDrop={e => handleDrop(e, f.key)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        height: '100px', borderRadius: '8px',
+                        border: '2px dashed', cursor: 'pointer',
+                        fontSize: '12px', fontWeight: '500',
+                        flexDirection: 'column',
+                        transition: 'all 0.15s ease',
+                        ...(dragKey === f.key
+                          ? { borderColor: '#4f46e5', background: '#eef2ff', color: '#4f46e5' }
+                          : { borderColor: '#d1d5db', background: '#fff', color: '#6b7280' }),
+                      }}
+                    >
                       <Upload style={{ width: '18px', height: '18px' }} />
-                      {filled ? 'Ganti Foto' : 'Pilih Foto'}
+                      {dragKey === f.key ? 'Lepaskan di sini' : (filled ? 'Ganti Foto' : 'Drag & Drop / Klik')}
                       <input
                         ref={el => { inputRefs.current[f.key] = el }}
                         type="file"
@@ -221,7 +242,7 @@ export function AbsenUploadModal({ isOpen, idIzin, nama, existing, onClose, onSu
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '14px', padding: '10px 12px', background: '#fef3c7', borderRadius: '8px' }}>
             <AlertCircle style={{ width: '14px', height: '14px', color: '#d97706', marginTop: '2px', flexShrink: 0 }} />
             <p style={{ fontSize: '11px', color: '#92400e', margin: 0 }}>
-              Maksimal 2MB per foto (JPG/PNG/WebP). Satu foto dipakai untuk absen awal & akhir sekaligus.
+              Drag & drop atau klik untuk pilih. Maksimal 10MB per foto (JPG/PNG/WebP). Satu foto dipakai untuk absen awal & akhir sekaligus.
             </p>
           </div>
         </div>
