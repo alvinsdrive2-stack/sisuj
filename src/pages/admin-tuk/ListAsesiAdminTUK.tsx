@@ -13,6 +13,7 @@ import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { toast } from "@/components/ui/toast"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
+import { AbsenUploadModal } from "@/components/admin-tuk/AbsenUploadModal"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 
@@ -87,7 +88,9 @@ export default function ListAsesiAdminTUK() {
   const navigate = useNavigate()
   const { asesiList, isLoading: asesiLoading, error, refetch } = useListAsesi(jadwalId || "")
   const asesiIds = asesiList.map(a => a.id_izin)
-  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
+  const [absenRefreshKey, setAbsenRefreshKey] = useState(0)
+  const [uploadTarget, setUploadTarget] = useState<{ id_izin: string; nama: string } | null>(null)
+  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0, absenRefreshKey)
   const allAbsenAkhirDone = asesiIds.length > 0 && asesiIds.every(id => {
     const absen = absenData[id]
     return absen?.url_absen_asesi_pra_akhir
@@ -215,6 +218,11 @@ export default function ListAsesiAdminTUK() {
       setResettingJadwal(false)
       setResetConfirm(null)
     }
+  }
+
+  const handleAbsenUploaded = () => {
+    setAbsenRefreshKey(k => k + 1)
+    refetch()
   }
 
   const handleResetJawabanAsesi = async (idIzin: string) => {
@@ -498,6 +506,14 @@ export default function ListAsesiAdminTUK() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
                           <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); setUploadTarget({ id_izin: asesi.id_izin, nama: asesi.nama }) }}
+                              className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/10 transition-colors"
+                              title="Upload foto absen"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                            </button>
                             {(kegiatan?.tahap === 1 || kegiatan?.tahap === 2) && (
                               <button
                                 type="button"
@@ -601,6 +617,18 @@ export default function ListAsesiAdminTUK() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Upload Foto Absen */}
+      {uploadTarget && (
+        <AbsenUploadModal
+          isOpen={!!uploadTarget}
+          idIzin={uploadTarget.id_izin}
+          nama={uploadTarget.nama}
+          existing={(absenData[uploadTarget.id_izin] ?? null) as unknown as Record<string, string | null> | null}
+          onClose={() => setUploadTarget(null)}
+          onSuccess={handleAbsenUploaded}
+        />
+      )}
 
       {/* Konfirmasi Reset */}
       <ConfirmDialog
