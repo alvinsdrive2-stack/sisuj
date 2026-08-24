@@ -104,7 +104,7 @@ export default function FrAk01Page() {
   const [pendingToSuccessPage, setPendingToSuccessPage] = useState(false)
   const [showMasukAsesmenModal, setShowMasukAsesmenModal] = useState(false)
   const [isDataLoading, setIsDataLoading] = useState(true)
-  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode, jenisKelas } = useDataDokumenPraAsesmen(actualIdIzin)
+  const { jabatanKerja, nomorSkema, tuk, namaAsesor, asesorList, namaAsesi, tanggalUji, tahap, jadwalId, jenjang, metode } = useDataDokumenPraAsesmen(actualIdIzin)
   const isLowJenjangAsesor = jenjang && parseInt(jenjang) < 4 && isAsesor
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
@@ -230,13 +230,16 @@ export default function FrAk01Page() {
     setBarcodes: setBarcodes as React.Dispatch<React.SetStateAction<BarcodeState | null>>,
     asesorList,
     userId: user?.id,
+    userNoreg: user?.noreg ?? undefined,
     userName: user?.name,
     isSaving,
     idIzin: actualIdIzin,
     jadwalId,
     onRefresh: fetchData,
     nextPageName: 'Proses Asesmen',
-    jenisKelas,
+    // SENG AJA gak dikirim jenisKelas: FR-AK-01 wajib ditandatangani semua
+    // pihak (asesi + asesor 1 + asesor 2) baik luring maupun daring. Kalau
+    // jenisKelas masuk, mode luring jadi singleSigner → TTD asesor 2 kelewat.
   })
 
   const asesmenSteps = useMemo(() => {
@@ -355,9 +358,13 @@ export default function FrAk01Page() {
       })
 
       if (response.ok) {
-        // Generate QR using hook (handles both asesor and asesi roles)
-        if (tahap !== 0 && jadwalId) {
-          await signing.generateQR()
+        // Generate QR using hook (handles both asesor and asesi roles).
+        // Gagal generateQR = QR/TTD gak kebuat → jangan klaim berhasil.
+        const qrOk = jadwalId ? await signing.generateQR() : false
+        if (!qrOk) {
+          showWarning('Tanda tangan gagal diproses (QR tidak ter-generate). Coba lagi.')
+          setIsSaving(false)
+          return
         }
 
         // Show success toast, stay on page

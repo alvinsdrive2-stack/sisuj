@@ -23,8 +23,9 @@ export interface SigningStateInput {
   tahap: number
   barcodes: BarcodeState | null
   setBarcodes: React.Dispatch<React.SetStateAction<BarcodeState | null>>
-  asesorList: Array<{ id: number | string }>
+  asesorList: Array<{ id: number | string; noreg?: string | null }>
   userId?: number | string
+  userNoreg?: string | null
   userName?: string
   isSaving?: boolean
   idIzin?: string
@@ -62,7 +63,7 @@ export interface SigningState {
 export function useSigningState(input: SigningStateInput): SigningState {
   const {
     pageKey, isAsesor, tahap, barcodes, setBarcodes,
-    asesorList, userId, userName, isSaving = false,
+    asesorList, userId, userNoreg, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
     isUuidFlow = false, testingMode = false, jenisKelas,
   } = input
@@ -104,13 +105,28 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // ── Signature checks ──
   const asesiHasSigned = tahap === 0 ? true : !!barcodes?.asesi?.url
 
+  // Cari index asesor di asesorList: match by id dulu, fallback by noreg.
+  // Back-end resolve id_asesor_1/2 = akun LATEST per noreg; kalau asesor login
+  // pake akun lama, id beda tapi noreg sama → tanpa fallback ini dia dianggap
+  // asesor1 (idx === -1) sehingga asesor2 salah dikira udah ttd & skip sign.
+  const findAsesorIdx = useCallback(() => {
+    const byId = asesorList.findIndex(a => String(a.id) === String(userId))
+    if (byId !== -1) return byId
+    if (userNoreg) {
+      const byNoreg = asesorList.findIndex(a => a.noreg && a.noreg === userNoreg)
+      if (byNoreg !== -1) return byNoreg
+    }
+    return -1
+  }, [asesorList, userId, userNoreg])
+
   const asesorHasSigned = useMemo(() => {
     if (tahap === 0) return true
     if (!isAsesor) return true
-    const idx = asesorList.findIndex(a => String(a.id) === String(userId))
-    const isAsesor1 = idx === 0 || idx === -1
+    const myIdx = findAsesorIdx()
+    // 1 asesor → pasti asesor1; 2 asesor → strictly ikut urutan daftar
+    const isAsesor1 = asesorList.length <= 1 || myIdx === 0
     return isAsesor1 ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  }, [tahap, isAsesor, asesorList, userId, barcodes])
+  }, [tahap, isAsesor, findAsesorIdx, asesorList, barcodes])
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
@@ -169,8 +185,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
       let role: BarcodeRole
 
       if (isAsesor) {
-        const idx = asesorList.findIndex(a => String(a.id) === String(userId))
-        const isAsesor1 = idx === 0 || idx === -1
+        const myIdx = findAsesorIdx()
+        const isAsesor1 = asesorList.length <= 1 || myIdx === 0
         role = isAsesor1 ? 'asesor1' : 'asesor2'
         setBarcodes(prev => ({
           ...prev,
@@ -197,7 +213,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     } catch {
       return false
     }
-  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, asesorList, userId, userName, setBarcodes, publishUpdate])
+  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, findAsesorIdx, userName, setBarcodes, publishUpdate])
 
   // ── Button state ──
   const { buttonText, buttonDisabled } = useMemo(() => {
