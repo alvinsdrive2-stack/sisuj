@@ -308,9 +308,8 @@ export default function VerifikasiTukAjjPage() {
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Langkah-langkah</p>
               <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                 {[
-                  'Buka speedtest.net',
-                  'Klik "Go"',
-                  'Tunggu selesai',
+                  'Buka fast.com',
+                  'Tunggu hasil kecepatan muncul otomatis',
                   'Screenshot hasil',
                 ].map((item, i) => (
                   <span key={i} className="text-sm text-gray-600 flex items-center gap-1.5">
