@@ -15,6 +15,7 @@ interface DataDokumenAsesmenData {
   tuk: string
   jenjang: string
   metode?: string
+  is_paket?: boolean
   id_asesor_1: number
   id_asesor_2: number
   nama_asesi: string
@@ -47,6 +48,7 @@ interface UseDataDokumenAsesmenResult {
   tuk: string
   jenjang: string
   metode: string
+  isPaket: boolean
   asesorList: Asesor[]
   namaAsesor: string
   namaAsesi: string
@@ -79,6 +81,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     tuk: string
     jenjang: string
     metode: string
+    isPaket: boolean
     asesorList: Asesor[]
     namaAsesor: string
     namaAsesi: string
@@ -102,6 +105,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
     tuk: '',
     jenjang: '0',
     metode: '',
+    isPaket: false,
     asesorList: [],
     namaAsesor: '',
     namaAsesi: '',
@@ -174,6 +178,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
               tuk: result.data.tuk || '',
               jenjang: result.data.jenjang || '0',
               metode: result.data.metode || '',
+              isPaket: !!result.data.is_paket,
               asesorList,
               namaAsesor,
               namaAsesi: result.data.nama_asesi || '',
