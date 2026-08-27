@@ -359,8 +359,10 @@ export default function Ia05Page() {
           return
         }
 
-        // Navigate to AK02
-        setTimeout(() => navigate(`/asesi/asesmen/${id}/ak02`), 500)
+        // Navigate to next step (IA.06 when is_paket, else AK.02)
+        const ia05Idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
+        const next = asesmenSteps[ia05Idx + 1]
+        setTimeout(() => navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/ak02`), 500)
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan umpan balik. Silakan coba lagi.')
         showError(msg)
