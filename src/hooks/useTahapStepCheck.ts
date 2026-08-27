@@ -23,6 +23,8 @@ interface UseTahapStepCheckOptions {
   jenjang?: string
   /** methode for dynamic tahap 2 steps */
   metode?: string
+  /** inject IA.06 after IA.05 when skema uses soal paket */
+  isPaket?: boolean
 }
 
 interface UseTahapStepCheckReturn {
@@ -43,7 +45,7 @@ function hasBarcode(data: any): boolean {
   return false
 }
 
-function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDef[] {
+function getTahapSteps(tahap: number, jenjang?: string, metode?: string, isPaket?: boolean): StepDef[] {
   if (tahap === 1) {
     return [
       { stepKey: 'apl01', label: 'APL 01', href: '/praasesmen/:idIzin/apl01' },
@@ -73,28 +75,32 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string): StepDe
   }
 
   if (isLowJenjang) {
-    return [
+    const steps = [
       { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
       { stepKey: 'ia01', label: 'IA.01', href: '/asesmen/:id/ia01' },
       { stepKey: 'ia02', label: 'IA.02', href: '/asesmen/:id/ia02' },
       { stepKey: 'ia03', label: 'IA.03', href: '/asesmen/:id/ia03' },
       { stepKey: 'upload-tugas', label: 'Upload Tugas', href: '/asesmen/:id/upload-tugas' },
       { stepKey: 'ia05', label: 'IA.05', href: '/asesmen/:id/ia05' },
+      { stepKey: 'ia06', label: 'IA.06', href: '/asesmen/:id/ia06' },
       { stepKey: 'ak02', label: 'AK.02', href: '/asesmen/:id/ak02' },
       { stepKey: 'ak03', label: 'AK.03', href: '/asesmen/:id/ak03' },
     ]
+    return isPaket ? steps : steps.filter(s => s.stepKey !== 'ia06')
   }
 
   // Default: full jenjang
-  return [
+  const steps = [
     { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
     { stepKey: 'ia04a', label: 'IA.04.A', href: '/asesmen/:id/ia04a' },
     { stepKey: 'upload-tugas', label: 'Upload Tugas', href: '/asesmen/:id/upload-tugas' },
     { stepKey: 'ia04b', label: 'IA.04.B', href: '/asesmen/:id/ia04b' },
     { stepKey: 'ia05', label: 'IA.05', href: '/asesmen/:id/ia05' },
+    { stepKey: 'ia06', label: 'IA.06', href: '/asesmen/:id/ia06' },
     { stepKey: 'ak02', label: 'AK.02', href: '/asesmen/:id/ak02' },
     { stepKey: 'ak03', label: 'AK.03', href: '/asesmen/:id/ak03' },
   ]
+  return isPaket ? steps : steps.filter(s => s.stepKey !== 'ia06')
 }
 
 export function useTahapStepCheck({
@@ -103,6 +109,7 @@ export function useTahapStepCheck({
   replaceId,
   jenjang,
   metode,
+  isPaket,
 }: UseTahapStepCheckOptions): UseTahapStepCheckReturn {
   const navigate = useNavigate()
   const [redirectStep, setRedirectStep] = useState<StepCheck | null>(null)
@@ -124,7 +131,7 @@ export function useTahapStepCheck({
 
     const token = localStorage.getItem("access_token")
     const headers = { Accept: "application/json", Authorization: `Bearer ${token}` }
-    const steps = getTahapSteps(tahap, jenjang, metode)
+    const steps = getTahapSteps(tahap, jenjang, metode, isPaket)
     const resolvedId = tahap === 1 ? idIzin : (replaceId || idIzin)
 
     let cancelled = false
@@ -162,7 +169,7 @@ export function useTahapStepCheck({
     setRedirectStep(null)
     setIsLoading(false)
     setChecked(true)
-  }, [tahap, idIzin, replaceId, jenjang, metode])
+  }, [tahap, idIzin, replaceId, jenjang, metode, isPaket])
 
   useEffect(() => {
     runCheck()

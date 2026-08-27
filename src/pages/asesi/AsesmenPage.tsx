@@ -10,7 +10,7 @@ export default function AsesmenPage() {
   const { kegiatan, isLoading: kegiatanLoading } = useKegiatanByRole()
 
   const idIzin = kegiatan?.jadwal_id
-  const { jenjang, metode } = useDataDokumenAsesmen(idIzin)
+  const { jenjang, metode, isPaket } = useDataDokumenAsesmen(idIzin)
 
   // Auto-redirect to first step with empty QR (hook handles navigation internally)
   const { redirectStep: _redirectStep, isLoading: stepLoading } = useTahapStepCheck({
@@ -19,6 +19,7 @@ export default function AsesmenPage() {
     replaceId: idIzin,
     jenjang,
     metode,
+    isPaket,
   })
 
   useEffect(() => {

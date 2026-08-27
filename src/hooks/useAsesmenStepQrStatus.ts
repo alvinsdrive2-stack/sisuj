@@ -10,7 +10,7 @@ import { API_BASE_URL } from "@/config/api"
 export function useMissingStepsRedirect(idIzin: string | undefined, enabled = true) {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { jenjang, metode } = useDataDokumenAsesmen(idIzin)
+  const { jenjang, metode, isPaket } = useDataDokumenAsesmen(idIzin)
   const { kegiatan: _kegiatan } = useKegiatanByRole()
   const [checked, setChecked] = useState(false)
 
@@ -26,7 +26,7 @@ export function useMissingStepsRedirect(idIzin: string | undefined, enabled = tr
     const headers = { Accept: "application/json", Authorization: `Bearer ${token}` }
 
     // Get steps for this jenjang/method
-    const steps = getAsesmenSteps(jenjang, false, 'asesor_1', 0, metode, _kegiatan?.tahap)
+    const steps = getAsesmenSteps(jenjang, false, 'asesor_1', 0, metode, _kegiatan?.tahap, isPaket)
 
     // IA05 is step index 4 or 5 depending on jenjang
     // Check all steps BEFORE ia05 (index < current ia05 index)
@@ -79,7 +79,7 @@ export function useMissingStepsRedirect(idIzin: string | undefined, enabled = tr
     }
 
     setChecked(true)
-  }, [idIzin, isAsesi, enabled, jenjang, metode, navigate, _kegiatan?.tahap])
+  }, [idIzin, isAsesi, enabled, jenjang, metode, isPaket, navigate, _kegiatan?.tahap])
 
   useEffect(() => {
     if (enabled && isAsesi && idIzin && jenjang) {
