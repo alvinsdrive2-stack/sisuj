@@ -75,11 +75,12 @@ export default function Ia09Page() {
     tanggalUji,
     jadwalId,
     jenisKelas,
+    isPaket,
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
   const { tahap } = useDataDokumenPraAsesmen(id)
 
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorList.length, metode, tahap, isPaket])
 
   const {
     showAwalModal,

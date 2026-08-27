@@ -119,14 +119,14 @@ export default function UjianPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
-  const { jabatanKerja, asesorList, jenjang, metode, jadwalId } = useDataDokumenAsesmen(id)
+  const { jabatanKerja, asesorList, jenjang, metode, jadwalId, isPaket } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
   const { isAsesor1: _isAsesor1 } = useAsesorRole(id)
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, _kegiatan?.tahap, isPaket), [jenjang, isAsesor, asesorList.length, metode, _kegiatan?.tahap, isPaket])
   const canEdit = !isAsesor
   // Note: Ujian page doesn't have kegiatan data, so we use "0" as default jenjang_id
   // This page is part of the asesmen flow but the jenjang_id is not critical for ujian steps
