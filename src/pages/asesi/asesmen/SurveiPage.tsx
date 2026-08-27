@@ -55,11 +55,11 @@ export default function SurveiPage() {
   const { isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji, metode } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, namaAsesi, jabatanKerja, tuk, tanggalUji, metode, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {

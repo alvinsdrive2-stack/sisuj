@@ -81,14 +81,14 @@ export default function Ak06Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole, isAsesor1, isAsesor2 } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId, jenisKelas, namaAsesi } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, idAsesor2: _idAsesor2, jadwalId, jenisKelas, namaAsesi, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
 
   // Get dynamic steps
   const isAsesor = user?.role?.id === RoleId.ASESOR
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   // All asesor can fill (removed restriction to specific asesor)
   const isFormDisabled = !isAsesor

@@ -50,7 +50,7 @@ export default function Ak05Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role } = useAsesorRole(id)
-  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId, jenisKelas } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesor, jadwalId, jenisKelas, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan } = useKegiatanByRole()
@@ -65,7 +65,7 @@ export default function Ak05Page() {
   const canEdit = isAsesor
 
   const resolvedAsesorRole = role || 'none'
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, resolvedAsesorRole, asesorList.length, metode, tahap, isPaket])
   const currentStep = asesmenSteps.find(s => s.href.includes('ak05'))?.number
 
   // Absen check

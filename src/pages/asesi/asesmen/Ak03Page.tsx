@@ -59,11 +59,11 @@ export default function Ak03Page() {
   const { user, isLoading: authLoading } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, asesorList, jadwalId, metode, jenisKelas } = useDataDokumenAsesmen(id)
+  const { jenjang, asesorList, jadwalId, metode, jenisKelas, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const {

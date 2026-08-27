@@ -66,7 +66,7 @@ export default function UploadTugasPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { asesorList, jenjang, jadwalId, metode, jenisKelas } = useDataDokumenAsesmen(id)
+  const { asesorList, jenjang, jadwalId, metode, jenisKelas, isPaket } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
   // Check if user is an asesor (view-only mode)
@@ -85,7 +85,7 @@ export default function UploadTugasPage() {
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   // Get dynamic steps
-  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap])
+  const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
