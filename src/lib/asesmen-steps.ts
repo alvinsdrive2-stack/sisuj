@@ -171,6 +171,16 @@ export const MUK_STEPS_TAHAP_0_PORTOFOLIO: StepConfig[] = [
   { number: 5, label: 'IA.10', href: '/asesi/asesmen/ia10' },
 ]
 
+// Insert IA.06 after IA.05 when the skema uses a soal paket (is_paket).
+export function injectIa06(steps: StepConfig[], isPaket?: boolean): StepConfig[] {
+  if (!isPaket) return steps
+  const idx = steps.findIndex(s => s.href.includes('ia05'))
+  if (idx === -1) return steps
+  const inserted = [...steps]
+  inserted.splice(idx + 1, 0, { number: 0, label: 'IA.06', href: '/asesi/asesmen/ia06' })
+  return inserted.map((s, i) => ({ ...s, number: i + 1 }))
+}
+
 // Get MUK steps based on tahap, jenjang, and metode
 export function getMukSteps(tahap: number, jenjang: string, metode?: string): StepConfig[] {
   if (tahap === 0) {
@@ -217,7 +227,8 @@ export function getAsesmenSteps(
   asesorRole: 'asesor_1' | 'asesor_2' | 'asesor_other' | 'none' | undefined,
   _asesorCount: number,
   metode?: string,
-  tahap?: number
+  tahap?: number,
+  isPaket?: boolean
 ): StepConfig[] {
   // KAN flow bypasses all jenjang/metode/tahap logic
   if (import.meta.env.VITE_SAAT_INI === 'KAN') {
@@ -240,11 +251,11 @@ export function getAsesmenSteps(
     else if (asesorRole === 'asesor_1') steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
     else steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
   } else if (!isAsesor) {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)]
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)], isPaket)
   } else if (asesorRole === 'asesor_1') {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)]
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)], isPaket)
   } else {
-    steps = [...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)]
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)], isPaket)
   }
 
   // For tahap 0 (non-KAN): return combined MUK + IA steps as unified breadcrumb
@@ -253,8 +264,8 @@ export function getAsesmenSteps(
     const isPortofolio = metode?.toLowerCase() === 'portofolio'
 
     if (isPortofolio && !isLowJenjang) return [...MUK_STEPS_TAHAP_0_PORTOFOLIO]
-    if (isLowJenjang) return [...MUK_STEPS_TAHAP_0_LOW_JENJANG]
-    return [...MUK_STEPS_TAHAP_0_OBSERVASI]
+    if (isLowJenjang) return injectIa06([...MUK_STEPS_TAHAP_0_LOW_JENJANG], isPaket)
+    return injectIa06([...MUK_STEPS_TAHAP_0_OBSERVASI], isPaket)
   }
 
   // Filter out AK.01 when tahap is 2 (asesmen, AK.01 is separate pre-step)
