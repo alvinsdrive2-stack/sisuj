@@ -289,7 +289,7 @@ export default function VerifikasiTukAjjPage() {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-800">Kecepatan Jaringan</h3>
-              <p className="text-xs text-gray-500">Hasil speedtest koneksi internet yang akan digunakan</p>
+              <p className="text-xs text-gray-500">Hasil fast.com koneksi internet yang akan digunakan</p>
             </div>
           </div>
           <CardContent className="p-5">
@@ -301,8 +301,8 @@ export default function VerifikasiTukAjjPage() {
             
             {/* Foto tengah besar */}
             <div className="mb-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Contoh hasil speedtest</p>
-              {renderExampleImage(EXAMPLE_IMAGES.jaringan, 'Contoh speedtest', 'aspect-video')}
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Contoh hasil Fast.com</p>
+              {renderExampleImage(EXAMPLE_IMAGES.jaringan, 'Contoh Fast.com', 'aspect-video')}
             </div>
             <div className="mb-4">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Langkah-langkah</p>

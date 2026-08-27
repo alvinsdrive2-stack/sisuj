@@ -36,7 +36,9 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
     }
 
     if (!ablyInstance) {
-      ablyInstance = new Ably.Realtime({ key: ablyKey })
+      // echoMessages: false — publisher tidak menerima pesannya sendiri kembali,
+      // memangkas trafik dan efek samping refetch beruntun saat save
+      ablyInstance = new Ably.Realtime({ key: ablyKey, echoMessages: false })
     }
 
     const channel = ablyInstance.channels.get(channelName)
@@ -48,6 +50,9 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
 
     return () => {
       try { channel.unsubscribe() } catch {}
+      // Detach agar channel benar-benar lepas dari koneksi saat pindah halaman
+      // (tanpa ini, channel menumpuk dan kena limit channel Ably)
+      try { channel.detach() } catch {}
 
       if (mountedRef.current) {
         mountedRef.current = false

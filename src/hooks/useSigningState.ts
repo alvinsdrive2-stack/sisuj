@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { getSigningConfig, SigningOrder } from '@/lib/signing-config'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { apiFetch } from '@/lib/api-fetch'
@@ -84,6 +84,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
     onRefresh?.()
   }, [onRefresh])
 
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const handleAblyMessage = useCallback((data?: any) => {
     if (data?.role && data?.barcode) {
       const payload = data as AblySigningPayload
@@ -92,10 +94,19 @@ export function useSigningState(input: SigningStateInput): SigningState {
         [payload.role]: payload.barcode,
       }))
     }
-    // Always refetch data on any Ably message — ensures answer data syncs
-    // Wrap in try-catch so Ably callback errors don't crash the page
-    try { refresh() } catch {}
-  }, [setBarcodes, refresh])
+    // Debounce refetch — burst pesan Ably memicu satu panggilan API saja
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    refreshTimerRef.current = setTimeout(() => {
+      // Wrap in try-catch so Ably callback errors don't crash the page
+      try { onRefresh?.() } catch {}
+    }, 500)
+  }, [setBarcodes, onRefresh])
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    }
+  }, [])
 
   const { publishUpdate } = useRealtimeSync({
     channelName,
@@ -201,13 +212,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
         }))
       }
 
-      // Publish full barcode data via Ably
+      // Publish once via Ably — penerima akan refetch dari API
       publishUpdate({ role, barcode })
-
-      // Also publish full API response for pages that need it
-      if (result.data) {
-        publishUpdate({ role, barcode, fullResponse: result.data })
-      }
 
       return true
     } catch {
