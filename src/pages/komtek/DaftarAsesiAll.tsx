@@ -44,6 +44,7 @@ const DOC_LABELS: Record<string, string> = {
   ia04a: "FR-IA-04A",
   ia04b: "FR-IA-04B",
   ia05: "FR-IA-05",
+  ia06: "FR-IA-06",
   ia08: "FR-IA-08",
   ia09: "FR-IA-09",
   ia10: "FR-IA-10",
@@ -70,7 +71,7 @@ const DOC_LABELS: Record<string, string> = {
 const DOC_GROUPS: { title: string; keys: string[] }[] = [
   { title: "Pra Asesmen", keys: ["apl01", "apl02", "mapa01", "mapa02", "ak07", "ak04", "k3"] },
   { title: "Perjanjian Asesmen", keys: ["ak01"] },
-  { title: "Asesmen", keys: ["ia01", "ia02", "ia03", "ia04a", "ia04b", "ia05", "ia08", "ia09", "ia10", "ak02", "ak03", "ak05", "ak06", "tugas", "foto_kegiatan", "pernyataan"] },
+  { title: "Asesmen", keys: ["ia01", "ia02", "ia03", "ia04a", "ia04b", "ia05", "ia06", "ia08", "ia09", "ia10", "ak02", "ak03", "ak05", "ak06", "tugas", "foto_kegiatan", "pernyataan"] },
   { title: "Foto Dokumentasi", keys: ["foto_foto_bersama", "foto_ttd_asesi_asesmen", "foto_ttd_asesi_pra", "foto_ttd_asesor_asesmen", "foto_ttd_asesor_pra"] },
   { title: "Surat Verifikasi TUK", keys: ["surat_verifikasi_tuk"] },
   { title: "SPT", keys: ["spt_asesor", "spt_komtek"] },

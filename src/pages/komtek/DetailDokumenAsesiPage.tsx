@@ -139,6 +139,7 @@ export default function DetailDokumenAsesiPage() {
       'ia04b': 'ia04b',
       'ak03': 'ak03',
       'ia05': 'ia05',
+      'ia06': 'ia06',
       'ak05': 'ak05',
       'ak06': 'ak06',
       'tugas': 'tugas'
