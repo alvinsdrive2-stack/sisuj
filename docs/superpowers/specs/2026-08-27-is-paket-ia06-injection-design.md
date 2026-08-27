@@ -20,8 +20,8 @@ consistent across:
 
 | Area | Decision |
 |---|---|
-| Flows injected | Asesi full + low jenjang, Asesor 1/2 full + low jenjang, Tahap 0 MUK (observasi + low jenjang) — all flows containing IA.05 |
-| Portofolio flow | Skipped — has no IA.05 |
+| Flows injected | Asesi full + low jenjang, Asesor 1/2 full + low jenjang, Tahap 0 MUK (observasi + low jenjang) — all flows containing IA.05, **metode observasi only** |
+| Portofolio flow | Skipped — has no IA.05; low-jenjang + portofolio combos also excluded (`injectIa06Flag = isPaket && !isPortofolio`) |
 | KAN flow | Skipped — already has its own IA.06 |
 | Komtek views | Included — `DaftarAsesiAll`, `DetailDokumenAsesiPage` show IA.06 when `is_paket` |
 | Direktur views | Not affected — only shows SK/SPT/BA documents |
