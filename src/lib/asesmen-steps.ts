@@ -244,6 +244,8 @@ export function getAsesmenSteps(
 
   const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
   const isPortofolio = metode?.toLowerCase() === 'portofolio'
+  // IA.06 hanya untuk metode observasi
+  const injectIa06Flag = isPaket && !isPortofolio
 
   let steps: StepConfig[]
   if (isPortofolio && !isLowJenjang) {
@@ -251,21 +253,22 @@ export function getAsesmenSteps(
     else if (asesorRole === 'asesor_1') steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_1]
     else steps = [...ASESMEN_STEPS_PORTOFOLIO_ASESOR_2]
   } else if (!isAsesor) {
-    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)], isPaket)
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESI : ASESMEN_STEPS_ASESI)], injectIa06Flag)
   } else if (asesorRole === 'asesor_1') {
-    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)], isPaket)
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_1 : ASESMEN_STEPS_ASESOR_1)], injectIa06Flag)
   } else {
-    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)], isPaket)
+    steps = injectIa06([...(isLowJenjang ? ASESMEN_STEPS_LOW_JENJAH_ASESOR_2 : ASESMEN_STEPS_ASESOR_2)], injectIa06Flag)
   }
 
   // For tahap 0 (non-KAN): return combined MUK + IA steps as unified breadcrumb
   if (tahap === 0) {
     const isLowJenjang = jenjangId && parseInt(jenjangId) < 4
     const isPortofolio = metode?.toLowerCase() === 'portofolio'
+    const injectIa06Flag = isPaket && !isPortofolio
 
     if (isPortofolio && !isLowJenjang) return [...MUK_STEPS_TAHAP_0_PORTOFOLIO]
-    if (isLowJenjang) return injectIa06([...MUK_STEPS_TAHAP_0_LOW_JENJANG], isPaket)
-    return injectIa06([...MUK_STEPS_TAHAP_0_OBSERVASI], isPaket)
+    if (isLowJenjang) return injectIa06([...MUK_STEPS_TAHAP_0_LOW_JENJANG], injectIa06Flag)
+    return injectIa06([...MUK_STEPS_TAHAP_0_OBSERVASI], injectIa06Flag)
   }
 
   // Filter out AK.01 when tahap is 2 (asesmen, AK.01 is separate pre-step)
