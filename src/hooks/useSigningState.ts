@@ -130,14 +130,31 @@ export function useSigningState(input: SigningStateInput): SigningState {
     return -1
   }, [asesorList, userId, userNoreg])
 
+  /**
+   * Role asesor yang login: 'asesor1' | 'asesor2' | null (tidak terdeteksi).
+   *
+   * Fix bug TTD: dulu `isAsesor1 = asesorList.length <= 1 || myIdx === 0`, jadi saat
+   * asesorList cuma 1 (atau user tidak match → myIdx=-1), SEMUA asesor dianggap asesor1
+   * → asesor2 yang ttd QR-nya ditulis ke slot asesor1 → tampilan asesor1 "terisi" dgn QR
+   * asesor2 & button langsung "Lanjut" padahal DB asesor1 kosong.
+   *
+   * Sekarang: TIDAK menebak. Jika tidak match sama sekali → null → tombol TTD
+   * disabled & generateQR ditolak (tidak menulis ke slot mana pun).
+   */
+  const myAsesorRole = useMemo<'asesor1' | 'asesor2' | null>(() => {
+    if (!isAsesor) return null
+    const idx = findAsesorIdx()
+    if (idx === 0) return 'asesor1'
+    if (idx === 1) return 'asesor2'
+    return null
+  }, [isAsesor, findAsesorIdx])
+
   const asesorHasSigned = useMemo(() => {
     if (tahap === 0) return true
     if (!isAsesor) return true
-    const myIdx = findAsesorIdx()
-    // 1 asesor → pasti asesor1; 2 asesor → strictly ikut urutan daftar
-    const isAsesor1 = asesorList.length <= 1 || myIdx === 0
-    return isAsesor1 ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
-  }, [tahap, isAsesor, findAsesorIdx, asesorList, barcodes])
+    if (myAsesorRole === null) return false
+    return myAsesorRole === 'asesor1' ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
+  }, [tahap, isAsesor, myAsesorRole, barcodes])
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
@@ -196,13 +213,14 @@ export function useSigningState(input: SigningStateInput): SigningState {
       let role: BarcodeRole
 
       if (isAsesor) {
-        const myIdx = findAsesorIdx()
-        const isAsesor1 = asesorList.length <= 1 || myIdx === 0
-        role = isAsesor1 ? 'asesor1' : 'asesor2'
+        // Fix bug: jangan menebak role. Jika myAsesorRole null (user tidak match
+        // asesorList) → tolak TTD, jangan menulis ke slot asesor1/2 secara salah.
+        if (myAsesorRole === null) return false
+        role = myAsesorRole === 'asesor2' ? 'asesor2' : 'asesor1'
         setBarcodes(prev => ({
           ...prev,
-          asesor1: isAsesor1 ? barcode : prev?.asesor1 || null,
-          asesor2: !isAsesor1 ? barcode : prev?.asesor2 || null,
+          asesor1: role === 'asesor1' ? barcode : prev?.asesor1 || null,
+          asesor2: role === 'asesor2' ? barcode : prev?.asesor2 || null,
         }))
       } else {
         role = 'asesi'
@@ -219,11 +237,19 @@ export function useSigningState(input: SigningStateInput): SigningState {
     } catch {
       return false
     }
-  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, findAsesorIdx, userName, setBarcodes, publishUpdate])
+  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, myAsesorRole, userName, setBarcodes, publishUpdate])
 
   // ── Button state ──
   const { buttonText, buttonDisabled } = useMemo(() => {
     if (tahap === 0) return { buttonText: lanjutText, buttonDisabled: isSaving }
+
+    // Fix bug: role asesor tidak terdeteksi → blokir TTD, jangan biarkan lanjut
+    if (isAsesor && myAsesorRole === null) {
+      return {
+        buttonText: 'Role asesor tidak terdeteksi',
+        buttonDisabled: true,
+      }
+    }
 
     if (order === 'asesi_only') {
       if (isAsesor) {
@@ -303,7 +329,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     }
 
     return { buttonText: lanjutText, buttonDisabled: false }
-  }, [order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode])
+  }, [order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode, myAsesorRole])
 
   return {
     asesiHasSigned,
