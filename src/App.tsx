@@ -32,6 +32,7 @@ import AsesiMainLayout from './components/AsesiMainLayout'
 import { Toaster } from './components/ui/toast'
 import { FullPageLoader } from './components/ui/loading-spinner'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
+import KanPaketRoute from './components/KanPaketRoute'
 
 // Route-level code splitting — each page loads only when navigated to
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -89,11 +90,13 @@ const Ia04bKANPage = lazy(() => import('./pages/asesi/asesmen/Ia04bKANPage'))
 const Ia05Page = lazy(() => import('./pages/asesi/asesmen/Ia05Page'))
 const Ia05KANPage = lazy(() => import('./pages/asesi/asesmen/Ia05KANPage'))
 const Ia06Page = lazy(() => import('./pages/asesi/asesmen/Ia06Page'))
+const Ia06KANPage = lazy(() => import('./pages/asesi/asesmen/Ia06KANPage'))
 const Ia08Page = lazy(() => import('./pages/asesi/asesmen/Ia08Page'))
 const Ia09Page = lazy(() => import('./pages/asesi/asesmen/Ia09Page'))
 const Ia10Page = lazy(() => import('./pages/asesi/asesmen/Ia10Page'))
 const UjianPage = lazy(() => import('./pages/asesi/asesmen/UjianPage'))
 const Ak02Page = lazy(() => import('./pages/asesi/asesmen/Ak02Page'))
+const Ak02KANPage = lazy(() => import('./pages/asesi/asesmen/Ak02KANPage'))
 const Ak03Page = lazy(() => import('./pages/asesi/asesmen/Ak03Page'))
 const SurveiPage = lazy(() => import('./pages/asesi/asesmen/SurveiPage'))
 const Ak05Page = lazy(() => import('./pages/asesi/asesmen/Ak05Page'))
@@ -354,19 +357,23 @@ function App() {
                   <Route path="asesmen/:id/ia03" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/ia04a" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04aPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/upload-tugas" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><UploadTugasPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
-                  <Route path="asesmen/:id/ia04b" element={
-                    import.meta.env.VITE_SAAT_INI === 'KAN'
-                      ? <AsesmenDataGate><AsesiOrAsesorRoute><Ia04bKANPage /></AsesiOrAsesorRoute></AsesmenDataGate>
-                      : <AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>
-                  } />
+                  <Route path="asesmen/:id/ia04b" element={<AsesmenDataGate><KanPaketRoute
+                    kan={<AsesiOrAsesorRoute><Ia04bKANPage /></AsesiOrAsesorRoute>}
+                    regular={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia04bPage /></AsesiOrAsesorRoute></ValidatedNavigationRoute>}
+                  /></AsesmenDataGate>} />
                   <Route path="asesmen/:id/uji" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiRoute><UjianPage /></AsesiRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
-                  <Route path="asesmen/:id/ia05" element={
-                    import.meta.env.VITE_SAAT_INI === 'KAN'
-                      ? <AsesmenDataGate><AsesiOrAsesorRoute><Ia05KANPage /></AsesiOrAsesorRoute></AsesmenDataGate>
-                      : <AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>
-                  } />
-                  <Route path="asesmen/:id/ia06" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia06Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
-                  <Route path="asesmen/:id/ak02" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia05" element={<AsesmenDataGate><KanPaketRoute
+                    kan={<AsesiOrAsesorRoute><Ia05KANPage /></AsesiOrAsesorRoute>}
+                    regular={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia05Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>}
+                  /></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ia06" element={<AsesmenDataGate><KanPaketRoute
+                    kan={<AsesiOrAsesorRoute><Ia06KANPage /></AsesiOrAsesorRoute>}
+                    regular={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ia06Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>}
+                  /></AsesmenDataGate>} />
+                  <Route path="asesmen/:id/ak02" element={<AsesmenDataGate><KanPaketRoute
+                    kan={<AsesiOrAsesorRoute><Ak02KANPage /></AsesiOrAsesorRoute>}
+                    regular={<ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak02Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute>}
+                  /></AsesmenDataGate>} />
                   <Route path="asesmen/:id/ak03" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiOrAsesorRoute><Ak03Page /></AsesiOrAsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/survei" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesiRoute><SurveiPage /></AsesiRoute></ValidatedNavigationRoute></AsesmenDataGate>} />
                   <Route path="asesmen/:id/ak05" element={<AsesmenDataGate><ValidatedNavigationRoute><AsesorRoute><Ak05Page /></AsesorRoute></ValidatedNavigationRoute></AsesmenDataGate>} />

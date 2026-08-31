@@ -41,6 +41,7 @@ export default function Ia05KANPage() {
   const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError } = useToast()
+  const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
   const isAsesi = user?.role?.id === RoleId.ASESI
@@ -137,7 +138,7 @@ export default function Ia05KANPage() {
   const fontS = { fontFamily: '"Arial Narrow", Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif', fontSize: '12pt' }
 
   return (
-    <ModularAsesiLayout currentStep={currentStep} steps={asesmenSteps} id={id} metode={metode}>
+    <ModularAsesiLayout currentStep={currentStep} steps={asesmenSteps} id={id} metode={metode} isKan={isKanFlow}>
       <AsesmenBreadcrumb currentPage="IA.05" />
 
       <div style={{ ...fontS, maxWidth: '1000px', margin: '0 auto' }}>

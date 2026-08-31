@@ -30,6 +30,7 @@ export default function Ia04bKANPage() {
   const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
+  const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({ phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList })
@@ -129,7 +130,7 @@ export default function Ia04bKANPage() {
   if (isLoading) return <FullPageLoader text="Memuat IA.04.B..." />
 
   return (
-    <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia04b'))?.number || 1} steps={asesmenSteps} id={id} metode={metode}>
+    <ModularAsesiLayout currentStep={asesmenSteps.find(s => s.href.includes('ia04b'))?.number || 1} steps={asesmenSteps} id={id} metode={metode} isKan={isKanFlow}>
       <div style={{ minHeight: '100vh', background: '#fff', fontFamily: '"Open Sans",Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif', fontSize: '13px' }}>
         <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
           {/* Title */}
