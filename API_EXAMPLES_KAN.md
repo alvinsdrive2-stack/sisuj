@@ -128,7 +128,7 @@ GET https://backend.devgatensi.site/api/jabatan-kerja?search=PRACETAK
 
 ### IA04B
 ```bash
-curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia04b?version=kan \
+curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia04b \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -142,7 +142,7 @@ curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia04b?version=kan 
 
 ### IA05
 ```bash
-curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia05?version=kan \
+curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia05 \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -154,7 +154,7 @@ curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia05?version=kan \
 }'
 ```
 
-### IA06 (KAN-only, tanpa `?version=kan`)
+### IA06 (KAN-only, tanpa ``)
 ```bash
 curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia06 \
   -H "Authorization: Bearer TOKEN" \
@@ -171,7 +171,7 @@ curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ia06 \
 
 ### AK02
 ```bash
-curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ak02?version=kan \
+curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ak02 \
   -H "Authorization: Bearer TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -194,10 +194,10 @@ curl -X POST https://backend.devgatensi.site/api/asesmen/{id}/ak02?version=kan \
 > Endpoint ini tetap **memerlukan auth**.
 
 ```bash
-POST https://backend.devgatensi.site/api/qr/{id}/ia04b?version=kan  body: {"id_jadwal": 50}
-POST https://backend.devgatensi.site/api/qr/{id}/ia05?version=kan   body: {"id_jadwal": 50}
+POST https://backend.devgatensi.site/api/qr/{id}/ia04b  body: {"id_jadwal": 50}
+POST https://backend.devgatensi.site/api/qr/{id}/ia05   body: {"id_jadwal": 50}
 POST https://backend.devgatensi.site/api/qr/{id}/ia06              body: {"id_jadwal": 50}
-POST https://backend.devgatensi.site/api/qr/{id}/ak02?version=kan  body: {"id_jadwal": 50}
+POST https://backend.devgatensi.site/api/qr/{id}/ak02  body: {"id_jadwal": 50}
 ```
 
 ---
@@ -218,7 +218,7 @@ Data soal + jawaban asesi langsung by `id_izin`. Gak perlu `dokumen_id` manual �
 ### IA04B — Soal DIT + Rekomendasi
 
 ```bash
-GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia04b?version=kan
+GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia04b
 ```
 
 **Response:**
@@ -251,7 +251,7 @@ GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia04b?version=kan
 ### IA05 — Pilihan Ganda
 
 ```bash
-GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia05?version=kan
+GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia05
 ```
 
 **Response:**
@@ -283,7 +283,7 @@ GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia05?version=kan
 }
 ```
 
-### IA06 — Esai (tanpa `?version=kan`)
+### IA06 — Esai (tanpa ``)
 
 ```bash
 GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia06
@@ -316,7 +316,7 @@ GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ia06
 ### AK02 — Rekap Nilai
 
 ```bash
-GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ak02?version=kan
+GET https://backend.devgatensi.site/api/asesmen/{id_izin}/ak02
 ```
 
 **Response:**

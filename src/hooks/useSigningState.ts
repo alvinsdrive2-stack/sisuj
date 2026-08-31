@@ -40,7 +40,7 @@ export interface SigningStateInput {
   testingMode?: boolean
   /** Jenis kelas kegiatan. '2' = Daring (multi-signer). Lainnya = single signer, cukup TTD user yang login lalu lanjut. */
   jenisKelas?: string
-  /** Jika 'kan', QR endpoint dipanggil dengan ?version=kan (halaman KAN) */
+  /** Jika 'kan', QR endpoint dipanggil dengan  (halaman KAN) */
   qrVersion?: 'kan'
 }
 

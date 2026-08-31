@@ -210,7 +210,7 @@ export default function Ia06KANPage() {
     if (!id) return
     try {
       const token = localStorage.getItem("access_token")
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06?version=kan`, {
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -268,7 +268,7 @@ export default function Ia06KANPage() {
       }))
       const payload: any = { dokumen_id: dokumen.id, answers, umpan_balik: umpanBalik, unit_elemen_kuk: null }
 
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06?version=kan`, {
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),

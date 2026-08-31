@@ -51,7 +51,7 @@ export default function Ia04bKANPage() {
     if (!id) return
     try {
       const token = localStorage.getItem("access_token")
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b?version=kan`, {
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
         headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -107,7 +107,7 @@ export default function Ia04bKANPage() {
       const payload: any = { dokumen_id: dokumen.id, answers }
       if (rekomendasi) payload.rekomendasi = rekomendasi === 'kompeten'
 
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b?version=kan`, {
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
