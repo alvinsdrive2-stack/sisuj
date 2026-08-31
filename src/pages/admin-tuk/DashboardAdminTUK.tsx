@@ -116,7 +116,7 @@ export default function DashboardAdminTUK() {
 
     // Realtime: refetch when asesi completes absen akhir pra
     const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
-      channelName: `jadwal:${kegiatan.jadwal_id}`,
+      channelName: `jadwal.${kegiatan.jadwal_id}`,
       onUpdate: () => {
         refetch()
         setRefreshKey(k => k + 1)

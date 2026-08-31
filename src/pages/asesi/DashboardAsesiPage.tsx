@@ -39,7 +39,7 @@ export default function DashboardAsesiPage() {
 
   // Realtime: refetch when admin TUK changes tahap
   useRealtimeSync({
-    channelName: kegiatan?.jadwal_id ? `jadwal:${kegiatan.jadwal_id}` : '',
+    channelName: kegiatan?.jadwal_id ? `jadwal.${kegiatan.jadwal_id}` : '',
     onUpdate: () => refetch(),
   })
   const [showPage, setShowPage] = useState(false)

@@ -118,7 +118,7 @@ export default function PraAsesmenPage() {
   useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
 
   const { publishUpdate: _publishUpdate } = useRealtimeSync({
-    channelName: `praasesmen:${idIzinFromUrl}`,
+    channelName: `praasesmen.${idIzinFromUrl}`,
     onUpdate: fetchPraAsesmenData
   })
 

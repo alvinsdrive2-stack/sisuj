@@ -97,7 +97,7 @@ export default function ListAsesiAsesor() {
 
   // Realtime: refetch when admin TUK changes tahap / asesi submit-TTD dokumen
   const { status: realtimeStatus } = useRealtimeSync({
-    channelName: `jadwal:${jadwalId}`,
+    channelName: `jadwal.${jadwalId}`,
     onUpdate: (payload?: any) => {
       refetch()
       setKegiatanRefreshKey(k => k + 1)

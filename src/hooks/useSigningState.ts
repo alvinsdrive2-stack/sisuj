@@ -80,7 +80,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const lanjutText = nextPageName ? `Lanjut ke ${nextPageName}` : 'Lanjut'
 
   // ── Ably realtime ──
-  const channelName = idIzin ? `signing:${idIzin}:${pageKey}` : ''
+  const channelName = idIzin ? `signing.${idIzin}.${pageKey}` : ''
 
   const refresh = useCallback(() => {
     onRefresh?.()

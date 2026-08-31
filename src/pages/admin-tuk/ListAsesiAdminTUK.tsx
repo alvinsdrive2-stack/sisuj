@@ -100,7 +100,7 @@ export default function ListAsesiAdminTUK() {
 
   // Realtime sync: refetch when asesi completes absen akhir pra
   const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
-    channelName: `jadwal:${jadwalId}`,
+    channelName: `jadwal.${jadwalId}`,
     onUpdate: () => {
       refetch()
       setKegiatanRefreshKey(k => k + 1)

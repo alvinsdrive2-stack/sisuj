@@ -44,7 +44,7 @@ export default function JadwalVideoUploader({ jadwalId, namaKegiatan, className,
 
   // Realtime sync: kalau ada upload di halaman lain, status video langsung refresh
   const { publishUpdate } = useRealtimeSync({
-    channelName: `jadwal:${jadwalId}`,
+    channelName: `jadwal.${jadwalId}`,
     onUpdate: () => { fetchLinkVideo() },
   })
 

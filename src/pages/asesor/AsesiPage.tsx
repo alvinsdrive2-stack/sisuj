@@ -88,7 +88,7 @@ export default function AsesiPage() {
 
   // Realtime: refetch when admin TUK changes tahap / asesi submit-TTD dokumen
   const { status: realtimeStatus } = useRealtimeSync({
-    channelName: jadwalId ? `jadwal:${jadwalId}` : '',
+    channelName: jadwalId ? `jadwal.${jadwalId}` : '',
     onUpdate: (payload?: any) => {
       refetchKegiatan()
       refetchAsesi()

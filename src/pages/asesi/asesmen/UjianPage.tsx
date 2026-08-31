@@ -223,7 +223,7 @@ export default function UjianPage() {
   }, [])
 
   const { publishUpdate } = useRealtimeSync({
-    channelName: `asesmen:${id}`,
+    channelName: `asesmen.${id}`,
     onUpdate: fetchUjianData
   })
 

@@ -321,6 +321,6 @@ Mapping field: `lingkup` → `soal1`, `kode_unit` → `soal2`, `a/b/c/d` → `ja
 - **DOCX upload**: Via Vite middleware `/extract-upload` (dev only). Production pake backend sendiri kalo perlu extract Word.
 - **File jabker**: `public/listjabker_extracted.json` harus ada buat dropdown.
 - **TTD**: Reuse `useSigningState` + tambah role baru di barcode state machine.
-- **Ably channel**: Perlu bedain signing channel biar ga overlap asesi/asesor. Format: `signing:{idIzin}:{role}`.
+- **Realtime channel**: Perlu bedain signing channel biar ga overlap asesi/asesor. Format: `signing.{idIzin}.{role}`.
 - **Praktisi**: Bisa reuse komponen asesi flow, endpoint prefix `/praktisi/` instead of `/asesi/`.
 - **Python script**: `pythonextractor.py` dipanggil via backend/middleware setelah upload file.

@@ -94,7 +94,7 @@ export default function K3AsesmenPage() {
 
   // Realtime sync: notify admin-tuk when absen akhir pra completed
   const { publishUpdate: publishJadwalUpdate } = useRealtimeSync({
-    channelName: `jadwal:${jadwalId}`,
+    channelName: `jadwal.${jadwalId}`,
     onUpdate: () => {},
   })
 
