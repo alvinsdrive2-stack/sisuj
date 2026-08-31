@@ -198,13 +198,16 @@ export default function UploadTugasPage() {
       'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       'image/jpeg',
       'image/png',
-      'image/jpg'
+      'image/jpg',
+      'image/webp',
+      'image/heic',
+      'image/heif'
     ]
-    const allowedExtensions = ['.pdf', '.ppt', '.pptx', '.jpg', '.jpeg', '.png']
+    const allowedExtensions = ['.pdf', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.webp', '.heic']
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase()
 
     if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-      showError('Format file tidak didukung. Gunakan PDF, PPT, PPTX, JPG, atau PNG.')
+      showError('Format file tidak didukung. Gunakan PDF, PPT, PPTX, JPG, PNG, WEBP, atau HEIC.')
       return false
     }
 
@@ -513,13 +516,13 @@ export default function UploadTugasPage() {
                           Pilih File
                           <input
                             type="file"
-                            accept=".pdf,.ppt,.pptx"
+                            accept=".pdf,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.heic"
                             onChange={handleFileChange}
                             style={{ display: 'none' }}
                           />
                         </label>
                         <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '16px' }}>
-                          PDF, PPT, PPTX, JPG, PNG • Maks 10MB
+                          PDF, PPT, PPTX, JPG, PNG, WEBP, HEIC • Maks 10MB
                         </p>
                       </>
                     )}
