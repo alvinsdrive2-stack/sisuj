@@ -58,12 +58,12 @@ export default function Ia04bKANPage() {
         const body = await res.json()
         const d = body.data
         setDokumen(d.dokumen || null)
-        setSoalList(d.soal_list || [])
+        setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
         if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
         const jwb: Record<number, string> = {}
         const sk: Record<number, number> = {}
-        ;(d.soal_list || []).forEach((s: SoalKAN) => {
+        ;(d.soal || []).forEach((s: SoalKAN) => {
           if (s.jawaban) jwb[s.id] = s.jawaban
           if (s.pencapaian !== undefined && s.pencapaian !== null) sk[s.id] = s.pencapaian
         })

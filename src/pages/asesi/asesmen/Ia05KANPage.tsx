@@ -23,8 +23,8 @@ import { BRANDING } from "@/config/branding"
 interface SoalKAN {
   id: number; no: string; soal: string
   jawab_a: string; jawab_b: string; jawab_c: string; jawab_d: string
-  kunci_jawaban: string; jawaban_asesi: string | null; skor?: number
-  unit_kode: string; kuk_kode: string | null
+  kunci_jawaban: string; jawaban_asesi: string | null
+  unit?: { kode: string } | null; kuk?: { kode: string } | null
 }
 
 const td = { border: '0.2px solid black', padding: '4px 6px' }
@@ -72,10 +72,10 @@ export default function Ia05KANPage() {
         const body = await res.json()
         const d = body.data
         setDokumen(d.dokumen || null)
-        setSoalList(d.soal_list || [])
+        setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
         const a: Record<number, 'A'|'B'|'C'|'D'> = {}
-        ;(d.soal_list || []).forEach((s: SoalKAN) => { if (s.jawaban_asesi) a[s.id] = s.jawaban_asesi as 'A'|'B'|'C'|'D' })
+        ;(d.soal || []).forEach((s: SoalKAN) => { if (s.jawaban_asesi) a[s.id] = s.jawaban_asesi as 'A'|'B'|'C'|'D' })
         setAnswers(a)
         if (d.umpan_balik) setUmpanBalik(d.umpan_balik)
       }
@@ -104,13 +104,13 @@ export default function Ia05KANPage() {
   }
 
   // Hasil penilaian disembunyikan dari asesi sampai asesor menilai (skor tersimpan / umpan balik ada)
-  const isDinilai = soalList.some(s => s.skor !== undefined && s.skor !== null) || !!umpanBalik
+  const isDinilai = soalList.some(s => s.jawaban_asesi) || !!umpanBalik
   const showHasil = isAsesor || isDinilai
 
   const jumlahSoal = soalList.length || 0
   const jumlahBenar = useMemo(() => {
     if (isAsesor) return soalList.filter(s => answers[s.id] === s.kunci_jawaban).length
-    return soalList.filter(s => s.skor === 1).length
+    return soalList.filter(s => s.jawaban_asesi && s.jawaban_asesi === s.kunci_jawaban).length
   }, [soalList, answers, isAsesor])
   const jumlahSalah = jumlahSoal - jumlahBenar
 
@@ -122,11 +122,9 @@ export default function Ia05KANPage() {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
-      const answersPayload = soalList.map(s => ({
-        soal_id: s.id,
-        jawaban: answers[s.id] || '',
-        skor: isAsesor ? (answers[s.id] === s.kunci_jawaban ? 1 : 0) : null,
-      }))
+      const answersPayload = soalList
+        .filter(s => answers[s.id])
+        .map(s => ({ soal_id: s.id, jawaban: answers[s.id] }))
       const payload: any = { dokumen_id: dokumen.id, answers: answersPayload }
       if (isAsesor) payload.umpan_balik = umpanBalik
 
@@ -249,7 +247,7 @@ export default function Ia05KANPage() {
               return [
                 <tr key={soal.id}>
                   <Td style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#d58a94' }}>
-                    {soal.unit_kode}<br />{soal.kuk_kode || ''}
+                    {soal.unit?.kode}<br />{soal.kuk?.kode || ''}
                   </Td>
                   <Td style={{ width: '40px', textAlign: 'center' }}>{soal.no}.</Td>
                   <Td>{soal.soal}</Td>
@@ -287,7 +285,7 @@ export default function Ia05KANPage() {
             {soalList.map((soal) => {
               const hasAnswer = !!answers[soal.id]
               const isCorrect = showHasil
-                ? (soal.skor != null ? soal.skor === 1 : answers[soal.id] === soal.kunci_jawaban)
+                ? answers[soal.id] === soal.kunci_jawaban
                 : false
               return (
                 <tr key={soal.id}>
