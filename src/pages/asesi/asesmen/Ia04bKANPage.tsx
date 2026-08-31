@@ -234,9 +234,9 @@ export default function Ia04bKANPage() {
             {soalList.map((soal, idx) => (
               <tr key={soal.id}>
                 <td style={{ textAlign: 'center', verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.no || idx + 1}</td>
-                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal1}</td>
+                <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal}</td>
                 <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>
-                  <div>{soal.soal}</div>
+                  <div>{soal.soal1}</div>
                   {isAsesi ? (
                     <>
                       <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: 'bold' }}>Jawaban asesi:</p>
