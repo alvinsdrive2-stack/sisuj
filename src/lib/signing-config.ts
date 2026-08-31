@@ -25,6 +25,7 @@ export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
   ia04a: { order: 'asesor_first', qrEndpoint: 'ia04a' },
   ia04b: { order: 'asesor_first', qrEndpoint: 'ia04b' },
   ia05:  { order: 'asesi_first', qrEndpoint: 'ia05' },
+  ia06:  { order: 'asesor_first', qrEndpoint: 'ia06' },
   ia08:  { order: 'asesor_first', qrEndpoint: 'ia08' },
   ia09:  { order: 'asesor_first', qrEndpoint: 'ia09' },
   ia10:  { order: 'asesor_first', qrEndpoint: 'ia10' },

@@ -40,6 +40,8 @@ export interface SigningStateInput {
   testingMode?: boolean
   /** Jenis kelas kegiatan. '2' = Daring (multi-signer). Lainnya = single signer, cukup TTD user yang login lalu lanjut. */
   jenisKelas?: string
+  /** Jika 'kan', QR endpoint dipanggil dengan ?version=kan (halaman KAN) */
+  qrVersion?: 'kan'
 }
 
 export interface SigningState {
@@ -65,7 +67,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     pageKey, isAsesor, tahap, barcodes, setBarcodes,
     asesorList, userId, userNoreg, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
-    isUuidFlow = false, testingMode = false, jenisKelas,
+    isUuidFlow = false, testingMode = false, jenisKelas, qrVersion,
   } = input
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -195,7 +197,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (!token) return false
 
     try {
-      const response = await apiFetch(`${API_BASE_URL}/qr/${idIzin}/${config.qrEndpoint}`, {
+      const response = await apiFetch(`${API_BASE_URL}/qr/${idIzin}/${config.qrEndpoint}${qrVersion ? `?version=${qrVersion}` : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id_jadwal: jadwalId }),
@@ -237,7 +239,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     } catch {
       return false
     }
-  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, myAsesorRole, userName, setBarcodes, publishUpdate])
+  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, myAsesorRole, userName, setBarcodes, publishUpdate, qrVersion])
 
   // ── Button state ──
   const { buttonText, buttonDisabled } = useMemo(() => {

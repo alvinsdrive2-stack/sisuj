@@ -8,6 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -182,9 +183,9 @@ export default function Ia06KANPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
-  const { showSuccess, showError } = useToast()
+  const { showSuccess, showError, showWarning } = useToast()
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
   const isAsesi = user?.role?.id === RoleId.ASESI
@@ -203,7 +204,7 @@ export default function Ia06KANPage() {
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
-  const [barcodes, setBarcodes] = useState<any>(null)
+  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const fetchIa06Data = useCallback(async () => {
     if (!id) return
@@ -234,10 +235,29 @@ export default function Ia06KANPage() {
 
   useEffect(() => { fetchIa06Data() }, [fetchIa06Data])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia06')) + 1]?.label
+  const signing = useSigningState({
+    pageKey: 'ia06', isAsesor, tahap,
+    barcodes, setBarcodes, asesorList,
+    userId: user?.id, userName: user?.name, isSaving,
+    idIzin: id, jadwalId,
+    nextPageName: nextStepLabel,
+    onRefresh: fetchIa06Data,
+    jenisKelas,
+    qrVersion: 'kan',
+  })
+
+  const goNext = () => {
+    const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
+    const nextStep = asesmenSteps[currentIdx + 1]
+    const nextPath = nextStep ? nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(nextPath)
+  }
+
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
 
-  const handleSave = async () => {
-    if (!id) return
+  const doSave = async () => {
+    if (!id || !dokumen) return
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
@@ -246,9 +266,7 @@ export default function Ia06KANPage() {
         jawaban: jawaban[s.id] || '',
         skor: skor[s.id] ?? null,
       }))
-      const payload: any = { answers, umpan_balik: umpanBalik, unit_elemen_kuk: null }
-      if (dokumen) payload.dokumen_id = dokumen.id
-      else if (soalList[0]) payload.dokumen_id = 0
+      const payload: any = { dokumen_id: dokumen.id, answers, umpan_balik: umpanBalik, unit_elemen_kuk: null }
 
       const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06?version=kan`, {
         method: 'POST',
@@ -260,22 +278,34 @@ export default function Ia06KANPage() {
         showError(msg); setIsSaving(false); return
       }
 
-      if (jadwalId) {
-        await fetch(`${API_BASE_URL}/qr/${id}/ia06?version=kan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id_jadwal: jadwalId }),
-        })
-      }
-
+      await signing.generateQR()
+      signing.publishUpdate()
       showSuccess('IA.06 berhasil disimpan!')
-      const currentIdx = asesmenSteps.findIndex(s => s.href.includes("ia06"))
-      const nextStep = asesmenSteps[currentIdx + 1]
-      const nextPath = nextStep ? nextStep.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-      navigate(nextPath)
     } catch (e) {
       showError(extractErrorMessage(e, 'Gagal menyimpan data'))
     } finally { setIsSaving(false) }
+  }
+
+  const handleSave = async () => {
+    if (!id) return
+
+    if (tahap === 0 || signing.allSigned) return goNext()
+    if (!isAsesor && signing.asesiHasSigned) return goNext()
+    if (isAsesor && signing.asesorHasSigned) return goNext()
+    if (!signing.agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu.')
+      return
+    }
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
+      return
+    }
+    if (!dokumen) {
+      showWarning('Dokumen IA.06 belum tersedia. Silakan hubungi asesor/admin.')
+      return
+    }
+
+    await doSave()
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.06..." />
@@ -456,11 +486,11 @@ export default function Ia06KANPage() {
               <Td>Tanda tangan/ Tanggal</Td>
               <Td>:</Td>
               <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
-                {(barcodes as any)?.['asesi']?.url ? (
+                {barcodes?.asesi?.url ? (
                   <>
-                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
                     <span style={{ fontSize: '11px' }}>
-                      {(barcodes as any)['asesi']?.tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                      {barcodes.asesi?.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                     </span>
                   </>
                 ) : (
@@ -472,15 +502,31 @@ export default function Ia06KANPage() {
         </table>
         {asesorList.map((a: any, idx: number) => (
           <div key={idx}>
-            <TTDTable title={`Asesor ${asesorList.length > 1 ? idx + 1 : ''} :`} nama={a?.nama || '-'} noReg={a?.no_reg} barcode={(barcodes as any)?.[`asesor${idx + 1}`]} />
+            <TTDTable title={`Asesor ${asesorList.length > 1 ? idx + 1 : ''} :`} nama={a?.nama || '-'} noReg={a?.no_reg} barcode={barcodes?.[idx === 0 ? 'asesor1' : 'asesor2']} />
           </div>
         ))}
 
-        {/* Buttons */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px 0' }}>
-          <ActionButton variant="primary" onClick={handleSave}>
-            {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
-          </ActionButton>
+        {/* Checklist + Buttons */}
+        <div style={{ padding: '16px 0' }}>
+          {!signing.allSigned && (
+            <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                <CustomCheckbox
+                  checked={signing.agreedChecklist}
+                  onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                  disabled={signing.allSigned}
+                />
+                <span style={{ fontSize: '13px', color: '#333' }}>
+                  Saya menyatakan dengan sebenar-benarnya bahwa saya telah memberikan jawaban yang jujur dan dapat dipertanggungjawabkan sesuai dengan pengetahuan dan pengalaman yang saya miliki.
+                </span>
+              </label>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {signing.buttonText}
+            </ActionButton>
+          </div>
         </div>
       </div>
 

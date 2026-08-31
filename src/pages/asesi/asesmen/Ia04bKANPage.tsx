@@ -7,6 +7,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
@@ -27,14 +28,14 @@ interface SoalKAN {
 export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
   const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({ phase: 'asesmen', role: 'auto', checkOnMount: true, idIzin: id, asesorList })
-  const { showSuccess, showError } = useToast()
+  const { showSuccess, showError, showWarning } = useToast()
 
   const [dokumen, setDokumen] = useState<{ id: number; nama_dokumen: string } | null>(null)
   const [soalList, setSoalList] = useState<SoalKAN[]>([])
@@ -42,7 +43,7 @@ export default function Ia04bKANPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
-  const [barcodes, setBarcodes] = useState<any>(null)
+  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
   const [showBkConfirm, setShowBkConfirm] = useState(false)
 
@@ -73,6 +74,24 @@ export default function Ia04bKANPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]?.label
+  const signing = useSigningState({
+    pageKey: 'ia04b', isAsesor, tahap,
+    barcodes, setBarcodes, asesorList,
+    userId: user?.id, userName: user?.name, isSaving,
+    idIzin: id, jadwalId,
+    nextPageName: nextStepLabel,
+    onRefresh: fetchData,
+    jenisKelas,
+    qrVersion: 'kan',
+  })
+
+  const goNext = () => {
+    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
+    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(path)
+  }
+
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
 
   const doSave = async () => {
@@ -98,25 +117,32 @@ export default function Ia04bKANPage() {
         showError(msg); setIsSaving(false); return
       }
 
-      if (jadwalId) {
-        await fetch(`${API_BASE_URL}/qr/${id}/ia04b?version=kan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id_jadwal: jadwalId }),
-        })
-      }
-
+      await signing.generateQR()
+      signing.publishUpdate()
       showSuccess('IA.04.B berhasil disimpan!')
-      const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia04b')) + 1]
-      const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-      navigate(path)
     } catch (e) {
       showError(extractErrorMessage(e, 'Gagal menyimpan data'))
     } finally { setIsSaving(false) }
   }
 
   const handleSave = async () => {
-    if (!id || !dokumen) return
+    if (!id) return
+
+    if (tahap === 0 || signing.allSigned) return goNext()
+    if (!isAsesor && signing.asesiHasSigned) return goNext()
+    if (isAsesor && signing.asesorHasSigned) return goNext()
+    if (!signing.agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu.')
+      return
+    }
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
+      return
+    }
+    if (!dokumen) {
+      showWarning('Data belum dimuat.')
+      return
+    }
 
     // Ada BK: warning dulu sebelum simpan/ttd biar asesor cek ulang
     if (isAsesor && rekomendasi === 'belum_kompeten') {
@@ -318,11 +344,11 @@ export default function Ia04bKANPage() {
             <tr><td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
               <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                {(barcodes as any)?.['asesi']?.url ? (
+                {barcodes?.asesi?.url ? (
                   <>
-                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" /><br />
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" /><br />
                     <span style={{ fontSize: '11px' }}>
-                      {(barcodes as any)['asesi']?.tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                      {barcodes.asesi?.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                     </span>
                   </>
                 ) : (
@@ -334,7 +360,10 @@ export default function Ia04bKANPage() {
         </table>
 
         {/* TTD Asesor */}
-        {asesorList.map((a: any, i: number) => (
+        {asesorList.map((a: any, i: number) => {
+          const asesorKey = i === 0 ? 'asesor1' : 'asesor2'
+          const asesorBc = barcodes?.[asesorKey]
+          return (
           <table key={i} width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
             <tbody>
               <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesor {asesorList.length > 1 ? i + 1 : ''} :</td></tr>
@@ -349,11 +378,11 @@ export default function Ia04bKANPage() {
               <tr><td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan/ Tanggal</td>
                 <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
                 <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                  {(barcodes as any)?.[`asesor${i + 1}`]?.url ? (
+                  {asesorBc?.url ? (
                     <>
-                      <img src={(barcodes as any)[`asesor${i + 1}`].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`barcode asesor ${i + 1}`} /><br />
+                      <img src={asesorBc.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`barcode asesor ${i + 1}`} /><br />
                       <span style={{ fontSize: '11px' }}>
-                        {(barcodes as any)[`asesor${i + 1}`]?.tanggal ? new Date((barcodes as any)[`asesor${i + 1}`].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                        {asesorBc?.tanggal ? new Date(asesorBc.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                       </span>
                     </>
                   ) : (
@@ -363,14 +392,31 @@ export default function Ia04bKANPage() {
               </tr>
             </tbody>
           </table>
-        ))}
+          )
+        })}
           <br />
 
-          {/* Buttons */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-            <ActionButton variant="primary" onClick={handleSave}>
-              {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
-            </ActionButton>
+          {/* Checklist + Buttons */}
+          <div style={{ marginTop: '20px' }}>
+            {!signing.allSigned && (
+              <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                  <CustomCheckbox
+                    checked={signing.agreedChecklist}
+                    onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                    disabled={signing.allSigned}
+                  />
+                  <span style={{ fontSize: '13px', color: '#333' }}>
+                    Saya menyatakan dengan sebenar-benarnya bahwa saya telah memberikan jawaban yang jujur dan dapat dipertanggungjawabkan sesuai dengan pengetahuan dan pengalaman yang saya miliki.
+                  </span>
+                </label>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+                {signing.buttonText}
+              </ActionButton>
+            </div>
           </div>
         </div>
       </div>

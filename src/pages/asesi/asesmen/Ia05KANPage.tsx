@@ -8,6 +8,7 @@ import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
+import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps, getStepNumberFromHref } from "@/lib/asesmen-steps"
 import { CustomRadio } from "@/components/ui/Radio"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -38,9 +39,9 @@ export default function Ia05KANPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
-  const { showSuccess, showError } = useToast()
+  const { showSuccess, showError, showWarning } = useToast()
   const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
 
   const isAsesor = user?.role?.id === RoleId.ASESOR
@@ -58,7 +59,7 @@ export default function Ia05KANPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({})
   const [umpanBalik, setUmpanBalik] = useState("")
-  const [barcodes, setBarcodes] = useState<any>(null)
+  const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -84,16 +85,39 @@ export default function Ia05KANPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]?.label
+  const signing = useSigningState({
+    pageKey: 'ia05', isAsesor, tahap,
+    barcodes, setBarcodes, asesorList,
+    userId: user?.id, userName: user?.name, isSaving,
+    idIzin: id, jadwalId,
+    nextPageName: nextStepLabel,
+    onRefresh: fetchData,
+    jenisKelas,
+    qrVersion: 'kan',
+  })
+
+  const goNext = () => {
+    const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
+    const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
+    navigate(path)
+  }
+
+  // Hasil penilaian disembunyikan dari asesi sampai asesor menilai (skor tersimpan / umpan balik ada)
+  const isDinilai = soalList.some(s => s.skor !== undefined && s.skor !== null) || !!umpanBalik
+  const showHasil = isAsesor || isDinilai
+
   const jumlahSoal = soalList.length || 0
-  const jumlahBenar = useMemo(() =>
-    soalList.filter(s => answers[s.id] === s.kunci_jawaban).length || 0,
-    [soalList, answers])
+  const jumlahBenar = useMemo(() => {
+    if (isAsesor) return soalList.filter(s => answers[s.id] === s.kunci_jawaban).length
+    return soalList.filter(s => s.skor === 1).length
+  }, [soalList, answers, isAsesor])
   const jumlahSalah = jumlahSoal - jumlahBenar
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
 
-  const handleSubmit = async () => {
+  const doSave = async () => {
     if (!id || !dokumen) return
     setIsSaving(true)
     try {
@@ -101,7 +125,7 @@ export default function Ia05KANPage() {
       const answersPayload = soalList.map(s => ({
         soal_id: s.id,
         jawaban: answers[s.id] || '',
-        skor: answers[s.id] === s.kunci_jawaban ? 1 : 0,
+        skor: isAsesor ? (answers[s.id] === s.kunci_jawaban ? 1 : 0) : null,
       }))
       const payload: any = { dokumen_id: dokumen.id, answers: answersPayload }
       if (isAsesor) payload.umpan_balik = umpanBalik
@@ -116,21 +140,38 @@ export default function Ia05KANPage() {
         showError(msg); setIsSaving(false); return
       }
 
-      if (jadwalId) {
-        await fetch(`${API_BASE_URL}/qr/${id}/ia05?version=kan`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ id_jadwal: jadwalId }),
-        })
-      }
-
+      await signing.generateQR()
+      signing.publishUpdate()
       showSuccess('IA.05 berhasil disimpan!')
-      const next = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia05')) + 1]
-      const path = next ? next.href.replace("/asesi/asesmen/", `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`
-      navigate(path)
     } catch (e) {
       showError(extractErrorMessage(e, 'Gagal menyimpan data'))
     } finally { setIsSaving(false) }
+  }
+
+  const handleSave = async () => {
+    if (!id) return
+
+    if (tahap === 0 || signing.allSigned) return goNext()
+    if (!isAsesor && signing.asesiHasSigned) return goNext()
+    if (isAsesor && signing.asesorHasSigned) return goNext()
+    if (!signing.agreedChecklist) {
+      showWarning('Silakan centang pernyataan terlebih dahulu.')
+      return
+    }
+    if (!isAsesor && !signing.allAsesorSigned) {
+      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
+      return
+    }
+    if (!dokumen) {
+      showWarning('Data belum dimuat.')
+      return
+    }
+    if (isAsesi && soalList.some(s => !answers[s.id])) {
+      showWarning('Jawab semua pertanyaan terlebih dahulu.')
+      return
+    }
+
+    await doSave()
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.05..." />
@@ -244,8 +285,10 @@ export default function Ia05KANPage() {
               <td style={{ ...td, width: '25%' }}>Salah</td>
             </tr>
             {soalList.map((soal) => {
-              const isCorrect = answers[soal.id] === soal.kunci_jawaban
               const hasAnswer = !!answers[soal.id]
+              const isCorrect = showHasil
+                ? (soal.skor != null ? soal.skor === 1 : answers[soal.id] === soal.kunci_jawaban)
+                : false
               return (
                 <tr key={soal.id}>
                   <td style={{ ...td, textAlign: 'center' }}>{soal.no}</td>
@@ -256,12 +299,21 @@ export default function Ia05KANPage() {
                       <span style={{ color: '#999', fontStyle: 'italic' }}>Belum dijawab</span>
                     )}
                   </td>
-                  <td style={{ ...td, textAlign: 'center' }}>
-                    <CustomCheckbox checked={hasAnswer && isCorrect} onChange={() => {}} disabled />
-                  </td>
-                  <td style={{ ...td, textAlign: 'center' }}>
-                    <CustomCheckbox checked={hasAnswer && !isCorrect} onChange={() => {}} disabled />
-                  </td>
+                  {showHasil ? (
+                    <>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <CustomCheckbox checked={hasAnswer && isCorrect} onChange={() => {}} disabled />
+                      </td>
+                      <td style={{ ...td, textAlign: 'center' }}>
+                        <CustomCheckbox checked={hasAnswer && !isCorrect} onChange={() => {}} disabled />
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ ...td, textAlign: 'center' }}>–</td>
+                      <td style={{ ...td, textAlign: 'center' }}>–</td>
+                    </>
+                  )}
                 </tr>
               )
             })}
@@ -270,21 +322,25 @@ export default function Ia05KANPage() {
         <br />
 
         {/* ==================== REKAPITULASI ==================== */}
-        <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
-          <tbody>
-            <tr style={{ fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>
-              <td colSpan={2} style={{ ...td, textAlign: 'center' }}>Rekapitulasi Penilaian Pertanyaan Pilihan Ganda</td>
-            </tr>
-            <tr>
-              <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Benar</td>
-              <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Salah</td>
-            </tr>
-            <tr>
-              <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahBenar}</td>
-              <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahSalah}</td>
-            </tr>
-          </tbody>
-        </table>
+        {showHasil ? (
+          <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
+            <tbody>
+              <tr style={{ fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>
+                <td colSpan={2} style={{ ...td, textAlign: 'center' }}>Rekapitulasi Penilaian Pertanyaan Pilihan Ganda</td>
+              </tr>
+              <tr>
+                <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Benar</td>
+                <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Salah</td>
+              </tr>
+              <tr>
+                <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahBenar}</td>
+                <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahSalah}</td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <p style={{ fontStyle: 'italic', color: '#666' }}>Hasil penilaian akan tersedia setelah dinilai oleh asesor.</p>
+        )}
         <br /><br />
 
         {/* ==================== UMPAN BALIK + TTD ASESI ==================== */}
@@ -322,11 +378,11 @@ export default function Ia05KANPage() {
               <td style={td}>Tanda tangan/ Tanggal</td>
               <td style={{ ...td, textAlign: 'center' }}>:</td>
               <td style={{ ...td, height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
-                {((barcodes as any)?.['asesi']?.url) ? (
+                {(barcodes?.asesi?.url) ? (
                   <>
-                    <img src={(barcodes as any)['asesi'].url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
                     <span style={{ fontSize: '11px' }}>
-                      {(barcodes as any)['asesi'].tanggal ? new Date((barcodes as any)['asesi'].tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                      {barcodes.asesi.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
                     </span>
                   </>
                 ) : (
@@ -342,16 +398,32 @@ export default function Ia05KANPage() {
               title={`Asesor ${asesorList.length > 1 ? idx + 1 : ''} :`}
               nama={a?.nama || '-'}
               noReg={a?.no_reg}
-              barcode={(barcodes as any)?.[`asesor${idx + 1}`]}
+              barcode={barcodes?.[idx === 0 ? 'asesor1' : 'asesor2']}
             />
           </div>
         ))}
 
-        {/* ==================== BUTTONS ==================== */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', padding: '16px 0' }}>
-          <ActionButton variant="primary" onClick={handleSubmit}>
-            {isSaving ? "Menyimpan..." : "Simpan & Lanjutkan"}
-          </ActionButton>
+        {/* ==================== CHECKLIST + BUTTONS ==================== */}
+        <div style={{ padding: '16px 0' }}>
+          {!signing.allSigned && (
+            <div style={{ background: '#fff', border: '1px solid #999', borderRadius: '4px', padding: '16px', marginBottom: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer' }}>
+                <CustomCheckbox
+                  checked={signing.agreedChecklist}
+                  onChange={() => signing.setAgreedChecklist(!signing.agreedChecklist)}
+                  disabled={signing.allSigned}
+                />
+                <span style={{ fontSize: '13px', color: '#333' }}>
+                  Saya menyatakan dengan sebenar-benarnya bahwa saya telah memberikan jawaban yang jujur dan dapat dipertanggungjawabkan sesuai dengan pengetahuan dan pengalaman yang saya miliki.
+                </span>
+              </label>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {signing.buttonText}
+            </ActionButton>
+          </div>
         </div>
       </div>
 
