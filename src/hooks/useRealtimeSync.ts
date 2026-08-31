@@ -15,6 +15,9 @@ function getAblyKey(): string {
 let ablyInstance: Ably.Realtime | null = null
 let refCount = 0
 
+// Listener global status koneksi Ably (instance dibagi antar hook)
+const ablyStatusListeners = new Set<(state: string) => void>()
+
 let echoInstance: Echo<any> | null = null
 
 function getEcho(): Echo<any> {
@@ -53,11 +56,15 @@ interface UseRealtimeSyncOptions {
  * Penanda beda: signer menerima event-nya sendiri di Reverb —
  * handler konsumen sudah idempotent, jadi aman.
  */
+export type RealtimeStatus = 'connecting' | 'online' | 'offline'
+
 export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-updated' }: UseRealtimeSyncOptions) {
   const channelRef = useRef<Ably.RealtimeChannel | null>(null)
   const onUpdateRef = useRef(onUpdate)
   const mountedRef = useRef(false)
   onUpdateRef.current = onUpdate
+
+  const [status, setStatus] = useState<RealtimeStatus>('connecting')
 
   const reverbConfigured =
     REALTIME_DRIVER === 'reverb' &&
@@ -89,9 +96,11 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
         setDriver('ably')
       }
       const handleStateChange = (states: { current: string }) => {
-        if (states.current === 'unavailable' || states.current === 'failed') {
+        if (states.current === 'connected') setStatus('online')
+        else if (states.current === 'unavailable' || states.current === 'failed') {
+          setStatus('offline')
           fallBackToAbly()
-        }
+        } else setStatus('connecting')
       }
       conn?.bind('state_change', handleStateChange)
       // Belum connected dalam 10 detik (mis. server belum dideploy / proxy belum ada) → fallback
@@ -121,7 +130,20 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
       // echoMessages: false — publisher tidak menerima pesannya sendiri kembali,
       // memangkas trafik dan efek samping refetch beruntun saat save
       ablyInstance = new Ably.Realtime({ key: ablyKey, echoMessages: false })
+      ablyInstance.connection.on((stateChange: any) => {
+        ablyStatusListeners.forEach(fn => fn(stateChange.current))
+      })
     }
+
+    const ablyStatusListener = (state: string) => {
+      if (state === 'connected' || state === 'initialized') setStatus('online')
+      else if (state === 'suspended' || state === 'failed' || state === 'closed') setStatus('offline')
+      else setStatus('connecting')
+    }
+    ablyStatusListeners.add(ablyStatusListener)
+    setStatus(
+      ablyInstance.connection.state === 'connected' ? 'online' : 'connecting'
+    )
 
     const channel = ablyInstance.channels.get(channelName)
     channelRef.current = channel
@@ -131,6 +153,7 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
     })
 
     return () => {
+      ablyStatusListeners.delete(ablyStatusListener)
       try { channel.unsubscribe() } catch {}
       // Detach agar channel benar-benar lepas dari koneksi saat pindah halaman
       // (tanpa ini, channel menumpuk dan kena limit channel Ably)
@@ -168,5 +191,5 @@ export function useRealtimeSync({ channelName, onUpdate, eventName = 'document-u
     }
   }, [channelName, eventName])
 
-  return { publishUpdate }
+  return { publishUpdate, status }
 }

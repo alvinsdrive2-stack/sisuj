@@ -9,9 +9,11 @@ import { useKegiatanAsesorList, useListAsesi, KegiatanAsesor } from "@/hooks/use
 import { useBatchAbsenData, AbsenData } from "@/hooks/useAbsenData"
 import { kegiatanService } from "@/lib/kegiatan-service"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgress"
+import { RealtimeStatusBanner } from "@/components/RealtimeStatusBanner"
 import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
@@ -79,12 +81,26 @@ export default function AsesiPage() {
   const currentKegiatan = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId)) || allKegiatans[0]
   const { asesiList, isLoading: asesiLoading, error: asesiError, refetch: refetchAsesi } = useListAsesi(jadwalId || "")
 
-  // Realtime: refetch when admin TUK changes tahap
-  useRealtimeSync({
+  // Progress dokumen per asesi (live)
+  const asesiIdsForProgress = asesiList.map(a => a.id_izin)
+  const { progressMap, refetch: refetchProgress, refetchOne: refetchProgressOne } = useDokumenProgress(asesiIdsForProgress, asesiIdsForProgress.length > 0)
+  const progressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Realtime: refetch when admin TUK changes tahap / asesi submit-TTD dokumen
+  const { status: realtimeStatus } = useRealtimeSync({
     channelName: jadwalId ? `jadwal:${jadwalId}` : '',
-    onUpdate: () => {
+    onUpdate: (payload?: any) => {
       refetchKegiatan()
       refetchAsesi()
+      // Targeted: kalau event menyebut id_izin, cukup refetch row itu
+      if (payload?.id_izin) {
+        refetchProgressOne(String(payload.id_izin))
+      } else if (progressDebounceRef.current) {
+        clearTimeout(progressDebounceRef.current)
+        progressDebounceRef.current = setTimeout(refetchProgress, 2000)
+      } else {
+        progressDebounceRef.current = setTimeout(refetchProgress, 2000)
+      }
     },
   })
 
@@ -641,6 +657,7 @@ export default function AsesiPage() {
               <Users className="w-5 h-5 text-primary" />
               Daftar Asesi
               {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+              <RealtimeStatusBanner status={realtimeStatus} className="ml-1" />
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -658,6 +675,23 @@ export default function AsesiPage() {
                 title="Tidak ada asesi"
                 message="Tidak ada asesi untuk jadwal ini"
               />
+            )}
+
+            {asesiLoading && asesiList.length === 0 && (
+              <div className="space-y-2">
+                {[0, 1, 2].map(i => (
+                  <div key={i} className="p-4 border border-slate-200 rounded-lg bg-white flex items-center justify-between animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-slate-200" />
+                      <div className="space-y-2">
+                        <div className="h-3.5 w-36 rounded bg-slate-200" />
+                        <div className="h-2.5 w-24 rounded bg-slate-100" />
+                      </div>
+                    </div>
+                    <div className="h-6 w-24 rounded-full bg-slate-100" />
+                  </div>
+                ))}
+              </div>
             )}
 
             <div className="space-y-4">
@@ -682,6 +716,9 @@ export default function AsesiPage() {
                               : 'Butuh ditinjau')
                         : 'Butuh ditinjau'
 
+                      const filled = countFilledDokumen(progressMap[asesi.id_izin])
+                      const progressPct = Math.round((filled / 20) * 100)
+
                       return (
                         <div
                           key={asesi.id_izin}
@@ -700,6 +737,24 @@ export default function AsesiPage() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                              <div
+                                className="hidden sm:flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-1"
+                                title={`${filled} dari 20 dokumen asesmen sudah terisi`}
+                              >
+                                <div className="w-14 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${
+                                      progressPct === 100 ? 'bg-emerald-500' : 'bg-primary'
+                                    }`}
+                                    style={{ width: `${progressPct}%` }}
+                                  />
+                                </div>
+                                <span className={`text-xs font-semibold tabular-nums ${
+                                  progressPct === 100 ? 'text-emerald-600' : 'text-slate-600'
+                                }`}>
+                                  {filled}/20
+                                </span>
+                              </div>
                               <Badge className={getStatusBadgeStyle(reviewStatus)}>
                                 {reviewStatus}
                               </Badge>

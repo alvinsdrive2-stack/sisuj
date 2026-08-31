@@ -14,6 +14,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { formatTimeWIB } from "@/lib/date-utils"
 
 interface PersonalData {
@@ -148,10 +149,9 @@ export default function PraAsesmenPage() {
       if (listAsesiResponse.ok) {
         const listResult = await listAsesiResponse.json()
         if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-          // Cari asesi yang namanya match dengan user yang login
-          const matchedAsesi = listResult.list_asesi.find((a: any) => a.nama === user?.name)
-          if (matchedAsesi?.id_izin) {
-            navigate(`/asesi/praasesmen/${matchedAsesi.id_izin}/apl01`)
+          const matchedIdIzin = matchAsesiIdIzin(listResult.list_asesi, user)
+          if (matchedIdIzin) {
+            navigate(`/asesi/praasesmen/${matchedIdIzin}/apl01`)
             return
           }
         }

@@ -18,6 +18,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
 
@@ -1858,7 +1859,7 @@ export default function Apl02Page() {
           if (listAsesiResponse.ok) {
             const listResult = await listAsesiResponse.json()
             if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-              fetchedIdIzin = listResult.list_asesi[0].id_izin
+              fetchedIdIzin = matchAsesiIdIzin(listResult.list_asesi, user) ?? listResult.list_asesi[0].id_izin
               setIdIzin(fetchedIdIzin)
             }
           }
@@ -2151,6 +2152,126 @@ export default function Apl02Page() {
     )
   }
 
+  // ── Autosave draft APL-02 (debounce) ─────────────────────────────
+  // Crash / session expired tidak bikin isi ulang dari nol.
+  // Draft TIDAK trigger status/submitted_at — hanya upsert jawaban.
+
+  // Build answers dari kukChecklist + kukBukti (sama dengan yang dikirim saat submit)
+  const buildApl02Answers = () => {
+    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: { url: string; name: string }[] }>()
+
+    Object.entries(kukChecklist).forEach(([kukId, status]) => {
+      if (status === null) return
+      const parts = kukId.split('-')
+      const subunitId = parseInt(parts[1])
+
+      if (!subunitDataMap.has(subunitId)) {
+        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: [] })
+      }
+
+      const data = subunitDataMap.get(subunitId)
+      if (!data) {
+        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: [] })
+        return
+      }
+      data.statuses.push(status)
+
+      const fileIds = kukBukti[kukId] || []
+      fileIds.forEach(id => {
+        if (excludedApiFileIds.has(String(id))) return
+        const fInfo = uploadedFilesInfo.find(f => f.id === id)
+        if (!fInfo) return
+        if (fInfo.kebenaran || id < 0) {
+          if (fInfo.path) data.allFileUrls.push({ url: fInfo.path, name: fInfo.name })
+        } else {
+          data.allFileIds.add(id)
+        }
+      })
+    })
+
+    apl02Data?.units.forEach(unit => {
+      unit.subunits.forEach(subunit => {
+        const subunitId = parseInt(subunit.id)
+        if (subunitDataMap.has(subunitId)) {
+          const data = subunitDataMap.get(subunitId)
+          if (!data) return
+          subunit.files.forEach(file => {
+            if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
+              data.allFileIds.add(file.id)
+            }
+          })
+        }
+      })
+    })
+
+    const dedupByUrl = (arr: { url: string; name: string }[]) => {
+      const seen = new Set<string>()
+      return arr.filter(item => {
+        if (seen.has(item.url)) return false
+        seen.add(item.url)
+        return true
+      })
+    }
+
+    return Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
+      subunit_id: subunitId,
+      kompeten: data.statuses.every(s => s === 'K'),
+      file_ids: Array.from(data.allFileIds),
+      file_urls: dedupByUrl(data.allFileUrls)
+    }))
+  }
+
+  const [draftStatus, setDraftStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [draftSavedAt, setDraftSavedAt] = useState('')
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const draftBaselineRef = useRef<string>('')
+  const draftChainRef = useRef<Promise<void>>(Promise.resolve())
+
+  const saveDraftApl02 = useCallback(async () => {
+    const finalIdIzin = _idIzin || idIzin
+    if (!finalIdIzin || isAsesor) return
+    const answers = buildApl02Answers()
+    if (!answers.length) return
+
+    setDraftStatus('saving')
+    try {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/draft`, {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers }),
+      })
+      if (!response.ok) throw new Error('draft save failed')
+      setDraftStatus('saved')
+      setDraftSavedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }))
+    } catch (error) {
+      console.error('Error saving APL-02 draft:', error)
+      setDraftStatus('error')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_idIzin, idIzin, isAsesor, kukChecklist, kukBukti, uploadedFilesInfo, apl02Data])
+
+  useEffect(() => {
+    // Baseline setelah data awal selesai dimuat — hindari autosave saat open page.
+    // Kalau asesor sudah menandatangani, asesi tidak boleh mengubah jawaban lagi.
+    if (isDataLoading || isAsesor || anyAsesorSigned) return
+    const snapshot = JSON.stringify({ k: kukChecklist, b: kukBukti })
+    if (!draftBaselineRef.current) {
+      draftBaselineRef.current = snapshot
+      return
+    }
+    if (snapshot === draftBaselineRef.current) return
+
+    if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = setTimeout(() => {
+      draftChainRef.current = draftChainRef.current.then(saveDraftApl02).then(() => {
+        draftBaselineRef.current = JSON.stringify({ k: kukChecklist, b: kukBukti })
+      }).catch(() => {})
+    }, 1500)
+    return () => {
+      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
+    }
+  }, [kukChecklist, kukBukti, isDataLoading, isAsesor, anyAsesorSigned, saveDraftApl02])
+
   const getNextRoute = (id: string) => {
     const base = isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'
     if (isAsesiTidakKompeten()) return `${base}/${id}/apl02/failed`
@@ -2342,76 +2463,7 @@ export default function Apl02Page() {
     }
 
     // Convert kukChecklist to answers array (per subunit)
-    // First, collect all KUK data grouped by subunit
-    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: { url: string; name: string }[] }>()
-
-    Object.entries(kukChecklist).forEach(([kukId, status]) => {
-      // kukId format: "unitId-subunitId-kukNo"
-      if (status === null) return // Skip null values
-      const parts = kukId.split('-')
-      const subunitId = parseInt(parts[1])
-
-      if (!subunitDataMap.has(subunitId)) {
-        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: [] })
-      }
-
-      const data = subunitDataMap.get(subunitId)
-      if (!data) {
-        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: [] })
-        return
-      }
-      data.statuses.push(status)
-
-      // Add user-selected file IDs (filter out excluded API files)
-      const fileIds = kukBukti[kukId] || []
-      fileIds.forEach(id => {
-        if (excludedApiFileIds.has(String(id))) return
-        const fInfo = uploadedFilesInfo.find(f => f.id === id)
-        if (!fInfo) return
-        if (fInfo.kebenaran || id < 0) {
-          // Dokumen asesi: only file_urls, no file_ids (fake negative IDs)
-          if (fInfo.path) data.allFileUrls.push({ url: fInfo.path, name: fInfo.name })
-        } else {
-          // Regular files: only file_ids (already on server, no re-send URL)
-          data.allFileIds.add(id)
-        }
-      })
-    })
-
-    // Also include API files from subunits that are NOT excluded
-    apl02Data?.units.forEach(unit => {
-      unit.subunits.forEach(subunit => {
-        const subunitId = parseInt(subunit.id)
-        if (subunitDataMap.has(subunitId)) {
-          const data = subunitDataMap.get(subunitId)
-      if (!data) return
-          subunit.files.forEach(file => {
-            if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
-              // Regular files from subunit: only file_ids (already on server)
-              data.allFileIds.add(file.id)
-            }
-          })
-        }
-      })
-    })
-
-    // Dedup file_urls by URL (same file can be selected for multiple KUKs)
-    const dedupByUrl = (arr: { url: string; name: string }[]) => {
-      const seen = new Set<string>()
-      return arr.filter(item => {
-        if (seen.has(item.url)) return false
-        seen.add(item.url)
-        return true
-      })
-    }
-    // Convert to answers array format
-    // asesi sends kompeten: null, asesor sends kompeten: true/false
-    const answers = Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
-      subunit_id: subunitId,
-      kompeten: data.statuses.every(s => s === 'K'),
-      file_ids: Array.from(data.allFileIds),
-      file_urls: dedupByUrl(data.allFileUrls)
-    }))
+    const answers = buildApl02Answers()
 
     // Check if all subunits have been answered
     if (apl02Data?.units) {
@@ -2766,7 +2818,22 @@ export default function Apl02Page() {
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
+          {!isAsesor && draftStatus !== 'idle' && (
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                marginRight: 'auto',
+                color: draftStatus === 'error' ? '#dc2626' : draftStatus === 'saving' ? '#64748b' : '#059669',
+              }}
+              role="status"
+            >
+              {draftStatus === 'saving' && 'Menyimpan draf…'}
+              {draftStatus === 'saved' && `Draf tersimpan ${draftSavedAt}`}
+              {draftStatus === 'error' && 'Gagal menyimpan draf — coba ubah lagi'}
+            </span>
+          )}
           {isAsesor && (
             <ActionButton variant="secondary" onClick={handleNavigateBack} disabled={isSaving}>
               Kembali

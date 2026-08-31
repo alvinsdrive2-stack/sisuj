@@ -28,6 +28,7 @@ import { useKegiatanAsesi } from "@/hooks/useKegiatan"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { toast } from "@/components/ui/toast"
 import { API_BASE_URL } from "@/config/api"
+import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { apiFetch } from "@/lib/api-fetch"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 
@@ -51,16 +52,16 @@ export default function DashboardAsesiPage() {
   // Fetch id_izin from list-asesi
   useEffect(() => {
     const fetchIdIzin = async () => {
-      if (!kegiatan?.jadwal_id || !user?.name) return
+      if (!kegiatan?.jadwal_id || !user?.id) return
 
       try {
         const response = await apiFetch(`${API_BASE_URL}/kegiatan/${kegiatan.jadwal_id}/list-asesi`)
 
         if (response.ok) {
           const result = await response.json()
-          const matchedAsesi = result.list_asesi?.find((a: any) => a.nama === user.name)
-          if (matchedAsesi?.id_izin) {
-            setIdIzin(matchedAsesi.id_izin)
+          const matchedIdIzin = matchAsesiIdIzin(result.list_asesi, user)
+          if (matchedIdIzin) {
+            setIdIzin(matchedIdIzin)
           }
         }
       } catch (error) {
@@ -69,7 +70,7 @@ export default function DashboardAsesiPage() {
     }
 
     fetchIdIzin()
-  }, [kegiatan?.jadwal_id, user?.name])
+  }, [kegiatan?.jadwal_id, user?.id, user?.name])
 
   // Page entrance animation
 

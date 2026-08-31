@@ -7,11 +7,13 @@ import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useListAsesi } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgress"
+import { RealtimeStatusBanner } from "@/components/RealtimeStatusBanner"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
 
 interface CountdownTime {
@@ -88,12 +90,23 @@ export default function ListAsesiAsesor() {
   const [kegiatan, setKegiatan] = useState<KegiatanAsesor | null>(null)
   const [kegiatanRefreshKey, setKegiatanRefreshKey] = useState(0)
 
-  // Realtime: refetch when admin TUK changes tahap
-  useRealtimeSync({
+  // Progress dokumen per asesi (live)
+  const asesiIdsForProgress = asesiList.map(a => a.id_izin)
+  const { progressMap, refetch: refetchProgress, refetchOne: refetchProgressOne } = useDokumenProgress(asesiIdsForProgress, asesiIdsForProgress.length > 0)
+  const progressDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Realtime: refetch when admin TUK changes tahap / asesi submit-TTD dokumen
+  const { status: realtimeStatus } = useRealtimeSync({
     channelName: `jadwal:${jadwalId}`,
-    onUpdate: () => {
+    onUpdate: (payload?: any) => {
       refetch()
       setKegiatanRefreshKey(k => k + 1)
+      if (payload?.id_izin) {
+        refetchProgressOne(String(payload.id_izin))
+      } else {
+        if (progressDebounceRef.current) clearTimeout(progressDebounceRef.current)
+        progressDebounceRef.current = setTimeout(refetchProgress, 2000)
+      }
     },
   })
   const [_kegiatanLoading, setKegiatanLoading] = useState(true)
@@ -354,6 +367,7 @@ export default function ListAsesiAsesor() {
             <Users className="w-5 h-5 text-primary" />
             Daftar Asesi
             {asesiLoading && <SimpleSpinner size="sm" className="ml-2 text-primary" />}
+            <RealtimeStatusBanner status={realtimeStatus} className="ml-1" />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -371,6 +385,23 @@ export default function ListAsesiAsesor() {
               title="Tidak ada asesi"
               message="Tidak ada asesi untuk jadwal ini"
             />
+          )}
+
+          {asesiLoading && asesiList.length === 0 && (
+            <div className="space-y-2">
+              {[0, 1, 2].map(i => (
+                <div key={i} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700" />
+                    <div className="space-y-2">
+                      <div className="h-3.5 w-36 rounded bg-slate-200 dark:bg-slate-700" />
+                      <div className="h-2.5 w-24 rounded bg-slate-100 dark:bg-slate-700/60" />
+                    </div>
+                  </div>
+                  <div className="h-6 w-24 rounded-full bg-slate-100 dark:bg-slate-700" />
+                </div>
+              ))}
+            </div>
           )}
 
           <div className="space-y-4">
@@ -453,6 +484,32 @@ export default function ListAsesiAsesor() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">ID: {asesi.id_izin}</p>
                           </div>
                         </div>
+
+                        {/* Progress chip */}
+                        {(() => {
+                          const filled = countFilledDokumen(progressMap[asesi.id_izin])
+                          const progressPct = Math.round((filled / 20) * 100)
+                          return (
+                            <div
+                              className="hidden sm:flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 dark:border-slate-700 px-2.5 py-1"
+                              title={`${filled} dari 20 dokumen asesmen sudah terisi`}
+                            >
+                              <div className="w-14 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    progressPct === 100 ? 'bg-emerald-500' : 'bg-primary'
+                                  }`}
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+                              <span className={`text-xs font-semibold tabular-nums ${
+                                progressPct === 100 ? 'text-emerald-600' : 'text-slate-600 dark:text-slate-300'
+                              }`}>
+                                {filled}/20
+                              </span>
+                            </div>
+                          )
+                        })()}
 
                         {/* Belum Kirim Video — khusus kelas daring (2) */}
                         {kegiatan?.jenis_kelas === '2' && videoUploaded === false && (

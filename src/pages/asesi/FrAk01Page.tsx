@@ -13,6 +13,7 @@ import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { TimePickerModal } from "@/components/ui/TimePickerModal"
 import { API_BASE_URL } from "@/config/api"
+import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
@@ -163,7 +164,7 @@ export default function FrAk01Page() {
         if (listAsesiResponse.ok) {
           const listResult = await listAsesiResponse.json()
           if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            fetchedIdIzin = listResult.list_asesi[0].id_izin
+            fetchedIdIzin = matchAsesiIdIzin(listResult.list_asesi, user) ?? listResult.list_asesi[0].id_izin
             setActualIdIzin(fetchedIdIzin)
           }
         }

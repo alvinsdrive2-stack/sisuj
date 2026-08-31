@@ -168,6 +168,17 @@ export default function UjianPage() {
   const prevIndexRef = useRef(currentIndex)
   const violationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const saveAnswerRef = useRef<() => Promise<void>>(async () => {})
+  const violationCountRef = useRef(0)
+
+  // Delta-save: hanya soal yang berubah sejak save terakhir yang dikirim.
+  // POST full-answers paralel bisa saling timpa (jawaban balik ke nilai lama).
+  const dirtySoalRef = useRef<Set<number>>(new Set())
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flushChainRef = useRef<Promise<void>>(Promise.resolve())
+  const answersRef = useRef(answers)
+  answersRef.current = answers
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [savedAt, setSavedAt] = useState('')
 
   const fetchUjianData = useCallback(async () => {
     if (!id) return
@@ -207,6 +218,10 @@ export default function UjianPage() {
 
   useEffect(() => { fetchUjianData() }, [fetchUjianData])
 
+  useEffect(() => () => {
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current)
+  }, [])
+
   const { publishUpdate } = useRealtimeSync({
     channelName: `asesmen:${id}`,
     onUpdate: fetchUjianData
@@ -235,9 +250,12 @@ export default function UjianPage() {
     if (isAsesor) return // Only apply for asesi
 
     const handleViolation = (type: string) => {
-      const newCount = violationCount + 1
+      violationCountRef.current += 1
+      const newCount = violationCountRef.current
       setViolationCount(newCount)
       setDisplayViolationCount(newCount) // Update immediately for display
+
+      if (newCount > MAX_VIOLATIONS) return
 
       const messages = [
         `${type} tidak diperbolekan selama ujian!`,
@@ -245,7 +263,7 @@ export default function UjianPage() {
         `Pelanggaran ke-3: Ujian otomatis dihentikan!`,
       ]
 
-      setWarningMessage(messages[newCount - 1])
+      setWarningMessage(messages[Math.min(newCount - 1, messages.length - 1)])
       setShowWarningModal(true)
 
       if (newCount >= MAX_VIOLATIONS) {
@@ -329,18 +347,36 @@ export default function UjianPage() {
     }
   }, [violationCount, isAsesor])
 
-  // Prevent page exit without confirmation
+  // Prevent page exit without confirmation + simpan jawaban belum ke-save
   useEffect(() => {
     if (isAsesor) return
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const ids = Array.from(dirtySoalRef.current)
+      if (ids.length && id && dokumen) {
+        const answersPayload = ids
+          .map(soalId => ({ soal_id: soalId, jawaban: answersRef.current[soalId] }))
+          .filter(a => a.jawaban)
+        if (answersPayload.length) {
+          // keepalive supaya request tetap jalan walau halaman unload
+          fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+            body: JSON.stringify({ id_izin: parseInt(id), dokumen_id: dokumen.id, answers: answersPayload }),
+            keepalive: true,
+          }).catch(() => {})
+        }
+      }
       e.preventDefault()
       e.returnValue = ''
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [isAsesor])
+  }, [isAsesor, id, dokumen])
 
   const currentSoal = soalList[currentIndex]
   const totalQuestions = soalList.length
@@ -351,43 +387,86 @@ export default function UjianPage() {
     if (!currentSoal || !canEdit || allSigned) return
     setSelectedOption(answer)
     setAnswers(prev => ({ ...prev, [currentSoal.id]: answer }))
+
+    dirtySoalRef.current.add(currentSoal.id)
+    if (flushTimerRef.current) clearTimeout(flushTimerRef.current)
+    flushTimerRef.current = setTimeout(flushDirtySave, 1500)
   }
 
-  const saveAnswer = async () => {
+  // Kirim delta jawaban (hanya soal dirty) — diserialisasi supaya tidak ada
+  // dua POST paralel yang saling menimpa.
+  const flushDirtySave = () => {
+    if (!id || !dokumen) return
+    flushChainRef.current = flushChainRef.current.then(async () => {
+      if (!dirtySoalRef.current.size) return
+      const ids = Array.from(dirtySoalRef.current)
+      const answersPayload = ids
+        .map(soalId => ({ soal_id: soalId, jawaban: answersRef.current[soalId] }))
+        .filter(a => a.jawaban)
+      if (!answersPayload.length) return
+
+      setSaveStatus('saving')
+      try {
+        const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+          body: JSON.stringify({ id_izin: parseInt(id), dokumen_id: dokumen.id, answers: answersPayload }),
+        })
+        if (!response.ok) throw new Error('Failed to save')
+        ids.forEach(soalId => dirtySoalRef.current.delete(soalId))
+        setSaveStatus('saved')
+        setSavedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }))
+      } catch (error) {
+        console.error('Error saving answer:', error)
+        setSaveStatus('error')
+      }
+    })
+  }
+
+  const doFullSave = async () => {
     if (!id || !dokumen) return
 
-    try {
-      const token = localStorage.getItem('access_token')
+    const answersPayload = soalList
+      .filter(soal => answersRef.current[soal.id])
+      .map(soal => ({
+        soal_id: soal.id,
+        jawaban: answersRef.current[soal.id]
+      }))
 
-      const answersPayload = soalList
-        .filter(soal => answers[soal.id])
-        .map(soal => ({
-          soal_id: soal.id,
-          jawaban: answers[soal.id]
-        }))
-
-      const payload = {
-        id_izin: parseInt(id),
-        dokumen_id: dokumen.id,
-        answers: answersPayload
-      }
-
-      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to save')
-      }
-    } catch (error) {
-      console.error('Error saving answer:', error)
-      throw error
+    const payload = {
+      id_izin: parseInt(id),
+      dokumen_id: dokumen.id,
+      answers: answersPayload
     }
+
+    const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to save')
+    }
+
+    Object.keys(answersRef.current).forEach(soalId => dirtySoalRef.current.delete(Number(soalId)))
+  }
+
+  // Full save ikut masuk rantai yang sama dengan delta flush → tidak pernah
+  // ada dua POST IA-05 paralel yang saling menimpa jawaban.
+  const saveAnswer = async () => {
+    if (flushTimerRef.current) {
+      clearTimeout(flushTimerRef.current)
+      flushTimerRef.current = null
+    }
+    flushChainRef.current = flushChainRef.current.then(doFullSave, doFullSave)
+    await flushChainRef.current
   }
 
   // Keep ref in sync for stale closure prevention
@@ -403,7 +482,7 @@ export default function UjianPage() {
       return
     }
 
-    if (answers[currentSoal.id]) {
+    if (canEdit && (answers[currentSoal.id] || dirtySoalRef.current.size)) {
       setIsSaving(true)
       try {
         await saveAnswer()
@@ -471,8 +550,8 @@ export default function UjianPage() {
   }
 
   const handleDotClick = (index: number) => {
-    if (answers[currentSoal.id] && canEdit) {
-      saveAnswer().catch(console.error)
+    if (canEdit && dirtySoalRef.current.size) {
+      flushDirtySave()
     }
     setCurrentIndex(index)
   }
@@ -699,6 +778,19 @@ export default function UjianPage() {
                 <div style={{ fontSize: '10px', opacity: 0.9, marginTop: '2px' }}>
                   {progress} dijawab
                 </div>
+                {canEdit && saveStatus !== 'idle' && (
+                  <div style={{
+                    fontSize: '10px',
+                    marginTop: '4px',
+                    fontWeight: '600',
+                    opacity: saveStatus === 'error' ? 1 : 0.95,
+                    color: saveStatus === 'error' ? '#ffd6d6' : saveStatus === 'saving' ? 'rgba(255,255,255,0.85)' : '#b8ffe3',
+                  }}>
+                    {saveStatus === 'saving' && 'Menyimpan…'}
+                    {saveStatus === 'saved' && `Tersimpan ${savedAt}`}
+                    {saveStatus === 'error' && 'Gagal — coba lagi'}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -11,6 +11,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { useSigningState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
@@ -163,7 +164,7 @@ export default function FrAk07Page() {
         if (listAsesiResponse.ok) {
           const listResult = await listAsesiResponse.json()
           if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-            actualIdIzin = listResult.list_asesi[0].id_izin
+            actualIdIzin = matchAsesiIdIzin(listResult.list_asesi, user) ?? listResult.list_asesi[0].id_izin
           }
         }
       }
