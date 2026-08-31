@@ -217,11 +217,11 @@ export default function Ia06KANPage() {
         const body = await res.json()
         const d = body.data
         setDokumen(d.dokumen || null)
-        setSoalList(d.soal_list || [])
+        setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
         const savedJawaban: Record<number, string> = {}
         const savedSkor: Record<number, number> = {}
-        ;(d.soal_list || []).forEach((s: SoalEsai) => {
+        ;(d.soal || []).forEach((s: SoalEsai) => {
           if (s.jawaban) savedJawaban[s.id] = s.jawaban
           if (s.skor !== undefined && s.skor !== null) savedSkor[s.id] = s.skor
         })
