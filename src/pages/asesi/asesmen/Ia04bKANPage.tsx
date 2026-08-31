@@ -45,6 +45,7 @@ export default function Ia04bKANPage() {
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
+  const [rekomendasiId, setRekomendasiId] = useState<number | null>(null)
   const [showBkConfirm, setShowBkConfirm] = useState(false)
 
   const fetchData = useCallback(async () => {
@@ -60,12 +61,15 @@ export default function Ia04bKANPage() {
         setDokumen(d.dokumen || null)
         setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
+        if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
         if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
         const jwb: Record<number, string> = {}
         const sk: Record<number, number> = {}
         ;(d.soal || []).forEach((s: SoalKAN) => {
           if (s.jawaban) jwb[s.id] = s.jawaban
-          if (s.pencapaian !== undefined && s.pencapaian !== null) sk[s.id] = s.pencapaian
+          // Backend simpan pencapaian sebagai boolean (0 = tidak, 1-3 = ya) — skala KAN 0-3
+          const p = s.pencapaian
+          if (p !== undefined && p !== null) sk[s.id] = typeof p === 'boolean' ? (p ? 3 : 0) : p
         })
         setJawaban(jwb); setSkor(sk)
       }
@@ -115,6 +119,22 @@ export default function Ia04bKANPage() {
       if (!res.ok) {
         const msg = await extractApiError(res, 'Gagal menyimpan IA.04.B')
         showError(msg); setIsSaving(false); return
+      }
+
+      // Skor asesor + rekomendasi disimpan via endpoint nilai (backend simpan pencapaian boolean)
+      if (isAsesor) {
+        const evaluations = soalList
+          .filter(s => skor[s.id] !== undefined && skor[s.id] !== null)
+          .map(s => ({ soal_id: s.id, pencapaian: skor[s.id] !== 0 }))
+        const nilaiPayload: any = { dokumen_id: dokumen.id, evaluations }
+        if (rekomendasi && rekomendasiId) {
+          nilaiPayload.rekomendasi = { soal_id: rekomendasiId, value: rekomendasi === 'kompeten' }
+        }
+        await fetch(`${API_BASE_URL}/asesmen/${id}/nilai-ia04b`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(nilaiPayload),
+        })
       }
 
       await signing.generateQR()
