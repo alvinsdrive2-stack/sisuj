@@ -219,7 +219,6 @@ export default function Ak02KANPage() {
     nextPageName: nextStepLabel,
     onRefresh: fetchAk02Data,
     jenisKelas,
-    qrVersion: 'kan',
   })
 
   const goNext = () => {

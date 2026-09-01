@@ -262,7 +262,6 @@ export default function Ia06KANPage() {
     nextPageName: nextStepLabel,
     onRefresh: fetchIa06Data,
     jenisKelas,
-    qrVersion: 'kan',
   })
 
   const goNext = () => {

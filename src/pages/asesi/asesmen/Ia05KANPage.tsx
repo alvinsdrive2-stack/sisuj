@@ -95,7 +95,6 @@ export default function Ia05KANPage() {
     nextPageName: nextStepLabel,
     onRefresh: fetchData,
     jenisKelas,
-    qrVersion: 'kan',
   })
 
   const goNext = () => {
