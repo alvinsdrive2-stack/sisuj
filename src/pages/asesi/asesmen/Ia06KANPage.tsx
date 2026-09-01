@@ -101,12 +101,14 @@ function PenyusunValidatorTable({ namaPenyusun, noregPenyusun, tanggalPenyusun, 
   const ttdCell = (barcode?: string | null, tanggal?: string | null, alt?: string) => (
     <Td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center' }}>
       {barcode ? (
-        <>
-          <img src={barcode} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt={alt || 'barcode'} /><br />
-          <span style={{ fontSize: '11px' }}>
-            {tanggal ? new Date(tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-          </span>
-        </>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+          <img src={barcode} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt={alt || 'barcode'} />
+          {tanggal && (
+            <div style={{ fontSize: '11px', color: '#333' }}>
+              {new Date(tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+          )}
+        </div>
       ) : null}
     </Td>
   )

@@ -314,12 +314,14 @@ export default function Ia04bKANPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>{noregPenyusun || ''}</td>
               <td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 {barcodePenyusun ? (
-                  <>
-                    <img src={barcodePenyusun} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode penyusun" /><br />
-                    <span style={{ fontSize: '11px' }}>
-                      {tanggalPenyusun ? new Date(tanggalPenyusun).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                    </span>
-                  </>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodePenyusun} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode penyusun" />
+                    {tanggalPenyusun && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(tanggalPenyusun).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
                 ) : null}
               </td>
             </tr>
@@ -333,12 +335,14 @@ export default function Ia04bKANPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>{noregValidator || ''}</td>
               <td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 {barcodeValidator ? (
-                  <>
-                    <img src={barcodeValidator} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode validator" /><br />
-                    <span style={{ fontSize: '11px' }}>
-                      {tanggalValidator ? new Date(tanggalValidator).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                    </span>
-                  </>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodeValidator} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode validator" />
+                    {tanggalValidator && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(tanggalValidator).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
                 ) : null}
               </td>
             </tr>
