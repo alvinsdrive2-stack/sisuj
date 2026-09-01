@@ -397,15 +397,15 @@ export default function Ia04bKANPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
               <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 {barcodes?.asesi?.url ? (
-                  <>
-                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" /><br />
-                    <span style={{ fontSize: '11px' }}>
-                      {barcodes.asesi?.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
-                )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" />
+                    {barcodes.asesi?.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </td>
             </tr>
           </tbody>
@@ -431,15 +431,15 @@ export default function Ia04bKANPage() {
                 <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
                 <td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                   {asesorBc?.url ? (
-                    <>
-                      <img src={asesorBc.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`barcode asesor ${i + 1}`} /><br />
-                      <span style={{ fontSize: '11px' }}>
-                        {asesorBc?.tanggal ? new Date(asesorBc.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                      </span>
-                    </>
-                  ) : (
-                    <span style={{ color: '#999' }}>Belum ditandatangani</span>
-                  )}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img src={asesorBc.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`QR ${a.nama || 'asesor'}`} />
+                      {asesorBc?.tanggal && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {new Date(asesorBc.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             </tbody>

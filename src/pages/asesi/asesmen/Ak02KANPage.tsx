@@ -493,15 +493,15 @@ export default function Ak02KANPage() {
               <Td style={{ textAlign: 'center' }}>:</Td>
               <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
                 {barcodes?.asesi?.url ? (
-                  <>
-                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
-                    <span style={{ fontSize: '10px' }}>
-                      {barcodes.asesi?.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
-                )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" />
+                    {barcodes.asesi?.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </Td>
             </tr>
             {asesorList.map((a: any, idx: number) => {
@@ -527,15 +527,15 @@ export default function Ak02KANPage() {
                     <Td style={{ textAlign: 'center' }}>:</Td>
                     <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
                       {asesorBc?.url ? (
-                        <>
-                          <img src={asesorBc.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
-                          <span style={{ fontSize: '10px' }}>
-                            {asesorBc?.tanggal ? new Date(asesorBc.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                          </span>
-                        </>
-                      ) : (
-                        <span style={{ color: '#999' }}>Belum ditandatangani</span>
-                      )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                          <img src={asesorBc.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt={`QR ${a?.nama || 'asesor'}`} />
+                          {asesorBc?.tanggal && (
+                            <div style={{ fontSize: '11px', color: '#333' }}>
+                              {new Date(asesorBc.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      ) : null}
                     </Td>
                   </tr>
                 </Fragment>

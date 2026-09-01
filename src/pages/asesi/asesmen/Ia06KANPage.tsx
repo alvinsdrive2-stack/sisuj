@@ -177,15 +177,15 @@ function TTDTable({ title, nama, noReg, barcode }: {
           <Td style={{ textAlign: 'center' }}>:</Td>
           <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
             {barcode?.url ? (
-              <>
-                <img src={barcode.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
-                <span style={{ fontSize: '11px' }}>
-                  {barcode?.tanggal ? new Date(barcode.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                </span>
-              </>
-            ) : (
-              <span style={{ color: '#999' }}>Belum ditandatangani</span>
-            )}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <img src={barcode.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesor" />
+                {barcode?.tanggal && (
+                  <div style={{ fontSize: '11px', color: '#333' }}>
+                    {new Date(barcode.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </div>
+                )}
+              </div>
+            ) : null}
           </Td>
         </tr>
       </tbody>
@@ -506,15 +506,15 @@ export default function Ia06KANPage() {
               <Td>:</Td>
               <Td style={{ height: '70px', verticalAlign: 'middle', textAlign: 'center' }}>
                 {barcodes?.asesi?.url ? (
-                  <>
-                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode" /><br />
-                    <span style={{ fontSize: '11px' }}>
-                      {barcodes.asesi?.tanggal ? new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ color: '#999' }}>Belum ditandatangani</span>
-                )}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodes.asesi.url} style={{ height: '50px', width: '50px', objectFit: 'contain' }} alt="barcode asesi" />
+                    {barcodes.asesi?.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {new Date(barcodes.asesi.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </Td>
             </tr>
           </tbody>
