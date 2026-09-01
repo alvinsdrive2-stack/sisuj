@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -21,14 +21,15 @@ import { BRANDING } from "@/config/branding"
 
 interface SoalKAN {
   id: number; no: string; soal: string; soal1: string; soal2: string | null
-  tipe: number; is_komentar: boolean | null; jawaban?: string; skor?: number; pencapaian?: number
+  tipe: number; is_komentar: boolean | null; jawaban?: string; skor?: number; pencapaian?: boolean | number
   unit_kode?: string
 }
 
 export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas,
+    namaPenyusun, namaValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
   const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
@@ -47,6 +48,8 @@ export default function Ia04bKANPage() {
   const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
   const [rekomendasiId, setRekomendasiId] = useState<number | null>(null)
   const [showBkConfirm, setShowBkConfirm] = useState(false)
+  // Rekomendasi dari server hanya di-init sekali — jangan overwrite pilihan user pas refetch
+  const initializedRef = useRef(false)
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -61,8 +64,11 @@ export default function Ia04bKANPage() {
         setDokumen(d.dokumen || null)
         setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
-        if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
-        if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
+        if (!initializedRef.current) {
+          if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
+          if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
+          initializedRef.current = true
+        }
         const jwb: Record<number, string> = {}
         const sk: Record<number, number> = {}
         ;(d.soal || []).forEach((s: SoalKAN) => {
@@ -130,11 +136,15 @@ export default function Ia04bKANPage() {
         if (rekomendasi && rekomendasiId) {
           nilaiPayload.rekomendasi = { soal_id: rekomendasiId, value: rekomendasi === 'kompeten' }
         }
-        await fetch(`${API_BASE_URL}/asesmen/${id}/nilai-ia04b`, {
+        const nilaiRes = await fetch(`${API_BASE_URL}/asesmen/${id}/nilai-ia04b`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(nilaiPayload),
         })
+        if (!nilaiRes.ok) {
+          const msg = await extractApiError(nilaiRes, 'Gagal menyimpan penilaian IA.04.B')
+          showError(msg); setIsSaving(false); return
+        }
       }
 
       await signing.generateQR()
@@ -299,16 +309,38 @@ export default function Ia04bKANPage() {
             </tr>
             <tr style={{ fontWeight: 'bold' }}>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Penyusun</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td><td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td><td style={{ height: '50px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{namaPenyusun || ''}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{noregPenyusun || ''}</td>
+              <td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                {barcodePenyusun ? (
+                  <>
+                    <img src={barcodePenyusun} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode penyusun" /><br />
+                    <span style={{ fontSize: '11px' }}>
+                      {tanggalPenyusun ? new Date(tanggalPenyusun).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                    </span>
+                  </>
+                ) : null}
+              </td>
             </tr>
             <tr><td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td><td style={{ border: '1px solid #000', padding: '6px' }}></td>
               <td style={{ border: '1px solid #000', padding: '6px' }}></td><td style={{ height: '50px', border: '1px solid #000', padding: '6px' }}></td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}>
               <td rowSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Validator</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td><td style={{ border: '1px solid #000', padding: '6px' }}></td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}></td><td style={{ height: '50px', border: '1px solid #000', padding: '6px' }}></td>
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>1</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{namaValidator || ''}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{noregValidator || ''}</td>
+              <td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                {barcodeValidator ? (
+                  <>
+                    <img src={barcodeValidator} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt="barcode validator" /><br />
+                    <span style={{ fontSize: '11px' }}>
+                      {tanggalValidator ? new Date(tanggalValidator).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                    </span>
+                  </>
+                ) : null}
+              </td>
             </tr>
             <tr><td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>2</td><td style={{ border: '1px solid #000', padding: '6px' }}></td>
               <td style={{ border: '1px solid #000', padding: '6px' }}></td><td style={{ height: '50px', border: '1px solid #000', padding: '6px' }}></td>

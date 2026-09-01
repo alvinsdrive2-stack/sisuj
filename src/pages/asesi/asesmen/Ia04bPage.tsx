@@ -29,7 +29,7 @@ interface Soal {
   soal2: string
   is_komentar: string | null
   jawaban?: string
-  pencapaian?: boolean
+  pencapaian?: boolean | number
 }
 
 interface Rekomendasi {
@@ -143,9 +143,11 @@ export default function Ia04bPage() {
               const newAnswers: Record<number, 'ya' | 'tidak'> = {}
               const newJawabanAnswers: Record<number, string> = {}
               result.data.soal.forEach((soal) => {
-                if (soal.pencapaian === true) {
+                const p = soal.pencapaian
+                // Ya = >1 (skor 3), Tidak = 0 — terima boolean lama & numeric baru
+                if (p === true || (typeof p === 'number' && p > 1)) {
                   newAnswers[soal.id] = 'ya'
-                } else if (soal.pencapaian === false) {
+                } else if (p === false || p === 0) {
                   newAnswers[soal.id] = 'tidak'
                 }
                 if (soal.jawaban) {

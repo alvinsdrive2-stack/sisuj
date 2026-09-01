@@ -332,45 +332,53 @@ export default function Ak02KANPage() {
                 ))}
               </tr>
             ))}
+          </tbody>
+        </table>
+        <br />
 
-            {/* REKAPITULASI PENILAIAN HASIL UJI */}
+        {/* REKAPITULASI PENILAIAN HASIL UJI */}
+        <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          <tbody>
             <tr>
-              <td colSpan={8} style={{ padding: 0 }}>
-                <div style={{ padding: '10px 14px', fontSize: '13px', lineHeight: 1.4 }}>
-                  <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '12px' }}>
-                    Rekapitulasi Penilaian Hasil Uji
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <span style={{ fontWeight: 'bold' }}>A.</span>
-                    <div>
-                      <b>Panduan Penilaian:</b>
-                      <ol style={{ margin: '4px 0 8px', paddingLeft: '22px' }}>
-                        <li>Tuliskan Total Skor dari setiap masing masing instrumen asesmen (FR. IA 04B, FR. IA 05 dan FR. IA 06).</li>
-                        <li>Rumus Skor:</li>
-                      </ol>
-                      <div style={{ marginLeft: '18px' }}>
-                        <div>• Skor Pertanyaan DIT = (Total Skor / 10) × bobot nilai</div>
-                        <div>• Skor Pertanyaan Pilihan Ganda = (Total Skor / 20) × bobot nilai</div>
-                        <div>• Skor Pertanyaan Esai = (Total Skor / 10) × bobot nilai</div>
-                        <div>• Total Skor Nilai = Skor FR. IA 04B + Skor FR. IA 05 + Skor FR. IA 06</div>
-                      </div>
+              <td style={{ padding: '10px 14px', fontSize: '13px', lineHeight: 1.4, border: 'none' }}>
+                <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '12px' }}>
+                  Rekapitulasi Penilaian Hasil Uji
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <span style={{ fontWeight: 'bold' }}>A.</span>
+                  <div>
+                    <b>Panduan Penilaian:</b>
+                    <ol style={{ margin: '4px 0 8px', paddingLeft: '22px' }}>
+                      <li>Tuliskan Total Skor dari setiap masing masing instrumen asesmen (FR. IA 04B, FR. IA 05 dan FR. IA 06).</li>
+                      <li>Rumus Skor:</li>
+                    </ol>
+                    <div style={{ marginLeft: '18px' }}>
+                      <div>• Skor Pertanyaan DIT = (Total Skor / 10) × bobot nilai</div>
+                      <div>• Skor Pertanyaan Pilihan Ganda = (Total Skor / 20) × bobot nilai</div>
+                      <div>• Skor Pertanyaan Esai = (Total Skor / 10) × bobot nilai</div>
+                      <div>• Total Skor Nilai = Skor FR. IA 04B + Skor FR. IA 05 + Skor FR. IA 06</div>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                    <span style={{ fontWeight: 'bold' }}>B.</span>
-                    <div>
-                      <b>Syarat Total Skor Nilai Kompeten/Lulus yaitu:</b>
-                      <ol style={{ margin: '4px 0 0', paddingLeft: '22px' }}>
-                        <li>Total Skor Nilai &lt; 65/70 dinyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
-                        <li>Total Skor Nilai ≧ 65/70 dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
-                      </ol>
-                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                  <span style={{ fontWeight: 'bold' }}>B.</span>
+                  <div>
+                    <b>Syarat Total Skor Nilai Kompeten/Lulus yaitu:</b>
+                    <ol style={{ margin: '4px 0 0', paddingLeft: '22px' }}>
+                      <li>Total Skor Nilai &lt; 65/70 dinyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
+                      <li>Total Skor Nilai ≧ 65/70 dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
+                    </ol>
                   </div>
                 </div>
               </td>
             </tr>
+          </tbody>
+        </table>
+        <br />
 
-            {/* TABEL NILAI */}
+        {/* TABEL NILAI */}
+        <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
+          <tbody>
             <tr style={{ fontWeight: 'bold', textAlign: 'center', ...hdDok }}>
               <th style={{ ...td, width: '28%' }}>Form</th>
               <th style={td}>Jumlah Soal</th>

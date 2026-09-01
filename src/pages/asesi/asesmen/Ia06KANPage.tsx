@@ -94,7 +94,22 @@ function Panduan({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function PenyusunValidatorTable() {
+function PenyusunValidatorTable({ namaPenyusun, noregPenyusun, tanggalPenyusun, barcodePenyusun, namaValidator, noregValidator, tanggalValidator, barcodeValidator }: {
+  namaPenyusun?: string | null; noregPenyusun?: string | null; tanggalPenyusun?: string | null; barcodePenyusun?: string | null
+  namaValidator?: string | null; noregValidator?: string | null; tanggalValidator?: string | null; barcodeValidator?: string | null
+}) {
+  const ttdCell = (barcode?: string | null, tanggal?: string | null, alt?: string) => (
+    <Td style={{ height: '50px', verticalAlign: 'middle', textAlign: 'center' }}>
+      {barcode ? (
+        <>
+          <img src={barcode} style={{ height: '40px', width: '40px', objectFit: 'contain' }} alt={alt || 'barcode'} /><br />
+          <span style={{ fontSize: '11px' }}>
+            {tanggal ? new Date(tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+          </span>
+        </>
+      ) : null}
+    </Td>
+  )
   return (
     <table style={{ border: '1px solid #000', borderCollapse: 'collapse', width: '100%' }} cellPadding="5" cellSpacing="0">
       <tbody>
@@ -108,9 +123,9 @@ function PenyusunValidatorTable() {
         <tr style={{ fontWeight: 'bold' }}>
           <Td rowSpan={2}>PENYUSUN</Td>
           <Td style={{ textAlign: 'center' }}>1</Td>
-          <Td></Td>
-          <Td></Td>
-          <Td style={{ height: '50px' }}></Td>
+          <Td>{namaPenyusun || ''}</Td>
+          <Td>{noregPenyusun || ''}</Td>
+          {ttdCell(barcodePenyusun, tanggalPenyusun, 'barcode penyusun')}
         </tr>
         <tr>
           <Td style={{ textAlign: 'center' }}>2</Td>
@@ -121,9 +136,9 @@ function PenyusunValidatorTable() {
         <tr style={{ fontWeight: 'bold' }}>
           <Td rowSpan={2}>VALIDATOR</Td>
           <Td style={{ textAlign: 'center' }}>1</Td>
-          <Td></Td>
-          <Td></Td>
-          <Td style={{ height: '50px' }}></Td>
+          <Td>{namaValidator || ''}</Td>
+          <Td>{noregValidator || ''}</Td>
+          {ttdCell(barcodeValidator, tanggalValidator, 'barcode validator')}
         </tr>
         <tr>
           <Td style={{ textAlign: 'center' }}>2</Td>
@@ -183,7 +198,8 @@ export default function Ia06KANPage() {
   const { user } = useAuth()
   const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
-  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas } = useDataDokumenAsesmen(id)
+  const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas,
+    namaPenyusun, namaValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -376,7 +392,10 @@ export default function Ia06KANPage() {
 
         {/* PENYUSUN DAN VALIDATOR */}
         <h2 style={{ fontSize: '14px', fontWeight: 'bold' }}>PENYUSUN DAN VALIDATOR</h2>
-        <PenyusunValidatorTable />
+        <PenyusunValidatorTable
+          namaPenyusun={namaPenyusun} noregPenyusun={noregPenyusun} tanggalPenyusun={tanggalPenyusun} barcodePenyusun={barcodePenyusun}
+          namaValidator={namaValidator} noregValidator={noregValidator} tanggalValidator={tanggalValidator} barcodeValidator={barcodeValidator}
+        />
             <br/><br/><br/>
         {/* LEMBAR JAWABAN */}
         <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#4F81BD' }}>FR.IA.06. LEMBAR JAWABAN PERTANYAAN TERTULIS ESAI</h2>
