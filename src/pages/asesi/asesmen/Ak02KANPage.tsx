@@ -145,12 +145,28 @@ export default function Ak02KANPage() {
       if (res.ok) {
         const body = await res.json()
         const d = body.data
-        setUnits(d.unit_kompetensi || [])
+        const list: UnitKompetensi[] = (d.data_unit_kompetensi || []).map((u: any) => ({
+          id: u.id,
+          kode: u.kode,
+          nama: u.nama,
+          evidence: {
+            observasi: !!u.observasi,
+            portofolio: !!u.portofolio,
+            pertanyaan_wawancara: !!u.pertanyaan_wawancara,
+            pertanyaan_lisan: !!u.pertanyaan_lisan,
+            pertanyaan_tertulis: !!u.pertanyaan_tertulis,
+            proyek_kerja: !!u.proyek_kerja,
+            lainnya: !!u.lainnya,
+          },
+        }))
+        setUnits(list)
         if (d.barcodes) setBarcodes(d.barcodes)
         if (d.total_skor_dit !== null && d.total_skor_dit !== undefined) setTotalSkorDit(String(d.total_skor_dit))
         if (d.total_skor_pilihan_ganda !== null && d.total_skor_pilihan_ganda !== undefined) setTotalSkorPg(String(d.total_skor_pilihan_ganda))
         if (d.total_skor_esai !== null && d.total_skor_esai !== undefined) setTotalSkorEsai(String(d.total_skor_esai))
-        if (d.isLulus === true) setIsKompeten(true)
+        if (d.is_kompeten === true) setIsKompeten(true)
+        else if (d.is_kompeten === false) setIsKompeten(false)
+        else if (d.isLulus === true) setIsKompeten(true)
         else if (d.isTidakLulus === true) setIsKompeten(false)
         if (d.tindak_lanjut) setTindakLanjut(d.tindak_lanjut)
         if (d.komentar) setKomentar(d.komentar)
@@ -341,35 +357,65 @@ export default function Ak02KANPage() {
           <tbody>
             <tr>
               <td style={{ padding: '10px 14px', fontSize: '13px', lineHeight: 1.4, border: 'none' }}>
-                <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '12px' }}>
+                <div style={{ textAlign: 'center', fontWeight: 'bold', marginBottom: '18px' }}>
                   Rekapitulasi Penilaian Hasil Uji
                 </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <span style={{ fontWeight: 'bold' }}>A.</span>
-                  <div>
-                    <b>Panduan Penilaian:</b>
-                    <ol style={{ margin: '4px 0 8px', paddingLeft: '22px' }}>
-                      <li>Tuliskan Total Skor dari setiap masing masing instrumen asesmen (FR. IA 04B, FR. IA 05 dan FR. IA 06).</li>
-                      <li>Rumus Skor:</li>
-                    </ol>
-                    <div style={{ marginLeft: '18px' }}>
-                      <div>• Skor Pertanyaan DIT = (Total Skor / 10) × bobot nilai</div>
-                      <div>• Skor Pertanyaan Pilihan Ganda = (Total Skor / 20) × bobot nilai</div>
-                      <div>• Skor Pertanyaan Esai = (Total Skor / 10) × bobot nilai</div>
-                      <div>• Total Skor Nilai = Skor FR. IA 04B + Skor FR. IA 05 + Skor FR. IA 06</div>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                  <span style={{ fontWeight: 'bold' }}>B.</span>
-                  <div>
-                    <b>Syarat Total Skor Nilai Kompeten/Lulus yaitu:</b>
-                    <ol style={{ margin: '4px 0 0', paddingLeft: '22px' }}>
-                      <li>Total Skor Nilai &lt; 65/70 dinyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
-                      <li>Total Skor Nilai ≧ 65/70 dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
-                    </ol>
-                  </div>
-                </div>
+                <table width="100%" cellSpacing="0" cellPadding="0" style={{ border: '0' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ border: '0', width: '24px', verticalAlign: 'top', fontWeight: 'bold' }}>A.</td>
+                      <td style={{ border: '0' }}>
+                        Panduan Penilaian:
+                        <ol style={{ marginTop: 0, marginBottom: '8px', paddingLeft: '22px' }}>
+                          <li>Tuliskan Total Skor dari setiap masing masing instrumen asesmen (FR. IA 04B, FR. IA 05 dan FR. IA 06).</li>
+                          <li>Rumus Skor:</li>
+                        </ol>
+                        <table width="100%" cellSpacing="0" cellPadding="3" style={{ border: '0', marginLeft: '18px' }}>
+                          <tbody>
+                            {[
+                              { label: 'Skor Pertanyaan DIT', pembagi: '10' },
+                              { label: 'Skor Pertanyaan Pilihan Ganda', pembagi: '20' },
+                              { label: 'Skor Pertanyaan Esai', pembagi: '10' },
+                            ].map(({ label, pembagi }) => (
+                              <tr key={label}>
+                                <td style={{ border: '0', width: '18px', verticalAlign: 'top' }}>•</td>
+                                <td style={{ border: '0', width: '210px' }}>{label}</td>
+                                <td style={{ border: '0', width: '15px' }}>=</td>
+                                <td style={{ border: '0' }}>
+                                  <span style={{ display: 'inline-block', textAlign: 'center', verticalAlign: 'middle', fontStyle: 'italic' }}>
+                                    <span style={{ display: 'block', borderBottom: '1px solid #000', padding: '0 8px' }}>Total Skor</span>
+                                    <span style={{ display: 'block' }}>{pembagi}</span>
+                                  </span>
+                                  <span style={{ fontStyle: 'italic' }}> x bobot nilai</span>
+                                </td>
+                              </tr>
+                            ))}
+                            <tr>
+                              <td style={{ border: '0', width: '18px', verticalAlign: 'top' }}>•</td>
+                              <td style={{ border: '0' }} colSpan={3}>
+                                Total Skor Nilai = Skor FR. IA 04B + Skor FR. IA 05 + Skor FR. IA 06
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ border: '0', height: '18px' }}></td>
+                      <td style={{ border: '0' }}></td>
+                    </tr>
+                    <tr>
+                      <td style={{ border: '0', width: '24px', verticalAlign: 'top', fontWeight: 'bold' }}>B.</td>
+                      <td style={{ border: '0' }}>
+                        Syarat Total Skor Nilai Kompeten/Lulus yaitu:
+                        <ol style={{ marginTop: 0, marginBottom: 0, paddingLeft: '22px' }}>
+                          <li>Total Skor Nilai &lt; 65/70 di nyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
+                          <li>Total Skor Nilai ≧ 65/70 dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
+                        </ol>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </td>
             </tr>
           </tbody>
