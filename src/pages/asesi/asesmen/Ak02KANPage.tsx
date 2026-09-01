@@ -46,6 +46,13 @@ const EVIDENCE_KEYS = [
 
 type EvidenceKey = typeof EVIDENCE_KEYS[number]
 
+interface KanNilaiData {
+  jumlah_soal_dit?: number; total_skor_dit?: number; bobot_dit?: number; maks_skor_dit?: number; nilai_skor_dit?: number
+  jumlah_soal_pg?: number; total_skor_pg?: number; bobot_pg?: number; maks_skor_pg?: number; nilai_skor_pg?: number
+  jumlah_soal_esai?: number; total_skor_esai?: number; bobot_esai?: number; maks_skor_esai?: number; nilai_skor_esai?: number
+  skor_nilai_akhir?: number; threshold_passing?: number; is_kompeten?: boolean; is_lulus?: boolean
+}
+
 const td = { border: '0.2px solid black', padding: '4px 6px' }
 const hdDok = { backgroundColor: BRANDING.primaryColor, color: '#fff' }
 const fontS = { fontFamily: '"Arial Narrow", Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif', fontSize: '12pt' }
@@ -134,6 +141,7 @@ export default function Ak02KANPage() {
   const [tindakLanjut, setTindakLanjut] = useState("")
   const [komentar, setKomentar] = useState("")
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
+  const [kanNilai, setKanNilai] = useState<KanNilaiData | null>(null)
 
   const fetchAk02Data = useCallback(async () => {
     if (!id) return
@@ -175,7 +183,27 @@ export default function Ak02KANPage() {
     } finally { setIsLoading(false) }
   }, [id])
 
-  useEffect(() => { fetchAk02Data() }, [fetchAk02Data])
+  // Total skor + nilai diambil dari endpoint kan-nilai (rekap dari IA04B/IA05/IA06), bukan input manual
+  const fetchKanNilai = useCallback(async () => {
+    if (!id) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/kan-nilai`, {
+        headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const body = await res.json()
+      if (body.message === 'OK' && body.data) {
+        const d: KanNilaiData = body.data
+        setKanNilai(d)
+        if (d.total_skor_dit !== undefined && d.total_skor_dit !== null) setTotalSkorDit(String(d.total_skor_dit))
+        if (d.total_skor_pg !== undefined && d.total_skor_pg !== null) setTotalSkorPg(String(d.total_skor_pg))
+        if (d.total_skor_esai !== undefined && d.total_skor_esai !== null) setTotalSkorEsai(String(d.total_skor_esai))
+      }
+    } catch (error) { console.error("Error fetching kan-nilai:", error) }
+  }, [id])
+
+  useEffect(() => { fetchAk02Data(); fetchKanNilai() }, [fetchAk02Data, fetchKanNilai])
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ak02')) + 1]?.label
   const signing = useSigningState({
@@ -203,6 +231,8 @@ export default function Ak02KANPage() {
   const nilaiPg = numPg / 20 * 30
   const nilaiEsai = numEsai / 10 * 20
   const skorAkhir = nilaiDit + nilaiPg + nilaiEsai
+  // Minimal nilai kelulusan: jenjang >= 7 → 70, di bawahnya → 65
+  const thresholdNilai = Number(jenjang) >= 7 ? 70 : 65
 
   const handleEvidenceChange = (unitId: number, key: EvidenceKey) => {
     if (!isAsesor) return
@@ -280,7 +310,6 @@ export default function Ak02KANPage() {
 
   if (isLoading) return <FullPageLoader text="Memuat AK.02..." />
 
-  const inputStyle = { border: '1px solid #000', padding: '2px 6px', width: '70px', textAlign: 'center' as const, fontSize: '12pt' }
   const areaStyle = { width: '100%', border: 'none', padding: '4px', minHeight: '60px', fontSize: '11pt', resize: 'vertical' as const, outline: 'none', background: 'transparent' }
 
   const EVIDENCE_HEADERS: Record<EvidenceKey, string> = {
@@ -409,8 +438,8 @@ export default function Ak02KANPage() {
                       <td style={{ border: '0' }}>
                         Syarat Total Skor Nilai Kompeten/Lulus yaitu:
                         <ol style={{ marginTop: 0, marginBottom: 0, paddingLeft: '22px' }}>
-                          <li>Total Skor Nilai &lt; 65/70 di nyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
-                          <li>Total Skor Nilai ≧ 65/70 dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
+                          <li>Total Skor Nilai &lt; <b>{thresholdNilai}</b> di nyatakan <b>"Tidak Lulus/ Tidak direkomendasikan Kompeten"</b></li>
+                          <li>Total Skor Nilai ≧ <b>{thresholdNilai}</b> dapat direkomendasikan <b>"Lulus/ Direkomendasikan Kompeten"</b></li>
                         </ol>
                       </td>
                     </tr>
@@ -434,40 +463,28 @@ export default function Ak02KANPage() {
             </tr>
             <tr>
               <td style={td}>1. FR IA 04B<br />Pertanyaan DIT</td>
-              <td style={{ ...td, textAlign: 'center' }}>10</td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                {isAsesor ? (
-                  <input type="number" min={0} max={10} style={inputStyle} value={totalSkorDit} onChange={e => setTotalSkorDit(e.target.value)} />
-                ) : (totalSkorDit || '-')}
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>50</td>
-              <td style={{ ...td, textAlign: 'center' }}>{nilaiDit.toFixed(2)}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_dit ?? 10}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_dit ?? '-'}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_dit ?? 50}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_dit != null ? kanNilai.nilai_skor_dit.toFixed(2) : nilaiDit.toFixed(2)}</td>
             </tr>
             <tr>
               <td style={td}>2. FR IA 05<br />Pertanyaan Pilihan Ganda</td>
-              <td style={{ ...td, textAlign: 'center' }}>20</td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                {isAsesor ? (
-                  <input type="number" min={0} max={20} style={inputStyle} value={totalSkorPg} onChange={e => setTotalSkorPg(e.target.value)} />
-                ) : (totalSkorPg || '-')}
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>30</td>
-              <td style={{ ...td, textAlign: 'center' }}>{nilaiPg.toFixed(2)}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_pg ?? 20}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_pg ?? '-'}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_pg ?? 30}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_pg != null ? kanNilai.nilai_skor_pg.toFixed(2) : nilaiPg.toFixed(2)}</td>
             </tr>
             <tr>
               <td style={td}>3. FR IA 06<br />Pertanyaan Esai</td>
-              <td style={{ ...td, textAlign: 'center' }}>10</td>
-              <td style={{ ...td, textAlign: 'center' }}>
-                {isAsesor ? (
-                  <input type="number" min={0} max={10} style={inputStyle} value={totalSkorEsai} onChange={e => setTotalSkorEsai(e.target.value)} />
-                ) : (totalSkorEsai || '-')}
-              </td>
-              <td style={{ ...td, textAlign: 'center' }}>20</td>
-              <td style={{ ...td, textAlign: 'center' }}>{nilaiEsai.toFixed(2)}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_esai ?? 10}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_esai ?? '-'}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_esai ?? 20}</td>
+              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_esai != null ? kanNilai.nilai_skor_esai.toFixed(2) : nilaiEsai.toFixed(2)}</td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}>
               <td colSpan={4} style={{ ...td, textAlign: 'center', height: '45px' }}>Skor Nilai Akhir</td>
-              <td style={{ ...td, textAlign: 'center', fontSize: '13pt' }}>{skorAkhir.toFixed(2)}</td>
+              <td style={{ ...td, textAlign: 'center', fontSize: '13pt' }}>{kanNilai?.skor_nilai_akhir != null ? kanNilai.skor_nilai_akhir.toFixed(2) : skorAkhir.toFixed(2)}</td>
             </tr>
           </tbody>
         </table>
