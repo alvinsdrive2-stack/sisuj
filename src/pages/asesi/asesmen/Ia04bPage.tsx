@@ -231,7 +231,7 @@ export default function Ia04bPage() {
       // Build evaluations array from answers state
       const evaluations = ia04bData.soal.map(soal => ({
         soal_id: soal.id,
-        pencapaian: answers[soal.id] === 'ya' // 'ya' = true, 'tidak' = false
+        pencapaian: answers[soal.id] === 'ya' ? 3 : 0 // 'ya' = skor 3, 'tidak' = 0
       }))
 
       // Build rekomendasi

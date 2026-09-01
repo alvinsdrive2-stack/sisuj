@@ -402,9 +402,9 @@ export default function Ak02KANPage() {
                         <table width="100%" cellSpacing="0" cellPadding="3" style={{ border: '0', marginLeft: '18px' }}>
                           <tbody>
                             {[
-                              { label: 'Skor Pertanyaan DIT', pembagi: '10' },
+                              { label: 'Skor Pertanyaan DIT', pembagi: '30' },
                               { label: 'Skor Pertanyaan Pilihan Ganda', pembagi: '20' },
-                              { label: 'Skor Pertanyaan Esai', pembagi: '10' },
+                              { label: 'Skor Pertanyaan Esai', pembagi: '30' },
                             ].map(({ label, pembagi }) => (
                               <tr key={label}>
                                 <td style={{ border: '0', width: '18px', verticalAlign: 'top' }}>•</td>
