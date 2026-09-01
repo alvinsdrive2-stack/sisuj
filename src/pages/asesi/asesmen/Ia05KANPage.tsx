@@ -114,6 +114,9 @@ export default function Ia05KANPage() {
     return soalList.filter(s => s.jawaban_asesi && s.jawaban_asesi === s.kunci_jawaban).length
   }, [soalList, answers, isAsesor])
   const jumlahSalah = jumlahSoal - jumlahBenar
+  // Salah > 6 = belum kompeten (coret "tercapai"), ≤ 6 = kompeten (coret "belum tercapai")
+  const ia05Kompeten = jumlahSalah <= 6
+  const ia05Dinilai = soalList.some(s => answers[s.id] || s.jawaban_asesi)
 
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
@@ -196,7 +199,7 @@ export default function Ia05KANPage() {
           <b>Instruksi:</b>
           <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
             <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
-            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (âœ“) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dapat diisi dengan centang (✓) pada kolom jawaban benar atau jawaban salah, dengan ketentuan skor penilaian sebagai berikut:
               <br/>0 = Jawaban Salah
               <br/>1 = Jawaban Benar
             </li>
@@ -352,7 +355,7 @@ export default function Ia05KANPage() {
               <td style={{ fontWeight: 'bold', width: '20%', ...td }}>Umpan balik untuk asesi:</td>
               <td style={{ width: '5%', ...td }}>:</td>
               <td style={td}>
-                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: â€¦
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{ia05Dinilai && !ia05Kompeten ? <s>tercapai</s> : 'tercapai'} / {ia05Dinilai && ia05Kompeten ? <s>belum tercapai</s> : 'belum tercapai'}</strong>)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai:
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}

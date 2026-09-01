@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/auth-context"
 import ModularStepIndicator from "./ModularStepIndicator"
 import Apl02FilePanel from "./Apl02FilePanel"
 import { getMukSteps } from "@/lib/asesmen-steps"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { RoleId } from "@/lib/rbac-config"
 
 interface MukLayoutProps {
@@ -23,17 +24,18 @@ function getMukTitle(metode?: string): string {
 export default function MukLayout({ children, currentStep, idIzin, metode, tahap = 1, jenjang = '0' }: MukLayoutProps) {
   const { user } = useAuth()
   const isAsesor = user?.role?.id === RoleId.ASESOR
+  const { isPaket } = useDataDokumenAsesmen(idIzin)
   const [showSteps, setShowSteps] = useState(false)
   const [showFiles, setShowFiles] = useState(false)
   const [filePanelCollapsed, setFilePanelCollapsed] = useState(false)
 
   // Resolve :idIzin in step hrefs
   const resolvedSteps = useMemo(() =>
-    getMukSteps(tahap, jenjang, metode).map(s => ({
+    getMukSteps(tahap, jenjang, metode, isPaket).map(s => ({
       ...s,
       href: idIzin ? s.href.replace(':idIzin', idIzin) : s.href,
     })),
-    [tahap, jenjang, metode, idIzin]
+    [tahap, jenjang, metode, isPaket, idIzin]
   )
 
   return (

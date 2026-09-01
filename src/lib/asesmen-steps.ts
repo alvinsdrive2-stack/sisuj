@@ -181,15 +181,16 @@ export function injectIa06(steps: StepConfig[], isPaket?: boolean): StepConfig[]
   return inserted.map((s, i) => ({ ...s, number: i + 1 }))
 }
 
-// Get MUK steps based on tahap, jenjang, and metode
-export function getMukSteps(tahap: number, jenjang: string, metode?: string): StepConfig[] {
+// Get MUK steps based on tahap, jenjang, metode, and isPaket
+export function getMukSteps(tahap: number, jenjang: string, metode?: string, isPaket?: boolean): StepConfig[] {
   if (tahap === 0) {
     const isLowJenjang = jenjang && parseInt(jenjang) < 4
     const isPortofolio = metode?.toLowerCase() === 'portofolio'
+    const injectIa06Flag = isPaket && !isPortofolio
 
     if (isPortofolio && !isLowJenjang) return [...MUK_STEPS_TAHAP_0_PORTOFOLIO]
-    if (isLowJenjang) return [...MUK_STEPS_TAHAP_0_LOW_JENJANG]
-    return [...MUK_STEPS_TAHAP_0_OBSERVASI]
+    if (isLowJenjang) return injectIa06([...MUK_STEPS_TAHAP_0_LOW_JENJANG], injectIa06Flag)
+    return injectIa06([...MUK_STEPS_TAHAP_0_OBSERVASI], injectIa06Flag)
   }
   return [...MUK_STEPS]
 }

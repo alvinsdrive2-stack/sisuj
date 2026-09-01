@@ -378,7 +378,7 @@ export default function Ia01Page() {
             <ul style={{ margin: 0, paddingLeft: '20px' }}>
               <li>Lengkapi nama unit kompetensi, elemen, dan kriteria unjuk kerja sesuai kolom dalam tabel.</li>
               <li>Isi standar industri atau tempat kerja.</li>
-              <li>Beri tanda centang (âœ“) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
+              <li>Beri tanda centang (✓) pada kolom "YA" jika asesi kompeten, dan "Tidak" jika sebaliknya.</li>
               <li>Penilaian lanjut diisi bila hasil belum dapat disimpulkan.</li>
               <li>Isi kolom KUK sesuai SKKNI.</li>
             </ul>

@@ -273,6 +273,8 @@ export default function Ia06KANPage() {
   }
 
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
+  const kompeten = soalList.length > 0 && soalList.every(s => (skor[s.id] ?? 0) > 0)
+  const semuaDiskor = soalList.length > 0 && soalList.every(s => skor[s.id] !== undefined)
 
   const doSave = async () => {
     if (!id || !dokumen) return
@@ -479,7 +481,7 @@ export default function Ia06KANPage() {
               <Td style={{ fontWeight: 'bold', width: '20%' }}>Umpan balik untuk asesi:</Td>
               <Td style={{ width: '5%' }}>:</Td>
               <Td>
-                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: ...
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{!kompeten && semuaDiskor ? <s>tercapai</s> : 'tercapai'} / {kompeten ? <s>belum tercapai</s> : 'belum tercapai'}</strong>)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: ...
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}

@@ -298,7 +298,7 @@ export default function Ia06Page() {
           <b>Instruksi:</b>
           <ul style={{ margin: '4px 0 4px 18px', paddingLeft: '18px', listStyleType: 'disc' }}>
             <li style={{ marginBottom: '4px' }}>Pertanyaan pilihan ganda merupakan jenis bukti tambahan untuk mendukung bukti-bukti yang sudah ada.</li>
-            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (âœ“) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
+            <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
               <br/>0 = Jawaban tidak sesuai, keliru atau tidak menjawab.
               <br/>1 = Jawaban sebagian benar, namun tidak lengkap/ kurang tepat.
               <br/>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.
@@ -427,7 +427,7 @@ export default function Ia06Page() {
               <Td style={{ fontWeight: 'bold', width: '20%' }}>Umpan balik untuk asesi:</Td>
               <Td style={{ width: '5%' }}>:</Td>
               <Td>
-                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: â€¦
+                Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br /><br />Tuliskan unit/elemen/KUK jika belum tercapai: 
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}

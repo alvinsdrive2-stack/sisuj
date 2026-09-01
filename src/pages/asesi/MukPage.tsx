@@ -6,6 +6,7 @@ import AsesiLayout from "@/components/AsesiLayout"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { getMukSteps } from "@/lib/asesmen-steps"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
+import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 
 export default function MukPage() {
@@ -13,6 +14,7 @@ export default function MukPage() {
   const { user } = useAuth()
   const { idIzin } = useParams<{ idIzin: string }>()
   const { tahap, metode, jenjang } = useDataDokumenPraAsesmen(idIzin)
+  const { isPaket } = useDataDokumenAsesmen(idIzin)
   const isAsesi = user?.role?.id !== RoleId.ASESOR
 
   const mukTitle = metode?.toLowerCase() === 'portofolio' ? 'MUK Portofolio' : 'MUK Observasi'
@@ -39,8 +41,8 @@ export default function MukPage() {
 
           {/* Steps List */}
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '24px', overflow: 'hidden' }}>
-            {getMukSteps(tahap, jenjang, metode).map((step, idx) => {
-              const steps = getMukSteps(tahap, jenjang, metode)
+            {getMukSteps(tahap, jenjang, metode, isPaket).map((step, idx) => {
+              const steps = getMukSteps(tahap, jenjang, metode, isPaket)
               return (
               <div
                 key={step.number}
@@ -70,7 +72,7 @@ export default function MukPage() {
                 </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{step.label}</div>
-                  <div style={{ fontSize: '12px', color: '#6b7280' }}>{step.label === 'MAPA 01' ? 'Perencanaan Asesmen' : step.label === 'MAPA 02' ? 'Rencana Asesmen Lanjutan' : step.label === 'AK.07' ? 'Kesesuaian Rencana Asesmen' : step.label === 'AK.04' ? 'Banding Asesmen' : 'K3 Asesmen'}</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>{step.label === 'MAPA 01' ? 'Perencanaan Asesmen' : step.label === 'MAPA 02' ? 'Rencana Asesmen Lanjutan' : step.label === 'AK.07' ? 'Kesesuaian Rencana Asesmen' : step.label === 'AK.04' ? 'Banding Asesmen' : step.label === 'IA.06' ? 'Observasi Sistem Kerja' : 'K3 Asesmen'}</div>
                 </div>
               </div>
               )})}

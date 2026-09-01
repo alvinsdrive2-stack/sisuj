@@ -146,7 +146,7 @@ export function Apl01Preview({ data }: { data: any }) {
             <thead><tr><th style={th('8%')}>No</th><th style={th()}>Persyaratan</th><th style={th('15%')}>Status</th></tr></thead>
             <tbody>
               {persyaratan.map((p: any, i: number) => (
-                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? 'âœ“' : '-'}</td></tr>
+                <tr key={p.id || i}><td style={cell('8%')}>{p.no || i + 1}</td><td style={cell()}>{p.bukti || '-'}</td><td style={cell('15%')}>{p.checked ? '✓' : '-'}</td></tr>
               ))}
             </tbody>
           </table>

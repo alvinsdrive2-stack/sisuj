@@ -231,7 +231,7 @@ export default function Ia04bKANPage() {
                 <li style={{ marginBottom: '4px' }}>Lakukan penilaian pencapaian hasil proyek singkat atau kegiatan terstruktur lainnya melalui presentasi.</li>
                 <li style={{ marginBottom: '4px' }}>Penilaian dapat dilakukan untuk keseluruhan unit kompetensi dalam skema sertifikasi atau dapat pula dilakukan untuk masing-masing kelompok pekerjaan.</li>
                 <li style={{ marginBottom: '4px' }}>Pertanyaan disampaikan oleh asesor pada saat asesi melakukan presentasi kegiatan terstruktur.</li>
-                <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (âœ“) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
+                <li style={{ marginBottom: '4px' }}>Asesor menilai jawaban peserta uji berdasarkan jawaban yang diberikan. Penilaian dilakukan dengan memberikan tanda centang (✓) pada salah satu kolom skor penilaian 0, 1, 2, atau 3 sesuai dengan tingkat kesesuaian dan kelengkapan jawaban peserta, dengan ketentuan sebagai berikut:
                   <br/>0 = Jawaban tidak sesuai, keliru, atau tidak menjawab
                   <br/>1 = Jawaban sebagian benar, namun tidak lengkap/kurang tepat.
                   <br/>2 = Jawaban benar dan sesuai, namun belum sepenuhnya lengkap.
@@ -391,7 +391,7 @@ export default function Ia04bKANPage() {
             <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (tercapai / belum tercapai)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: â€¦</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{rekomendasi === 'belum_kompeten' ? <s>tercapai</s> : 'tercapai'} / {rekomendasi === 'kompeten' ? <s>belum tercapai</s> : 'belum tercapai'}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: </td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesi :</td></tr>
             <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>

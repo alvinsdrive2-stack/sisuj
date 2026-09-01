@@ -199,9 +199,14 @@ export default function Ak02KANPage() {
         if (d.total_skor_dit !== undefined && d.total_skor_dit !== null) setTotalSkorDit(String(d.total_skor_dit))
         if (d.total_skor_pg !== undefined && d.total_skor_pg !== null) setTotalSkorPg(String(d.total_skor_pg))
         if (d.total_skor_esai !== undefined && d.total_skor_esai !== null) setTotalSkorEsai(String(d.total_skor_esai))
+        // Auto-centang rekomendasi dari skor nilai akhir (rekomendasi tersimpan tetap menang)
+        if (d.skor_nilai_akhir != null) {
+          const pass = d.is_lulus ?? d.skor_nilai_akhir >= (d.threshold_passing ?? thresholdNilai)
+          setIsKompeten(prev => prev !== null ? prev : pass)
+        }
       }
     } catch (error) { console.error("Error fetching kan-nilai:", error) }
-  }, [id])
+  }, [id, jenjang])
 
   useEffect(() => { fetchAk02Data(); fetchKanNilai() }, [fetchAk02Data, fetchKanNilai])
 
@@ -502,7 +507,7 @@ export default function Ak02KANPage() {
                     onChange={() => isAsesor && setIsKompeten(false)}
                     disabled={!isAsesor}
                   />
-                  <span>Tidak Lulus/ Tidak direkomendasikan Kompeten (Nilai total &lt; 65/70)</span>
+                  <span>Tidak Lulus/ Tidak direkomendasikan Kompeten (Nilai total &lt; {thresholdNilai})</span>
                 </label>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isAsesor ? 'pointer' : 'default', padding: '6px 0' }}>
                   <CustomCheckbox
@@ -510,7 +515,7 @@ export default function Ak02KANPage() {
                     onChange={() => isAsesor && setIsKompeten(true)}
                     disabled={!isAsesor}
                   />
-                  <span>Lulus/ Direkomendasikan Kompeten (Nilai total ≧ 65/70)</span>
+                  <span>Lulus/ Direkomendasikan Kompeten (Nilai total ≧ {thresholdNilai})</span>
                 </label>
               </td>
             </tr>
