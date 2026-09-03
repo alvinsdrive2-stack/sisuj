@@ -43,6 +43,7 @@ export default function Ia04bKANPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
+  const [komentar, setKomentar] = useState("")
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
   const [rekomendasiId, setRekomendasiId] = useState<number | null>(null)
 
@@ -60,6 +61,7 @@ export default function Ia04bKANPage() {
         setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
         if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
+        if (d.komentar) setKomentar(d.komentar)
         const jwb: Record<number, string> = {}
         const sk: Record<number, number> = {}
         ;(d.soal || []).forEach((s: SoalKAN) => {
@@ -98,6 +100,13 @@ export default function Ia04bKANPage() {
   const rekomendasiKAN = jumlahSalah < 4
   const adaNilaiNol = jumlahSalah > 0
 
+  // Auto-fill umpan balik (komentar): list soal berskor 0 + info unit/elemen/KUK dari soal2
+  const komentarAuto = useMemo(() => {
+    const salah = soalList.filter(s => skor[s.id] === 0)
+    if (salah.length === 0) return 'Seluruh jawaban kompeten'
+    return salah.map(s => `- No. ${s.no} - ${s.soal2 || s.soal}`).join('\n')
+  }, [soalList, skor])
+
   const doSave = async () => {
     if (!id || !dokumen) return
     setIsSaving(true)
@@ -110,7 +119,7 @@ export default function Ia04bKANPage() {
           jawaban: jawaban[s.id] || '',
           skor: skor[s.id] ?? null,
         }))
-        const payload: any = { dokumen_id: dokumen.id, answers, rekomendasi: rekomendasiKAN }
+        const payload: any = { dokumen_id: dokumen.id, answers, rekomendasi: rekomendasiKAN, komentar: komentar || komentarAuto }
 
         const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
           method: 'POST',
@@ -357,7 +366,21 @@ export default function Ia04bKANPage() {
             <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{adaNilaiNol ? <s>tercapai</s> : 'tercapai'} / {adaNilaiNol ? 'belum tercapai' : <s>belum tercapai</s>}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: </td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{adaNilaiNol ? <s>tercapai</s> : 'tercapai'} / {adaNilaiNol ? 'belum tercapai' : <s>belum tercapai</s>}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai:
+                {isAsesor ? (
+                  <textarea
+                    value={komentar || komentarAuto}
+                    onChange={e => setKomentar(e.target.value)}
+                    placeholder="Tulis umpan balik..."
+                    style={{ width: '100%', border: '1px solid #ccc', padding: '6px', minHeight: '60px', fontSize: '12px', marginTop: '6px' }}
+                  />
+                ) : (komentar || (adaNilaiNol ? komentarAuto : '')) ? (
+                  <div style={{ marginTop: '6px' }}>
+                    <strong>Umpan Balik Asesor:</strong>
+                    <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-line' }}>{komentar || komentarAuto}</p>
+                  </div>
+                ) : null}
+              </td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesi :</td></tr>
             <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>
