@@ -127,7 +127,7 @@ export default function Ia05KANPage() {
       return j && j !== s.kunci_jawaban
     }), [soalList, answers])
   const defaultUmpanBalik = salahSoal.length > 0
-    ? salahSoal.map(s => `- No. ${s.no}${s.kuk?.kode ? ` - KUK: ${s.kuk.kode}` : ''}`).join('\n')
+    ? salahSoal.map(s => `- No. ${s.no} - Unit: ${s.unit?.kode || '-'}`).join('\n')
     : 'Seluruh jawaban benar'
 
   const doSave = async () => {
