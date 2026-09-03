@@ -176,6 +176,27 @@ export default function SurveiPage() {
       return
     }
 
+    // Validasi required: semua pertanyaan harus terisi
+    const belumDinilai = surveyItems.filter(item => item.skor === null)
+    if (belumDinilai.length > 0) {
+      showWarning(`Masih ada ${belumDinilai.length} pertanyaan yang belum dinilai (No. ${belumDinilai.map(i => i.no).join(', ')}). Semua pertanyaan wajib diisi.`)
+      return
+    }
+
+    if (referralSources.length === 0) {
+      showWarning('Pilih minimal satu sumber informasi (Darimana Anda mengetahui LSP ini?)')
+      return
+    }
+    if (referralSources.includes('Lainnya') && !referralLainnya.trim()) {
+      showWarning('Isi kolom "Lainnya"')
+      return
+    }
+
+    if (!saran.trim()) {
+      showWarning('Saran dan masukan wajib diisi')
+      return
+    }
+
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
