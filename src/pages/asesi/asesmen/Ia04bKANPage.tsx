@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo, useRef } from "react"
+﻿import { useState, useEffect, useCallback, useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
 import { useAuth } from "@/contexts/auth-context"
@@ -11,7 +11,6 @@ import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { ActionButton } from "@/components/ui/ActionButton"
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { useToast } from "@/contexts/ToastContext"
@@ -45,11 +44,7 @@ export default function Ia04bKANPage() {
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
   const [skor, setSkor] = useState<Record<number, number>>({})
   const [barcodes, setBarcodes] = useState<BarcodeState | null>(null)
-  const [rekomendasi, setRekomendasi] = useState<'kompeten' | 'belum_kompeten' | null>(null)
   const [rekomendasiId, setRekomendasiId] = useState<number | null>(null)
-  const [showBkConfirm, setShowBkConfirm] = useState(false)
-  // Rekomendasi dari server hanya di-init sekali — jangan overwrite pilihan user pas refetch
-  const initializedRef = useRef(false)
 
   const fetchData = useCallback(async () => {
     if (!id) return
@@ -64,11 +59,7 @@ export default function Ia04bKANPage() {
         setDokumen(d.dokumen || null)
         setSoalList(d.soal || [])
         if (d.barcodes) setBarcodes(d.barcodes)
-        if (!initializedRef.current) {
-          if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
-          if (d.rekomendasi?.rekomendasi !== undefined) setRekomendasi(d.rekomendasi.rekomendasi ? 'kompeten' : 'belum_kompeten')
-          initializedRef.current = true
-        }
+        if (d.rekomendasi?.id) setRekomendasiId(d.rekomendasi.id)
         const jwb: Record<number, string> = {}
         const sk: Record<number, number> = {}
         ;(d.soal || []).forEach((s: SoalKAN) => {
@@ -102,6 +93,10 @@ export default function Ia04bKANPage() {
   }
 
   const totalSkor = useMemo(() => Object.values(skor).reduce((a, b) => a + b, 0), [skor])
+  // KAN: rekomendasi selalu kompeten selama jumlah jawaban salah (skor 0) < 4
+  const jumlahSalah = useMemo(() => soalList.filter(s => skor[s.id] === 0).length, [soalList, skor])
+  const rekomendasiKAN = jumlahSalah < 4
+  const adaNilaiNol = jumlahSalah > 0
 
   const doSave = async () => {
     if (!id || !dokumen) return
@@ -115,8 +110,7 @@ export default function Ia04bKANPage() {
           jawaban: jawaban[s.id] || '',
           skor: skor[s.id] ?? null,
         }))
-        const payload: any = { dokumen_id: dokumen.id, answers }
-        if (rekomendasi) payload.rekomendasi = rekomendasi === 'kompeten'
+        const payload: any = { dokumen_id: dokumen.id, answers, rekomendasi: rekomendasiKAN }
 
         const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
           method: 'POST',
@@ -133,8 +127,8 @@ export default function Ia04bKANPage() {
           .filter(s => skor[s.id] !== undefined && skor[s.id] !== null)
           .map(s => ({ soal_id: s.id, pencapaian: skor[s.id] }))
         const nilaiPayload: any = { dokumen_id: dokumen.id, evaluations }
-        if (rekomendasi && rekomendasiId) {
-          nilaiPayload.rekomendasi = { soal_id: rekomendasiId, value: rekomendasi === 'kompeten' }
+        if (rekomendasiId) {
+          nilaiPayload.rekomendasi = { soal_id: rekomendasiId, value: rekomendasiKAN }
         }
         const nilaiRes = await fetch(`${API_BASE_URL}/asesmen/${id}/nilai-ia04b`, {
           method: 'POST',
@@ -171,12 +165,6 @@ export default function Ia04bKANPage() {
     }
     if (!dokumen) {
       showWarning('Data belum dimuat.')
-      return
-    }
-
-    // Ada BK: warning dulu sebelum simpan/ttd biar asesor cek ulang
-    if (isAsesor && rekomendasi === 'belum_kompeten') {
-      setShowBkConfirm(true)
       return
     }
 
@@ -364,34 +352,12 @@ export default function Ia04bKANPage() {
           </table>
           <br />
 
-          {/* Rekomendasi */}
-          {isAsesor && (
-          <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
-            <tbody>
-              <tr>
-                <td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px', width: '30%' }}>Rekomendasi:</td>
-                <td style={{ border: '1px solid #000', padding: '6px' }}>
-                  <div onClick={() => setRekomendasi('kompeten')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', cursor: 'pointer' }}>
-                    <CustomCheckbox checked={rekomendasi === 'kompeten'} onChange={() => {}} disabled={false} />
-                    Kompeten
-                  </div>
-                  <div onClick={() => setRekomendasi('belum_kompeten')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                    <CustomCheckbox checked={rekomendasi === 'belum_kompeten'} onChange={() => {}} disabled={false} />
-                    Belum Kompeten
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          )}
-          <br />
-
           {/* Umpan Balik */}
           <table width="100%" cellPadding="5" style={{ borderCollapse: 'collapse', border: '1px solid #000', background: '#fff' }}>
             <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{rekomendasi === 'belum_kompeten' ? <s>tercapai</s> : 'tercapai'} / {rekomendasi === 'kompeten' ? <s>belum tercapai</s> : 'belum tercapai'}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: </td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{adaNilaiNol ? <s>tercapai</s> : 'tercapai'} / {adaNilaiNol ? 'belum tercapai' : <s>belum tercapai</s>}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai: </td>
             </tr>
             <tr style={{ fontWeight: 'bold' }}><td colSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Asesi :</td></tr>
             <tr><td style={{ width: '20%', border: '1px solid #000', padding: '6px' }}>Nama</td>
@@ -478,16 +444,6 @@ export default function Ia04bKANPage() {
       </div>
       <WebcamModal isOpen={showAwalModal} onClose={handleAwalModalClose} onSubmit={submitAbsenAwal}
         title="Absen Masuk Asesmen" description="Silakan ambil foto wajah Anda untuk absen masuk" canClose={false} />
-      <ConfirmDialog
-        isOpen={showBkConfirm}
-        title="Perhatian: Rekomendasi Belum Kompeten"
-        message="Rekomendasi hasil asesmen adalah Belum Kompeten. Pastikan penilaian sudah benar sebelum tanda tangan, karena jika salah tanda tangan asesi akan dinilai tidak kompeten."
-        confirmText="Ya, Lanjut"
-        cancelText="Periksa Lagi"
-        confirmColor="#d97706"
-        onConfirm={async () => { setShowBkConfirm(false); await doSave() }}
-        onCancel={() => setShowBkConfirm(false)}
-      />
     </ModularAsesiLayout>
   )
 }
