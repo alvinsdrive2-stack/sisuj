@@ -31,7 +31,7 @@ export default function Ia04bKANPage() {
   const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas,
     namaPenyusun, namaValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
-  const isAsesor = user?.role?.id === RoleId.ASESOR; const isAsesi = user?.role?.id === RoleId.ASESI
+  const isAsesor = user?.role?.id === RoleId.ASESOR
   const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
