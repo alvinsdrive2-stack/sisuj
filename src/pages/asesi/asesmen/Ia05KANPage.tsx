@@ -120,6 +120,16 @@ export default function Ia05KANPage() {
   const handleAnswerChange = (soalId: number, answer: 'A' | 'B' | 'C' | 'D') =>
     setAnswers(prev => ({ ...prev, [soalId]: answer }))
 
+  // Auto-fill umpan balik: list jawaban salah + KUK-nya (asesor bisa edit manual; kosongkan untuk regenerate)
+  const salahSoal = useMemo(() =>
+    soalList.filter(s => {
+      const j = answers[s.id] || s.jawaban_asesi
+      return j && j !== s.kunci_jawaban
+    }), [soalList, answers])
+  const defaultUmpanBalik = salahSoal.length > 0
+    ? salahSoal.map(s => `- No. ${s.no}${s.kuk?.kode ? ` - KUK: ${s.kuk.kode}` : ''}`).join('\n')
+    : 'Seluruh jawaban benar'
+
   const doSave = async () => {
     if (!id || !dokumen) return
     setIsSaving(true)
@@ -129,7 +139,7 @@ export default function Ia05KANPage() {
         .filter(s => answers[s.id])
         .map(s => ({ soal_id: s.id, jawaban: answers[s.id] }))
       const payload: any = { dokumen_id: dokumen.id, answers: answersPayload }
-      if (isAsesor) payload.umpan_balik = umpanBalik
+      if (isAsesor) payload.umpan_balik = umpanBalik || defaultUmpanBalik
 
       const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia05`, {
         method: 'POST',
@@ -358,14 +368,14 @@ export default function Ia05KANPage() {
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
-                    value={umpanBalik}
+                    value={umpanBalik || defaultUmpanBalik}
                     onChange={e => setUmpanBalik(e.target.value)}
                     placeholder="Tulis umpan balik..."
                   />
-                ) : umpanBalik ? (
+                ) : (umpanBalik || (isDinilai ? defaultUmpanBalik : '')) ? (
                   <div style={{ marginTop: '8px' }}>
                     <strong>Umpan Balik Asesor:</strong>
-                    <p style={{ margin: '4px 0 0 0' }}>{umpanBalik}</p>
+                    <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-line' }}>{umpanBalik || defaultUmpanBalik}</p>
                   </div>
                 ) : null}
               </td>

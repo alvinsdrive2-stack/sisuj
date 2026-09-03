@@ -275,6 +275,14 @@ export default function Ia06KANPage() {
   const kompeten = soalList.length > 0 && soalList.every(s => (skor[s.id] ?? 0) > 0)
   const semuaDiskor = soalList.length > 0 && soalList.every(s => skor[s.id] !== undefined)
 
+  // Auto-fill umpan balik: list soal berskor 0 + KUK-nya (asesor bisa edit manual; kosongkan untuk regenerate)
+  const salahSoal = useMemo(() =>
+    soalList.filter(s => skor[s.id] === 0),
+  [soalList, skor])
+  const defaultUmpanBalik = salahSoal.length > 0
+    ? salahSoal.map((s, i) => `- No. ${s.no || i + 1} - KUK: ${s.unit_kode || ''}${s.kuk_kode ? ` / ${s.kuk_kode}` : ''}`).join('\n')
+    : 'Seluruh jawaban benar'
+
   const doSave = async () => {
     if (!id || !dokumen) return
     setIsSaving(true)
@@ -285,7 +293,14 @@ export default function Ia06KANPage() {
         jawaban: jawaban[s.id] || '',
         skor: skor[s.id] ?? null,
       }))
-      const payload: any = { dokumen_id: dokumen.id, answers, umpan_balik: umpanBalik, unit_elemen_kuk: null }
+      const payload: any = {
+        dokumen_id: dokumen.id,
+        answers,
+        umpan_balik: umpanBalik || defaultUmpanBalik,
+        unit_elemen_kuk: salahSoal.length > 0
+          ? salahSoal.map(s => `${s.unit_kode || ''}${s.kuk_kode ? ` / ${s.kuk_kode}` : ''}`).join(', ')
+          : null,
+      }
 
       const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia06`, {
         method: 'POST',
@@ -484,14 +499,14 @@ export default function Ia06KANPage() {
                 {isAsesor ? (
                   <textarea
                     style={{ width: '100%', border: '1px solid #000', padding: '8px', minHeight: '60px', fontSize: '12pt', marginTop: '8px' }}
-                    value={umpanBalik}
+                    value={umpanBalik || defaultUmpanBalik}
                     onChange={e => setUmpanBalik(e.target.value)}
                     placeholder="Tulis umpan balik..."
                   />
-                ) : umpanBalik ? (
+                ) : (umpanBalik || (semuaDiskor ? defaultUmpanBalik : '')) ? (
                   <div style={{ marginTop: '8px' }}>
                     <strong>Umpan Balik Asesor:</strong>
-                    <p style={{ margin: '4px 0 0 0' }}>{umpanBalik}</p>
+                    <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-line' }}>{umpanBalik || defaultUmpanBalik}</p>
                   </div>
                 ) : null}
               </Td>
