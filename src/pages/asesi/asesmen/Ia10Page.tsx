@@ -242,8 +242,8 @@ export default function Ia10Page() {
 
     if (!signing.agreedChecklist) return
 
-    // Asesi must wait for all asesor to sign
-    if (!isAsesor && !signing.allAsesorSigned) {
+    // Asesi must wait for all asesor to sign (kelas 1: bypass)
+    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       return
     }
 

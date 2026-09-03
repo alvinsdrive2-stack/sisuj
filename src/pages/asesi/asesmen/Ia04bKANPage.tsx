@@ -168,7 +168,7 @@ export default function Ia04bKANPage() {
       showWarning('Silakan centang pernyataan terlebih dahulu.')
       return
     }
-    if (!isAsesor && !signing.allAsesorSigned) {
+    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }

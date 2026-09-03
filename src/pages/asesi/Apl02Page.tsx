@@ -2844,7 +2844,7 @@ export default function Apl02Page() {
               {anyAsesorSigned ? 'Tanda Tangan' : 'Simpan & Tanda Tangan'}
             </ActionButton>
           )}
-          <ActionButton variant="primary" disabled={tahap === 1 && !isAsesor ? !signing.allAsesorSigned : signing.buttonDisabled} onClick={() => handleSubmit(false)}>
+          <ActionButton variant="primary" disabled={tahap === 1 && !isAsesor && jenisKelas !== '2' ? !signing.allAsesorSigned : signing.buttonDisabled} onClick={() => handleSubmit(false)}>
             {tahap === 1 && !isAsesor ? 'Lanjut ke MUK' : signing.buttonText}
           </ActionButton>
         </div>

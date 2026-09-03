@@ -247,7 +247,7 @@ export default function Ia04aPage() {
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !signing.allAsesorSigned) {
+    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }

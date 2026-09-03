@@ -263,7 +263,9 @@ export default function FrAk07Page() {
   })
 
 
-  const isFormDisabled = tahap !== 0 && (!isAsesor || signing.allSigned)
+  // Selain jenis kelas 2: kuncian dibuka semua — form bebas diedit siapapun
+  const isKelasTerbuka = jenisKelas !== '2'
+  const isFormDisabled = tahap !== 0 && !isKelasTerbuka && (!isAsesor || signing.allSigned)
 
   const handleBack = () => {
     navigate(-1)
@@ -384,8 +386,8 @@ export default function FrAk07Page() {
       return
     }
 
-    // Guard: asesi cannot submit until all asesor have signed
-    if (!isAsesor && !signing.allAsesorSigned) {
+    // Guard: asesi cannot submit until all asesor have signed (selain kelas 2: bypass)
+    if (!isKelasTerbuka && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }

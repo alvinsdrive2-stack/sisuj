@@ -169,7 +169,7 @@ export default function Ia05KANPage() {
       showWarning('Silakan centang pernyataan terlebih dahulu.')
       return
     }
-    if (!isAsesor && !signing.allAsesorSigned) {
+    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
