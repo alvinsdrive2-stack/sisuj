@@ -460,28 +460,28 @@ export default function Ak02KANPage() {
           <tbody>
             <tr style={{ fontWeight: 'bold', textAlign: 'center', ...hdDok }}>
               <th style={{ ...td, width: '28%' }}>Form</th>
-              <th style={td}>Jumlah Soal</th>
+              <th style={td}>Jumlah Skor Soal</th>
               <th style={td}>Total Skor</th>
               <th style={td}>Bobot Nilai %</th>
               <th style={td}>Nilai Skor</th>
             </tr>
             <tr>
               <td style={td}>1. FR IA 04B<br />Pertanyaan DIT</td>
-              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_dit ?? 10}</td>
+              <td style={{ ...td, textAlign: 'center' }}>30</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_dit ?? '-'}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_dit ?? 50}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_dit != null ? kanNilai.nilai_skor_dit.toFixed(2) : nilaiDit.toFixed(2)}</td>
             </tr>
             <tr>
               <td style={td}>2. FR IA 05<br />Pertanyaan Pilihan Ganda</td>
-              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_pg ?? 20}</td>
+              <td style={{ ...td, textAlign: 'center' }}>20</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_pg ?? '-'}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_pg ?? 30}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_pg != null ? kanNilai.nilai_skor_pg.toFixed(2) : nilaiPg.toFixed(2)}</td>
             </tr>
             <tr>
               <td style={td}>3. FR IA 06<br />Pertanyaan Esai</td>
-              <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.jumlah_soal_esai ?? 10}</td>
+              <td style={{ ...td, textAlign: 'center' }}>30</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.total_skor_esai ?? '-'}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.bobot_esai ?? 20}</td>
               <td style={{ ...td, textAlign: 'center' }}>{kanNilai?.nilai_skor_esai != null ? kanNilai.nilai_skor_esai.toFixed(2) : nilaiEsai.toFixed(2)}</td>
