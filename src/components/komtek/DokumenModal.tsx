@@ -183,14 +183,22 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
     const sections = getDocSections(jenjang, metode)
     const data = dokumenResponse.data
 
+    // Prefer KAN-signed version (kan_*) when it exists
+    const resolveDoc = (docType: string): { url: string | null; isKan: boolean } => {
+      const kanUrl = data[`kan_${docType}`]
+      if (kanUrl) return { url: kanUrl, isKan: true }
+      return { url: data[docType] || null, isKan: false }
+    }
+
     const items: DokumenItem[] = []
     sections.forEach(section => {
       section.docs.forEach(docType => {
         if (docType in data) {
+          const resolved = resolveDoc(docType)
           items.push({
             key: `${asesiId}-${docType}`,
             label: docType.toUpperCase().replace(/_/g, ' '),
-            url: data[docType] || null,
+            url: resolved.url,
             docType: docType,
           })
         }

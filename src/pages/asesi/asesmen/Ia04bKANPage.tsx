@@ -107,30 +107,31 @@ export default function Ia04bKANPage() {
     if (!id || !dokumen) return
     setIsSaving(true)
     try {
-      const token = localStorage.getItem("access_token")
-      const answers = soalList.map(s => ({
-        soal_id: s.id,
-        jawaban: jawaban[s.id] || '',
-        skor: skor[s.id] ?? null,
-      }))
-      const payload: any = { dokumen_id: dokumen.id, answers }
-      if (rekomendasi) payload.rekomendasi = rekomendasi === 'kompeten'
-
-      const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) {
-        const msg = await extractApiError(res, 'Gagal menyimpan IA.04.B')
-        showError(msg); setIsSaving(false); return
-      }
-
-      // Skor asesor + rekomendasi disimpan via endpoint nilai (backend simpan pencapaian boolean)
+      // Asesi cuma sign — POST jawaban/skor/rekomendasi hanya untuk asesor
       if (isAsesor) {
+        const token = localStorage.getItem("access_token")
+        const answers = soalList.map(s => ({
+          soal_id: s.id,
+          jawaban: jawaban[s.id] || '',
+          skor: skor[s.id] ?? null,
+        }))
+        const payload: any = { dokumen_id: dokumen.id, answers }
+        if (rekomendasi) payload.rekomendasi = rekomendasi === 'kompeten'
+
+        const res = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04b`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(payload),
+        })
+        if (!res.ok) {
+          const msg = await extractApiError(res, 'Gagal menyimpan IA.04.B')
+          showError(msg); setIsSaving(false); return
+        }
+
+        // Skor asesor + rekomendasi disimpan via endpoint nilai (skala pencapaian 0-3)
         const evaluations = soalList
           .filter(s => skor[s.id] !== undefined && skor[s.id] !== null)
-          .map(s => ({ soal_id: s.id, pencapaian: skor[s.id] !== 0 }))
+          .map(s => ({ soal_id: s.id, pencapaian: skor[s.id] }))
         const nilaiPayload: any = { dokumen_id: dokumen.id, evaluations }
         if (rekomendasi && rekomendasiId) {
           nilaiPayload.rekomendasi = { soal_id: rekomendasiId, value: rekomendasi === 'kompeten' }
@@ -266,7 +267,7 @@ export default function Ia04bKANPage() {
                 <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>{soal.soal}</td>
                 <td style={{ verticalAlign: 'top', border: '1px solid #000', padding: '6px' }}>
                   <div>{soal.soal1}</div>
-                  {isAsesi ? (
+                  {isAsesor ? (
                     <>
                       <p style={{ margin: '8px 0 4px 0', fontSize: '12px', fontWeight: 'bold' }}>Jawaban asesi:</p>
                       <textarea value={jawaban[soal.id] || ""} onChange={e => setJawaban(prev => ({ ...prev, [soal.id]: e.target.value }))}
