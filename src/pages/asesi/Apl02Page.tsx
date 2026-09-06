@@ -1982,6 +1982,41 @@ export default function Apl02Page() {
                   const newFiles = dokumenFiles.filter(f => !existingIds.has(f.id))
                   return [...newFiles, ...prev]
                 })
+
+                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA unit (default) ──
+                // File kebenaran (id negatif hasil injeksi dokumen-asesi) langsung
+                // terpilih di setiap elemen/subunit. Kecuali: mode asesor, atau
+                // subunit tsb SUDAH punya file serupa (mis. dari draft/attach
+                // sebelumnya) — hindari duplikat saat buka ulang halaman.
+                if (!isAsesor) {
+                  const defaultFiles = dokumenFiles.filter(f => f.id < 0)
+                  if (defaultFiles.length > 0) {
+                    const nameById = new Map(defaultFiles.map(f => [f.id, String(f.name || '').toLowerCase()]))
+                    setKukBukti(prev => {
+                      const next = { ...prev }
+                      units.forEach(unit => {
+                        unit.subunits.forEach(subunit => {
+                          const existingNames = new Set(
+                            (subunit.files || []).map(f => String(f.name || '').toLowerCase()),
+                          )
+                          const kukIds: string[] = []
+                          subunit.kuk_list.forEach(kuk => {
+                            kukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+                          })
+                          defaultFiles.forEach(df => {
+                            const nm = nameById.get(df.id)
+                            if (!nm || existingNames.has(nm)) return
+                            kukIds.forEach(kukId => {
+                              const cur = next[kukId] || []
+                              if (!cur.includes(df.id)) next[kukId] = [...cur, df.id]
+                            })
+                          })
+                        })
+                      })
+                      return next
+                    })
+                  }
+                }
               }
             }
           } catch { /* ignore parse errors */ }
