@@ -264,6 +264,12 @@ export default function Ia08Page() {
       }
     }
 
+    // Kesimpulan/rekomendasi wajib dipilih — jangan sampai terkirim null
+    if (isAsesor && rekomendasiKompeten == null) {
+      showWarning("Pilih rekomendasi asesor (Kompeten / Belum Kompeten) terlebih dahulu")
+      return
+    }
+
     // Semua jawaban (Valid, Asli, Terkini, Memadai) wajib terisi untuk tiap dokumen
     const incomplete = ia08Files.filter(f => {
       const a = f.answer
