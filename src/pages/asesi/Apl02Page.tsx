@@ -2287,8 +2287,9 @@ export default function Apl02Page() {
 
   useEffect(() => {
     // Baseline setelah data awal selesai dimuat — hindari autosave saat open page.
-    // Kalau asesor sudah menandatangani, asesi tidak boleh mengubah jawaban lagi.
-    if (isDataLoading || isAsesor || anyAsesorSigned) return
+    // Asesi TETAP boleh mengubah jawaban walau asesor sudah menandatangani
+    // (perubahan tersimpan & PDF APL-02 di-regen saat submit resmi).
+    if (isDataLoading || isAsesor) return
     const snapshot = JSON.stringify({ k: kukChecklist, b: kukBukti })
     if (!draftBaselineRef.current) {
       draftBaselineRef.current = snapshot
@@ -2305,7 +2306,7 @@ export default function Apl02Page() {
     return () => {
       if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
     }
-  }, [kukChecklist, kukBukti, isDataLoading, isAsesor, anyAsesorSigned, saveDraftApl02])
+  }, [kukChecklist, kukBukti, isDataLoading, isAsesor, saveDraftApl02])
 
   const getNextRoute = (id: string) => {
     const base = isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'
@@ -2327,53 +2328,16 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesi sudah ttd & semua asesor sudah ttd ? redirect ke halaman berikutnya
-    if (!isUuidFlow && !isAsesor && asesiHasSigned && allAsesorSigned) {
-      const finalIdIzin = _idIzin || idIzin
-      if (finalIdIzin) {
-        navigate(getNextRoute(finalIdIzin))
-      }
-      return
-    }
+    // Asesi tetap dapat menyimpan/menandatangani walau asesor sudah ttd:
+    // jawaban dikirim (POST), lalu QR asesi dibuat hanya jika ada subunit yang
+    // belum punya barcode asesi. PDF APL-02 di-regen otomatis oleh backend
+    // (submitApl02 → renderApl02Pdf) setiap kali jawaban tersimpan.
 
     // DEBUG BK-TTD: hapus setelah investigasi
     if (!isAsesor) {
       console.warn('[APL02-DEBUG] isUuidFlow:', isUuidFlow, 'tahap:', tahap)
       console.warn('[APL02-DEBUG] anyAsesorSigned:', anyAsesorSigned, '| asesiHasSigned:', asesiHasSigned, '| allAsesorSigned:', allAsesorSigned)
       console.warn('[APL02-DEBUG] subunitBarcodes:', JSON.stringify(subunitBarcodes, null, 2))
-    }
-
-    // Asesi hanya boleh menyimpan jika belum ada asesor yang menandatangani.
-    // Kalau salah satu asesor udah ttd, asesi ga bisa ubah/post ulang jawaban.
-    // Tapi asesi masih boleh TTD (post QR) kalau dia sendiri belum pernah ttd.
-    if (!isAsesor && anyAsesorSigned) {
-      if (!asesiHasSigned) {
-        const finalIdIzin = _idIzin || idIzin
-        if (!finalIdIzin) {
-          showWarning("ID Izin tidak ditemukan")
-          return
-        }
-        setIsSaving(true)
-        try {
-          const qrOk = await signing.generateQR()
-          if (qrOk) {
-            showSuccess('APL 02 berhasil ditandatangani!')
-            signing.publishUpdate()
-            if (!saveOnly) {
-              setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
-            }
-          } else {
-            showWarning("Gagal membuat tanda tangan digital. Silakan coba lagi.")
-          }
-        } catch (error) {
-          showError(extractErrorMessage(error, 'Gagal menandatangani dokumen'))
-        } finally {
-          setIsSaving(false)
-        }
-        return
-      }
-      showWarning("Dokumen sudah ditandatangani asesor, Anda tidak dapat menyimpan perubahan lagi.")
-      return
     }
 
     // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
