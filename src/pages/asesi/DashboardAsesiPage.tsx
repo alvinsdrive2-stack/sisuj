@@ -454,7 +454,9 @@ export default function DashboardAsesiPage() {
                               return
                             }
                             const json = await res.json()
-                            const filled = json.data?.barcodes?.asesi?.url
+                            // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
+                            const b = json.data?.barcodes
+                            const filled = !!b?.asesi?.url && !!b?.asesor1?.url && (kegiatan?.asesor2 ? !!b?.asesor2?.url : true)
                             if (!filled) {
                               sessionStorage.setItem('validNavigationEntry', 'true')
                               navigate(`/asesi${step.path}`, { state: { fromInternal: true } })

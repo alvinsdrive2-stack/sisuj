@@ -25,6 +25,8 @@ interface UseTahapStepCheckOptions {
   metode?: string
   /** inject IA.06 after IA.05 when skema uses soal paket */
   isPaket?: boolean
+  /** jumlah asesor kegiatan — untuk cek kelengkapan TTD AK01 */
+  asesorCount?: number
 }
 
 interface UseTahapStepCheckReturn {
@@ -65,7 +67,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string, isPaket
 
   if (isPortofolio) {
     return [
-      { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
+      { stepKey: 'ak01', label: 'AK.01', href: '/perjanjian/:id/ak01' },
       { stepKey: 'ia08', label: 'IA.08', href: '/asesmen/:id/ia08' },
       { stepKey: 'ia09', label: 'IA.09', href: '/asesmen/:id/ia09' },
       { stepKey: 'ia10', label: 'IA.10', href: '/asesmen/:id/ia10' },
@@ -76,7 +78,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string, isPaket
 
   if (isLowJenjang) {
     const steps = [
-      { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
+      { stepKey: 'ak01', label: 'AK.01', href: '/perjanjian/:id/ak01' },
       { stepKey: 'ia01', label: 'IA.01', href: '/asesmen/:id/ia01' },
       { stepKey: 'ia02', label: 'IA.02', href: '/asesmen/:id/ia02' },
       { stepKey: 'ia03', label: 'IA.03', href: '/asesmen/:id/ia03' },
@@ -91,7 +93,7 @@ function getTahapSteps(tahap: number, jenjang?: string, metode?: string, isPaket
 
   // Default: full jenjang
   const steps = [
-    { stepKey: 'ak01', label: 'AK.01', href: '/asesmen/:id/ak01' },
+    { stepKey: 'ak01', label: 'AK.01', href: '/perjanjian/:id/ak01' },
     { stepKey: 'ia04a', label: 'IA.04.A', href: '/asesmen/:id/ia04a' },
     { stepKey: 'upload-tugas', label: 'Upload Tugas', href: '/asesmen/:id/upload-tugas' },
     { stepKey: 'ia04b', label: 'IA.04.B', href: '/asesmen/:id/ia04b' },
@@ -110,6 +112,7 @@ export function useTahapStepCheck({
   jenjang,
   metode,
   isPaket,
+  asesorCount,
 }: UseTahapStepCheckOptions): UseTahapStepCheckReturn {
   const navigate = useNavigate()
   const [redirectStep, setRedirectStep] = useState<StepCheck | null>(null)
@@ -139,14 +142,23 @@ export function useTahapStepCheck({
     // Fire all step checks in parallel
     const results = await Promise.allSettled(
       steps.map(async (step) => {
+        // AK.01 API endpoint ada di /praasesmen/, bukan /asesmen/
         const apiPath = tahap === 1
           ? `/praasesmen/${idIzin}/${step.stepKey}`
-          : `/asesmen/${resolvedId}/${step.stepKey}`
+          : step.stepKey === 'ak01'
+            ? `/praasesmen/${resolvedId}/ak01`
+            : `/asesmen/${resolvedId}/${step.stepKey}`
 
         const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
         if (!res.ok) return { step, filled: false }
         const json = await res.json()
-        return { step, filled: hasBarcode(json.data) }
+        let filled = hasBarcode(json.data)
+        // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
+        if (step.stepKey === 'ak01') {
+          const b = json.data?.barcodes
+          filled = !!b?.asesi?.url && !!b?.asesor1?.url && (asesorCount && asesorCount >= 2 ? !!b?.asesor2?.url : true)
+        }
+        return { step, filled }
       })
     )
 
@@ -169,7 +181,7 @@ export function useTahapStepCheck({
     setRedirectStep(null)
     setIsLoading(false)
     setChecked(true)
-  }, [tahap, idIzin, replaceId, jenjang, metode, isPaket])
+  }, [tahap, idIzin, replaceId, jenjang, metode, isPaket, asesorCount])
 
   useEffect(() => {
     runCheck()

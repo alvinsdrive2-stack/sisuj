@@ -342,7 +342,10 @@ export default function AsesiPage() {
               return
             }
             const json = await res.json()
-            if (!json.data?.barcodes?.asesi?.url) {
+            // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
+            const b = json.data?.barcodes
+            const ak01Filled = !!b?.asesi?.url && !!b?.asesor1?.url && (asesorIds.id_asesor_2 ? !!b?.asesor2?.url : true)
+            if (!ak01Filled) {
               navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
               return
             }

@@ -426,6 +426,7 @@ export default function ListAsesiAsesor() {
                         let tahap2Steps: { key: string; path: string }[] = []
                         if (isPortofolio) {
                           tahap2Steps = [
+                            { key: 'ak01', path: `/asesi/perjanjian/${asesi.id_izin}/ak01` },
                             { key: 'ia08', path: `/asesi/asesmen/${asesi.id_izin}/ia08` },
                             { key: 'ia09', path: `/asesi/asesmen/${asesi.id_izin}/ia09` },
                             { key: 'ia10', path: `/asesi/asesmen/${asesi.id_izin}/ia10` },
@@ -434,6 +435,7 @@ export default function ListAsesiAsesor() {
                           ]
                         } else if (isLowJenjang) {
                           tahap2Steps = [
+                            { key: 'ak01', path: `/asesi/perjanjian/${asesi.id_izin}/ak01` },
                             { key: 'ia01', path: `/asesi/asesmen/${asesi.id_izin}/ia01` },
                             { key: 'ia02', path: `/asesi/asesmen/${asesi.id_izin}/ia02` },
                             { key: 'ia03', path: `/asesi/asesmen/${asesi.id_izin}/ia03` },
@@ -444,6 +446,7 @@ export default function ListAsesiAsesor() {
                           ]
                         } else {
                           tahap2Steps = [
+                            { key: 'ak01', path: `/asesi/perjanjian/${asesi.id_izin}/ak01` },
                             { key: 'ia04a', path: `/asesi/asesmen/${asesi.id_izin}/ia04a` },
                             { key: 'upload-tugas', path: `/asesi/asesmen/${asesi.id_izin}/upload-tugas` },
                             { key: 'ia04b', path: `/asesi/asesmen/${asesi.id_izin}/ia04b` },
@@ -458,12 +461,22 @@ export default function ListAsesiAsesor() {
                         const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
                         for (const step of tahap2Steps) {
                           try {
-                            const apiPath = `/asesmen/${asesi.id_izin}/${step.key}`
+                            // AK.01 API endpoint ada di /praasesmen/, bukan /asesmen/
+                            const apiPath = step.key === 'ak01'
+                              ? `/praasesmen/${asesi.id_izin}/ak01`
+                              : `/asesmen/${asesi.id_izin}/${step.key}`
                             const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
                             if (!res.ok) continue
                             const json = await res.json()
-                            const filled = json.data?.barcodes?.asesi?.url ||
-                              json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+                            let filled: boolean
+                            if (step.key === 'ak01') {
+                              // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
+                              const b = json.data?.barcodes
+                              filled = !!b?.asesi?.url && !!b?.asesor1?.url && (kegiatan?.asesor2 ? !!b?.asesor2?.url : true)
+                            } else {
+                              filled = json.data?.barcodes?.asesi?.url ||
+                                json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
+                            }
                             if (!filled) {
                               navigate(step.path, { state: { fromInternal: true } })
                               return
