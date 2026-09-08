@@ -294,46 +294,11 @@ export default function FrAk01Page() {
       return
     }
 
-    // If asesor already signed -> check absen akhir before navigate (skip untuk tahap 0)
-    if (tahap !== 0 && isAsesor && asesorHasSigned) {
-      if (isAsesmenFlow || tahap === 2 || isLowJenjangAsesor) {
-        setShowMasukAsesmenModal(true)
-        return
-      }
-      // Check if absen akhir needed
-      const needsAbsenAkhir = await _shouldShowAkhirModal()
-      if (needsAbsenAkhir) {
-        setPendingToSuccessPage(true)
-        setShowAkhirModal(true)
-        return
-      }
-      navigate(successPath, { state: { jadwalId } })
-      return
-    }
+    // Sudah ttd: tetap POST jawaban di bawah, skip QR, lalu absen akhir / redirect
+    const alreadySigned = isAsesor ? asesorHasSigned : asesiHasSigned
 
-    // If asesi already signed -> check absen akhir before navigate (skip untuk tahap 0)
-    if (tahap !== 0 && !isAsesor && asesiHasSigned) {
-      if (isAsesmenFlow || tahap === 2) {
-        setShowMasukAsesmenModal(true)
-        return
-      }
-      // Check if absen akhir needed
-      const needsAbsenAkhir = await _shouldShowAkhirModal()
-      if (needsAbsenAkhir) {
-        setPendingToSuccessPage(true)
-        setShowAkhirModal(true)
-        return
-      }
-      if (isAsesor) {
-        navigate(`/asesor/asesi/${jadwalId}`)
-      } else {
-        navigate(successPath)
-      }
-      return
-    }
-
-    // Guard: asesi cannot submit until all asesor have signed (skip untuk tahap 0)
-    if (tahap !== 0 && !isAsesor && !allAsesorSigned) {
+    // Guard: asesi cannot submit until all asesor have signed (skip untuk tahap 0 / sudah ttd)
+    if (tahap !== 0 && !isAsesor && !allAsesorSigned && !alreadySigned) {
       showWarning(`Menunggu tanda tangan: ${missingAsesorLabels.join(', ')}`)
       return
     }
@@ -359,22 +324,44 @@ export default function FrAk01Page() {
       })
 
       if (response.ok) {
-        // Generate QR using hook (handles both asesor and asesi roles).
-        // Gagal generateQR = QR/TTD gak kebuat → jangan klaim berhasil.
-        const qrOk = jadwalId ? await signing.generateQR() : false
-        if (!qrOk) {
-          showWarning('Tanda tangan gagal diproses (QR tidak ter-generate). Coba lagi.')
-          setIsSaving(false)
-          return
-        }
+        if (!alreadySigned) {
+          // Generate QR using hook (handles both asesor and asesi roles).
+          // Gagal generateQR = QR/TTD gak kebuat → jangan klaim berhasil.
+          const qrOk = jadwalId ? await signing.generateQR() : false
+          if (!qrOk) {
+            showWarning('Tanda tangan gagal diproses (QR tidak ter-generate). Coba lagi.')
+            setIsSaving(false)
+            return
+          }
 
-        // Show success toast, stay on page
-        showSuccess('Dokumen berhasil ditandatangani!')
+          // Show success toast, stay on page
+          showSuccess('Dokumen berhasil ditandatangani!')
+        }
 
         // Notify other users viewing this page
         signing.publishUpdate()
 
-        // Untuk asesmen flow, show floating modal
+        // Sudah ttd → absen akhir / modal / redirect, tanpa generate QR ulang
+        if (alreadySigned) {
+          if (isAsesmenFlow || tahap === 2 || (isAsesor && isLowJenjangAsesor)) {
+            setShowMasukAsesmenModal(true)
+            return
+          }
+          const needsAbsenAkhir = await _shouldShowAkhirModal()
+          if (needsAbsenAkhir) {
+            setPendingToSuccessPage(true)
+            setShowAkhirModal(true)
+            return
+          }
+          if (isAsesor) {
+            navigate(successPath, { state: { jadwalId } })
+          } else {
+            navigate(successPath)
+          }
+          return
+        }
+
+        // Belum ttd: untuk asesmen flow, show floating modal
         if (isAsesmenFlow) {
           setShowMasukAsesmenModal(true)
           return
@@ -384,13 +371,6 @@ export default function FrAk01Page() {
         if (tahap === 2 || isLowJenjangAsesor) {
           setShowMasukAsesmenModal(true)
           return
-        }
-
-        // Untuk tahap 0, langsung navigasi ke halaman berikutnya
-        if (tahap === 0) {
-          setTimeout(() => {
-            navigate(`/asesi/asesmen/{actualIdIzin}/ia04a`)
-          }, 500)
         }
       } else {
         console.error('Failed to save:', await response.text())

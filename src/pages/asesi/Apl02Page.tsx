@@ -2376,14 +2376,7 @@ export default function Apl02Page() {
       return
     }
 
-    // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && isAsesor && asesorHasSigned) {
-      const finalIdIzin = idIzinFromUrl || _idIzin
-      if (finalIdIzin) {
-        navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`)
-      }
-      return
-    }
+    // Jika asesor sudah ttd → tetap POST metode + jawaban, skip QR (skip untuk tahap 0)
 
     // Jika asesor, POST metode lalu generate QR
     if (isAsesor) {
@@ -2468,7 +2461,7 @@ export default function Apl02Page() {
         }
 
         // Generate QR via signing hook (handles API call, state update, Ably publish)
-        if (tahap !== 0) {
+        if (tahap !== 0 && !asesorHasSigned) {
           const qrOk = await signing.generateQR()
           if (qrOk) {
             showSuccess('Dokumen berhasil ditandatangani!')

@@ -270,41 +270,16 @@ export default function Ia04bPage() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If all signed â†’ redirect
-    if (signing.allSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    // Sudah ttd: tetap POST jawaban di bawah, skip QR, lalu lanjut
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-    // If current user already signed but others haven't â†’ redirect (prevent re-generate QR)
-    if (!isAsesor && signing.asesiHasSigned) {
-      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
-      const next = asesmenSteps[stepIdx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
-    if (isAsesor && signing.asesorHasSigned) {
-      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
-      const next = asesmenSteps[stepIdx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu.')
       return
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
+    if (!alreadySigned && jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
@@ -333,17 +308,24 @@ export default function Ia04bPage() {
         return
       }
 
-      // Ada BK: warning dulu sebelum TTD biar asesor cek ulang
-      if (rekomendasi === 'belum_kompeten') {
+      // Ada BK: warning dulu sebelum TTD biar asesor cek ulang (skip kalau sudah ttd)
+      if (!alreadySigned && rekomendasi === 'belum_kompeten') {
         setShowBkConfirm(true)
         return
       }
     }
 
-    await doSave()
+    await doSave(alreadySigned)
+
+    // Sudah ttd: jawaban tetap ter-POST, langsung lanjut tanpa QR
+    if (alreadySigned) {
+      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04b'))
+      const next = asesmenSteps[stepIdx + 1]
+      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
+    }
   }
 
-  const doSave = async () => {
+  const doSave = async (skipQr = false) => {
     if (!ia04bData || !id) return
     setIsSaving(true)
 
@@ -387,8 +369,8 @@ export default function Ia04bPage() {
         }
       }
 
-      // 3. Generate QR
-      await signing.generateQR()
+      // 3. Generate QR (skip kalau sudah ttd)
+      if (!skipQr) await signing.generateQR()
       publishUpdate()
 
       showSuccess('IA 04.B berhasil disimpan!')

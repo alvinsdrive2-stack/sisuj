@@ -194,17 +194,7 @@ export default function Mapa02Page() {
       return
     }
 
-    // Jika semua sudah ttd â†’ redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && !isAsesor && signing.asesiHasSigned && signing.allAsesorSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
-      return
-    }
-
-    // Jika asesor sudah ttd â†’ redirect (skip untuk tahap 0)
-    if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`)
-      return
-    }
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
     setIsSaving(true)
     try {
@@ -241,8 +231,11 @@ export default function Mapa02Page() {
 
       showSuccess('MAPA 02 berhasil disimpan!')
       signing.publishUpdate()
-      // Untuk tahap 0, langsung navigasi ke asesmen pertama
-      if (tahap === 0) {
+      // Sudah ttd → redirect ke AK.07 (tetap setelah POST jawaban)
+      if (alreadySigned) {
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak07`), 500)
+      } else if (tahap === 0) {
+        // Untuk tahap 0, langsung navigasi ke asesmen pertama
         const isPortofolio = metode?.toLowerCase() === 'portofolio'
         const jenjangId = parseInt(jenjang || "0")
         const isLowJenjang = jenjangId < 4

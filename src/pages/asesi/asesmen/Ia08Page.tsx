@@ -243,25 +243,10 @@ export default function Ia08Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    if (hasSigned) {
-      // Asesi → navigate
-      if (!isAsesor) {
-        const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
-        const nextStep = asesmenSteps[currentStepIndex + 1]
-        if (nextStep) {
-          const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-          navigate(nextPath)
-        } else {
-          navigate(`/asesi/asesmen/${id}/selesai`)
-        }
-        return
-      }
-      // Asesor → fall through to re-save
-    } else {
-      if (!signing.agreedChecklist) {
-        showWarning("Silakan centang pernyataan terlebih dahulu")
-        return
-      }
+    const alreadySigned = hasSigned
+    if (!alreadySigned && !signing.agreedChecklist) {
+      showWarning("Silakan centang pernyataan terlebih dahulu")
+      return
     }
 
     // Kesimpulan/rekomendasi wajib dipilih — jangan sampai terkirim null
@@ -316,8 +301,19 @@ export default function Ia08Page() {
 
       if (response.ok) {
         showSuccess('IA 08 berhasil disimpan!')
-        await signing.generateQR()
+        if (!alreadySigned) {
+          await signing.generateQR()
+        }
         signing.publishUpdate()
+        if (alreadySigned && !isAsesor) {
+          const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+          const nextStep = asesmenSteps[currentStepIndex + 1]
+          if (nextStep) {
+            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan IA 08')
         showError(msg)

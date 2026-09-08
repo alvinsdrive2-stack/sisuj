@@ -508,18 +508,6 @@ export default function UjianPage() {
   }
 
   const handleSubmit = async () => {
-    if (hasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05') || s.href.includes('ujian'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
-
     if (!id || !dokumen) {
       showWarning('Data tidak lengkap')
       return
@@ -533,13 +521,23 @@ export default function UjianPage() {
       publishUpdate()
       showSuccess('Ujian berhasil diselesaikan!')
 
-      // Generate QR after successful save
+      // Generate QR after successful save (skip kalau sudah signed)
       try {
-        if (jadwalId) {
+        if (jadwalId && !hasSigned) {
           await kegiatanService.generateQRUjian(id, jadwalId)
         }
       } catch (qrError) {
         console.error('Failed to generate QR Ujian:', qrError)
+      }
+
+      if (hasSigned) {
+        const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05') || s.href.includes('ujian'))
+        const nextStep = asesmenSteps[currentStepIndex + 1]
+        if (nextStep) {
+          navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+        } else {
+          navigate(`/asesi/asesmen/${id}/selesai`)
+        }
       }
     } catch (error) {
       showError(extractErrorMessage(error, 'Gagal menyimpan jawaban. Silakan coba lagi.'))

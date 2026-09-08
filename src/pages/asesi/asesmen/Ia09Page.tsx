@@ -178,7 +178,7 @@ export default function Ia09Page() {
     setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
   }
 
-  const doSave = async () => {
+  const doSave = async (skipQr = false) => {
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")
@@ -204,7 +204,9 @@ export default function Ia09Page() {
       })
 
       if (response.ok) {
-        await signing.generateQR()
+        if (!skipQr) {
+          await signing.generateQR()
+        }
         signing.publishUpdate()
       }
     } catch (err) {
@@ -222,19 +224,9 @@ export default function Ia09Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    if (hasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    const alreadySigned = hasSigned
 
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       return
     }
 
@@ -245,12 +237,21 @@ export default function Ia09Page() {
 
     // Ada BK: warning dulu sebelum TTD, biar asesor cek ulang penilaian.
     // Salah TTD di BK bikin asesi dinilai tidak kompeten.
-    if (isAsesor && pertanyaanList.some(p => p.bk)) {
+    if (!alreadySigned && isAsesor && pertanyaanList.some(p => p.bk)) {
       setShowBkConfirm(true)
       return
     }
 
-    await doSave()
+    await doSave(alreadySigned)
+    if (alreadySigned) {
+      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia09'))
+      const nextStep = asesmenSteps[currentStepIndex + 1]
+      if (nextStep) {
+        navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+      } else {
+        navigate(`/asesi/asesmen/${id}/selesai`)
+      }
+    }
   }
 
   if (!pertanyaanList.length) return <FullPageLoader text="Memuat data..." />

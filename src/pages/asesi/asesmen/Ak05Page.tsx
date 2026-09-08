@@ -259,18 +259,7 @@ export default function Ak05Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If user already signed â†’ navigate to next page
-    if (hasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak05'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    const alreadySigned = hasSigned
 
     if (!id) {
       showWarning('ID tidak ditemukan')
@@ -307,8 +296,8 @@ export default function Ak05Page() {
 
       showSuccess('AK 05 berhasil disimpan!')
 
-      // POST QR â€” cuma untuk id_izin di URL
-      if (jadwalId) {
+      // POST QR â€” cuma untuk id_izin di URL (skip kalau sudah signed)
+      if (jadwalId && !alreadySigned) {
         try {
           const qrResponse = await fetch(`${API_BASE_URL}/qr/${id}/ak05`, {
             method: 'POST',
@@ -334,6 +323,16 @@ export default function Ak05Page() {
           console.error('Error generating QR:', qrError)
         }
         signing.publishUpdate()
+      }
+
+      if (alreadySigned) {
+        const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak05'))
+        const nextStep = asesmenSteps[currentStepIndex + 1]
+        if (nextStep) {
+          navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+        } else {
+          navigate(`/asesi/asesmen/${id}/selesai`)
+        }
       }
     } catch (err) {
       console.error('Error saving AK05:', err)

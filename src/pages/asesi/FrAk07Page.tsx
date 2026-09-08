@@ -352,13 +352,10 @@ export default function FrAk07Page() {
       return
     }
 
-    // If already signed, navigate to FR AK 04 (skip untuk tahap 0)
-    if (tahap !== 0 && signing.allSigned) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`)
-      return
-    }
+    // Sudah semua ttd → tetap POST jawaban di bawah, skip QR, lalu redirect ke FR AK 04
+    const alreadySigned = tahap !== 0 && signing.allSigned
 
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -491,16 +488,16 @@ export default function FrAk07Page() {
         throw new Error(error.message || "Gagal menyimpan data AK07")
       }
 
-      // Generate QR jika jadwalId tersedia (skip untuk tahap 0)
+      // Generate QR jika jadwalId tersedia (skip untuk tahap 0 / sudah ttd)
       console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
-      if (tahap !== 0 && jadwalId) {
+      if (tahap !== 0 && jadwalId && !alreadySigned) {
         await signing.generateQR()
       }
 
       showSuccess('FR AK 07 berhasil disimpan!')
       signing.publishUpdate()
-      // Untuk tahap 0, langsung navigasi ke halaman berikutnya
-      if (tahap === 0) {
+      // Untuk tahap 0 / sudah ttd, langsung navigasi ke halaman berikutnya
+      if (tahap === 0 || alreadySigned) {
         setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`), 500)
       }
     } catch (error) {

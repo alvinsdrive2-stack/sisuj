@@ -247,7 +247,7 @@ export default function Ak02KANPage() {
     }))
   }
 
-  const doSave = async () => {
+  const doSave = async (skipQr = false) => {
     if (!id) return
     setIsSaving(true)
     try {
@@ -282,7 +282,9 @@ export default function Ak02KANPage() {
         showError(msg); setIsSaving(false); return
       }
 
-      await signing.generateQR()
+      if (!skipQr) {
+        await signing.generateQR()
+      }
       signing.publishUpdate()
       showSuccess('AK.02 berhasil disimpan!')
     } catch (e) {
@@ -293,23 +295,25 @@ export default function Ak02KANPage() {
   const handleSave = async () => {
     if (!id) return
 
-    if (tahap === 0 || signing.allSigned) return goNext()
-    if (!isAsesor && signing.asesiHasSigned) return goNext()
-    if (isAsesor && signing.asesorHasSigned) return goNext()
-    if (!signing.agreedChecklist) {
-      showWarning('Silakan centang pernyataan terlebih dahulu.')
-      return
-    }
-    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
-      return
+    if (tahap === 0) return goNext()
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
+    if (!alreadySigned) {
+      if (!signing.agreedChecklist) {
+        showWarning('Silakan centang pernyataan terlebih dahulu.')
+        return
+      }
+      if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
+        showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
+        return
+      }
     }
     if (isKompeten === null) {
       showError('Pilih rekomendasi hasil asesmen terlebih dahulu')
       return
     }
 
-    await doSave()
+    await doSave(alreadySigned)
+    if (alreadySigned) return goNext()
   }
 
   if (isLoading) return <FullPageLoader text="Memuat AK.02..." />

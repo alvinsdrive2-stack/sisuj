@@ -716,19 +716,7 @@ export default function Ia01Page() {
                   navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
                   return
                 }
-                if (signing.allSigned) {
-                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
-                  const nextStep = asesmenSteps[currentStepIndex + 1]
-                  if (nextStep) {
-                    const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                    navigate(nextPath)
-                  } else {
-                    navigate(`/asesi/asesmen/${id}/selesai`)
-                  }
-                  return
-                }
-
-                if (!signing.agreedChecklist) {
+                if (!signing.allSigned && !signing.agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
                   return
                 }
@@ -782,7 +770,19 @@ export default function Ia01Page() {
                   if (response.ok) {
                     showSuccess('IA 01 berhasil disimpan!')
 
-                    await signing.generateQR()
+                    if (!signing.allSigned) {
+                      await signing.generateQR()
+                    } else {
+                      // Sudah ttd: jawaban tetap ter-POST, langsung lanjut tanpa QR
+                      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))
+                      const nextStep = asesmenSteps[currentStepIndex + 1]
+                      if (nextStep) {
+                        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
+                        navigate(nextPath)
+                      } else {
+                        navigate(`/asesi/asesmen/${id}/selesai`)
+                      }
+                    }
                   } else {
                     const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
                     showError(msg)

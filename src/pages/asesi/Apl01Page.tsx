@@ -381,9 +381,20 @@ export default function Apl01Page() {
       return
     }
 
-    // Jika asesi sudah pernah tanda tangan, langsung navigate ke APL 02
+    // Jika asesi sudah pernah tanda tangan: tetap simpan data pekerjaan, skip QR
     if (signing.asesiHasSigned) {
-      navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      const errors = validatePekerjaan()
+      if (errors.length > 0) { showError(`Data pekerjaan wajib diisi: ${errors.join(', ')}`); return }
+      try {
+        setIsSaving(true)
+        await kegiatanService.saveApl01DataPekerjaan(targetIdIzin, formDataPekerjaan)
+        showSuccess('APL 01 berhasil disimpan!')
+        navigate(`/asesi/praasesmen/${targetIdIzin}/apl02`)
+      } catch (error) {
+        showError(error instanceof Error ? error.message : "Gagal menyimpan data pekerjaan")
+      } finally {
+        setIsSaving(false)
+      }
       return
     }
 

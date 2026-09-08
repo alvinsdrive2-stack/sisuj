@@ -107,7 +107,7 @@ export default function Ia04bKANPage() {
     return salah.map(s => `- No. ${s.no} - ${s.soal2 || s.soal}`).join('\n')
   }, [soalList, skor])
 
-  const doSave = async () => {
+  const doSave = async (skipQr = false) => {
     if (!id || !dokumen) return
     setIsSaving(true)
     try {
@@ -150,7 +150,7 @@ export default function Ia04bKANPage() {
         }
       }
 
-      await signing.generateQR()
+      if (!skipQr) await signing.generateQR()
       signing.publishUpdate()
       showSuccess('IA.04.B berhasil disimpan!')
     } catch (e) {
@@ -161,23 +161,27 @@ export default function Ia04bKANPage() {
   const handleSave = async () => {
     if (!id) return
 
-    if (tahap === 0 || signing.allSigned) return goNext()
-    if (!isAsesor && signing.asesiHasSigned) return goNext()
-    if (isAsesor && signing.asesorHasSigned) return goNext()
-    if (!signing.agreedChecklist) {
-      showWarning('Silakan centang pernyataan terlebih dahulu.')
-      return
-    }
-    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
-      showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
-      return
+    if (tahap === 0) return goNext()
+
+    // Sudah ttd: tetap POST jawaban, skip QR, lalu lanjut
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
+    if (!alreadySigned) {
+      if (!signing.agreedChecklist) {
+        showWarning('Silakan centang pernyataan terlebih dahulu.')
+        return
+      }
+      if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
+        showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
+        return
+      }
     }
     if (!dokumen) {
       showWarning('Data belum dimuat.')
       return
     }
 
-    await doSave()
+    await doSave(alreadySigned)
+    if (alreadySigned) return goNext()
   }
 
   if (isLoading) return <FullPageLoader text="Memuat IA.04.B..." />

@@ -231,20 +231,11 @@ export default function FrAk04Page() {
       return
     }
 
-    // Asesi already signed (dan semua asesor untuk multi-signer) → navigate to K3
-    if (tahap !== 0 && !isAsesor && signing.allSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
-      return
-    }
-
-    // Asesor already signed → navigate to K3
-    if (tahap !== 0 && isAsesor && signing.asesorHasSigned) {
-      navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`)
-      return
-    }
+    // Sudah ttd → tetap POST jawaban di bawah, skip QR, lalu redirect ke K3
+    const alreadySigned = tahap !== 0 && (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)
 
     // Asesi - validate and save
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -312,6 +303,8 @@ export default function FrAk04Page() {
       signing.publishUpdate()
       if (tahap === 0) {
         setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak01`), 500)
+      } else if (alreadySigned) {
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/k3-asesmen`), 500)
       }
     } catch (error) {
       console.error("Error saving AK04:", error)

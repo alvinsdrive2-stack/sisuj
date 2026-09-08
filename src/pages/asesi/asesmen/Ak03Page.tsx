@@ -197,38 +197,9 @@ export default function Ak03Page() {
       return
     }
     // If asesi already signed → check absen akhir before navigate
-    if (!isAsesor && signing.asesiHasSigned) {
-      const needsAbsenAkhir = await shouldShowAkhirModal()
-      if (needsAbsenAkhir) {
-        setPendingAfterAbsen(true)
-        setShowAkhirModal(true)
-        return
-      }
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-    // If asesor already signed → navigate directly
-    if (isAsesor && signing.asesorHasSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
-
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
@@ -286,9 +257,29 @@ export default function Ak03Page() {
           }
         }
 
-        // Generate QR via hook
-        await signing.generateQR()
+        // Generate QR via hook (skip kalau sudah signed)
+        if (!alreadySigned) {
+          await signing.generateQR()
+        }
         signing.publishUpdate()
+
+        if (alreadySigned) {
+          if (!isAsesor) {
+            const needsAbsenAkhir = await shouldShowAkhirModal()
+            if (needsAbsenAkhir) {
+              setPendingAfterAbsen(true)
+              setShowAkhirModal(true)
+              return
+            }
+          }
+          const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak03'))
+          const nextStep = asesmenSteps[currentStepIndex + 1]
+          if (nextStep) {
+            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
         showError(msg)

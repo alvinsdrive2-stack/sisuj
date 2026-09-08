@@ -213,41 +213,22 @@ export default function Ia04aPage() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If all signed â†’ redirect
-    if (signing.allSigned) {
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    // Sudah ttd: tetap POST jawaban di bawah, skip QR, lalu lanjut
+    const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-    // If current user already signed but others haven't â†’ redirect (prevent re-generate QR)
-    if (!isAsesor && signing.asesiHasSigned) {
+    const navigateNext = () => {
       const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
       const next = asesmenSteps[stepIdx + 1]
       navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
     }
 
-    if (isAsesor && signing.asesorHasSigned) {
-      const stepIdx = asesmenSteps.findIndex(s => s.href.includes('ia04a'))
-      const next = asesmenSteps[stepIdx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
 
     // Guard: asesi cannot submit until all asesor have signed
-    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
+    if (!alreadySigned && jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
@@ -293,14 +274,19 @@ export default function Ia04aPage() {
           return
         }
 
-        await signing.generateQR()
-        publishUpdate()
+        if (!alreadySigned) {
+          await signing.generateQR()
+          publishUpdate()
 
-        showSuccess('IA 04.A berhasil disimpan!')
+          showSuccess('IA 04.A berhasil disimpan!')
+          return
+        }
+
+        navigateNext()
         return
       }
 
-      // Asesor_1: simpan umpan balik, lalu generate QR
+      // Asesor_1: simpan umpan balik, lalu generate QR (skip QR kalau sudah ttd)
       if (isAsesor && isAsesor1 && umpanBalikSoalId) {
         try {
           const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia04a`, {
@@ -330,10 +316,15 @@ export default function Ia04aPage() {
           return
         }
 
-        await signing.generateQR()
-        publishUpdate()
+        if (!alreadySigned) {
+          await signing.generateQR()
+          publishUpdate()
 
-        showSuccess('IA 04.A berhasil disimpan!')
+          showSuccess('IA 04.A berhasil disimpan!')
+          return
+        }
+
+        navigateNext()
         return
       }
 
@@ -344,19 +335,29 @@ export default function Ia04aPage() {
           return
         }
 
-        await signing.generateQR()
-        publishUpdate()
+        if (!alreadySigned) {
+          await signing.generateQR()
+          publishUpdate()
 
-        showSuccess('IA 04.A berhasil disimpan!')
+          showSuccess('IA 04.A berhasil disimpan!')
+          return
+        }
+
+        navigateNext()
         return
       }
 
       // Asesi: generate QR jika belum ada
       if (!isAsesor) {
-        await signing.generateQR()
-        publishUpdate()
+        if (!alreadySigned) {
+          await signing.generateQR()
+          publishUpdate()
 
-        showSuccess('IA 04.A berhasil disimpan!')
+          showSuccess('IA 04.A berhasil disimpan!')
+          return
+        }
+
+        navigateNext()
         return
       }
     } finally {

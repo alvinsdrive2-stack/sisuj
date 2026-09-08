@@ -235,15 +235,12 @@ export default function Ia10Page() {
       }
     }
 
-    if (hasSigned) {
-      navigateNext()
-      return
-    }
+    const alreadySigned = hasSigned
 
-    if (!signing.agreedChecklist) return
+    if (!alreadySigned && !signing.agreedChecklist) return
 
     // Asesi must wait for all asesor to sign (kelas 1: bypass)
-    if (jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
+    if (!alreadySigned && jenisKelas !== '2' && !isAsesor && !signing.allAsesorSigned) {
       return
     }
 
@@ -287,8 +284,13 @@ export default function Ia10Page() {
       })
 
       if (response.ok) {
-        await signing.generateQR()
+        if (!alreadySigned) {
+          await signing.generateQR()
+        }
         signing.publishUpdate()
+        if (alreadySigned) {
+          navigateNext()
+        }
       }
     } catch (err) {
       console.error("Error saving IA10:", err)

@@ -296,26 +296,9 @@ export default function Ak06Page() {
       navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
       return
     }
-    // If user already signed â†’ check absen akhir before navigate
-    if (hasSigned) {
-      const needsAbsenAkhir = await shouldShowAkhirModal()
-      if (needsAbsenAkhir) {
-        setPendingAfterAbsen(true)
-        setShowAkhirModal(true)
-        return
-      }
-      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
-      const nextStep = asesmenSteps[currentStepIndex + 1]
-      if (nextStep) {
-        const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-        navigate(nextPath)
-      } else {
-        navigate(`/asesi/asesmen/${id}/selesai`)
-      }
-      return
-    }
+    const alreadySigned = hasSigned
 
-    if (!signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning('Silakan centang pernyataan terlebih dahulu')
       return
     }
@@ -364,16 +347,33 @@ export default function Ak06Page() {
       if (response.ok) {
         showSuccess('AK 06 berhasil disimpan!')
 
-        // Auto-check absen akhir setelah save pertama — biar ga kelewat
-        const needsAbsenAkhir = await shouldShowAkhirModal()
+        if (alreadySigned) {
+          // Sudah signed → skip QR, langsung absen akhir / navigasi next
+          const needsAbsenAkhir = await shouldShowAkhirModal()
+          if (needsAbsenAkhir) {
+            setPendingAfterAbsen(true)
+            setShowAkhirModal(true)
+            return
+          }
+          const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak06'))
+          const nextStep = asesmenSteps[currentStepIndex + 1]
+          if (nextStep) {
+            navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+          } else {
+            navigate(`/asesi/asesmen/${id}/selesai`)
+          }
+        } else {
+          // Auto-check absen akhir setelah save pertama — biar ga kelewat
+          const needsAbsenAkhir = await shouldShowAkhirModal()
 
-        // Daring class tanpa video: tawarin upload sekarang atau nanti
-        if (needsAbsenAkhir && jenisKelas === '2' && !videoAjj) {
-          setShowVideoChoice(true)
-          return
+          // Daring class tanpa video: tawarin upload sekarang atau nanti
+          if (needsAbsenAkhir && jenisKelas === '2' && !videoAjj) {
+            setShowVideoChoice(true)
+            return
+          }
+
+          await continueAfterSave()
         }
-
-        await continueAfterSave()
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
         showError(msg)

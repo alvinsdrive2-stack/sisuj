@@ -194,14 +194,6 @@ export default function Ia05Page() {
       navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard')
       return
     }
-    // If asesi already signed â†’ redirect (prevent re-generate QR)
-    if (isAsesi && signing.asesiHasSigned) {
-      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
-      const next = asesmenSteps[idx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
     if (!ia05Data) {
       showWarning('Data belum dimuat.')
       return
@@ -247,7 +239,7 @@ export default function Ia05Page() {
         // Generate QR after successful save
         console.log('ðŸ” QR Generation Check - jadwalId:', jadwalId, 'id:', id)
         try {
-          if (jadwalId) {
+          if (jadwalId && !signing.asesiHasSigned) {
             console.log('Generating QR for IA05...', { id, jadwalId })
             await kegiatanService.generateQRIa05(id, jadwalId)
             console.log('âœ… QR IA05 successfully generated!')
@@ -296,14 +288,6 @@ export default function Ia05Page() {
 
   // Handler for asesor to save umpan_balik
   const handleSaveUmpanBalik = async () => {
-    // If asesor already signed â†’ redirect
-    if (isAsesor && signing.asesorHasSigned) {
-      const idx = asesmenSteps.findIndex(s => s.href.includes('ia05'))
-      const next = asesmenSteps[idx + 1]
-      navigate(next ? next.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
-      return
-    }
-
     if (!ia05Data || !id) return
 
     setIsSaving(true)
@@ -341,7 +325,7 @@ export default function Ia05Page() {
         // Generate QR after successful save
         console.log('ðŸ” QR Generation Check - jadwalId:', jadwalId, 'id:', id)
         try {
-          if (jadwalId) {
+          if (jadwalId && !signing.asesorHasSigned) {
             console.log('Generating QR for IA05...', { id, jadwalId })
             await kegiatanService.generateQRIa05(id, jadwalId)
             console.log('âœ… QR IA05 successfully generated!')

@@ -567,20 +567,9 @@ export default function Ak02Page() {
                   navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
                   return
                 }
-                // If user already signed → navigate to next page
-                if (signing.allSigned || (isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned)) {
-                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
-                  const nextStep = asesmenSteps[currentStepIndex + 1]
-                  if (nextStep) {
-                    const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                    navigate(nextPath)
-                  } else {
-                    navigate(`/asesi/asesmen/${id}/selesai`)
-                  }
-                  return
-                }
+                const alreadySigned = isAsesor ? signing.asesorHasSigned : signing.asesiHasSigned
 
-                if (!signing.agreedChecklist) {
+                if (!alreadySigned && !signing.agreedChecklist) {
                   showWarning('Silakan centang pernyataan terlebih dahulu')
                   return
                 }
@@ -644,9 +633,20 @@ export default function Ak02Page() {
                       if (result.data.komentar !== undefined) setKomentar(result.data.komentar)
                     }
 
-                    // Generate QR via hook
-                    await signing.generateQR()
+                    // Generate QR via hook (skip kalau sudah signed)
+                    if (!alreadySigned) {
+                      await signing.generateQR()
+                    }
                     signing.publishUpdate()
+                    if (alreadySigned) {
+                      const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ak02'))
+                      const nextStep = asesmenSteps[currentStepIndex + 1]
+                      if (nextStep) {
+                        navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+                      } else {
+                        navigate(`/asesi/asesmen/${id}/selesai`)
+                      }
+                    }
                   } else {
                     const msg = await extractApiError(response, 'Gagal menyimpan data. Silakan coba lagi.')
                     showError(msg)
