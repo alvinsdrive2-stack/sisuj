@@ -2340,43 +2340,7 @@ export default function Apl02Page() {
       console.warn('[APL02-DEBUG] subunitBarcodes:', JSON.stringify(subunitBarcodes, null, 2))
     }
 
-<<<<<<< HEAD
-    // Asesi hanya boleh menyimpan jika belum ada asesor yang menandatangani.
-    // Kalau salah satu asesor udah ttd, asesi ga bisa ubah/post ulang jawaban.
-    // Tapi asesi masih boleh TTD (post QR) kalau dia sendiri belum pernah ttd.
-    if (!isAsesor && anyAsesorSigned) {
-      if (!asesiHasSigned) {
-        const finalIdIzin = _idIzin || idIzin
-        if (!finalIdIzin) {
-          showWarning("ID Izin tidak ditemukan")
-          return
-        }
-        setIsSaving(true)
-        try {
-          const qrOk = await signing.generateQR()
-          if (qrOk) {
-            showSuccess('APL 02 berhasil ditandatangani!')
-            signing.publishUpdate()
-            if (!saveOnly) {
-              setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
-            }
-          } else {
-            showWarning("Gagal membuat tanda tangan digital. Silakan coba lagi.")
-          }
-        } catch (error) {
-          showError(extractErrorMessage(error, 'Gagal menandatangani dokumen'))
-        } finally {
-          setIsSaving(false)
-        }
-        return
-      }
-      showWarning("Dokumen sudah ditandatangani asesor, Anda tidak dapat menyimpan perubahan lagi.")
-      return
-    }
-
-    // Jika asesor sudah ttd → tetap POST metode + jawaban, skip QR (skip untuk tahap 0)
-=======
-    // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
+// Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
@@ -2384,7 +2348,6 @@ export default function Apl02Page() {
       }
       return
     }
->>>>>>> 055e0cb5d855f202864ef328f10da77b0fb1113e
 
     // Jika asesor, POST metode lalu generate QR
     if (isAsesor) {
