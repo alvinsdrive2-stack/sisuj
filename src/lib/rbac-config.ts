@@ -13,7 +13,8 @@ import {
   ClipboardList,
   Award,
   Eye,
-  History
+  History,
+  FilePenLine
 } from "lucide-react"
 
 // Role Types
@@ -153,6 +154,11 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         title: "Dashboard",
         path: "/admin-lsp/dashboard",
         icon: LayoutDashboard
+      },
+      {
+        title: "Revisi MUK",
+        path: "/admin-lsp/revisi-muk",
+        icon: FilePenLine
       },
       {
         title: "Laporan Sertifikasi",

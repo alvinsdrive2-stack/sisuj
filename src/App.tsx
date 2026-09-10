@@ -44,6 +44,9 @@ const AttendancePage = lazy(() => import('./pages/AttendancePage'))
 const DashboardAdminLSP = lazy(() => import('./pages/admin-lsp/DashboardAdminLSP'))
 const PreviewIndexPage = lazy(() => import('./pages/admin-lsp/PreviewIndexPage'))
 const PreviewDetailPage = lazy(() => import('./pages/admin-lsp/PreviewDetailPage'))
+const RevisiMukListPage = lazy(() => import('./pages/admin-lsp/revisi-muk/RevisiMukListPage'))
+const RevisiMukDetailPage = lazy(() => import('./pages/admin-lsp/revisi-muk/RevisiMukDetailPage'))
+const RevisiMukEditorPage = lazy(() => import('./pages/admin-lsp/revisi-muk/RevisiMukEditorPage'))
 
 // Direktur Pages
 const TandatanganDirektur = lazy(() => import('./pages/direktur/TandatanganDirektur'))
@@ -174,6 +177,9 @@ function App() {
                       <Route path="settings" element={<div className="p-4"><h2 className="text-xl font-bold">Pengaturan</h2><p className="text-slate-600">Coming soon...</p></div>} />
                       <Route path="preview" element={<PreviewIndexPage />} />
                       <Route path="preview/:idJabatan/:docType" element={<PreviewDetailPage />} />
+                      <Route path="revisi-muk" element={<RevisiMukListPage />} />
+                      <Route path="revisi-muk/:idIzin" element={<RevisiMukDetailPage />} />
+                      <Route path="revisi-muk/:idIzin/:doc" element={<RevisiMukEditorPage />} />
                       <Route path="" element={<Navigate to="dashboard" replace />} />
                     </Routes>
                   </DashboardLayout>
