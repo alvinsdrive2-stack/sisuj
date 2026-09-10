@@ -2341,7 +2341,7 @@ export default function Apl02Page() {
       console.warn('[APL02-DEBUG] subunitBarcodes:', JSON.stringify(subunitBarcodes, null, 2))
     }
 
-    // Jika asesor sudah ttd ? redirect ke halaman berikutnya (skip untuk tahap 0)
+    // Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
     if (tahap !== 0 && isAsesor && asesorHasSigned) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {

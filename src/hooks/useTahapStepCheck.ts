@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { API_BASE_URL } from "@/config/api"
+import { getAk01Status } from "@/lib/ak01-check"
 
 interface StepDef {
   stepKey: string
@@ -25,8 +26,6 @@ interface UseTahapStepCheckOptions {
   metode?: string
   /** inject IA.06 after IA.05 when skema uses soal paket */
   isPaket?: boolean
-  /** jumlah asesor kegiatan — untuk cek kelengkapan TTD AK01 */
-  asesorCount?: number
 }
 
 interface UseTahapStepCheckReturn {
@@ -112,7 +111,6 @@ export function useTahapStepCheck({
   jenjang,
   metode,
   isPaket,
-  asesorCount,
 }: UseTahapStepCheckOptions): UseTahapStepCheckReturn {
   const navigate = useNavigate()
   const [redirectStep, setRedirectStep] = useState<StepCheck | null>(null)
@@ -142,23 +140,22 @@ export function useTahapStepCheck({
     // Fire all step checks in parallel
     const results = await Promise.allSettled(
       steps.map(async (step) => {
+        // AK01: cek kelengkapan TTD per-asesi (asesi + asesor 1 + asesor 2 kalau
+        // data-dokumen asesi ini menunjuk asesor 2) — bukan dari jumlah asesor global
+        if (step.stepKey === 'ak01') {
+          const status = await getAk01Status(resolvedId)
+          return { step, filled: status.filled }
+        }
+
         // AK.01 API endpoint ada di /praasesmen/, bukan /asesmen/
         const apiPath = tahap === 1
           ? `/praasesmen/${idIzin}/${step.stepKey}`
-          : step.stepKey === 'ak01'
-            ? `/praasesmen/${resolvedId}/ak01`
-            : `/asesmen/${resolvedId}/${step.stepKey}`
+          : `/asesmen/${resolvedId}/${step.stepKey}`
 
         const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
         if (!res.ok) return { step, filled: false }
         const json = await res.json()
-        let filled = hasBarcode(json.data)
-        // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
-        if (step.stepKey === 'ak01') {
-          const b = json.data?.barcodes
-          filled = !!b?.asesi?.url && !!b?.asesor1?.url && (asesorCount && asesorCount >= 2 ? !!b?.asesor2?.url : true)
-        }
-        return { step, filled }
+        return { step, filled: hasBarcode(json.data) }
       })
     )
 
@@ -181,7 +178,7 @@ export function useTahapStepCheck({
     setRedirectStep(null)
     setIsLoading(false)
     setChecked(true)
-  }, [tahap, idIzin, replaceId, jenjang, metode, isPaket, asesorCount])
+  }, [tahap, idIzin, replaceId, jenjang, metode, isPaket])
 
   useEffect(() => {
     runCheck()
