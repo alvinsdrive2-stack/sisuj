@@ -491,7 +491,11 @@ export default function FrAk07Page() {
       // Generate QR jika jadwalId tersedia (skip untuk tahap 0 / sudah ttd)
       console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
       if (tahap !== 0 && jadwalId && !alreadySigned) {
-        await signing.generateQR()
+        const ok = await signing.generateQR()
+        if (!ok) {
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
+        }
       }
 
       showSuccess('FR AK 07 berhasil disimpan!')

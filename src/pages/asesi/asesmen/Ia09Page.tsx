@@ -205,7 +205,11 @@ export default function Ia09Page() {
 
       if (response.ok) {
         if (!skipQr) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
         }
         signing.publishUpdate()
       }

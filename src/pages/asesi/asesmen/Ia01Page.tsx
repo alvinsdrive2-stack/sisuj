@@ -771,7 +771,11 @@ export default function Ia01Page() {
                     showSuccess('IA 01 berhasil disimpan!')
 
                     if (!signing.allSigned) {
-                      await signing.generateQR()
+                      const ok = await signing.generateQR()
+                      if (!ok) {
+                        showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+                        return
+                      }
                     } else {
                       // Sudah ttd: jawaban tetap ter-POST, langsung lanjut tanpa QR
                       const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia01'))

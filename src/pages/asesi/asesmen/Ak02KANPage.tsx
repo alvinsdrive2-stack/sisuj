@@ -283,7 +283,11 @@ export default function Ak02KANPage() {
       }
 
       if (!skipQr) {
-        await signing.generateQR()
+        const ok = await signing.generateQR()
+        if (!ok) {
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
+        }
       }
       signing.publishUpdate()
       showSuccess('AK.02 berhasil disimpan!')

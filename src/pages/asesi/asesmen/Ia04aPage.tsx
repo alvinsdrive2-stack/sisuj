@@ -275,7 +275,11 @@ export default function Ia04aPage() {
         }
 
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
           publishUpdate()
 
           showSuccess('IA 04.A berhasil disimpan!')
@@ -317,7 +321,11 @@ export default function Ia04aPage() {
         }
 
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
           publishUpdate()
 
           showSuccess('IA 04.A berhasil disimpan!')
@@ -336,7 +344,11 @@ export default function Ia04aPage() {
         }
 
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
           publishUpdate()
 
           showSuccess('IA 04.A berhasil disimpan!')
@@ -350,7 +362,11 @@ export default function Ia04aPage() {
       // Asesi: generate QR jika belum ada
       if (!isAsesor) {
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
           publishUpdate()
 
           showSuccess('IA 04.A berhasil disimpan!')

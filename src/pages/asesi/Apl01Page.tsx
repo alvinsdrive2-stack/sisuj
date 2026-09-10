@@ -352,13 +352,19 @@ export default function Apl01Page() {
 
         // Generate QR for UUID flow
         try {
-          await apiFetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
+          const qrRes = await apiFetch(`${API_BASE_URL}/qr/${targetIdIzin}/apl01`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_jadwal: jadwalId ?? "" }),
           })
+          if (!qrRes.ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
         } catch (qrErr) {
           console.error('Error generating QR APL01:', qrErr)
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
         }
 
         showSuccess('APL 01 berhasil ditandatangani!')
@@ -418,7 +424,11 @@ export default function Apl01Page() {
 
       // Generate QR setelah data tersimpan (skip untuk tahap 0)
       if (tahap !== 0 && !barcodes?.asesi?.url && jadwalId) {
-        await signing.generateQR()
+        const ok = await signing.generateQR()
+        if (!ok) {
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
+        }
       }
       showSuccess('APL 01 berhasil disimpan!')
       signing.publishUpdate()

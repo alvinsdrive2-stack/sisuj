@@ -151,7 +151,13 @@ export default function Ia05KANPage() {
         showError(msg); setIsSaving(false); return
       }
 
-      if (!skipQr) await signing.generateQR()
+      if (!skipQr) {
+        const ok = await signing.generateQR()
+        if (!ok) {
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
+        }
+      }
       signing.publishUpdate()
       showSuccess('IA.05 berhasil disimpan!')
     } catch (e) {

@@ -71,6 +71,8 @@ interface UseDataDokumenPraAsesmenResult {
   tanggalManajer: string | null
   barcodeManajer: string | null
   jadwalId: string | null
+  idAsesor2: number | null
+  fetchFailed: boolean
   isLoading: boolean
   error: string | null
 }
@@ -133,6 +135,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [idAsesor2, setIdAsesor2] = useState<number | null>(null)
+  const [fetchFailed, setFetchFailed] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -144,6 +148,7 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
       }
 
       setIsLoading(true)
+      setFetchFailed(false)
       try {
         const response = await apiFetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
           signal: controller.signal,
@@ -170,6 +175,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
                 noreg: result.data.noreg_asesor_2 || '',
               })
             }
+
+            setIdAsesor2(result.data.id_asesor_2 || null)
 
             // Combine asesor names for backward compatibility
             const namaAsesor = asesorList.map(a => a.nama).join(', ')
@@ -203,11 +210,13 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
           }
         } else {
           console.warn(`Data Dokumen PraAsesmen API returned ${response.status}`)
+          setFetchFailed(true)
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
         console.error("Error fetching data dokumen praasesmen:", err)
         setError(err instanceof Error ? err.message : "Unknown error")
+        setFetchFailed(true)
       } finally {
         setIsLoading(false)
       }
@@ -219,6 +228,8 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
 
   return {
     ...data,
+    idAsesor2,
+    fetchFailed,
     isLoading,
     error,
   }

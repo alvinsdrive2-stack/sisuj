@@ -150,7 +150,13 @@ export default function Ia04bKANPage() {
         }
       }
 
-      if (!skipQr) await signing.generateQR()
+      if (!skipQr) {
+        const ok = await signing.generateQR()
+        if (!ok) {
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
+        }
+      }
       signing.publishUpdate()
       showSuccess('IA.04.B berhasil disimpan!')
     } catch (e) {

@@ -259,7 +259,11 @@ export default function Ak03Page() {
 
         // Generate QR via hook (skip kalau sudah signed)
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
         }
         signing.publishUpdate()
 

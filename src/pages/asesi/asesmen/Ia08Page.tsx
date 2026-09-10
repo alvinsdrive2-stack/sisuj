@@ -302,7 +302,11 @@ export default function Ia08Page() {
       if (response.ok) {
         showSuccess('IA 08 berhasil disimpan!')
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
         }
         signing.publishUpdate()
         if (alreadySigned && !isAsesor) {

@@ -40,6 +40,8 @@ export interface SigningStateInput {
   testingMode?: boolean
   /** Jenis kelas kegiatan. '2' = Daring (multi-signer). Lainnya = single signer, cukup TTD user yang login lalu lanjut. */
   jenisKelas?: string
+  /** Eksplisit: asesor 2 ada/tidak (dari data jadwal). null/undefined → fallback ke asesorList.length >= 2; /ttd-status tetap jadi sumber kebenaran. */
+  hasAsesor2?: boolean | null
 }
 
 export interface SigningState {
@@ -66,6 +68,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     asesorList, userId, userNoreg, userName, isSaving = false,
     idIzin, jadwalId, nextPageName: nextPageNameOverride, onRefresh,
     isUuidFlow = false, testingMode = false, jenisKelas,
+    hasAsesor2: hasAsesor2Input,
   } = input
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
@@ -76,6 +79,31 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const nextPageName = nextPageNameOverride ?? config.nextPageName
   const lanjutText = nextPageName ? `Lanjut ke ${nextPageName}` : 'Lanjut'
+
+  // ── Status ttd dari server: sumber kebenaran ada/tidaknya asesor 2 ──
+  // Sekali per mount; gagal → diam (fallback ke input.hasAsesor2 / panjang asesorList).
+  const [statusHasAsesor2, setStatusHasAsesor2] = useState<boolean | null>(null)
+  useEffect(() => {
+    if (!idIzin || isUuidFlow || singleSigner) return
+    let alive = true
+    ;(async () => {
+      try {
+        const res = await apiFetch(`${API_BASE_URL}/ttd-status/${idIzin}`)
+        if (!res.ok || !alive) return
+        const json = await res.json()
+        const has2 = json?.data?.has_asesor_2
+        if (alive && typeof has2 === 'boolean') setStatusHasAsesor2(has2)
+      } catch { /* fallback ke input */ }
+    })()
+    return () => { alive = false }
+  }, [idIzin, isUuidFlow, singleSigner])
+
+  // Asesor 2 wajib? Prioritas: status server > input eksplisit > panjang asesorList.
+  const asesor2Required = useMemo(() => {
+    if (tahap === 0 || singleSigner || isUuidFlow) return false
+    const explicit = statusHasAsesor2 ?? hasAsesor2Input
+    return explicit ?? asesorList.length >= 2
+  }, [tahap, singleSigner, isUuidFlow, statusHasAsesor2, hasAsesor2Input, asesorList])
 
   // ── Ably realtime ──
   const channelName = idIzin ? `signing.${idIzin}.${pageKey}` : ''
@@ -162,9 +190,9 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (isUuidFlow) return true
     if (asesorList.length === 0) return false
     if (!barcodes?.asesor1?.url) return false
-    if (asesorList.length >= 2 && !barcodes?.asesor2?.url) return false
+    if (asesor2Required && !barcodes?.asesor2?.url) return false
     return true
-  }, [tahap, singleSigner, isUuidFlow, asesorList, barcodes])
+  }, [tahap, singleSigner, isUuidFlow, asesorList, barcodes, asesor2Required])
 
   const allSigned = useMemo(() => {
     if (order === 'asesi_only') return asesiHasSigned
@@ -178,10 +206,10 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (isUuidFlow) return []
     const labels: string[] = []
     if (!barcodes?.asesor1?.url) labels.push('Asesor 1')
-    if (asesorList.length >= 2 && !barcodes?.asesor2?.url) labels.push('Asesor 2')
+    if (asesor2Required && !barcodes?.asesor2?.url) labels.push('Asesor 2')
     if (!asesiHasSigned) labels.push('Asesi')
     return labels
-  }, [tahap, isUuidFlow, singleSigner, barcodes, asesorList])
+  }, [tahap, isUuidFlow, singleSigner, barcodes, asesiHasSigned, asesor2Required])
 
   useEffect(() => {
     if (allSigned) setAgreedChecklist(true)
@@ -294,7 +322,13 @@ export function useSigningState(input: SigningStateInput): SigningState {
           buttonDisabled: true,
         }
       }
-      if (asesorHasSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+      if (asesorHasSigned) {
+        if (testingMode || allAsesorSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+        return {
+          buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
+          buttonDisabled: true,
+        }
+      }
       return {
         buttonText: 'Simpan & Tanda Tangan',
         buttonDisabled: isSaving || !agreedChecklist,

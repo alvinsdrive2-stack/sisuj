@@ -258,7 +258,11 @@ export default function Ak06Page() {
   // Shared flow after save: generate QR, then absen akhir or navigate next
   const continueAfterSave = useCallback(async () => {
     if (isAsesor) {
-      await signing.generateQR()
+      const ok = await signing.generateQR()
+      if (!ok) {
+        showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+        return
+      }
       signing.publishUpdate()
     }
 

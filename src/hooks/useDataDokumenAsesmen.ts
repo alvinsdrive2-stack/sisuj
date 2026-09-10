@@ -66,6 +66,7 @@ interface UseDataDokumenAsesmenResult {
   noregPenyusun: string | null
   noregValidator: string | null
   jadwalId: string | null
+  fetchFailed: boolean
   isLoading: boolean
   error: string | null
 }
@@ -126,6 +127,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
   })
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fetchFailed, setFetchFailed] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -137,6 +139,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
       }
 
       setIsLoading(true)
+      setFetchFailed(false)
       try {
         const token = localStorage.getItem("access_token")
         const response = await fetch(`${API_BASE_URL}/asesmen/${idIzin}/data-dokumen`, {
@@ -200,11 +203,13 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
           }
         } else {
           console.warn(`Data Dokumen Asesmen API returned ${response.status}`)
+          setFetchFailed(true)
         }
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return
         console.error("Error fetching data dokumen asesmen:", err)
         setError(err instanceof Error ? err.message : "Unknown error")
+        setFetchFailed(true)
       } finally {
         setIsLoading(false)
       }
@@ -216,6 +221,7 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
 
   return {
     ...data,
+    fetchFailed,
     isLoading,
     error,
   }

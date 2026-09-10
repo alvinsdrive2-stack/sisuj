@@ -64,7 +64,7 @@ export default function Mapa02Page() {
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
   const { jabatanKerja, nomorSkema, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, asesorList, tahap, jadwalId, metode, jenjang, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
-  const { showSuccess, showWarning } = useToast()
+  const { showSuccess, showWarning, showError } = useToast()
   const [mapaData, setMapaData] = useState<Mapa02Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
   const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
@@ -226,6 +226,8 @@ export default function Mapa02Page() {
             showSuccess('Dokumen berhasil ditandatangani!')
             return
           }
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
         }
       }
 

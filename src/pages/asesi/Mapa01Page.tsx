@@ -262,6 +262,8 @@ export default function Mapa01Page() {
             showSuccess('Dokumen berhasil ditandatangani!')
             return
           }
+          showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+          return
         }
       }
 

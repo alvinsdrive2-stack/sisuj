@@ -143,7 +143,7 @@ export default function Ia02Page() {
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, tanggalUji, jadwalId, metode, jenisKelas, isPaket } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
-  const { showSuccess, showWarning } = useToast()
+  const { showSuccess, showWarning, showError } = useToast()
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
 
   // Get dynamic steps
@@ -259,7 +259,12 @@ export default function Ia02Page() {
 
     setIsSaving(true)
 
-    await signing.generateQR()
+    const ok = await signing.generateQR()
+    if (!ok) {
+      showError('Tanda tangan digital gagal disimpan. Periksa koneksi/sesi Anda, lalu coba lagi.')
+      setIsSaving(false)
+      return
+    }
 
     showSuccess('IA.02 berhasil disimpan!')
     setIsSaving(false)

@@ -14,6 +14,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
+import { useToast } from "@/contexts/ToastContext"
 import { API_BASE_URL } from "@/config/api"
 
 interface ReferensiItem {
@@ -86,6 +87,7 @@ export default function Ia10Page() {
     isPaket,
   } = useDataDokumenAsesmen(id)
   const { kegiatan: _kegiatan, isAsesor } = useKegiatanByRole()
+  const { showError } = useToast()
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, undefined, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorList.length, metode, tahap, isPaket])
@@ -285,7 +287,11 @@ export default function Ia10Page() {
 
       if (response.ok) {
         if (!alreadySigned) {
-          await signing.generateQR()
+          const ok = await signing.generateQR()
+          if (!ok) {
+            showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
+            return
+          }
         }
         signing.publishUpdate()
         if (alreadySigned) {
