@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import React from 'react'
+import { getAk01Status } from "@/lib/ak01-check"
+import { useToast } from "@/contexts/ToastContext"
 
 interface Step {
   number: number
@@ -17,6 +19,7 @@ interface ModularStepIndicatorProps {
 
 const ModularStepIndicator = React.memo(function ModularStepIndicator({ currentStep, steps, id, disableClick, title = 'Progress' }: ModularStepIndicatorProps) {
   const navigate = useNavigate()
+  const { showWarning } = useToast()
 
   // Get the class name for the step circle based on status
   const getStepCircleClassName = (status: string) => {
@@ -70,9 +73,21 @@ const ModularStepIndicator = React.memo(function ModularStepIndicator({ currentS
     }
   }
 
-  const handleStepClick = (step: Step) => {
+  const handleStepClick = async (step: Step) => {
     const href = getHref(step.href)
-    if (href) navigate(href)
+    if (!href) return
+    // Guard AK01: asesor tidak boleh lompat ke step asesmen lain kalau TTD
+    // FR.AK.01 belum lengkap. Fail-open: fetch error / flow tanpa AK01 (KAN/MUK)
+    // → check dilewati, navigasi jalan normal.
+    if (id && href.includes('/asesi/asesmen/')) {
+      const status = await getAk01Status(id)
+      if (!status.filled) {
+        showWarning(`FR.AK.01 (Persetujuan Asesmen) belum ditandatangani lengkap: ${status.missing.join(', ')}`)
+        navigate(`/asesi/perjanjian/${id}/ak01`)
+        return
+      }
+    }
+    navigate(href)
   }
 
   return (

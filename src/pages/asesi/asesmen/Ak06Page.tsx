@@ -308,6 +308,18 @@ export default function Ak06Page() {
       return
     }
 
+    // Validasi: semua centang kesesuaian asesmen wajib terisi.
+    // Kolom Fleksibel pada baris "Keputusan asesmen" & "Umpan balik asesmen"
+    // memang dihitamkan (tidak bisa dicentang) → dikecualikan.
+    const fleksibelDihitamkan = (nama: string) => nama.includes('Keputusan asesmen') || nama.includes('Umpan balik asesmen')
+    const aspekBelumLengkap = aspekItems.filter(item =>
+      !item.validitas || !item.reliabel || !item.adil || (!fleksibelDihitamkan(item.nama) && !item.fleksibel)
+    )
+    if (aspekBelumLengkap.length > 0) {
+      showWarning(`Silakan lengkapi semua centang kesesuaian asesmen: ${aspekBelumLengkap.map(item => item.nama).join(', ')}`)
+      return
+    }
+
     setIsSaving(true)
     try {
       const token = localStorage.getItem("access_token")

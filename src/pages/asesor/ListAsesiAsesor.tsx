@@ -10,6 +10,7 @@ import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { useEffect, useState, useRef } from "react"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
+import { getAk01Status } from "@/lib/ak01-check"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgress"
@@ -461,22 +462,21 @@ export default function ListAsesiAsesor() {
                         const headers = { "Accept": "application/json", "Authorization": `Bearer ${token}` }
                         for (const step of tahap2Steps) {
                           try {
-                            // AK.01 API endpoint ada di /praasesmen/, bukan /asesmen/
-                            const apiPath = step.key === 'ak01'
-                              ? `/praasesmen/${asesi.id_izin}/ak01`
-                              : `/asesmen/${asesi.id_izin}/${step.key}`
-                            const res = await fetch(`${API_BASE_URL}${apiPath}`, { headers })
+                            if (step.key === 'ak01') {
+                              // Cek kelengkapan TTD AK01 per-asesi (asesi + asesor 1 + asesor 2
+                              // kalau data-dokumen asesi ini menunjuk asesor 2)
+                              const ak01Status = await getAk01Status(asesi.id_izin)
+                              if (!ak01Status.filled) {
+                                navigate(step.path, { state: { fromInternal: true } })
+                                return
+                              }
+                              continue
+                            }
+                            const res = await fetch(`${API_BASE_URL}/asesmen/${asesi.id_izin}/${step.key}`, { headers })
                             if (!res.ok) continue
                             const json = await res.json()
-                            let filled: boolean
-                            if (step.key === 'ak01') {
-                              // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
-                              const b = json.data?.barcodes
-                              filled = !!b?.asesi?.url && !!b?.asesor1?.url && (kegiatan?.asesor2 ? !!b?.asesor2?.url : true)
-                            } else {
-                              filled = json.data?.barcodes?.asesi?.url ||
-                                json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
-                            }
+                            const filled = json.data?.barcodes?.asesi?.url ||
+                              json.data?.units?.some?.((u: any) => u.subunits?.some?.((s: any) => !!s.barcodes?.asesi?.url))
                             if (!filled) {
                               navigate(step.path, { state: { fromInternal: true } })
                               return

@@ -16,6 +16,7 @@ import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgre
 import { RealtimeStatusBanner } from "@/components/RealtimeStatusBanner"
 import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
+import { getAk01Status } from "@/lib/ak01-check"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
 
 interface CountdownTime {
@@ -337,15 +338,10 @@ export default function AsesiPage() {
           })
 
           if (step.key === 'ak01') {
-            if (!res.ok) {
-              navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
-              return
-            }
-            const json = await res.json()
-            // AK01 wajib TTD semua pihak: asesi + asesor 1 + asesor 2 (kalau ada)
-            const b = json.data?.barcodes
-            const ak01Filled = !!b?.asesi?.url && !!b?.asesor1?.url && (asesorIds.id_asesor_2 ? !!b?.asesor2?.url : true)
-            if (!ak01Filled) {
+            // Cek kelengkapan TTD per-asesi (wajib asesi + asesor 1 + asesor 2 kalau
+            // data-dokumen asesi ini menunjuk asesor 2) — bukan dari state global.
+            const ak01Status = await getAk01Status(idIzin)
+            if (!ak01Status.filled) {
               navigate(`/asesi${step.path}`, { state: { fromInternal: true } })
               return
             }

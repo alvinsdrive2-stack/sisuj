@@ -70,8 +70,10 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
 
-  // Kelas non-2 (Luring/Hybrid/Onsite) → single signer: cukup TTD user yang sedang login, langsung bisa lanjut.
-  const singleSigner = jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
+  // AK.01 = Persetujuan Asesmen: TTD semua pihak wajib apa pun jenis kelasnya.
+  // Kelas non-2 (Luring/Hybrid/Onsite) tetap single signer untuk halaman lain,
+  // tapi AK.01 selalu butuh asesi + asesor 1 (+ asesor 2 kalau ada).
+  const singleSigner = pageKey !== 'ak01' && jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
   const order: SigningOrder = singleSigner ? (isAsesor ? 'asesor_only' : 'asesi_only') : config.order
 
   const nextPageName = nextPageNameOverride ?? config.nextPageName
