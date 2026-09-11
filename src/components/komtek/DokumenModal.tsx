@@ -4,6 +4,7 @@ import { faFile, faFileText, faChevronLeft, faChevronRight, faEye, faClose, faCh
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { StatusStamp } from "@/components/ui/StatusStamp"
 import { RoleId } from "@/lib/rbac-config"
+import { getDocFileType as getFileType } from "@/lib/doc-file-type"
 import { API_BASE_URL } from "@/config/api"
 
 interface DokumenResponse {
@@ -308,12 +309,6 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  const getFileType = (url: string) => {
-    if (!url) return 'unknown'
-    const extension = url.split('.').pop()?.toLowerCase() || ''
-    return extension
   }
 
   const getPdfUrl = (url: string) => {

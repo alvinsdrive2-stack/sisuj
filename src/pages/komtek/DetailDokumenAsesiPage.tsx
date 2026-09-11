@@ -6,6 +6,7 @@ import DashboardNavbar from "@/components/DashboardNavbar"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
+import { getDocFileType as getFileType } from "@/lib/doc-file-type"
 import { kegiatanService, KegiatanAsesor } from "@/lib/kegiatan-service"
 import { API_BASE_URL } from "@/config/api"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
@@ -33,8 +34,7 @@ interface DokumenItem {
 
 const getFileIcon = (url: string) => {
   if (!url) return faFile
-  const extension = url.split('.').pop()?.toLowerCase() || ''
-  switch (extension) {
+  switch (getFileType(url)) {
     case 'pdf':
       return faFilePdf
     case 'ppt':
@@ -47,12 +47,6 @@ const getFileIcon = (url: string) => {
     default:
       return faFile
   }
-}
-
-const getFileType = (url: string) => {
-  if (!url) return 'unknown'
-  const extension = url.split('.').pop()?.toLowerCase() || ''
-  return extension
 }
 
 const getPdfUrl = (url: string) => {
