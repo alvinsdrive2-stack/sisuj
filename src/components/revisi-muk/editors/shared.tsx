@@ -8,12 +8,19 @@ import { ActionButton } from '@/components/ui/ActionButton'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { InlineLoader } from '@/components/ui/loading-spinner'
 import { getJson, postJson } from '@/lib/revisi-muk-api'
+import type { DokumenHeaderData } from './bnsp'
+
+export type { DokumenHeaderData } from './bnsp'
 
 /** Props wajib semua editor dokumen. */
 export interface MukEditorProps {
   idIzin: string
   /** Dipanggil setelah simpan sukses — editor page memakainya untuk refresh panel PDF. */
   onSaved: () => void
+  /** Identitas dokumen (Skema/TUK/Asesi/Asesor/Tanggal) utk tabel header BNSP. */
+  dokumenHeader?: DokumenHeaderData
+  /** true = render varian KAN (khusus ia04b/ia05/ia06/ak02). */
+  kan?: boolean
 }
 
 /** Fetch GET dokumen (json utuh) + reload. url null = tidak fetch. */

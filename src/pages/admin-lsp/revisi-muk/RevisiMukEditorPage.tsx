@@ -138,12 +138,53 @@ export default function RevisiMukEditorPage() {
     )
   }
 
+  // Identitas dokumen utk tabel header BNSP di editor — pra utk dokumen
+  // pra-asesmen, asesmen utk dokumen asesmen (field kedua hook kompatibel).
+  const dokumenHeader = doc.tahap === 'praasesmen'
+    ? {
+        jabatanKerja: pra.jabatanKerja,
+        nomorSkema: pra.nomorSkema,
+        tuk: pra.tuk,
+        namaAsesi: pra.namaAsesi,
+        asesorList: pra.asesorList,
+        tanggalUji: pra.tanggalUji,
+        tanggalSelesai: pra.tanggalSelesai,
+        metode: pra.metode,
+        namaPenyusun: pra.namaPenyusun,
+        namaValidator: pra.namaValidator,
+        noregPenyusun: pra.noregPenyusun,
+        noregValidator: pra.noregValidator,
+        tanggalPenyusun: pra.tanggalPenyusun,
+        tanggalValidator: pra.tanggalValidator,
+        barcodePenyusun: pra.barcodePenyusun,
+        barcodeValidator: pra.barcodeValidator,
+        jenjang: pra.jenjang,
+      }
+    : {
+        jabatanKerja: ases.jabatanKerja,
+        nomorSkema: ases.nomorSkema,
+        tuk: ases.tuk,
+        namaAsesi: ases.namaAsesi,
+        asesorList: ases.asesorList,
+        tanggalUji: ases.tanggalUji,
+        tanggalSelesai: ases.tanggalSelesai,
+        metode: ases.metode,
+        namaPenyusun: ases.namaPenyusun,
+        namaValidator: ases.namaValidator,
+        noregPenyusun: ases.noregPenyusun,
+        noregValidator: ases.noregValidator,
+        tanggalPenyusun: ases.tanggalPenyusun,
+        tanggalValidator: ases.tanggalValidator,
+        barcodePenyusun: ases.barcodePenyusun,
+        barcodeValidator: ases.barcodeValidator,
+      }
+
   return (
     <div className="space-y-4">
       {header}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
         <div>
-          <Editor idIzin={idIzin} onSaved={onSaved} />
+          <Editor idIzin={idIzin} onSaved={onSaved} dokumenHeader={dokumenHeader} kan={!!docKan} />
         </div>
         <div>
           <PdfPreviewPanel
