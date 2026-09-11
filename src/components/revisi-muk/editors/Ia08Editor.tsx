@@ -1,23 +1,25 @@
 /**
  * Editor Revisi MUK — FR.IA.08 (Validasi Portofolia & Wawancara).
+ * Tampilan = form FR.IA.08 halaman asesi (Ia08Page): identitas, panduan,
+ * tabel dokumen portofolio (aturan bukti), cek list wawancara, bukti tambahan,
+ * rekomendasi asesor, ttd read-only (barcode existing, tanpa generate).
  * file_id WAJIB berasal dari GET (exists:apl2_files) — tidak boleh dikarang;
  * valid/asli/terkini/memadai per file + unit_answers + rekomendasi.
  */
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { BRANDING } from '@/config/branding'
+import { CustomCheckbox } from '@/components/ui/Checkbox'
 import { useToast } from '@/contexts/ToastContext'
 import { asesmenUrl } from '@/lib/revisi-muk-api'
 import {
   DocError,
   DocLoading,
-  FieldRow,
-  KompetenToggle,
   SaveBar,
-  TextField,
   saveDoc,
   useDocFetch,
   type MukEditorProps,
 } from './shared'
+import { Barcodes, DocTitle, fmtTanggalId } from './bnsp'
 
 interface Ia08File {
   id: number
@@ -25,10 +27,10 @@ interface Ia08File {
   path: string
   filetype: string | null
   answer?: {
-    valid: boolean
-    asli: boolean
-    terkini: boolean
-    memadai: boolean
+    valid: boolean | null
+    asli: boolean | null
+    terkini: boolean | null
+    memadai: boolean | null
   }
 }
 interface WawancaraItem {
@@ -59,24 +61,17 @@ interface Ia08Response {
       rekomendasi_kuk?: string
     }
     dokumen?: { id: number }
+    barcodes?: Barcodes
   }
 }
 
-const KRITERIA = ['valid', 'asli', 'terkini', 'memadai'] as const
-type Kriteria = (typeof KRITERIA)[number]
-const KRITERIA_LABEL: Record<Kriteria, string> = {
-  valid: 'Valid',
-  asli: 'Asli',
-  terkini: 'Terkini',
-  memadai: 'Memadai',
-}
-
-export function Ia08Editor({ idIzin, onSaved }: MukEditorProps) {
+export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
   const toast = useToast()
   const { data, isLoading, error, reload } = useDocFetch<Ia08Response>(asesmenUrl(idIzin, 'ia08'))
 
   const [files, setFiles] = useState<Ia08File[]>([])
   const [wawancara, setWawancara] = useState<WawancaraItem[]>([])
+  const [barcodes, setBarcodes] = useState<Barcodes | undefined>(undefined)
   const [dokumenId, setDokumenId] = useState<number | null>(null)
   const [buktiTambahan, setBuktiTambahan] = useState('')
   const [isKompeten, setIsKompeten] = useState<boolean | null>(null)
@@ -108,6 +103,8 @@ export function Ia08Editor({ idIzin, onSaved }: MukEditorProps) {
     }
     if (inner.dokumen?.id) setDokumenId(inner.dokumen.id)
 
+    if (inner.barcodes) setBarcodes(inner.barcodes)
+
     if (inner.recommendation) {
       const rec = inner.recommendation
       if (rec.bukti_tambahan) setBuktiTambahan(rec.bukti_tambahan)
@@ -118,24 +115,21 @@ export function Ia08Editor({ idIzin, onSaved }: MukEditorProps) {
     }
   }, [data])
 
-  const setFileKriteria = (fileId: number, k: Kriteria, v: boolean) =>
+  // Klik nilai sama = kosongkan (handleFileCheck Ia08Page).
+  const setFileKriteria = (fileId: number, field: 'valid' | 'asli' | 'terkini' | 'memadai', value: boolean) => {
+    if (isSaving) return
     setFiles((prev) =>
-      prev.map((f) =>
-        f.id === fileId
-          ? {
-              ...f,
-              answer: {
-                valid: false,
-                asli: false,
-                terkini: false,
-                memadai: false,
-                ...f.answer,
-                [k]: v,
-              },
-            }
-          : f
-      )
+      prev.map((f) => {
+        if (f.id !== fileId) return f
+        const current = f.answer?.[field]
+        const newVal = current === value ? null : value
+        return {
+          ...f,
+          answer: { ...(f.answer || { valid: null, asli: null, terkini: null, memadai: null }), [field]: newVal },
+        }
+      })
     )
+  }
 
   const handleSave = async () => {
     if (isKompeten === null) {
@@ -177,109 +171,384 @@ export function Ia08Editor({ idIzin, onSaved }: MukEditorProps) {
   if (files.length === 0 && wawancara.length === 0)
     return <DocError message="Data FR.IA.08 tidak ditemukan." onRetry={reload} />
 
+  const header = dokumenHeader
+  const asesorList = header?.asesorList ?? []
+  const inputStyle = {
+    width: '100%',
+    border: '1px solid #ccc',
+    padding: '4px',
+    fontSize: '12px',
+    cursor: isSaving ? 'not-allowed' : 'text',
+  } as const
+
   return (
-    <div className="space-y-4">
-      {files.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-bold text-slate-800 mb-3">
-              Validasi Bukti Portofolio ({files.length} file)
-            </h3>
-            <div className="space-y-3">
-              {files.map((f) => (
-                <div
-                  key={f.id}
-                  className="rounded-lg border border-slate-100 bg-slate-50/60 p-3"
-                >
-                  <div className="text-sm font-medium text-slate-800 mb-2 break-all">
-                    {f.original_name}
+    <div style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <DocTitle>FR.IA.08. CEKLIS VERIFIKASI PORTOFOLIO</DocTitle>
+
+      {/* Identitas Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr>
+            <td style={{ width: '30%', border: '1px solid #000', padding: '6px' }}>
+              Skema Sertifikasi<br /><span style={{ fontSize: '12px' }}>(KKNI/Okupasi/Klaster)</span>
+            </td>
+            <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{header?.jabatanKerja || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>Judul</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{header?.nomorSkema || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>TUK</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{header?.tuk || '-'}</td>
+          </tr>
+          {asesorList.length > 1 ? (
+            <>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor 1</td>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}</td>
+              </tr>
+              <tr>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor 2</td>
+                <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[1]?.nama?.toUpperCase() || ''}{asesorList[1]?.noreg && ` (${asesorList[1].noreg})`}</td>
+              </tr>
+            </>
+          ) : (
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}</td>
+            </tr>
+          )}
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>Nama Asesi</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textTransform: 'uppercase' }}>{header?.namaAsesi?.toUpperCase() || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>{fmtTanggalId(header?.tanggalUji) || '-'}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style={{ fontSize: '12px', marginBottom: '15px' }}>*Coret yang tidak perlu</div>
+
+      {/* Panduan Bagi Asesor */}
+      <div style={{ marginBottom: '15px', border: '2px solid #000', background: '#fff' }}>
+        <div style={{ background: BRANDING.primaryColor, color: '#fff', padding: '6px', fontWeight: 'bold', fontSize: '13px' }}>
+          PANDUAN BAGI ASESOR
+        </div>
+        <div style={{ padding: '10px', fontSize: '12px' }}>
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            <li>Verifikasi portofolio dapat dilakukan untuk keseluruhan unit kompetensi dalam skema sertifikasi atau dilakukan untuk masing-masing kelompok pekerjaan dalam satu skema sertifikasi.</li>
+            <li>Isilah bukti portofolio sesuai ketentuan bukti berkualitas dan relevan dengan standar kompetensi kerja.</li>
+            <li>Lakukan verifikasi portofolio berdasarkan aturan bukti.</li>
+            <li>Berikan hasil verifikasi portofolio dengan memberi centang (√).</li>
+            <li>Jika belum memenuhi aturan bukti maka lanjutkan wawancara.</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Dokumen Portofolio Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <td rowSpan={3} style={{ border: '1px solid #000', padding: '6px' }}>Dokumen Portofolio</td>
+            <td colSpan={8} style={{ border: '1px solid #000', padding: '6px' }}>Aturan Bukti</td>
+          </tr>
+          <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Valid</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Asli</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Terkini</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Memadai</td>
+          </tr>
+          <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Ya</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '8%' }}>Tidak</td>
+          </tr>
+          {files.map((file) => (
+            <tr key={file.id}>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>
+                <a href={file.path} target="_blank" rel="noopener noreferrer" style={{ color: '#0066cc', fontWeight: 'bold', textDecoration: 'underline' }}>{file.original_name}</a>
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.valid === true} onChange={() => setFileKriteria(file.id, 'valid', true)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.valid === false} onChange={() => setFileKriteria(file.id, 'valid', false)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.asli === true} onChange={() => setFileKriteria(file.id, 'asli', true)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.asli === false} onChange={() => setFileKriteria(file.id, 'asli', false)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.terkini === true} onChange={() => setFileKriteria(file.id, 'terkini', true)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.terkini === false} onChange={() => setFileKriteria(file.id, 'terkini', false)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.memadai === true} onChange={() => setFileKriteria(file.id, 'memadai', true)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox checked={file.answer?.memadai === false} onChange={() => setFileKriteria(file.id, 'memadai', false)} disabled={isSaving} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Cek List Wawancara Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '12px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '5%' }}>Cek List</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '25%' }}>No. Unit Kompetensi</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '10%' }}>No. Elemen</td>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>Materi/Substansi Wawancara</td>
+          </tr>
+          {wawancara.map((item) => (
+            <tr key={item.id}>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                <CustomCheckbox
+                  checked={item.checked}
+                  onChange={() =>
+                    !isSaving &&
+                    setWawancara((prev) =>
+                      prev.map((it) => (it.id === item.id ? { ...it, checked: !it.checked } : it))
+                    )
+                  }
+                  disabled={isSaving}
+                />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{item.unit_kompetensi}</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{item.no_elemen}</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{item.materi}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {/* Bukti Tambahan */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}><b>Bukti tambahan diperlukan pada unit / elemen kompetensi</b></td>
+          </tr>
+          <tr>
+            <td style={{ height: '80px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+              <b>Sebagai berikut :</b>
+              <textarea
+                value={buktiTambahan}
+                onChange={(e) => setBuktiTambahan(e.target.value)}
+                disabled={isSaving}
+                style={{
+                  width: '100%',
+                  minHeight: '50px',
+                  border: '1px solid #ccc',
+                  padding: '6px',
+                  fontSize: '12px',
+                  resize: 'vertical',
+                  cursor: isSaving ? 'not-allowed' : 'text',
+                  marginTop: '6px',
+                }}
+                placeholder="Isi bukti tambahan..."
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Rekomendasi */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr>
+            <td style={{ background: BRANDING.primaryColor, color: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>Rekomendasi Asesor</td>
+            <td style={{ border: '1px solid #000', padding: '6px', width: '80%' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+                <CustomCheckbox
+                  checked={isKompeten === true}
+                  onChange={() => setIsKompeten(isKompeten === true ? null : true)}
+                  disabled={isSaving}
+                  style={{ marginTop: '2px' }}
+                />
+                <span style={{ fontSize: '12px' }}>Asesi telah memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan <b>KOMPETEN</b></span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
+                <CustomCheckbox
+                  checked={isKompeten === false}
+                  onChange={() => setIsKompeten(isKompeten === false ? null : false)}
+                  disabled={isSaving}
+                  style={{ marginTop: '2px' }}
+                />
+                <span style={{ fontSize: '12px' }}>Asesi belum memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan uji demonstrasi pada:</span>
+              </label>
+              {isKompeten === false && (
+                <div style={{ marginLeft: '24px', marginTop: '10px' }}>
+                  <div style={{ marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '2px' }}>Unit :</label>
+                    <input
+                      type="text"
+                      value={rekomendasiUnit}
+                      onChange={(e) => setRekomendasiUnit(e.target.value)}
+                      disabled={isSaving}
+                      style={inputStyle}
+                      placeholder="Isi unit..."
+                    />
                   </div>
-                  <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    {KRITERIA.map((k) => (
-                      <label
-                        key={k}
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-700 cursor-pointer"
-                      >
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 accent-primary"
-                          checked={f.answer?.[k] === true}
-                          onChange={(e) => setFileKriteria(f.id, k, e.target.checked)}
-                        />
-                        {KRITERIA_LABEL[k]}
-                      </label>
-                    ))}
+                  <div style={{ marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '2px' }}>Elemen :</label>
+                    <input
+                      type="text"
+                      value={rekomendasiElemen}
+                      onChange={(e) => setRekomendasiElemen(e.target.value)}
+                      disabled={isSaving}
+                      style={inputStyle}
+                      placeholder="Isi elemen..."
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '2px' }}>KUK :</label>
+                    <input
+                      type="text"
+                      value={rekomendasiKuk}
+                      onChange={(e) => setRekomendasiKuk(e.target.value)}
+                      disabled={isSaving}
+                      style={inputStyle}
+                      placeholder="Isi KUK..."
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Signature Tables — Asesi */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+        <tbody>
+          <tr>
+            <td colSpan={3} style={{ background: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}><b>Asesi</b></td>
+          </tr>
+          <tr>
+            <td style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+            <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>{header?.namaAsesi?.toUpperCase() || ''}</td>
+          </tr>
+          <tr>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
+            <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+            <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+              {barcodes?.asesi?.url ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                  <img src={barcodes.asesi.url} alt="Tanda Tangan Asesi" style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                  {barcodes.asesi.tanggal && (
+                    <div style={{ fontSize: '11px', color: '#333' }}>
+                      {fmtTanggalId(barcodes.asesi.tanggal)}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Asesor 1 */}
+      {asesorList.length > 0 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td colSpan={3} style={{ background: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}><b>Asesor {asesorList.length > 1 ? '1' : ''}</b></td>
+            </tr>
+            <tr>
+              <td style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[0]?.nama?.toUpperCase() || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[0]?.noreg || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
+              <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesor1?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodes.asesor1.url} alt={`Tanda Tangan ${asesorList[0]?.nama}`} style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                    {barcodes.asesor1.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {fmtTanggalId(barcodes.asesor1.tanggal)}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       )}
 
-      {wawancara.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <h3 className="text-sm font-bold text-slate-800 mb-3">
-              Wawancara Pendukung (item yang diperiksa)
-            </h3>
-            <div className="space-y-2">
-              {wawancara.map((item) => (
-                <label
-                  key={item.id}
-                  className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer rounded-lg border border-slate-100 bg-slate-50/60 p-3 hover:bg-slate-100/60 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 mt-0.5 accent-primary shrink-0"
-                    checked={item.checked}
-                    onChange={() =>
-                      setWawancara((prev) =>
-                        prev.map((it) =>
-                          it.id === item.id ? { ...it, checked: !it.checked } : it
-                        )
-                      )
-                    }
-                  />
-                  <span>
-                    <span className="font-medium">{item.unit_kompetensi}</span>
-                    {' · '}{item.no_elemen} — {item.materi}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Asesor 2 */}
+      {asesorList.length > 1 && (
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '15px', fontSize: '13px', background: '#fff', border: '2px solid #000' }}>
+          <tbody>
+            <tr>
+              <td colSpan={3} style={{ background: '#fff', border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}><b>Asesor 2</b></td>
+            </tr>
+            <tr>
+              <td style={{ width: '15%', border: '1px solid #000', padding: '6px' }}>Nama</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[1]?.nama?.toUpperCase() || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>No. Reg</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{asesorList[1]?.noreg || ''}</td>
+            </tr>
+            <tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Tanda tangan dan tanggal</td>
+              <td style={{ width: '3%', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
+              <td style={{ height: '60px', border: '1px solid #000', padding: '6px', verticalAlign: 'middle', textAlign: 'center' }}>
+                {barcodes?.asesor2?.url ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <img src={barcodes.asesor2.url} alt={`Tanda Tangan ${asesorList[1]?.nama}`} style={{ height: '50px', width: '50px', objectFit: 'contain' }} />
+                    {barcodes.asesor2.tanggal && (
+                      <div style={{ fontSize: '11px', color: '#333' }}>
+                        {fmtTanggalId(barcodes.asesor2.tanggal)}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       )}
 
-      <Card>
-        <CardContent className="p-4">
-          <FieldRow label="Rekomendasi Hasil Asesmen" hint="Wajib dipilih sebelum menyimpan.">
-            <KompetenToggle value={isKompeten} onChange={setIsKompeten} />
-          </FieldRow>
-          <FieldRow label="Bukti Tambahan">
-            <TextField
-              value={buktiTambahan}
-              onChange={setBuktiTambahan}
-              placeholder="Bukti tambahan yang diminta (bila ada)"
-            />
-          </FieldRow>
-          <FieldRow label="Rekomendasi per Unit">
-            <TextField value={rekomendasiUnit} onChange={setRekomendasiUnit} />
-          </FieldRow>
-          <FieldRow label="Rekomendasi per Elemen">
-            <TextField value={rekomendasiElemen} onChange={setRekomendasiElemen} />
-          </FieldRow>
-          <FieldRow label="Rekomendasi per KUK">
-            <TextField value={rekomendasiKuk} onChange={setRekomendasiKuk} />
-          </FieldRow>
-          <SaveBar
-            isSaving={isSaving}
-            onSave={handleSave}
-            note="Daftar file berasal dari portofolio asesi — hanya status validasinya yang diubah."
-          />
-        </CardContent>
-      </Card>
+      <SaveBar
+        isSaving={isSaving}
+        onSave={handleSave}
+        note="Daftar file berasal dari portofolio asesi — hanya status validasinya yang diubah."
+      />
     </div>
   )
 }

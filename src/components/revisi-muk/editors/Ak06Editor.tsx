@@ -1,24 +1,26 @@
 /**
- * Editor Revisi MUK — FR.AK.06 (Umpan Balik Asesmen — konsistensi instrumen).
- * Backend hanya menimpa field yang dikirim (array_filter null) → SEMUA nilai
- * existing dikirim ulang. dimensi_kompetensi tidak dikirim → nilai lama dipertahankan.
+ * Editor Revisi MUK — FR.AK.06 (Meninjau Proses Asesmen).
+ * Tampilan = form FR.AK.06 halaman asesi (Ak06Page): identitas, penjelasan,
+ * tabel kesesuaian prinsip asesmen (baris aspek typed + kolom Fleksibel
+ * dihitamkan utk Keputusan/Umpan balik), tabel dimensi kompetensi, ttd +
+ * komentar per asesor (barcode existing read-only).
+ * Payload persis editor sebelumnya: answers + rekomendasi1/2 + catatan_asesor1/2.
+ * dimensi_kompetensi tidak dikirim → nilai lama dipertahankan backend.
  */
 import { useEffect, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { BRANDING } from '@/config/branding'
+import { CustomCheckbox } from '@/components/ui/Checkbox'
 import { useToast } from '@/contexts/ToastContext'
 import { asesmenUrl } from '@/lib/revisi-muk-api'
 import {
   DocError,
   DocLoading,
-  FieldRow,
-  KompetenToggle,
   SaveBar,
-  TextField,
-  TextareaField,
   saveDoc,
   useDocFetch,
   type MukEditorProps,
 } from './shared'
+import { Barcodes, DocTitle, fmtTanggalId } from './bnsp'
 
 interface AspekAPI {
   aspek_id: string
@@ -38,6 +40,7 @@ interface Ak06Response {
       catatan_asesor1?: string
       catatan_asesor2?: string
     }
+    barcodes?: Barcodes
   }
 }
 
@@ -50,14 +53,9 @@ interface AspekItem {
   adil: boolean | null
 }
 
-const KRITERIA: { key: keyof Omit<AspekItem, 'id' | 'nama'>; label: string }[] = [
-  { key: 'validitas', label: 'Validitas' },
-  { key: 'reliabel', label: 'Reliabel' },
-  { key: 'fleksibel', label: 'Fleksibel' },
-  { key: 'adil', label: 'Adil' },
-]
+type AspekKey = keyof Omit<AspekItem, 'id' | 'nama'>
 
-export function Ak06Editor({ idIzin, onSaved }: MukEditorProps) {
+export function Ak06Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
   const toast = useToast()
   const { data, isLoading, error, reload } = useDocFetch<Ak06Response>(asesmenUrl(idIzin, 'ak06'))
 
@@ -66,6 +64,7 @@ export function Ak06Editor({ idIzin, onSaved }: MukEditorProps) {
   const [rekomendasi2, setRekomendasi2] = useState('')
   const [catatanAsesor1, setCatatanAsesor1] = useState('')
   const [catatanAsesor2, setCatatanAsesor2] = useState('')
+  const [barcodes, setBarcodes] = useState<Barcodes | undefined>(undefined)
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -85,10 +84,35 @@ export function Ak06Editor({ idIzin, onSaved }: MukEditorProps) {
     setRekomendasi2(inner.feedback?.rekomendasi2 || '')
     setCatatanAsesor1(inner.feedback?.catatan_asesor1 || '')
     setCatatanAsesor2(inner.feedback?.catatan_asesor2 || '')
+    if (inner.barcodes) setBarcodes(inner.barcodes)
   }, [data])
 
-  const setAspek = (id: string, key: keyof Omit<AspekItem, 'id' | 'nama'>, v: boolean | null) =>
-    setAspekItems((prev) => prev.map((it) => (it.id === id ? { ...it, [key]: v } : it)))
+  const findAspek = (nama: string) => aspekItems.find((a) => a.nama.includes(nama))
+
+  const handleAspekChange = (id: string, field: AspekKey) => {
+    if (isSaving) return
+    setAspekItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: !item[field] } : item))
+    )
+  }
+
+  // Get dimensi kompetensi labels based on jenjang and metode (same as Ak06Page/MAPA01)
+  const getDimensiKompetensiLabel = (): string => {
+    const jenjangNum = parseInt(dokumenHeader?.jenjang || '0')
+
+    // jenjang < 4: L/CL T/DPT
+    if (jenjangNum < 4) {
+      return 'L/CL<br/> T/DPT'
+    }
+    // jenjang > 3 AND portofolio: TL/VP T/PW T/VPK
+    else if (dokumenHeader?.metode === 'portofolio') {
+      return 'TL/VP<br/> T/PW<br/> T/VPK'
+    }
+    // jenjang > 3 AND observasi: L/DIT T/DPT
+    else {
+      return 'L/DIT<br/> T/DPT'
+    }
+  }
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -117,66 +141,278 @@ export function Ak06Editor({ idIzin, onSaved }: MukEditorProps) {
 
   if (isLoading) return <DocLoading />
   if (error) return <DocError message={error} onRetry={reload} />
-  if (aspekItems.length === 0) return <DocError message="Data FR.AK.06 tidak ditemukan." onRetry={reload} />
+  if (aspekItems.length === 0)
+    return <DocError message="Data FR.AK.06 tidak ditemukan." onRetry={reload} />
+
+  const header = dokumenHeader
+  const asesorList = header?.asesorList ?? []
+
+  // Baris aspek typed — persis Ak06Page (bullet •, kolom Fleksibel dihitamkan
+  // pada Keputusan & Umpan balik asesmen).
+  const aspekRows: { label: React.ReactNode; nama: string; fleksibelHitam?: boolean }[] = [
+    {
+      label: (
+        <>
+          Prosedur asesmen:
+          <br />• Rencana asesmen
+        </>
+      ),
+      nama: 'Rencana asesmen',
+    },
+    { label: <>• Persiapan asesmen</>, nama: 'Persiapan asesmen' },
+    { label: <>• Implementasi asesmen</>, nama: 'Implementasi asesmen' },
+    { label: <>• Keputusan asesmen</>, nama: 'Keputusan asesmen', fleksibelHitam: true },
+    { label: <>• Umpan balik asesmen</>, nama: 'Umpan balik asesmen', fleksibelHitam: true },
+  ]
+
+  const hdStyle = {
+    background: BRANDING.primaryColor,
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    border: '1px solid #000',
+    padding: '6px',
+  } as const
+
+  const ttdRows = asesorList.length > 0 ? asesorList : [{ id: 0, nama: '', noreg: '' }]
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardContent className="p-4">
-          <h3 className="text-sm font-bold text-slate-800 mb-1">
-            Penilaian Konsistensi Instrumen
-          </h3>
-          <p className="text-xs text-slate-400 mb-3">
-            Nilai Ya / Tidak per aspek; klik ulang pilihan yang sama untuk mengosongkan.
-          </p>
-          <div className="space-y-3">
-            {aspekItems.map((item) => (
-              <div
-                key={item.id}
-                className="rounded-lg border border-slate-100 bg-slate-50/60 p-3"
-              >
-                <div className="text-sm font-medium text-slate-800 mb-2">{item.nama}</div>
-                <div className="flex flex-wrap gap-x-6 gap-y-2">
-                  {KRITERIA.map(({ key, label }) => (
-                    <div key={key}>
-                      <div className="text-[11px] font-semibold text-slate-400 uppercase mb-1">
-                        {label}
-                      </div>
-                      <KompetenToggle
-                        value={item[key]}
-                        onChange={(v) => setAspek(item.id, key, v)}
-                        labels={['Ya', 'Tidak']}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <div style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <DocTitle>FR.AK.06. MENINJAU PROSES ASESMEN</DocTitle>
 
-      <Card>
-        <CardContent className="p-4">
-          <FieldRow label="Rekomendasi Prinsip Asesmen">
-            <TextField value={rekomendasi1} onChange={setRekomendasi1} />
-          </FieldRow>
-          <FieldRow label="Rekomendasi Dimensi Kompetensi">
-            <TextField value={rekomendasi2} onChange={setRekomendasi2} />
-          </FieldRow>
-          <FieldRow label="Catatan Asesor 1">
-            <TextareaField value={catatanAsesor1} onChange={setCatatanAsesor1} rows={2} />
-          </FieldRow>
-          <FieldRow label="Catatan Asesor 2">
-            <TextareaField value={catatanAsesor2} onChange={setCatatanAsesor2} rows={2} />
-          </FieldRow>
-          <SaveBar
-            isSaving={isSaving}
-            onSave={handleSave}
-            note="Dimensi kompetensi (jenjang/metode) tidak diubah oleh revisi ini."
-          />
-        </CardContent>
-      </Card>
+      {/* IDENTITAS Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <td rowSpan={2} style={{ width: '30%', background: '#fff', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>Skema Sertifikasi<br />(KKNI/Okupasi/Klaster)</td>
+            <td style={{ width: '12%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Judul</td>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>{header?.jabatanKerja || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nomor</td>
+            <td style={{ border: '1px solid #000', padding: '6px' }}>{header?.nomorSkema || '-'}</td>
+          </tr>
+          <tr>
+            <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>TUK</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{header?.tuk || '-'}</td>
+          </tr>
+          {asesorList.length > 1 ? (
+            asesorList.map((asesor, idx) => (
+              <tr key={asesor.id}>
+                <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Asesor {idx + 1}</td>
+                <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                  {asesor.nama?.toUpperCase() || ''}{asesor.noreg && ` (${asesor.noreg})`}
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Asesor</td>
+              <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>
+                {asesorList[0]?.nama?.toUpperCase() || ''}{asesorList[0]?.noreg && ` (${asesorList[0].noreg})`}
+              </td>
+            </tr>
+          )}
+          <tr>
+            <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Tanggal</td>
+            <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>{fmtTanggalId(new Date().toISOString())}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* PENJELASAN Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <th style={{ ...hdStyle, textAlign: 'left' }}>Penjelasan:</th>
+          </tr>
+          <tr>
+            <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>
+              1. Peninjauan dapat dilakukan oleh lead asesor atau asesor yang melaksanakan asesmen.<br />
+              2. Peninjauan dapat dilakukan secara terpadu dalam skema sertifikasi dan / atau peserta kelompok yang homogen.<br />
+              3. Isilah pemenuhan dimensi kompetensi dengan menulis kode rekaman formulir yang membuktikan terpenuhinya dimensi kompetensi.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* KONSEP ASESMEN Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <th rowSpan={2} style={hdStyle}>Aspek yang ditinjau</th>
+            <th colSpan={4} style={hdStyle}>Kesesuaian dengan prinsip asesmen</th>
+          </tr>
+          <tr>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Validitas</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Reliabel</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Fleksibel</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Adil</th>
+          </tr>
+
+          {aspekRows.map((row, rowIdx) => {
+            const aspek = findAspek(row.nama)
+            const id = aspek?.id || ''
+            const cell = (field: AspekKey) => (
+              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                <CustomCheckbox
+                  checked={(aspek?.[field] as boolean | null | undefined) || false}
+                  onChange={() => handleAspekChange(id, field)}
+                  disabled={isSaving}
+                />
+              </td>
+            )
+            return (
+              <tr key={rowIdx}>
+                <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>{row.label}</td>
+                {cell('validitas')}
+                {cell('reliabel')}
+                {row.fleksibelHitam ? (
+                  <td style={{ background: '#000', border: '1px solid #000', padding: '6px' }}></td>
+                ) : (
+                  cell('fleksibel')
+                )}
+                {cell('adil')}
+              </tr>
+            )
+          })}
+
+          <tr>
+            <td colSpan={5} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>
+              Rekomendasi untuk peningkatan<br />
+              <textarea
+                value={rekomendasi1}
+                onChange={(e) => setRekomendasi1(e.target.value)}
+                disabled={isSaving}
+                style={{
+                  width: '100%',
+                  height: '120px',
+                  border: '1px solid #ccc',
+                  padding: '6px',
+                  fontSize: '13px',
+                  resize: 'none',
+                  cursor: isSaving ? 'not-allowed' : 'text',
+                }}
+                placeholder="Tuliskan rekomendasi..."
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* DIMENSI KOMPETENSI Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <th rowSpan={2} style={hdStyle}>Aspek yang ditinjau</th>
+            <th colSpan={5} style={hdStyle}>Pemenuhan dimensi kompetensi</th>
+          </tr>
+          <tr>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Task Skills</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Task Management Skills</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Contingency Management Skills</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Job Role/Environment Skills</th>
+            <th style={{ ...hdStyle, fontStyle: 'italic' }}>Transfer Skills</th>
+          </tr>
+
+          <tr>
+            <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>
+              <b>Konsistensi keputusan asesmen</b><br />
+              Bukti dari berbagai asesmen diperiksa untuk konsistensi dimensi kompetensi
+            </td>
+            <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+            <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+            <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+            <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+            <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }} dangerouslySetInnerHTML={{ __html: getDimensiKompetensiLabel() }} />
+          </tr>
+
+          <tr>
+            <td colSpan={6} style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>
+              Rekomendasi untuk peningkatan:<br />
+              <textarea
+                value={rekomendasi2}
+                onChange={(e) => setRekomendasi2(e.target.value)}
+                disabled={isSaving}
+                style={{
+                  width: '100%',
+                  height: '120px',
+                  padding: '6px',
+                  border: '1px solid #ccc',
+                  fontSize: '13px',
+                  resize: 'none',
+                  cursor: isSaving ? 'not-allowed' : 'text',
+                }}
+                placeholder="Tuliskan rekomendasi..."
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* TANDA TANGAN Table */}
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '10px', fontSize: '13px', background: '#fff', border: '1px solid #000' }}>
+        <tbody>
+          <tr>
+            <td style={{ width: '33%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Nama Lead Asesor/Asesor</td>
+            <td style={{ width: '33%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Tanggal Tanda Tangan</td>
+            <td style={{ width: '34%', background: '#fff', border: '1px solid #000', padding: '6px' }}>Komentar</td>
+          </tr>
+          {ttdRows.map((asesor, index) => {
+            const asesorBarcode = index === 0 ? barcodes?.asesor1 : barcodes?.asesor2
+            const komentar = index === 0 ? catatanAsesor1 : catatanAsesor2
+            const setKomentar = (v: string) => (index === 0 ? setCatatanAsesor1(v) : setCatatanAsesor2(v))
+            return (
+              <tr key={asesor.id || index}>
+                <td style={{ height: '100px', border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                  {asesor.nama?.toUpperCase() || ''}
+                </td>
+                <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top', textAlign: 'center' }}>
+                  {asesorBarcode ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                      <img
+                        src={asesorBarcode.url}
+                        alt={`QR ${asesor.nama}`}
+                        style={{ height: '50px', width: '50px', objectFit: 'contain' }}
+                      />
+                      {asesorBarcode.tanggal && (
+                        <div style={{ fontSize: '11px', color: '#333' }}>
+                          {fmtTanggalId(asesorBarcode.tanggal)}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ minHeight: '50px' }}></div>
+                  )}
+                </td>
+                <td style={{ border: '1px solid #000', padding: '6px' }}>
+                  <textarea
+                    value={komentar}
+                    onChange={(e) => setKomentar(e.target.value)}
+                    disabled={isSaving}
+                    style={{
+                      width: '100%',
+                      height: '80px',
+                      border: '1px solid #ccc',
+                      padding: '6px',
+                      fontSize: '13px',
+                      resize: 'none',
+                      cursor: isSaving ? 'not-allowed' : 'text',
+                    }}
+                    placeholder="Tuliskan komentar..."
+                  />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+
+      <SaveBar
+        isSaving={isSaving}
+        onSave={handleSave}
+        note="Dimensi kompetensi (jenjang/metode) tidak diubah oleh revisi ini."
+      />
     </div>
   )
 }
