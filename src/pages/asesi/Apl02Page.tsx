@@ -1877,6 +1877,8 @@ export default function Apl02Page() {
   const initialFetchDone = useRef(false)
   // BK warning: tampil sekali sebelum TTD/simpan. Pakai ref biar ga loop karena handleSubmit dipanggil ulang dari onConfirm.
   const [showBkConfirm, setShowBkConfirm] = useState(false)
+  // Target rute yang nunggu konfirmasi metode sebelum pindah halaman
+  const [metodeConfirmNav, setMetodeConfirmNav] = useState<string | null>(null)
   const bkConfirmedRef = useRef(false)
   const bkSaveOnlyRef = useRef(false)
 
@@ -2489,11 +2491,11 @@ export default function Apl02Page() {
             return
           }
           showSuccess('Dokumen berhasil ditandatangani!')
-          // Navigate after save + QR attempt
-          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`), 500)
+          // Navigate after save + QR attempt — konfirmasi metode dulu
+          setMetodeConfirmNav(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`)
         } else {
           showSuccess('Metode asesmen berhasil disimpan!')
-          setTimeout(() => navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`), 500)
+          setMetodeConfirmNav(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`)
         }
       } catch (error) {
         console.error('Error saving metode:', error)
@@ -2609,8 +2611,8 @@ export default function Apl02Page() {
         showSuccess('APL 02 berhasil ditandatangani!')
         signing.publishUpdate()
         if (!saveOnly) {
-          // Navigasi ke halaman berikutnya
-          setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+          // Navigasi ke halaman berikutnya — konfirmasi metode dulu
+          setMetodeConfirmNav(getNextRoute(finalIdIzin))
         }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data APL 02')
@@ -2933,6 +2935,22 @@ export default function Apl02Page() {
           await handleSubmit(bkSaveOnlyRef.current)
         }}
         onCancel={() => setShowBkConfirm(false)}
+      />
+
+      {/* Konfirmasi metode asesmen sebelum lanjut ke halaman berikutnya.
+          Asesor: pilihannya sendiri. Asesi: metode yang dipilih asesor. */}
+      <ConfirmDialog
+        isOpen={!!metodeConfirmNav}
+        title={`Metode Asesmen: ${(metodeAsesmenRef.current || savedMetodeRef.current || 'observasi').toUpperCase()}`}
+        message={`Metode asesmen yang tercatat adalah "${(metodeAsesmenRef.current || savedMetodeRef.current || 'observasi').toUpperCase()}".${!isAsesor ? ' Metode ini dipilih oleh asesor Anda.' : ''} Pastikan sudah sesuai sebelum melanjutkan ke tahap berikutnya.`}
+        confirmText="OK, Lanjut"
+        cancelText="Tetap di Halaman Ini"
+        onConfirm={() => {
+          const target = metodeConfirmNav
+          setMetodeConfirmNav(null)
+          if (target) navigate(target)
+        }}
+        onCancel={() => setMetodeConfirmNav(null)}
       />
 
       {!isUuidFlow && (
