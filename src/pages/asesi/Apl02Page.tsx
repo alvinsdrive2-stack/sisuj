@@ -16,6 +16,7 @@ import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState } from "@/hooks/useSigningState"
+import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
 import { matchAsesiIdIzin } from "@/lib/match-asesi"
@@ -116,6 +117,11 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
                     <span>Portofolio</span>
                   </label>
                 </>
+              )}
+              {!metodeAsesmen && !isAsesor && (
+                <div style={{ marginTop: '6px', fontSize: '12px', fontStyle: 'italic', color: '#666' }}>
+                  Menunggu asesor memilih metode asesmen — akan ter-update otomatis di halaman ini.
+                </div>
               )}
             </td>
             <td colSpan={2} style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Asesi :</td>
@@ -1513,6 +1519,37 @@ export default function Apl02Page() {
     metodeAsesmenRef.current = metode
   }, [])
 
+  // ── Realtime sync metode asesmen ──
+  // Asesor publish 'metode-updated' setelah POST; halaman asesi yang kebuka
+  // duluan refetch metode (data-dokumen, ringan) tanpa reload halaman.
+  const handleMetodeRealtime = useCallback(async () => {
+    if (!idIzin) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/praasesmen/${idIzin}/data-dokumen`, {
+        headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      const fresh = json?.data?.metode
+      if (fresh === 'observasi' || fresh === 'portofolio') {
+        savedMetodeRef.current = fresh
+        // Jangan ganggu pilihan asesor yang lagi aktif di halaman ini;
+        // asesi nggak pernah ngubah metode (radio disabled), aman update.
+        if (!isAsesor) {
+          metodeAsesmenRef.current = fresh
+          setApl02Data(prev => (prev && prev.metode !== fresh ? { ...prev, metode: fresh } : prev))
+        }
+      }
+    } catch { /* silent — realtime update bersifat best-effort */ }
+  }, [idIzin, isAsesor])
+
+  const { publishUpdate: publishMetodeUpdate } = useRealtimeSync({
+    channelName: idIzin ? `apl02-${idIzin}` : '',
+    eventName: 'metode-updated',
+    onUpdate: handleMetodeRealtime,
+  })
+
   const handleToggleExclude = useCallback((unitId: string, subunitId: string, fileId: number) => {
     const key = `${unitId}-${subunitId}-${fileId}`
     setExcludedApiFileIds(prev => {
@@ -2022,13 +2059,21 @@ export default function Apl02Page() {
           } catch { /* ignore parse errors */ }
         }
 
-        // Set metode from API - default to observasi if not set
-        if (metodeFromApi) {
-          metodeAsesmenRef.current = metodeFromApi
+        // Set metode from API - default to observasi if not set.
+        // Guard: JANGAN overwrite kalau asesor udah pilih manual di halaman ini
+        // (fetchData bisa resolve belakangan gara-gara jaringan lambat).
+        if (metodeAsesmenRef.current === null) {
+          if (metodeFromApi) {
+            metodeAsesmenRef.current = metodeFromApi
+            savedMetodeRef.current = metodeFromApi
+          } else {
+            metodeAsesmenRef.current = null // No selection until asesor chooses
+            savedMetodeRef.current = undefined
+          }
+        } else if (metodeFromApi && savedMetodeRef.current === undefined) {
+          // Halaman asesi yang kebuka sebelum asesor memilih: simpan nilai
+          // API supaya submit asesi nggak kirim metode kosong.
           savedMetodeRef.current = metodeFromApi
-        } else {
-          metodeAsesmenRef.current = null // No selection until asesor chooses
-          savedMetodeRef.current = undefined
         }
 
         // Set combined data
@@ -2432,6 +2477,10 @@ export default function Apl02Page() {
           return
         }
 
+        // Kabari halaman asesi yang kebuka duluan biar metodenya ke-update
+        // realtime (best-effort, gagal publish tidak menggagalkan flow).
+        publishMetodeUpdate({ metode: metodeAsesmenRef.current })
+
         // Generate QR via signing hook (handles API call, state update, Ably publish)
         if (tahap !== 0 && !asesorHasSigned) {
           const qrOk = await signing.generateQR()
@@ -2480,11 +2529,31 @@ export default function Apl02Page() {
 
     setIsSaving(true)
     try {
+      // Halaman asesi bisa kebuka SEBELUM asesor memilih metode. Kalau
+      // savedMetodeRef masih kosong, ambil metode terbaru dari backend dulu —
+      // jangan pernah POST metode kosong, itu bisa overwrite pilihan asesor
+      // (backend INSERT ulang baris apl02 saat submit).
+      let metodeToPost = savedMetodeRef.current
+      if (!metodeToPost) {
+        try {
+          const freshRes = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
+            headers: { ...authHeaders(), Accept: 'application/json' },
+          })
+          if (freshRes.ok) {
+            const freshJson = await freshRes.json()
+            if (freshJson?.data?.metode === 'observasi' || freshJson?.data?.metode === 'portofolio') {
+              metodeToPost = freshJson.data.metode
+              savedMetodeRef.current = freshJson.data.metode
+            }
+          }
+        } catch { /* biarkan kosong kalau GET gagal — backend harus skip metode kosong */ }
+      }
+
       const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          metode: savedMetodeRef.current || '',
+          metode: metodeToPost || '',
           is_dilanjutkan: true,
           answers
         }),
