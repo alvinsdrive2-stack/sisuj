@@ -83,11 +83,13 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const nextPageName = nextPageNameOverride ?? config.nextPageName
   const lanjutText = nextPageName ? `Lanjut ke ${nextPageName}` : 'Lanjut'
 
-  // ── Status ttd dari server: sumber kebenaran ada/tidaknya asesor 2 ──
-  // Sekali per mount; gagal → diam (fallback ke input.hasAsesor2 / panjang asesorList).
+  // ── Status ttd dari server: sumber kebenaran ada/tidaknya asesor 2 + guard
+  // urutan TTD per user (docs). Sekali per mount; gagal → diam (fallback ke
+  // input.hasAsesor2 / panjang asesorList).
   const [statusHasAsesor2, setStatusHasAsesor2] = useState<boolean | null>(null)
+  const [ttdDocs, setTtdDocs] = useState<Record<string, Partial<Record<BarcodeRole | 'admin', 0 | 1>>> | null>(null)
   useEffect(() => {
-    if (!idIzin || isUuidFlow || singleSigner) return
+    if (!idIzin || isUuidFlow) return
     let alive = true
     ;(async () => {
       try {
@@ -96,10 +98,11 @@ export function useSigningState(input: SigningStateInput): SigningState {
         const json = await res.json()
         const has2 = json?.data?.has_asesor_2
         if (alive && typeof has2 === 'boolean') setStatusHasAsesor2(has2)
+        if (alive && json?.data?.docs) setTtdDocs(json.data.docs)
       } catch { /* fallback ke input */ }
     })()
     return () => { alive = false }
-  }, [idIzin, isUuidFlow, singleSigner])
+  }, [idIzin, isUuidFlow])
 
   // Asesor 2 wajib? Prioritas: status server > input eksplisit > panjang asesorList.
   const asesor2Required = useMemo(() => {
@@ -193,6 +196,49 @@ export function useSigningState(input: SigningStateInput): SigningState {
     return myAsesorRole === 'asesor1' ? !!barcodes?.asesor1?.url : !!barcodes?.asesor2?.url
   }, [tahap, isAsesor, myAsesorRole, barcodes])
 
+  // ── GUARD URUTAN TTD PER USER ──
+  // User X hanya boleh sign/lanjut di dokumen N bila barcode MILIKNYA SENDIRI
+  // sudah ada di seluruh dokumen sebelumnya (chain pra-asesmen). Status user
+  // dengan role lain TIDAK di sini — itu gate per-dokumen (allAsesorSigned).
+  // Sumber: /ttd-status docs (server-side) + mirror barcodes lokal utk dokumen
+  // yang baru di-sign di sesi ini. FE-only convenience; BE assertTtdOrder ikut
+  // memvalidasi (bypass URL tetap ditolak server).
+  const SIGNING_CHAIN: Record<'asesi' | 'asesor', Array<{ key: string; doc: string }>> = {
+    asesi: [
+      { key: 'apl01', doc: 'APL01' }, { key: 'apl02', doc: 'APL02' },
+      { key: 'mapa01', doc: 'MAPA01' }, { key: 'mapa02', doc: 'MAPA02' },
+      { key: 'ak07', doc: 'AK07' }, { key: 'ak04', doc: 'AK04' },
+      { key: 'k3', doc: 'K3' }, { key: 'ak01', doc: 'AK01' },
+    ],
+    asesor: [
+      { key: 'apl02', doc: 'APL02' }, { key: 'mapa01', doc: 'MAPA01' },
+      { key: 'mapa02', doc: 'MAPA02' }, { key: 'ak07', doc: 'AK07' },
+      { key: 'ak04', doc: 'AK04' }, { key: 'k3', doc: 'K3' },
+      { key: 'ak01', doc: 'AK01' },
+    ],
+  }
+  const mySlot: BarcodeRole | null = isAsesor ? (myAsesorRole ?? null) : 'asesi'
+  const missingPrevDocs = useMemo(() => {
+    if (tahap === 0 || isUuidFlow || !mySlot) return []
+    // Fail-open: status server belum diterima (fetch gagal/loading) → jangan
+    // blokir UI; BE assertTtdOrder tetap menolak QR tanpa barcode sebelumnya.
+    if (!ttdDocs) return []
+    const chain = isAsesor ? SIGNING_CHAIN.asesor : SIGNING_CHAIN.asesi
+    const idx = chain.findIndex(c => c.key === pageKey)
+    if (idx <= 0) return []
+    const missing: string[] = []
+    for (const c of chain.slice(0, idx)) {
+      const serverSigned = (ttdDocs[c.doc]?.[mySlot] ?? 0) === 1
+      // Mirror lokal: dokumen yg baru di-sign di halaman ini (ttdDocs di-fetch
+      // saat mount, bisa stale) — aman dari race setelah realtime update.
+      const localSigned = c.key === pageKey
+        ? (mySlot === 'asesi' ? !!barcodes?.asesi?.url : !!barcodes?.[mySlot]?.url)
+        : false
+      if (!serverSigned && !localSigned) missing.push(c.doc)
+    }
+    return missing
+  }, [tahap, isUuidFlow, isAsesor, mySlot, pageKey, ttdDocs, barcodes])
+
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
     if (singleSigner) return true
@@ -227,6 +273,9 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // ── QR generation ──
   const generateQR = useCallback(async (): Promise<boolean> => {
     if (!idIzin || !jadwalId || tahap === 0) return false
+    // Guard urutan: jangan biarkan QR dokumen N dibuat kalau user ini belum
+    // ada barcode di dokumen sebelumnya (BE juga menolak — ini utk UX).
+    if (missingPrevDocs.length > 0) return false
 
     const token = localStorage.getItem('access_token')
     if (!token) return false
@@ -274,11 +323,21 @@ export function useSigningState(input: SigningStateInput): SigningState {
     } catch {
       return false
     }
-  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, myAsesorRole, userName, setBarcodes, publishUpdate])
+  }, [idIzin, jadwalId, tahap, config.qrEndpoint, isAsesor, myAsesorRole, userName, setBarcodes, publishUpdate, missingPrevDocs])
 
   // ── Button state ──
   const { buttonText, buttonDisabled } = useMemo(() => {
     if (tahap === 0) return { buttonText: lanjutText, buttonDisabled: isSaving }
+
+    // Guard urutan TTD per user: barcode user ini di dokumen sebelumnya belum
+    // lengkap → TTD/lanjut di halaman ini diblok (pesan: selesaikan dulu di
+    // dokumen mana). Ini murni status user ini — tidak peduli user lain.
+    if (missingPrevDocs.length > 0) {
+      return {
+        buttonText: `Selesaikan TTD Anda di ${missingPrevDocs.join(', ')}`,
+        buttonDisabled: true,
+      }
+    }
 
     // Fix bug: role asesor tidak terdeteksi → blokir TTD, jangan biarkan lanjut
     if (isAsesor && myAsesorRole === null) {
