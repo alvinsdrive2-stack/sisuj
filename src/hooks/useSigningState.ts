@@ -73,10 +73,11 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
 
-  // AK.01 = Persetujuan Asesmen: TTD semua pihak wajib apa pun jenis kelasnya.
-  // Kelas non-2 (Luring/Hybrid/Onsite) tetap single signer untuk halaman lain,
-  // tapi AK.01 selalu butuh asesi + asesor 1 (+ asesor 2 kalau ada).
-  const singleSigner = pageKey !== 'ak01' && jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
+  // AK.01 (Persetujuan) & AK.07 (Penyesuaian) selalu multi signer: kedua form itu
+  // punya slot ttd asesor 1 & 2, jadi TTD semua pihak wajib apa pun jenis kelasnya.
+  // Kelas non-2 (Luring/Hybrid/Onsite) tetap single signer untuk halaman lain.
+  const alwaysMultiSigner = pageKey === 'ak01' || pageKey === 'ak07'
+  const singleSigner = !alwaysMultiSigner && jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
   const order: SigningOrder = singleSigner ? (isAsesor ? 'asesor_only' : 'asesi_only') : config.order
 
   const nextPageName = nextPageNameOverride ?? config.nextPageName
@@ -103,9 +104,15 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // Asesor 2 wajib? Prioritas: status server > input eksplisit > panjang asesorList.
   const asesor2Required = useMemo(() => {
     if (tahap === 0 || singleSigner || isUuidFlow) return false
+    // Halaman yg wajib TTD semua pihak (AK.01/AK.07): kalau di halaman ini memang
+    // ada 2 asesor, asesor 2 WAJIB ttd. Jangan gantung ke /ttd-status doang — dia
+    // bisa balikin false (akun asesor 2 role-nya bukan 5, noreg kosong, atau jadwal
+    // belum kebentuk saat request) → gate asesi cuma nunggu asesor 1 & asesor 2
+    // ke-skip. Halaman lain tetap pakai prioritas lama.
+    if (alwaysMultiSigner && asesorList.length >= 2) return true
     const explicit = statusHasAsesor2 ?? hasAsesor2Input
     return explicit ?? asesorList.length >= 2
-  }, [tahap, singleSigner, isUuidFlow, statusHasAsesor2, hasAsesor2Input, asesorList])
+  }, [tahap, singleSigner, isUuidFlow, alwaysMultiSigner, statusHasAsesor2, hasAsesor2Input, asesorList])
 
   // ── Ably realtime ──
   const channelName = idIzin ? `signing.${idIzin}.${pageKey}` : ''

@@ -104,14 +104,16 @@ export default function FrAk07Page() {
     tahap: tahap
   })
 
-  // Transform barcodes from old API format (asesor1, asesor2) to new dynamic format
+  // Map barcode asesor dari format API (asesor1/asesor2) ke format dinamis
+  // (asesor[<id>]) supaya baris ttd bisa nyari barcode per id asesor.
+  // Dulu effect ini skip kalau map-nya sudah keisi → TTD yang datang belakangan
+  // (mis. asesor 2 ttd setelah asesor 1) nggak pernah ke-render sampai refetch
+  // sukses. Sekarang map selalu dibangun ulang dari slot mentah; setBarcodes cuma
+  // dipanggil kalau isinya beda — deps-nya `barcodes`, jadi tanpa guard itu loop.
   useEffect(() => {
     if (!barcodes || asesorList.length === 0) return
 
     const apiBarcodes = barcodes as any
-
-    // If already has asesor in new format, skip transformation
-    if (apiBarcodes.asesor && Object.keys(apiBarcodes.asesor || {}).length > 0) return
 
     // Transform old format (asesor1, asesor2) to new dynamic format
     const transformedAsesor: Record<string, { url: string; tanggal: string; nama: string }> = {}
@@ -132,15 +134,23 @@ export default function FrAk07Page() {
       }
     }
 
-    // Only update if we have transformed data
-    if (Object.keys(transformedAsesor).length > 0) {
-      setBarcodes({
-        asesi: apiBarcodes.asesi,
-        asesor: transformedAsesor,
-        asesor1: apiBarcodes.asesor1,
-        asesor2: apiBarcodes.asesor2,
-      })
+    const next = {
+      asesi: apiBarcodes.asesi,
+      asesor: transformedAsesor,
+      asesor1: apiBarcodes.asesor1,
+      asesor2: apiBarcodes.asesor2,
     }
+    const prev = {
+      asesi: barcodes.asesi,
+      asesor: barcodes.asesor ?? {},
+      asesor1: barcodes.asesor1,
+      asesor2: barcodes.asesor2,
+    }
+
+    // Isinya sama → jangan setState (nanti jadi render loop)
+    if (JSON.stringify(next) === JSON.stringify(prev)) return
+
+    setBarcodes(next)
   }, [barcodes, asesorList])
 
   const initialFetchDone = useRef(false)
