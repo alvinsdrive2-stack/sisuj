@@ -214,9 +214,10 @@ class KegiatanService {
   }
 
   // Get kegiatan for direktur (paginated, by ttd status)
-  async getKegiatanDirektur(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
+  async getKegiatanDirektur(ttd: boolean, page: number = 1, search: string = '', statusFilter: 'all' | 'draft' | 'synced' = 'all'): Promise<PaginatedKegiatanResponse> {
     const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
     if (search) params.set('search', search)
+    if (statusFilter !== 'all') params.set('status_filter', statusFilter)
     return apiFetchJson(`${this.baseUrl}/kegiatan/direktur?${params}`)
   }
 

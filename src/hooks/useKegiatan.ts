@@ -338,7 +338,7 @@ export function useKegiatanHistoryAdminTUK(page: number = 1) {
   return { kegiatans, isLoading, error, pagination, refetch: fetchHistory }
 }
 
-export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {
+export function useKegiatanDirektur(ttd: boolean, page = 1, search = '', statusFilter: 'all' | 'draft' | 'synced' = 'all') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -352,7 +352,7 @@ export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await kegiatanService.getKegiatanDirektur(ttd, page, search)
+        const response = await kegiatanService.getKegiatanDirektur(ttd, page, search, statusFilter)
         setKegiatansRef.current?.(response.data.data)
         setPagination({ currentPage: response.data.current_page, lastPage: response.data.last_page, total: response.data.total, perPage: response.data.per_page })
       } catch (err) {
@@ -363,7 +363,7 @@ export function useKegiatanDirektur(ttd: boolean, page = 1, search = '') {
       }
     }
     fetchKegiatanDirektur()
-  }, [ttd, page, search])
+  }, [ttd, page, search, statusFilter])
 
   return { kegiatans, isLoading, error, pagination }
 }

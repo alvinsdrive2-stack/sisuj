@@ -2,7 +2,7 @@ import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Calendar, User, CheckCircle2, Search } from "lucide-react"
-import { DocumentCard, EmptyState } from "@/components/direktur"
+import { DocumentCard, EmptyState, JadwalStatusFilter, JadwalStatusFilterValue } from "@/components/direktur"
 import { useKegiatanDirektur, useDirekturDokumenStatus } from "@/hooks/useKegiatan"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
@@ -15,7 +15,8 @@ export default function SudahDitandatangani() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
-  const { kegiatans, isLoading, error, pagination } = useKegiatanDirektur(true, page, search)
+  const [statusFilter, setStatusFilter] = useState<JadwalStatusFilterValue>('all')
+  const { kegiatans, isLoading, error, pagination } = useKegiatanDirektur(true, page, search, statusFilter)
 
   const jadwalIds = useMemo(() => kegiatans.map(k => k.jadwal_id), [kegiatans])
   const { statusMap } = useDirekturDokumenStatus(jadwalIds)
@@ -33,15 +34,21 @@ export default function SudahDitandatangani() {
         <p className="text-slate-600">Daftar dokumen yang telah ditandatangani</p>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari kegiatan..."
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+      {/* Search + Filter Status Jadwal */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari kegiatan..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          />
+        </div>
+        <JadwalStatusFilter
+          value={statusFilter}
+          onChange={(value) => { setStatusFilter(value); setPage(1) }}
         />
       </div>
 
@@ -86,7 +93,16 @@ export default function SudahDitandatangani() {
                   { icon: FileText, label: "TUK", value: doc.tuk?.nama?.toUpperCase() || '-' },
                   { icon: Calendar, label: "Tanggal Uji", value: formatDate(doc.tanggal_uji) }
                 ]}
-                badges={[<Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>]}
+                badges={[
+                  <Badge key="status" className="bg-emerald-100 text-emerald-700">Ditandatangani</Badge>,
+                  <Badge
+                    key="jadwal-status"
+                    variant="outline"
+                    className={doc.status === 'draft' ? 'border-slate-300 text-slate-600' : 'border-sky-200 text-sky-700'}
+                  >
+                    {doc.status === 'draft' ? 'Draft' : 'Sudah Sync'}
+                  </Badge>
+                ]}
                 dokumenStatus={buildDokumenStatus(statusMap[doc.jadwal_id])}
                 cardClassName="bg-emerald-50/40"
                 onClick={() => navigate(`/direktur/sudah-ditandatangani/${doc.jadwal_id}`)}
