@@ -2941,8 +2941,8 @@ export default function Apl02Page() {
           Asesor: pilihannya sendiri. Asesi: metode yang dipilih asesor. */}
       <ConfirmDialog
         isOpen={!!metodeConfirmNav}
-        title={`Metode Asesmen: ${(metodeAsesmenRef.current || savedMetodeRef.current || 'observasi').toUpperCase()}`}
-        message={`Metode asesmen yang tercatat adalah "${(metodeAsesmenRef.current || savedMetodeRef.current || 'observasi').toUpperCase()}".${!isAsesor ? ' Metode ini dipilih oleh asesor Anda.' : ''} Pastikan sudah sesuai sebelum melanjutkan ke tahap berikutnya.`}
+        title={`Metode Asesmen: ${(metodeAsesmenRef.current || savedMetodeRef.current || 'belum dipilih').toUpperCase()}`}
+        message={`Metode asesmen yang tercatat adalah "${(metodeAsesmenRef.current || savedMetodeRef.current || 'belum dipilih').toUpperCase()}".${!isAsesor ? ' Metode ini dipilih oleh asesor Anda.' : ''} Pastikan sudah sesuai sebelum melanjutkan ke tahap berikutnya.`}
         confirmText="OK, Lanjut"
         cancelText="Tetap di Halaman Ini"
         onConfirm={() => {
