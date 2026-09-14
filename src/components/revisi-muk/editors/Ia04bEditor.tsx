@@ -56,6 +56,10 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
   const { data, isLoading, error, reload } = useDocFetch<Ia04bResponse>(asesmenUrl(idIzin, 'ia04b'))
 
   const [jawaban, setJawaban] = useState<Record<number, string>>({})
+  // Revisi pencapaian (Ya/Tdk varian BNSP) & rekomendasi — dikirim ke /nilai-ia04b
+  // pakai codepath produksi asesor; null = tidak diubah.
+  const [yaMap, setYaMap] = useState<Record<number, boolean | null>>({})
+  const [rekom, setRekom] = useState<boolean | null>(null)
   const [barcodes, setBarcodes] = useState<Barcodes | undefined>(undefined)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -70,6 +74,8 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
       if (s.jawaban) init[s.id] = s.jawaban
     })
     setJawaban(init)
+    setYaMap({})
+    setRekom(inner.rekomendasi?.rekomendasi ?? null)
   }, [data])
 
   const handleSave = async () => {
@@ -87,8 +93,39 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
           jawaban: jawaban[s.id] || s.jawaban || '',
         })),
       })
+
+      // POST /ia04b di BE men-null-kan pencapaian (updateOrCreate submitIa04b),
+      // jadi nilai-ia04b WAJIB selalu ikut dikirim utk menulis ulang Ya/Tdk
+      // (termasuk perubahan dari yaMap) + rekomendasi — codepath produksi asesor.
+      const rekomendasiId = inner.rekomendasi?.id ?? null
+      if (!kan && rekomendasiId) {
+        const evaluations = inner.soal
+          .map((s) => {
+            const eff =
+              s.id in yaMap
+                ? yaMap[s.id]
+                : isYa(s.pencapaian)
+                  ? true
+                  : isTidak(s.pencapaian)
+                    ? false
+                    : null
+            return eff === null ? null : { soal_id: s.id, pencapaian: eff ? 3 : 0 }
+          })
+          .filter((e): e is { soal_id: number; pencapaian: number } => e !== null)
+        if (evaluations.length > 0) {
+          await saveDoc(`${asesmenUrl(idIzin, 'ia04b').replace(/ia04b$/, 'nilai-ia04b')}`, {
+            dokumen_id: inner.dokumen.id,
+            evaluations,
+            rekomendasi: {
+              soal_id: rekomendasiId,
+              value: rekom ?? (inner.rekomendasi?.rekomendasi ?? true),
+            },
+          })
+        }
+      }
       toast.showSuccess('FR.IA.04.B berhasil disimpan')
       onSaved()
+      reload()
     } catch (e) {
       toast.showError(e instanceof Error ? e.message : 'Gagal menyimpan FR.IA.04.B')
     } finally {
@@ -553,12 +590,28 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
                 />
               </td>
               <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{(item.soal2 ?? '').replace(/\r\n/g, ' ')}</td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={isYa(item.pencapaian)} onChange={() => {}} disabled style={{ pointerEvents: 'none' }} />
-              </td>
-              <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
-                <CustomCheckbox checked={isTidak(item.pencapaian)} onChange={() => {}} disabled style={{ pointerEvents: 'none' }} />
-              </td>
+              {(() => {
+                const eff: boolean | null =
+                  item.id in yaMap ? yaMap[item.id] : isYa(item.pencapaian) ? true : isTidak(item.pencapaian) ? false : null
+                return (
+                  <>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                      <CustomCheckbox
+                        checked={eff === true}
+                        onChange={() => !isSaving && setYaMap((prev) => ({ ...prev, [item.id]: eff === true ? null : true }))}
+                        disabled={isSaving}
+                      />
+                    </td>
+                    <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
+                      <CustomCheckbox
+                        checked={eff === false}
+                        onChange={() => !isSaving && setYaMap((prev) => ({ ...prev, [item.id]: eff === false ? null : false }))}
+                        disabled={isSaving}
+                      />
+                    </td>
+                  </>
+                )
+              })()}
             </tr>
           ))}
         </tbody>
@@ -574,11 +627,19 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
             <td style={{ border: '1px solid #000', padding: '6px' }}>
               Asesi telah memenuhi/belum memenuhi pencapaian seluruh kriteria unjuk kerja, direkomendasikan:<br /><br />
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <CustomCheckbox checked={rekomendasi?.rekomendasi === true} onChange={() => {}} disabled style={{ pointerEvents: 'none' }} />
+                <CustomCheckbox
+                  checked={rekom === true}
+                  onChange={() => !isSaving && setRekom((p) => (p === true ? null : true))}
+                  disabled={isSaving}
+                />
                 Kompeten
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CustomCheckbox checked={rekomendasi?.rekomendasi === false} onChange={() => {}} disabled style={{ pointerEvents: 'none' }} />
+                <CustomCheckbox
+                  checked={rekom === false}
+                  onChange={() => !isSaving && setRekom((p) => (p === false ? null : false))}
+                  disabled={isSaving}
+                />
                 Belum Kompeten
               </div>
             </td>
@@ -656,7 +717,7 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
       <SaveBar
         isSaving={isSaving}
         onSave={handleSave}
-        note={`${soalList.length} soal — hanya jawaban teks asesi yang direvisi; pencapaian (Ya/Tdk) & rekomendasi tidak diubah.`}
+        note={`${soalList.length} soal — jawaban teks, pencapaian (Ya/Tdk) & rekomendasi bisa direvisi; klik ulang centang = kosongkan.`}
       />
     </div>
   )
