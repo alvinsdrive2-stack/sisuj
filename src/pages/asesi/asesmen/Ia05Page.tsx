@@ -9,7 +9,6 @@ import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useAsesorRole } from "@/hooks/useAsesorRole"
 import { useDataDokumenAsesmen } from "@/hooks/useDataDokumenAsesmen"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
-import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
@@ -82,7 +81,6 @@ export default function Ia05Page() {
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, jabatanKerja, nomorSkema, tuk, asesorList, namaAsesi, idAsesor1: _idAsesor1, namaPenyusun, namaValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, noregPenyusun, noregValidator, jenisKelas, isLoading: isDataLoading, jadwalId, isPaket } = useDataDokumenAsesmen(id)
   const { showSuccess, showError, showWarning } = useToast()
-  const { kegiatan: _kegiatan } = useKegiatanByRole()
   const { tahap } = useDataDokumenPraAsesmen(id)
 
   // Get dynamic steps
@@ -251,11 +249,10 @@ export default function Ia05Page() {
           // Don't block navigation on QR failure
         }
 
-        // Tahap 0 â†’ dashboard asesor
-        if (_kegiatan?.tahap === 0) {
-          setTimeout(() => navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard'), 500)
-          return
-        }
+        // Tahap 0 sudah di-handle di awal handleSubmit (pakai `tahap` dari
+        // dokumen ini). Jangan pakai _kegiatan?.tahap — itu kegiatan PERTAMA
+        // di list user (useKegiatanByRole), bukan kegiatan asesmen ini, jadi
+        // salah-salah user ditendang ke dashboard padahal asesmen tahap 2.
 
         // Navigate to next step based on asesmenSteps
         const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia05'))
@@ -337,8 +334,10 @@ export default function Ia05Page() {
           // Don't block navigation on QR failure
         }
 
-        // Tahap 0 â†’ dashboard asesor
-        if (_kegiatan?.tahap === 0) {
+        // Tahap 0 (MUK): ia05 step terakhir → balik ke daftar asesi.
+        // Pakai `tahap` dokumen ini, BUKAN _kegiatan?.tahap — itu kegiatan
+        // pertama di list user, salah scope.
+        if (tahap === 0) {
           setTimeout(() => navigate(jadwalId ? `/asesor/asesi/${jadwalId}` : '/asesor/dashboard'), 500)
           return
         }

@@ -21,6 +21,13 @@ export const CustomCheckbox = React.memo(function CustomCheckbox({
   const uniqueId = id || generatedId.current
   const shiftRef = useRef(false)
 
+  // Kalau caller matiin pointer-events di wrapper (pola 'checkbox display-only',
+  // klik-nya di-handle parent), label wajib ikut mati. CSS `.checkbox-wrapper
+  // .check-box` maksa `pointer-events: auto`, jadi tanpa ini klik di kotaknya
+  // tetap kena label → label nerusin klik ke input → onClick parent jalan 2x dan
+  // toggle-nya jadi netral, keliatan kayak kotaknya gak bisa dipencet.
+  const labelPointerEvents = style?.pointerEvents
+
   return (
     <div
       className={`checkbox-wrapper ${className}`}
@@ -39,6 +46,7 @@ export const CustomCheckbox = React.memo(function CustomCheckbox({
         className="check-box"
         style={{
           opacity: disabled ? 0.5 : 1,
+          ...(labelPointerEvents ? { pointerEvents: labelPointerEvents } : null),
         }}
       >
       </label>
