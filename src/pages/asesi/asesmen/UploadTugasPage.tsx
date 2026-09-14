@@ -142,7 +142,6 @@ export default function UploadTugasPage() {
   const publishUpdate = signing.publishUpdate
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (signing.allSigned) return
     const file = e.target.files?.[0]
     if (file && validateFile(file)) {
       setSelectedFile(file)
@@ -150,7 +149,7 @@ export default function UploadTugasPage() {
   }
 
   const handleUpload = async () => {
-    if (!selectedFile || signing.allSigned) return
+    if (!selectedFile) return
 
     setIsUploading(true)
     try {
@@ -224,7 +223,6 @@ export default function UploadTugasPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (signing.allSigned) return
     const file = e.dataTransfer.files?.[0]
     if (file && validateFile(file)) {
       setSelectedFile(file)
@@ -243,7 +241,8 @@ export default function UploadTugasPage() {
   }
 
   const handleGantiFile = () => {
-    if (signing.allSigned) return
+    // Catatan: replace tetap diizinkan meski TTD lengkap — BE menimpa file lama
+    // pada UUID/path yang sama sehingga URL & barcode TTD tidak berubah.
     setUploadedTugas(null)
     setSelectedFile(null)
     // Reset file input
