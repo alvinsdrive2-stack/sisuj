@@ -97,8 +97,10 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
       // POST /ia04b di BE men-null-kan pencapaian (updateOrCreate submitIa04b),
       // jadi nilai-ia04b WAJIB selalu ikut dikirim utk menulis ulang Ya/Tdk
       // (termasuk perubahan dari yaMap) + rekomendasi — codepath produksi asesor.
+      // rekomendasiId boleh null: jabatan tanpa soal tipe-3 (mis. SI101014) ->
+      // BE skip baris rekomendasi, evaluasi tetap tersimpan.
       const rekomendasiId = inner.rekomendasi?.id ?? null
-      if (!kan && rekomendasiId) {
+      if (!kan) {
         const evaluations = inner.soal
           .map((s) => {
             const eff =

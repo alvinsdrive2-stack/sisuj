@@ -234,9 +234,10 @@ export default function Ia04bPage() {
         pencapaian: answers[soal.id] === 'ya' ? 3 : 0 // 'ya' = skor 3, 'tidak' = 0
       }))
 
-      // Build rekomendasi
+      // Build rekomendasi — soal_id boleh null (jabatan tanpa soal tipe-3,
+      // mis. SI101014); BE skips the rekomendasi row in that case.
       const rekomendasiPayload = {
-        soal_id: ia04bData.rekomendasi?.id!,
+        soal_id: ia04bData.rekomendasi?.id ?? null,
         value: rekomendasi === 'kompeten' // 'kompeten' = true, 'belum_kompeten' = false
       }
 
