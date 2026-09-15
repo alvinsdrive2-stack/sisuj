@@ -2560,6 +2560,8 @@ export default function Apl02Page() {
         }),
       })
 
+      let signingOk = true
+      let signingErrMsg = 'Gagal menyimpan data APL 02'
       if (response.ok) {
         // Generate QR jika belum ada dan jadwalId tersedia
         if (jadwalId) {
@@ -2578,9 +2580,11 @@ export default function Apl02Page() {
                 })
               })
 
+              let qrSaved = false
               if (qrResponse.ok) {
                 const qrResult = await qrResponse.json()
                 if (qrResult.message === "Success" && qrResult.data?.url_image) {
+                  qrSaved = true
                   // Update barcodes state - untuk display
                   // Karena barcode sama untuk semua subunit, update semua
                   const newBarcodes: Record<string, SubunitBarcodes> = {}
@@ -2600,18 +2604,28 @@ export default function Apl02Page() {
                   setSubunitBarcodes(newBarcodes)
                 }
               }
+              if (!qrSaved) {
+                // TTD (barcode QR) TIDAK tersimpan — jangan klaim "berhasil".
+                signingOk = false
+                signingErrMsg = await extractApiError(qrResponse, 'Tanda tangan Anda tidak tersimpan. Periksa kembali dan ulangi TTD.')
+              }
             } catch (qrError) {
               console.error('Error generating QR:', qrError)
-              // Continue even if QR generation fails
+              signingOk = false
+              signingErrMsg = extractErrorMessage(qrError, 'Tanda tangan Anda tidak tersimpan. Periksa koneksi lalu ulangi TTD.')
             }
           }
         }
 
-        showSuccess('APL 02 berhasil ditandatangani!')
-        signing.publishUpdate()
-        if (!saveOnly) {
-          // Navigasi ke halaman berikutnya
-          setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+        if (signingOk) {
+          showSuccess('APL 02 berhasil ditandatangani!')
+          signing.publishUpdate()
+          if (!saveOnly) {
+            // Navigasi ke halaman berikutnya
+            setTimeout(() => navigate(getNextRoute(finalIdIzin)), 500)
+          }
+        } else {
+          showError(signingErrMsg)
         }
       } else {
         const msg = await extractApiError(response, 'Gagal menyimpan data APL 02')
