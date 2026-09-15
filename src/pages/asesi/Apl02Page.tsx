@@ -2563,10 +2563,16 @@ export default function Apl02Page() {
       let signingOk = true
       let signingErrMsg = 'Gagal menyimpan data APL 02'
       if (response.ok) {
-        // Generate QR jika belum ada dan jadwalId tersedia
-        if (jadwalId) {
+        // Generate QR untuk barcode yang belum ada.
+        // PENTING: dulu dibungkus `if (jadwalId)` — saat asesi menekan TTD
+        // sebelum jadwal dibuat (jadwalId null), panggilan QR DILEWATI
+        // total tapi UI tetap bilang "berhasil ditandatangani" → tanda
+        // tangan asesi hilang tanpa pesan error (kasus I-2026091417425998348).
+        // Endpoint /qr/{id}/apl02 backend tidak membutuhkan id_jadwal
+        // (generateTtdBarcodeWithoutJadwal), jadi tetap panggil tanpa jadwal.
+        if (apl02Data?.units?.length) {
           // Cek apakah ada subunit yang belum punya barcode asesi
-          const hasMissingBarcode = apl02Data?.units.some(unit =>
+          const hasMissingBarcode = apl02Data.units.some(unit =>
             unit.subunits.some(subunit => !subunit.barcodes?.asesi?.url)
           )
 
@@ -2575,9 +2581,7 @@ export default function Apl02Page() {
               const qrResponse = await fetch(`${API_BASE_URL}/qr/${finalIdIzin}/apl02`, {
                 method: 'POST',
                 headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  id_jadwal: jadwalId
-                })
+                body: JSON.stringify(jadwalId ? { id_jadwal: jadwalId } : {})
               })
 
               let qrSaved = false
