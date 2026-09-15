@@ -2059,7 +2059,8 @@ export default function Apl02Page() {
           } catch { /* ignore parse errors */ }
         }
 
-        // Set metode from API - default to observasi if not set.
+        // Set metode dari API — jangan pernah memoles null: selama asesor
+        // belum memilih, tidak ada checkbox yang tercentang.
         // Guard: JANGAN overwrite kalau asesor udah pilih manual di halaman ini
         // (fetchData bisa resolve belakangan gara-gara jaringan lambat).
         if (metodeAsesmenRef.current === null) {
