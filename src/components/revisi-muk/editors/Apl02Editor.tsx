@@ -1,19 +1,20 @@
 /**
  * Editor Revisi MUK — FR.APL.02 (Asesmen Mandiri).
- * Tampilan = form FR.APL.02 halaman asesi (Apl02Page): tabel identitas,
- * panduan, tabel unit dgn kolom K/BK + bukti (bisa direvisi), tabel rekomendasi
- * dgn metode asesmen + barcode ttd existing (read-only).
- * Hati-hati: POST wajib tiap answer punya ≥1 file → file bukti per elemen yang
- * tampil di kolom Bukti-lah yang dikirim sebagai file_ids. Admin bisa:
- *   - unggah file baru (POST praasesmen/{id}/apl02/files),
- *   - hapus file terunggah (DELETE praasesmen/apl02/files/{fileId} — lepas dari
- *     SEMUA elemen + hapus di FTP),
- *   - pasang/lepas lampiran bukti tiap elemen (disimpan saat Simpan).
- * Admin hanya merevisi `kompeten` & `metode` (metode tetap keputusan asesor).
- * is_dilanjutkan: true punya efek lanjut → konfirmasi sebelum simpan.
+ * Tampilan sengaja DISAMAKAN dengan halaman praasesmen (src/pages/asesi/Apl02Page.tsx):
+ *  - section terpisah "UPLOAD BUKTI DOKUMEN" (drop zone + daftar file terunggah),
+ *  - kolom Bukti tiap elemen HANYA untuk memilih file yang sudah terunggah
+ *    (dropdown pilihan — tidak ada unggah inline lagi),
+ *  - khusus revisi-MUK: mengubah 1 bukti langsung diterapkan ke SELURUH elemen
+ *    (delta: file yang ditambah/dilepas di satu elemen ikut ditambah/dilepas di
+ *    semua elemen lain) selama toggle "Terapkan ke semua N elemen" aktif.
+ * POST wajib tiap answer punya ≥1 file → daftar bukti di kolom Bukti-lah yang
+ * dikirim sebagai file_ids. Admin hanya merevisi `kompeten` & `metode` (metode
+ * tetap keputusan asesor). is_dilanjutkan: true → konfirmasi sebelum simpan.
  */
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { File, Trash2, Upload, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { Check, File as FileIcon, FileImage, FileType, Trash2, X } from 'lucide-react'
+import { API_BASE_URL } from '@/config/api'
 import { BRANDING } from '@/config/branding'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CustomCheckbox } from '@/components/ui/Checkbox'
@@ -79,29 +80,27 @@ type Metode = 'observasi' | 'portofolio'
 
 const cell = { border: '1px solid #000', padding: '4px' } as const
 
-/** Chip nama file bukti + aksi revisi (lepas dari elemen / hapus dari server). */
+/** Ikon file berdasar ekstensi (mengikuti halaman praasesmen Apl02Page). */
+function getFileIcon(fileName: string): React.ReactNode {
+  const ext = (fileName.split('.').pop() || '').toLowerCase()
+  if (ext === 'pdf') return <FileType size={14} style={{ color: '#dc2626' }} />
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return <FileImage size={14} style={{ color: '#059669' }} />
+  if (['doc', 'docx'].includes(ext)) return <FileType size={14} style={{ color: '#2563eb' }} />
+  return <FileIcon size={14} style={{ color: '#666' }} />
+}
+
+/** Chip bukti di kolom Bukti: klik nama = buka file, X = lepas bukti. */
 function FileChip({
   file,
   disabled,
   onDetach,
-  onDelete,
+  title,
 }: {
   file: ServerFile
   disabled?: boolean
   onDetach: () => void
-  onDelete: () => void
+  title: string
 }) {
-  const btn: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: 'transparent',
-    border: 'none',
-    padding: '2px',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    color: '#64748b',
-    lineHeight: 1,
-  }
   return (
     <span
       style={{
@@ -119,7 +118,7 @@ function FileChip({
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
       }}
     >
-      <File size={14} style={{ color: '#0284c7' }} />
+      <FileIcon size={14} style={{ color: '#0284c7' }} />
       <a
         href={file.path}
         target="_blank"
@@ -140,17 +139,94 @@ function FileChip({
         type="button"
         disabled={disabled}
         onClick={onDetach}
-        title="Lepas file ini dari elemen (file tetap terunggah)"
-        style={btn}
+        title={title}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'transparent',
+          border: 'none',
+          padding: '2px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          color: '#dc2626',
+          lineHeight: 1,
+        }}
       >
         <X size={13} />
       </button>
+    </span>
+  )
+}
+
+/** Kapsul file di section upload: buka file + hapus permanen dari server. */
+function UploadedCapsule({
+  file,
+  disabled,
+  onDelete,
+}: {
+  file: ServerFile
+  disabled?: boolean
+  onDelete: () => void
+}) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '8px',
+        height: '38px',
+        background: '#f5f5f5',
+        border: '1px solid #ddd',
+        borderRadius: '6px',
+        padding: '0 8px 0 12px',
+        fontSize: '12px',
+        fontWeight: 500,
+        color: '#333',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+      }}
+    >
+      <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {getFileIcon(file.name)}
+        <a
+          href={file.path}
+          target="_blank"
+          rel="noreferrer"
+          title="Buka file"
+          style={{
+            maxWidth: '240px',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            color: '#0369a1',
+            textDecoration: 'none',
+          }}
+        >
+          {file.name}
+        </a>
+      </span>
+      {file.filetype && (
+        <span style={{ fontSize: '10px', color: '#64748b', textTransform: 'uppercase' }}>{file.filetype}</span>
+      )}
       <button
         type="button"
         disabled={disabled}
         onClick={onDelete}
-        title="Hapus file dari server (lepas dari semua elemen)"
-        style={{ ...btn, color: '#dc2626' }}
+        title={
+          isExternalFile(file)
+            ? 'Lepas tautan eksternal ini dari semua elemen'
+            : 'Hapus file dari server (lepas dari SEMUA elemen)'
+        }
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'transparent',
+          border: 'none',
+          padding: '2px',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          color: '#dc2626',
+          lineHeight: 1,
+        }}
       >
         <Trash2 size={13} />
       </button>
@@ -158,30 +234,181 @@ function FileChip({
   )
 }
 
-const smallBtn: React.CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: '4px',
-  fontSize: '11px',
-  fontWeight: 600,
-  color: '#0369a1',
-  background: '#fff',
-  border: '1px solid #cbd5e1',
-  borderRadius: '6px',
-  padding: '4px 8px',
-  cursor: 'pointer',
-  height: '28px',
-}
+/**
+ * Dropdown pilih bukti per elemen (meniru BuktiDropdown halaman praasesmen). Menu
+ * dirender via portal agar tidak terpotong tabel. Tetap terbuka setelah memilih
+ * supaya bisa memilih beberapa file sekaligus.
+ */
+function BuktiPicker({
+  uploadedFiles,
+  selectedFileIds,
+  onToggle,
+  disabled,
+}: {
+  uploadedFiles: ServerFile[]
+  selectedFileIds: number[]
+  onToggle: (fileId: number) => void
+  disabled?: boolean
+}) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 })
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const kosong = uploadedFiles.length === 0
 
-const selectCls: React.CSSProperties = {
-  fontSize: '11px',
-  height: '28px',
-  maxWidth: '260px',
-  border: '1px solid #cbd5e1',
-  borderRadius: '6px',
-  padding: '0 4px',
-  color: '#0369a1',
-  background: '#fff',
+  const toggleDropdown = () => {
+    if (disabled || kosong) return
+    if (!isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect()
+      const dropdownHeight = Math.min(uploadedFiles.length * 40 + 20, 180)
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      const top =
+        spaceBelow < dropdownHeight && spaceAbove > spaceBelow ? rect.top - dropdownHeight - 4 : rect.bottom + 4
+      setMenuPosition({ top, left: rect.left, width: Math.max(rect.width, 260) })
+    }
+    setIsOpen((v) => !v)
+  }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!buttonRef.current?.contains(target) && !menuRef.current?.contains(target)) setIsOpen(false)
+    }
+    const close = () => setIsOpen(false)
+    document.addEventListener('mousedown', handleClickOutside)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [isOpen])
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={toggleDropdown}
+        disabled={disabled || kosong}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          border: isOpen ? '1px solid #999' : '1px solid #ddd',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontFamily: 'Arial, Helvetica, sans-serif',
+          fontWeight: 500,
+          backgroundColor: disabled || kosong ? '#f5f5f5' : '#fff',
+          cursor: disabled || kosong ? 'not-allowed' : 'pointer',
+          textAlign: 'left',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          transition: 'all 0.2s ease',
+          color: '#333',
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {selectedFileIds.length > 0 && (
+            <span
+              style={{
+                background: '#666',
+                color: '#fff',
+                borderRadius: '10px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+            >
+              {selectedFileIds.length}
+            </span>
+          )}
+          {selectedFileIds.length > 0
+            ? 'file dipilih'
+            : kosong
+              ? '-- Upload file terlebih dahulu --'
+              : '-- Pilih File --'}
+        </span>
+        <span
+          style={{
+            transition: 'transform 0.3s ease',
+            display: 'inline-block',
+            transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
+        >
+          ▼
+        </span>
+      </button>
+
+      {isOpen &&
+        !kosong &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: `${menuPosition.top}px`,
+              left: `${menuPosition.left}px`,
+              width: `${menuPosition.width}px`,
+              zIndex: 100000,
+              background: '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '6px',
+              maxHeight: '180px',
+              overflowY: 'auto',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            }}
+          >
+            {uploadedFiles.map((file, index) => {
+              const isSelected = selectedFileIds.includes(file.id)
+              return (
+                <div
+                  key={file.id}
+                  onClick={() => onToggle(file.id)}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    background: isSelected ? '#e8e8e8' : 'transparent',
+                    borderBottom: index === uploadedFiles.length - 1 ? 'none' : '1px solid #eee',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    color: '#333',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = '#f5f5f5'
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) e.currentTarget.style.background = 'transparent'
+                  }}
+                >
+                  <CustomCheckbox checked={isSelected} onChange={() => {}} style={{ pointerEvents: 'none' }} />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {getFileIcon(file.name)}
+                    <span>
+                      {file.name}
+                      {file.filetype ? ` — ${file.filetype}` : ''}
+                    </span>
+                  </span>
+                  {isSelected && (
+                    <span style={{ marginLeft: 'auto', color: '#666' }}>
+                      <Check size={16} />
+                    </span>
+                  )}
+                </div>
+              )
+            })}
+          </div>,
+          document.body
+        )}
+    </div>
+  )
 }
 
 /** Sel tanda tangan/tanggal read-only: barcode existing atau '-'. */
@@ -219,11 +446,15 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
   const [isSaving, setIsSaving] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
-  const [uploadingUnit, setUploadingUnit] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  /** Khusus revisi-MUK: 1 perubahan bukti langsung diterapkan ke semua elemen. */
+  const [applyToAll, setApplyToAll] = useState(true)
+  /** File hasil unggah sesi ini — katalog server bisa telat ter-refresh. */
+  const [uploadedLocally, setUploadedLocally] = useState<ServerFile[]>([])
   const [deleteTarget, setDeleteTarget] = useState<ServerFile | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const uploadInputRef = useRef<HTMLInputElement | null>(null)
-  const uploadTargetRef = useRef<string | null>(null)
 
   useEffect(() => {
     const inner = data?.data
@@ -248,7 +479,13 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
     setSubunitBarcodes(bcs)
   }, [data])
 
-  const allFiles = useMemo(() => filesData?.data ?? [], [filesData])
+  /** Katalog file: daftar server + file hasil unggah sesi ini (dedup by id). */
+  const allFiles = useMemo(() => {
+    const map = new Map<number, ServerFile>()
+    ;(filesData?.data ?? []).forEach((f) => map.set(f.id, f))
+    uploadedLocally.forEach((f) => map.set(f.id, f))
+    return Array.from(map.values())
+  }, [filesData, uploadedLocally])
 
   /** Katalog file: gabungan daftar server + lampiran yang tampil di dokumen. */
   const fileById = useMemo(() => {
@@ -264,33 +501,46 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
     return map
   }, [allFiles, units])
 
-  const detachFile = (subunitId: string, fileId: number) => {
-    setBuktiMap((prev) => ({
-      ...prev,
-      [subunitId]: (prev[subunitId] ?? []).filter((id) => id !== fileId),
-    }))
-  }
+  const subunitIds = useMemo(() => units.flatMap((u) => u.subunits.map((s) => s.id)), [units])
 
-  const attachFile = (subunitId: string, fileId: number) => {
+  /**
+   * Inti revisi-MUK: satu perubahan bukti langsung diterapkan ke SEMUA elemen
+   * (delta — hanya file yang diubah, file lain di elemen lain tidak diganggu).
+   * Bila toggle "Terapkan ke semua" dimatikan, perubahan hanya untuk elemen itu.
+   */
+  const changeBukti = (subunitId: string, fileId: number, action: 'attach' | 'detach') => {
     setBuktiMap((prev) => {
-      const cur = prev[subunitId] ?? []
-      if (cur.includes(fileId)) return prev
-      return { ...prev, [subunitId]: [...cur, fileId] }
+      const next: Record<string, number[]> = {}
+      Object.entries(prev).forEach(([key, ids]) => {
+        const kena = applyToAll || key === subunitId
+        if (!kena) {
+          next[key] = ids
+          return
+        }
+        next[key] =
+          action === 'attach'
+            ? ids.includes(fileId)
+              ? ids
+              : [...ids, fileId]
+            : ids.filter((id) => id !== fileId)
+      })
+      return next
     })
+    const nama = fileById.get(fileId)?.name ?? `#${fileId}`
+    const verb = action === 'attach' ? 'dipasang di' : 'dilepas dari'
+    toast.showSuccess(
+      applyToAll ? `Bukti "${nama}" ${verb} semua ${subunitIds.length} elemen` : `Bukti "${nama}" ${verb} elemen ini`
+    )
   }
 
-  const pickUpload = (subunitId: string) => {
-    uploadTargetRef.current = subunitId
-    uploadInputRef.current?.click()
+  const toggleBukti = (subunitId: string, fileId: number) => {
+    const isAttached = (buktiMap[subunitId] ?? []).includes(fileId)
+    changeBukti(subunitId, fileId, isAttached ? 'detach' : 'attach')
   }
 
-  /** Unggah file baru ke server lalu langsung pasang sebagai bukti elemen ini. */
-  const handleUploadPicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const subunitId = uploadTargetRef.current
-    const picked = Array.from(e.target.files ?? [])
-    e.target.value = ''
-    if (!picked.length || !subunitId) return
-
+  /** Unggah file dari section upload (drop zone / browse), lalu pasang ke semua elemen. */
+  const doUpload = async (picked: File[]) => {
+    if (!picked.length || isUploading) return
     const form = new FormData()
     picked.forEach((f) => {
       form.append('files[]', f)
@@ -298,21 +548,48 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
       form.append('filetypes[]', base.toLowerCase().replace(/\s+/g, '_'))
     })
 
-    setUploadingUnit(subunitId)
+    setIsUploading(true)
     try {
-      const res = await uploadForm<{ message: string; files?: { id: number }[] }>(
-        praUrl(idIzin, 'apl02/files'),
-        form
-      )
-      const ids = (res.files ?? []).map((f) => f.id)
+      const res = await uploadForm<{
+        message: string
+        files?: { id: number; name?: string; original_name?: string; path?: string; filetype?: string }[]
+      }>(praUrl(idIzin, 'apl02/files'), form)
+      const fileBase = import.meta.env.VITE_FILE_BASE_URL || API_BASE_URL.replace('/api', '')
+      const uploaded: ServerFile[] = (res.files ?? []).map((f) => ({
+        id: f.id,
+        name: f.original_name || f.name || `file_${f.id}`,
+        path: f.path
+          ? /^https?:\/\//i.test(f.path)
+            ? f.path
+            : `${fileBase}${f.path.startsWith('/') ? '' : '/'}${f.path}`
+          : '',
+        filetype: f.filetype ?? null,
+      }))
+      if (uploaded.length) setUploadedLocally((prev) => [...prev, ...uploaded])
+
+      if (applyToAll && uploaded.length) {
+        const newIds = uploaded.map((f) => f.id)
+        setBuktiMap((prev) => {
+          const next: Record<string, number[]> = {}
+          Object.entries(prev).forEach(([key, ids]) => {
+            next[key] = [...ids, ...newIds.filter((id) => !ids.includes(id))]
+          })
+          return next
+        })
+      }
+
       reloadFiles()
-      ids.forEach((id) => attachFile(subunitId, id))
-      toast.showSuccess(`${ids.length} file diunggah & dipasang sebagai bukti elemen ini`)
+      toast.showSuccess(
+        uploaded.length === 0
+          ? 'Tidak ada file yang diunggah'
+          : applyToAll
+            ? `${uploaded.length} file diunggah & langsung dipasang di semua ${subunitIds.length} elemen`
+            : `${uploaded.length} file diunggah — pilih di kolom Bukti tiap elemen`
+      )
     } catch (err) {
       toast.showError(err instanceof Error ? err.message : 'Gagal mengunggah file')
     } finally {
-      setUploadingUnit(null)
-      uploadTargetRef.current = null
+      setIsUploading(false)
     }
   }
 
@@ -330,6 +607,7 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
         })
         return next
       })
+      setUploadedLocally((prev) => prev.filter((f) => f.id !== target.id))
       reloadFiles()
       toast.showSuccess(`File "${target.name}" dihapus dari server`)
       setDeleteTarget(null)
@@ -406,6 +684,169 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
   return (
     <div style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
       <DocTitle>APL-02 ASESMEN MANDIRI {header?.jabatanKerja || '-'}</DocTitle>
+
+      {/* ===== Section terpisah: Upload Bukti Dokumen (sama seperti praasesmen) ===== */}
+      <div
+        style={{
+          background: '#fff',
+          border: '1px solid #e0e0e0',
+          marginBottom: '20px',
+          padding: '16px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#1a1a1a', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Upload Bukti Dokumen
+            </span>
+            <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>
+              Upload dokumen pendukung di sini, lalu cukup <strong>pilih</strong> di kolom bukti tiap elemen.
+            </p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#334155',
+                cursor: isSaving ? 'not-allowed' : 'pointer',
+              }}
+              title={`Bila aktif: mengubah 1 bukti langsung diterapkan ke ${totalSubunit} elemen`}
+            >
+              <CustomCheckbox checked={applyToAll} onChange={() => setApplyToAll((v) => !v)} disabled={isSaving} />
+              Terapkan ke semua {totalSubunit} elemen
+            </label>
+            {allFiles.length > 0 && (
+              <div style={{ background: '#e8f5e9', color: '#2e7d32', padding: '6px 12px', fontSize: '12px', fontWeight: 600 }}>
+                {allFiles.length} File
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Drop zone */}
+        <div
+          onClick={() => {
+            if (!isUploading && !isSaving) uploadInputRef.current?.click()
+          }}
+          onDragOver={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragOver(true)
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragOver(false)
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setDragOver(false)
+            if (isUploading || isSaving) return
+            const dropped = e.dataTransfer?.files
+            if (dropped?.length) doUpload(Array.from(dropped))
+          }}
+          style={{
+            border: `2px dashed ${dragOver ? '#00488f' : '#0066cc'}`,
+            borderRadius: '16px',
+            padding: '32px 24px 24px',
+            textAlign: 'center',
+            cursor: isUploading || isSaving ? 'not-allowed' : 'pointer',
+            background: dragOver ? '#e8f0fe' : 'linear-gradient(135deg, #f8fbff 0%, #f0f7ff 100%)',
+            transition: 'border-color 0.25s, background 0.25s',
+            opacity: isUploading ? 0.7 : 1,
+          }}
+        >
+          {isUploading ? (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+              <span
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  border: '3px solid #cfe3ff',
+                  borderTopColor: '#0066cc',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                  animation: 'apl02spin 0.8s linear infinite',
+                }}
+              />
+              <span style={{ fontSize: '13px', fontWeight: 600, color: '#00488f' }}>Mengunggah…</span>
+            </div>
+          ) : (
+            <>
+              <svg
+                width="52"
+                height="52"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#0066cc"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginBottom: '10px' }}
+              >
+                <path d="M12 16V4" />
+                <path d="M8 8l4-4 4 4" />
+                <path d="M20 16.5a4 4 0 0 0-2.2-7.4 5.5 5.5 0 0 0-10.5-1A4.5 4.5 0 0 0 4 17.5" />
+              </svg>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#0066cc', marginBottom: '4px' }}>
+                Seret &amp; lepas file di sini
+              </div>
+              <div style={{ fontSize: '12px', color: '#666', marginBottom: '2px' }}>atau klik untuk browse</div>
+              <div style={{ fontSize: '11px', color: '#999' }}>PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, PPT, PPTX (Maks. 5MB per file)</div>
+            </>
+          )}
+        </div>
+
+        <input
+          ref={uploadInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const picked = Array.from(e.target.files ?? [])
+            e.target.value = ''
+            if (picked.length) doUpload(picked)
+          }}
+        />
+
+        {allFiles.length > 0 && (
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: '#333', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              File yang Diupload ({allFiles.length})
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              {allFiles.map((file) => (
+                <UploadedCapsule
+                  key={file.id}
+                  file={file}
+                  disabled={isSaving}
+                  onDelete={() => setDeleteTarget(file)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Catatan (sama seperti praasesmen + info penerapan ke semua elemen) */}
+      <div style={{ background: '#fff9e6', border: '1px solid #e6b800', marginBottom: '20px', padding: '12px' }}>
+        <p style={{ fontSize: '12px', color: '#000', margin: 0 }}>
+          <strong>CATATAN:</strong> K = Kompeten, BK = Belum Kompeten. Kolom <strong>Bukti</strong> hanya untuk memilih file yang sudah
+          diunggah di section atas.{' '}
+          {applyToAll
+            ? `Setiap perubahan bukti otomatis diterapkan ke SEMUA ${totalSubunit} elemen — matikan centang "Terapkan ke semua" bila ingin mengatur per elemen.`
+            : 'Mode per elemen aktif — perubahan bukti hanya berlaku pada elemen yang diubah.'}
+        </p>
+      </div>
+
+      <style>{`@keyframes apl02spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Tabel identitas dokumen */}
       <table style={{ width: '100%', tableLayout: 'fixed', contain: 'content' as const, borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', fontSize: '12px' }}>
@@ -491,8 +932,6 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
               const buktiFiles = buktiIds
                 .map((id) => fileById.get(id))
                 .filter((f): f is ServerFile => Boolean(f))
-              const availableFiles = allFiles.filter((f) => !buktiIds.includes(f.id))
-              const isUploading = uploadingUnit === subunit.id
               return (
                 <Fragment key={subunit.id}>
                   {/* Elemen Header */}
@@ -536,45 +975,24 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
                                     key={file.id}
                                     file={file}
                                     disabled={isSaving}
-                                    onDetach={() => detachFile(subunit.id, file.id)}
-                                    onDelete={() => setDeleteTarget(file)}
+                                    title={
+                                      applyToAll
+                                        ? `Lepas "${file.name}" dari SEMUA ${totalSubunit} elemen`
+                                        : `Lepas "${file.name}" dari elemen ini`
+                                    }
+                                    onDetach={() => changeBukti(subunit.id, file.id, 'detach')}
                                   />
                                 ))}
                               </div>
                             ) : (
                               <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>Belum ada file bukti</div>
                             )}
-                            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
-                              {availableFiles.length > 0 && (
-                                <select
-                                  value=""
-                                  disabled={isSaving}
-                                  style={selectCls}
-                                  title="Pasang file yang sudah terunggah sebagai bukti elemen ini"
-                                  onChange={(e) => {
-                                    const id = Number(e.target.value)
-                                    if (id) attachFile(subunit.id, id)
-                                  }}
-                                >
-                                  <option value="">+ Tambah bukti…</option>
-                                  {availableFiles.map((f) => (
-                                    <option key={f.id} value={f.id}>
-                                      {f.name}
-                                      {f.filetype ? ` — ${f.filetype}` : ''}
-                                    </option>
-                                  ))}
-                                </select>
-                              )}
-                              <button
-                                type="button"
-                                style={{ ...smallBtn, cursor: isSaving || isUploading ? 'not-allowed' : 'pointer' }}
-                                disabled={isSaving || isUploading}
-                                onClick={() => pickUpload(subunit.id)}
-                                title="Unggah file baru dari komputer lalu pasang sebagai bukti elemen ini"
-                              >
-                                <Upload size={12} /> {isUploading ? 'Mengunggah…' : 'Unggah file'}
-                              </button>
-                            </div>
+                            <BuktiPicker
+                              uploadedFiles={allFiles}
+                              selectedFileIds={buktiIds}
+                              disabled={isSaving}
+                              onToggle={(fileId) => toggleBukti(subunit.id, fileId)}
+                            />
                           </td>
                         </>
                       )}
@@ -692,17 +1110,11 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
       <SaveBar
         isSaving={isSaving}
         onSave={handleSaveClick}
-        note={`${totalSubunit} elemen — unggah/hapus file bukti & atur lampiran per elemen, lalu Simpan.`}
-      />
-
-      {/* Input unggah file — satu input dipakai semua elemen (target ditentukan saat klik) */}
-      <input
-        ref={uploadInputRef}
-        type="file"
-        multiple
-        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
-        style={{ display: 'none' }}
-        onChange={handleUploadPicked}
+        note={`${totalSubunit} elemen — ${
+          applyToAll
+            ? 'setiap perubahan bukti diterapkan ke SEMUA elemen'
+            : 'atur bukti per elemen (mode per elemen)'
+        }, lalu Simpan.`}
       />
 
       <ConfirmDialog
