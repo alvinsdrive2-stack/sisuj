@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { FilePenLine, Info, Search, X } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Pagination } from '@/components/ui/Pagination'
@@ -34,7 +33,6 @@ function fmtTanggalUji(value?: string | null): string {
 }
 
 export default function RevisiMukListPage() {
-  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -179,15 +177,18 @@ export default function RevisiMukListPage() {
                         {fmtTanggalUji(row.tanggal_uji)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() =>
-                            navigate(`/admin-lsp/revisi-muk/${encodeURIComponent(row.id_izin)}`)
-                          }
+                        {/* Anchor + target _blank: "Revisi Jawaban" opens in a new tab
+                            (list stays put; editor route is bookmarkable per id_izin).
+                            rel=noopener = standard hardening against tab-nabbing. */}
+                        <a
+                          href={`/admin-lsp/revisi-muk/${encodeURIComponent(row.id_izin)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors cursor-pointer"
                         >
                           <FilePenLine className="w-3.5 h-3.5" />
                           Revisi Jawaban
-                        </button>
+                        </a>
                       </td>
                     </tr>
                   ))}

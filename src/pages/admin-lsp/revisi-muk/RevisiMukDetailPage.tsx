@@ -93,6 +93,9 @@ function RevisiMukDetailInner({ onRetry }: { onRetry: () => void }) {
         title="Dokumen Pra-Asesmen"
         docs={praDocs}
         isPaket={ases.isPaket}
+        hrefFor={(doc) =>
+          `/admin-lsp/revisi-muk/${encodeURIComponent(idIzin ?? '')}/${doc.key}`
+        }
         onOpen={(doc) =>
           navigate(`/admin-lsp/revisi-muk/${encodeURIComponent(idIzin ?? '')}/${doc.key}`)
         }
@@ -103,6 +106,9 @@ function RevisiMukDetailInner({ onRetry }: { onRetry: () => void }) {
         title="Dokumen Asesmen"
         docs={asesmenDocs}
         isPaket={ases.isPaket}
+        hrefFor={(doc) =>
+          `/admin-lsp/revisi-muk/${encodeURIComponent(idIzin ?? '')}/${doc.key}`
+        }
         onOpen={(doc) =>
           navigate(`/admin-lsp/revisi-muk/${encodeURIComponent(idIzin ?? '')}/${doc.key}`)
         }
@@ -126,11 +132,13 @@ function DocSection({
   title,
   docs,
   isPaket,
+  hrefFor,
   onOpen,
 }: {
   title: string
   docs: MukDocConfig[]
   isPaket: boolean
+  hrefFor?: (doc: MukDocConfig) => string
   onOpen: (doc: MukDocConfig) => void
 }) {
   return (
@@ -179,17 +187,31 @@ function DocSection({
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => onOpen(doc)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                      isEdit
-                        ? 'bg-primary text-white hover:bg-primary/90'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
-                    }`}
-                  >
-                    {isEdit && <FilePenLine className="w-3.5 h-3.5" />}
-                    {actionLabel}
-                  </button>
+                  {isEdit && hrefFor ? (
+                    /* Editor route is addressable per id_izin+doc — open as a real
+                       link so "Revisi Jawaban" can be sent to a new tab. */
+                    <a
+                      href={hrefFor(doc)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer bg-primary text-white hover:bg-primary/90"
+                    >
+                      <FilePenLine className="w-3.5 h-3.5" />
+                      {actionLabel}
+                    </a>
+                  ) : (
+                    <button
+                      onClick={() => onOpen(doc)}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                        isEdit
+                          ? 'bg-primary text-white hover:bg-primary/90'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                      }`}
+                    >
+                      {isEdit && <FilePenLine className="w-3.5 h-3.5" />}
+                      {actionLabel}
+                    </button>
+                  )}
                 </div>
               )
             })}
