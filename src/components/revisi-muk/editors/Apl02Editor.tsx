@@ -1,19 +1,24 @@
 /**
  * Editor Revisi MUK — FR.APL.02 (Asesmen Mandiri).
  * Tampilan = form FR.APL.02 halaman asesi (Apl02Page): tabel identitas,
- * panduan, tabel unit dgn kolom K/BK + bukti (read-only), tabel rekomendasi
+ * panduan, tabel unit dgn kolom K/BK + bukti (bisa direvisi), tabel rekomendasi
  * dgn metode asesmen + barcode ttd existing (read-only).
- * Hati-hati: POST wajib tiap answer punya ≥1 file → file existing dari GET
- * (`subunit.files`) dikirim ulang sebagai file_ids; admin merevisi `kompeten`
- * & `metode`. is_dilanjutkan: true punya efek lanjut → konfirmasi sebelum simpan.
+ * Hati-hati: POST wajib tiap answer punya ≥1 file → file bukti per elemen yang
+ * tampil di kolom Bukti-lah yang dikirim sebagai file_ids. Admin bisa:
+ *   - unggah file baru (POST praasesmen/{id}/apl02/files),
+ *   - hapus file terunggah (DELETE praasesmen/apl02/files/{fileId} — lepas dari
+ *     SEMUA elemen + hapus di FTP),
+ *   - pasang/lepas lampiran bukti tiap elemen (disimpan saat Simpan).
+ * Admin hanya merevisi `kompeten` & `metode` (metode tetap keputusan asesor).
+ * is_dilanjutkan: true punya efek lanjut → konfirmasi sebelum simpan.
  */
-import { Fragment, useEffect, useMemo, useState } from 'react'
-import { File } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { File, Trash2, Upload, X } from 'lucide-react'
 import { BRANDING } from '@/config/branding'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { CustomCheckbox } from '@/components/ui/Checkbox'
 import { useToast } from '@/contexts/ToastContext'
-import { praUrl } from '@/lib/revisi-muk-api'
+import { apl02FileDeleteUrl, deleteJson, praUrl, uploadForm } from '@/lib/revisi-muk-api'
 import {
   DocError,
   DocLoading,
@@ -38,6 +43,7 @@ interface ServerFile {
   id: number
   name: string
   path: string
+  filetype?: string | null
 }
 interface Subunit {
   id: string
@@ -68,30 +74,109 @@ type Metode = 'observasi' | 'portofolio'
 
 const cell = { border: '1px solid #000', padding: '4px' } as const
 
-/** Chip nama file bukti — read-only (sama gaya kapsul file asesi, tanpa aksi). */
-function FileChip({ name }: { name: string }) {
+/** Chip nama file bukti + aksi revisi (lepas dari elemen / hapus dari server). */
+function FileChip({
+  file,
+  disabled,
+  onDetach,
+  onDelete,
+}: {
+  file: ServerFile
+  disabled?: boolean
+  onDetach: () => void
+  onDelete: () => void
+}) {
+  const btn: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'transparent',
+    border: 'none',
+    padding: '2px',
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    color: '#64748b',
+    lineHeight: 1,
+  }
   return (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: '6px',
         height: '38px',
         background: '#f1f5f9',
         border: '1px solid #cbd5e1',
         borderRadius: '6px',
-        padding: '0 12px',
+        padding: '0 8px 0 12px',
         fontSize: '12px',
         fontWeight: 500,
         color: '#0369a1',
         boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-        userSelect: 'none',
       }}
     >
       <File size={14} style={{ color: '#0284c7' }} />
-      <span style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+      <a
+        href={file.path}
+        target="_blank"
+        rel="noreferrer"
+        title="Buka file"
+        style={{
+          maxWidth: '200px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          color: 'inherit',
+          textDecoration: 'none',
+        }}
+      >
+        {file.name}
+      </a>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onDetach}
+        title="Lepas file ini dari elemen (file tetap terunggah)"
+        style={btn}
+      >
+        <X size={13} />
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onDelete}
+        title="Hapus file dari server (lepas dari semua elemen)"
+        style={{ ...btn, color: '#dc2626' }}
+      >
+        <Trash2 size={13} />
+      </button>
     </span>
   )
+}
+
+const smallBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  fontSize: '11px',
+  fontWeight: 600,
+  color: '#0369a1',
+  background: '#fff',
+  border: '1px solid #cbd5e1',
+  borderRadius: '6px',
+  padding: '4px 8px',
+  cursor: 'pointer',
+  height: '28px',
+}
+
+const selectCls: React.CSSProperties = {
+  fontSize: '11px',
+  height: '28px',
+  maxWidth: '260px',
+  border: '1px solid #cbd5e1',
+  borderRadius: '6px',
+  padding: '0 4px',
+  color: '#0369a1',
+  background: '#fff',
 }
 
 /** Sel tanda tangan/tanggal read-only: barcode existing atau '-'. */
@@ -115,42 +200,148 @@ function TtdBox({ barcode }: { barcode?: TtdBarcode | BarcodeInfo | null }) {
 export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
   const toast = useToast()
   const { data, isLoading, error, reload } = useDocFetch<Apl02Response>(praUrl(idIzin, 'apl02'))
+  // Katalog semua file APL-02 yang sudah terunggah untuk izin ini (bisa dipasang
+  // ke elemen mana pun). Dipakai untuk tombol unggah + pilih bukti per unit.
+  const { data: filesData, reload: reloadFiles } = useDocFetch<{ data?: ServerFile[] }>(
+    praUrl(idIzin, 'apl02/files')
+  )
 
   const [units, setUnits] = useState<Unit[]>([])
   const [kompetenMap, setKompetenMap] = useState<Record<string, boolean>>({})
+  /** Bukti per elemen (subunit_id → daftar file id) — inilah file_ids saat simpan. */
+  const [buktiMap, setBuktiMap] = useState<Record<string, number[]>>({})
   const [metode, setMetode] = useState<Metode | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [subunitBarcodes, setSubunitBarcodes] = useState<Record<string, SubunitBarcodes>>({})
+  const [uploadingUnit, setUploadingUnit] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<ServerFile | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const uploadInputRef = useRef<HTMLInputElement | null>(null)
+  const uploadTargetRef = useRef<string | null>(null)
 
   useEffect(() => {
     const inner = data?.data
     if (!inner?.units) return
     setUnits(inner.units)
     setMetode(inner.metode ?? null)
+
     const init: Record<string, boolean> = {}
     const bcs: Record<string, SubunitBarcodes> = {}
+    const initBukti: Record<string, number[]> = {}
     inner.units.forEach((unit) => {
       unit.subunits.forEach((subunit) => {
         // Default 'K' bila belum pernah disimpan (mirip Apl02Page asesi)
         init[subunit.id] = subunit.kompeten !== false
         if (subunit.barcodes) bcs[subunit.id] = subunit.barcodes
         else if (inner.barcodes) bcs[subunit.id] = inner.barcodes
+        initBukti[subunit.id] = (subunit.files ?? []).map((f) => f.id)
       })
     })
     setKompetenMap(init)
+    setBuktiMap(initBukti)
     setSubunitBarcodes(bcs)
   }, [data])
+
+  const allFiles = useMemo(() => filesData?.data ?? [], [filesData])
+
+  /** Katalog file: gabungan daftar server + lampiran yang tampil di dokumen. */
+  const fileById = useMemo(() => {
+    const map = new Map<number, ServerFile>()
+    allFiles.forEach((f) => map.set(f.id, f))
+    units.forEach((u) =>
+      u.subunits.forEach((s) => {
+        ;(s.files ?? []).forEach((f) => {
+          if (!map.has(f.id)) map.set(f.id, f)
+        })
+      })
+    )
+    return map
+  }, [allFiles, units])
+
+  const detachFile = (subunitId: string, fileId: number) => {
+    setBuktiMap((prev) => ({
+      ...prev,
+      [subunitId]: (prev[subunitId] ?? []).filter((id) => id !== fileId),
+    }))
+  }
+
+  const attachFile = (subunitId: string, fileId: number) => {
+    setBuktiMap((prev) => {
+      const cur = prev[subunitId] ?? []
+      if (cur.includes(fileId)) return prev
+      return { ...prev, [subunitId]: [...cur, fileId] }
+    })
+  }
+
+  const pickUpload = (subunitId: string) => {
+    uploadTargetRef.current = subunitId
+    uploadInputRef.current?.click()
+  }
+
+  /** Unggah file baru ke server lalu langsung pasang sebagai bukti elemen ini. */
+  const handleUploadPicked = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const subunitId = uploadTargetRef.current
+    const picked = Array.from(e.target.files ?? [])
+    e.target.value = ''
+    if (!picked.length || !subunitId) return
+
+    const form = new FormData()
+    picked.forEach((f) => {
+      form.append('files[]', f)
+      const base = f.name.replace(/\.[^.]+$/, '') || 'bukti'
+      form.append('filetypes[]', base.toLowerCase().replace(/\s+/g, '_'))
+    })
+
+    setUploadingUnit(subunitId)
+    try {
+      const res = await uploadForm<{ message: string; files?: { id: number }[] }>(
+        praUrl(idIzin, 'apl02/files'),
+        form
+      )
+      const ids = (res.files ?? []).map((f) => f.id)
+      reloadFiles()
+      ids.forEach((id) => attachFile(subunitId, id))
+      toast.showSuccess(`${ids.length} file diunggah & dipasang sebagai bukti elemen ini`)
+    } catch (err) {
+      toast.showError(err instanceof Error ? err.message : 'Gagal mengunggah file')
+    } finally {
+      setUploadingUnit(null)
+      uploadTargetRef.current = null
+    }
+  }
+
+  /** Hapus file dari server (lepas dari semua elemen + hapus di FTP). */
+  const doDeleteFile = async () => {
+    const target = deleteTarget
+    if (!target) return
+    setIsDeleting(true)
+    try {
+      await deleteJson(apl02FileDeleteUrl(target.id))
+      setBuktiMap((prev) => {
+        const next: Record<string, number[]> = {}
+        Object.entries(prev).forEach(([key, ids]) => {
+          next[key] = ids.filter((id) => id !== target.id)
+        })
+        return next
+      })
+      reloadFiles()
+      toast.showSuccess(`File "${target.name}" dihapus dari server`)
+      setDeleteTarget(null)
+    } catch (err) {
+      toast.showError(err instanceof Error ? err.message : 'Gagal menghapus file')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const totalSubunit = useMemo(
     () => units.reduce((n, u) => n + u.subunits.length, 0),
     [units]
   )
   const subunitTanpaFile = useMemo(
-    () =>
-      units.flatMap((u) => u.subunits).filter((s) => !s.files || s.files.length === 0)
-        .length,
-    [units]
+    () => units.flatMap((u) => u.subunits).filter((s) => (buktiMap[s.id] ?? []).length === 0).length,
+    [units, buktiMap]
   )
 
   const doSave = async () => {
@@ -161,8 +352,8 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
         unit.subunits.map((subunit) => ({
           subunit_id: subunit.id,
           kompeten: kompetenMap[subunit.id] ?? true,
-          // file existing wajib dikirim ulang (validasi backend: ≥1 file per answer)
-          file_ids: (subunit.files ?? []).map((f) => f.id),
+          // Bukti yang tampil di kolom "Bukti" elemen ini (validasi backend: ≥1 file per answer)
+          file_ids: buktiMap[subunit.id] ?? [],
           file_urls: [] as { url: string; name: string }[],
         }))
       )
@@ -187,7 +378,7 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
     }
     if (subunitTanpaFile > 0) {
       toast.showWarning(
-        `${subunitTanpaFile} elemen belum punya file bukti — APL.02 tidak bisa disimpan sebelum asesi mengunggah filenya.`
+        `${subunitTanpaFile} elemen belum punya file bukti — unggah file baru atau pasang bukti yang sudah terunggah sebelum menyimpan.`
       )
       return
     }
@@ -291,6 +482,12 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
 
             {unit.subunits.map((subunit) => {
               const kukCount = subunit.kuk_list.length
+              const buktiIds = buktiMap[subunit.id] ?? []
+              const buktiFiles = buktiIds
+                .map((id) => fileById.get(id))
+                .filter((f): f is ServerFile => Boolean(f))
+              const availableFiles = allFiles.filter((f) => !buktiIds.includes(f.id))
+              const isUploading = uploadingUnit === subunit.id
               return (
                 <Fragment key={subunit.id}>
                   {/* Elemen Header */}
@@ -327,15 +524,52 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
                             />
                           </td>
                           <td rowSpan={kukCount} style={{ ...cell, padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
-                            {(subunit.files ?? []).length > 0 ? (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                {(subunit.files ?? []).map((file) => (
-                                  <FileChip key={file.id} name={file.name} />
+                            {buktiFiles.length > 0 ? (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                                {buktiFiles.map((file) => (
+                                  <FileChip
+                                    key={file.id}
+                                    file={file}
+                                    disabled={isSaving}
+                                    onDetach={() => detachFile(subunit.id, file.id)}
+                                    onDelete={() => setDeleteTarget(file)}
+                                  />
                                 ))}
                               </div>
                             ) : (
-                              <span style={{ fontSize: '11px', color: '#999' }}>Belum ada file bukti</span>
+                              <div style={{ fontSize: '11px', color: '#999', marginBottom: '6px' }}>Belum ada file bukti</div>
                             )}
+                            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
+                              {availableFiles.length > 0 && (
+                                <select
+                                  value=""
+                                  disabled={isSaving}
+                                  style={selectCls}
+                                  title="Pasang file yang sudah terunggah sebagai bukti elemen ini"
+                                  onChange={(e) => {
+                                    const id = Number(e.target.value)
+                                    if (id) attachFile(subunit.id, id)
+                                  }}
+                                >
+                                  <option value="">+ Tambah bukti…</option>
+                                  {availableFiles.map((f) => (
+                                    <option key={f.id} value={f.id}>
+                                      {f.name}
+                                      {f.filetype ? ` — ${f.filetype}` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                              <button
+                                type="button"
+                                style={{ ...smallBtn, cursor: isSaving || isUploading ? 'not-allowed' : 'pointer' }}
+                                disabled={isSaving || isUploading}
+                                onClick={() => pickUpload(subunit.id)}
+                                title="Unggah file baru dari komputer lalu pasang sebagai bukti elemen ini"
+                              >
+                                <Upload size={12} /> {isUploading ? 'Mengunggah…' : 'Unggah file'}
+                              </button>
+                            </div>
                           </td>
                         </>
                       )}
@@ -453,7 +687,17 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
       <SaveBar
         isSaving={isSaving}
         onSave={handleSaveClick}
-        note={`${totalSubunit} elemen — file bukti existing dikirim ulang tanpa diubah.`}
+        note={`${totalSubunit} elemen — unggah/hapus file bukti & atur lampiran per elemen, lalu Simpan.`}
+      />
+
+      {/* Input unggah file — satu input dipakai semua elemen (target ditentukan saat klik) */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
+        style={{ display: 'none' }}
+        onChange={handleUploadPicked}
       />
 
       <ConfirmDialog
@@ -463,6 +707,15 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
         confirmText="Ya, Simpan"
         onConfirm={doSave}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Hapus file dari server?"
+        message={`File "${deleteTarget?.name ?? ''}" akan dilepas dari SEMUA elemen dan dihapus permanen dari server. Lanjutkan?`}
+        confirmText={isDeleting ? 'Menghapus…' : 'Ya, Hapus'}
+        onConfirm={doDeleteFile}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   )
