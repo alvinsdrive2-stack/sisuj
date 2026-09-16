@@ -45,6 +45,11 @@ interface ServerFile {
   path: string
   filetype?: string | null
 }
+
+/** Bukti eksternal (mis. portal PU) = path berupa URL, bukan file di server moon. */
+function isExternalFile(file: ServerFile | null | undefined): boolean {
+  return !!file?.path && /^https?:\/\//i.test(file.path)
+}
 interface Subunit {
   id: string
   no_elemen: string
@@ -711,8 +716,12 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Hapus file dari server?"
-        message={`File "${deleteTarget?.name ?? ''}" akan dilepas dari SEMUA elemen dan dihapus permanen dari server. Lanjutkan?`}
+        title={isExternalFile(deleteTarget) ? 'Hapus tautan bukti ini?' : 'Hapus file dari server?'}
+        message={
+          isExternalFile(deleteTarget)
+            ? `"${deleteTarget?.name ?? ''}" adalah berkas/tautan EKSTERNAL (bukan file di server) — akan dilepas dari SEMUA elemen dan datanya dihapus. Lanjutkan?`
+            : `File "${deleteTarget?.name ?? ''}" akan dilepas dari SEMUA elemen dan dihapus permanen dari server. Lanjutkan?`
+        }
         confirmText={isDeleting ? 'Menghapus…' : 'Ya, Hapus'}
         onConfirm={doDeleteFile}
         onCancel={() => setDeleteTarget(null)}
