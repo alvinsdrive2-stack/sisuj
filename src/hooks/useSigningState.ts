@@ -228,6 +228,13 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // Sumber: /ttd-status docs (server-side) + mirror barcodes lokal utk dokumen
   // yang baru di-sign di sesi ini. FE-only convenience; BE assertTtdOrder ikut
   // memvalidasi (bypass URL tetap ditolak server).
+  //
+  // OPTIONAL_CHAIN_DOCS: dokumen yang TIDAK pernah jadi syarat urutan di FE:
+  // - K3 = "Tata Tertib dan K3" (PDF statis, tidak "diisi") — keputusan user
+  //   16 Sep 2026, kasus I-2026091510190336922.
+  // AK04 justru kondisional (wajib hanya bila ada isi banding) → ditentukan
+  // server lewat ttd-status.not_required, bukan hardcode di sini.
+  const OPTIONAL_CHAIN_DOCS = ['K3']
   const SIGNING_CHAIN: Record<'asesi' | 'asesor', Array<{ key: string; doc: string }>> = {
     asesi: [
       { key: 'apl01', doc: 'APL01' }, { key: 'apl02', doc: 'APL02' },
@@ -254,7 +261,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     const missing: string[] = []
     for (const c of chain.slice(0, idx)) {
       // Dokumen yang tidak diisi (mis. AK04 tanpa banding) tidak wajib TTD.
-      if (ttdNotRequired.includes(c.doc)) continue
+      if (ttdNotRequired.includes(c.doc) || OPTIONAL_CHAIN_DOCS.includes(c.doc)) continue
       const serverSigned = (ttdDocs[c.doc]?.[mySlot] ?? 0) === 1
       // Mirror lokal: dokumen yg baru di-sign di halaman ini (ttdDocs di-fetch
       // saat mount, bisa stale) — aman dari race setelah realtime update.
