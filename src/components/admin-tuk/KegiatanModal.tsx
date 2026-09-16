@@ -337,7 +337,8 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
               {selectedField && (
                 <div style={{
                   borderRadius: '12px',
-                  overflow: 'hidden',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
                   border: '1px solid #e5e7eb',
                   background: '#f9fafb',
                   position: 'relative',
@@ -520,10 +521,9 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      margin: 'auto',
                       padding: '40px 24px',
                       gap: '24px',
-                      flex: 1,
                     }}>
                       <div style={{ textAlign: 'center' }}>
                         <FontAwesomeIcon icon={typeInfo.icon} style={{ fontSize: '48px', color: '#1e3a5f', marginBottom: '12px' }} />

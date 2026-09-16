@@ -388,7 +388,7 @@ export function DaftarHadirModal({
 
   // QR Mode styling - matching KegiatanModal
   const qrContent = (
-    <div style={{ textAlign: 'center', padding: '24px' }}>
+    <div style={{ textAlign: 'center', padding: '24px', margin: 'auto' }}>
       <p style={{ color: '#6b7280', marginBottom: '24px', fontSize: '14px' }}>
         {isMobile
           ? 'Gunakan kamera untuk mengambil foto kehadiran'
@@ -683,13 +683,13 @@ export function DaftarHadirModal({
                 background: '#f9fafb',
                 border: '1px solid #e5e7eb',
                 borderRadius: '8px',
-                overflow: 'hidden',
+                overflowY: 'auto',
+                overflowX: 'hidden',
                 margin: '0 16px 16px 16px',
                 minHeight: '50vh',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
                 position: 'relative'
               }}>
                 {selectedNode.url ? (
@@ -866,7 +866,7 @@ export function DaftarHadirModal({
                   </>
                 ) : selectedNode.canUpload ? (
                   // Show QR + Upload options for uploadable nodes without photo
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', gap: '24px', flex: 1 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: 'auto', padding: '40px 24px', gap: '24px' }}>
                     <div style={{ textAlign: 'center' }}>
                       <FontAwesomeIcon icon={faCamera} style={{ fontSize: '48px', color: '#1e3a5f', marginBottom: '12px' }} />
                       <p style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
@@ -1142,8 +1142,8 @@ export function DaftarHadirModal({
           padding: '24px',
           flex: 1,
           display: 'flex',
-          alignItems: mode === 'qr' ? 'center' : 'flex-start',
-          justifyContent: mode === 'qr' ? 'center' : 'flex-start',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
           overflow: 'auto',
         }}>
           {mode === 'qr' ? qrContent : detailContent}
