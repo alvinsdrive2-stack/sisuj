@@ -73,10 +73,13 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const config = getSigningConfig(pageKey)
   const [agreedChecklist, setAgreedChecklist] = useState(false)
 
-  // AK.01 (Persetujuan) & AK.07 (Penyesuaian) selalu multi signer: kedua form itu
-  // punya slot ttd asesor 1 & 2, jadi TTD semua pihak wajib apa pun jenis kelasnya.
-  // Kelas non-2 (Luring/Hybrid/Onsite) tetap single signer untuk halaman lain.
-  const alwaysMultiSigner = pageKey === 'ak01' || pageKey === 'ak07'
+  // AK.01 (Persetujuan) selalu multi signer. AK.07 dulu ikut (d6dbee17) tapi itu
+  // mengunci uji LURING: form-nya butuh 3 ttd padahal luring cukup satu pihak
+  // (kasus I-2026091021315621755 / jadwal 606302 kelas 1 — user menunggu
+  // "Asesor 1, Asesor 2, Asesi" selamanya). Luring kembali single-signer;
+  // perlindungan asesor-2 utk AK.07 tetap jalan di kelas Daring ('2').
+  const alwaysMultiSigner = pageKey === 'ak01'
+  const slotsMultiSigner = pageKey === 'ak01' || pageKey === 'ak07'
   const singleSigner = !alwaysMultiSigner && jenisKelas !== undefined && jenisKelas !== '' && jenisKelas !== '2'
   const order: SigningOrder = singleSigner ? (isAsesor ? 'asesor_only' : 'asesi_only') : config.order
 
@@ -104,18 +107,35 @@ export function useSigningState(input: SigningStateInput): SigningState {
     return () => { alive = false }
   }, [idIzin, isUuidFlow])
 
+  // ── Sanity check isi slot asesor ──
+  // asesorList bisa berisi 2 baris placeholder (asesor 2 tidak dijadwalkan, tapi
+  // barisnya tetap dirender). /api/data-dokumen mengisi baris tsb dari relasi
+  // id_asesor_2; slot kosong → nama/noreg null. Tanpa cek ini, halaman luring
+  // (jenis_kelas 1) dengan 1 asesor ikut menuntut "Asesor 2" + bikin gate
+  // allAsesorSigned mati selamanya (kasus I-2026091021315621755 / 606302).
+  const hasAsesorData = (a: any) => !!(a && (a.nama || a.noreg))
+  const hasAsesor1Data = useMemo(() => hasAsesorData(asesorList[0]), [asesorList])
+  const hasAsesor2Data = useMemo(() => hasAsesorData(asesorList[1]), [asesorList])
+
   // Asesor 2 wajib? Prioritas: status server > input eksplisit > panjang asesorList.
   const asesor2Required = useMemo(() => {
     if (tahap === 0 || singleSigner || isUuidFlow) return false
     // Halaman yg wajib TTD semua pihak (AK.01/AK.07): kalau di halaman ini memang
-    // ada 2 asesor, asesor 2 WAJIB ttd. Jangan gantung ke /ttd-status doang — dia
-    // bisa balikin false (akun asesor 2 role-nya bukan 5, noreg kosong, atau jadwal
-    // belum kebentuk saat request) → gate asesi cuma nunggu asesor 1 & asesor 2
-    // ke-skip. Halaman lain tetap pakai prioritas lama.
-    if (alwaysMultiSigner && asesorList.length >= 2) return true
+    // ADA 2 asesor sungguhan, dua-duanya wajib ttd. Jangan gantung ke /ttd-status
+    // doang — dia bisa balikin false (akun asesor 2 role-nya bukan 5, noreg kosong,
+    // atau jadwal belum kebentuk saat request) → gate asesi cuma nunggu asesor 1 &
+    // asesor 2 ke-skip. Halaman lain tetap pakai prioritas lama.
+    // "Sungguhan" = baris ke-2 punya nama/noreg (see hasAsesorData) — list 2 baris
+    // dengan slot 2 kosong = 1 asesor, asesor 2 TIDAK wajib.
+    if (alwaysMultiSigner) {
+      if (asesorList.length < 2) return false
+      // Data baris (nama/noreg) = sumber utama; server/status eksplisit tetap
+      // boleh menaikkan jadi wajib (union), tapi baris kosong tidak memaksa.
+      return hasAsesor2Data || statusHasAsesor2 === true || hasAsesor2Input === true
+    }
     const explicit = statusHasAsesor2 ?? hasAsesor2Input
     return explicit ?? asesorList.length >= 2
-  }, [tahap, singleSigner, isUuidFlow, alwaysMultiSigner, statusHasAsesor2, hasAsesor2Input, asesorList])
+  }, [tahap, singleSigner, isUuidFlow, alwaysMultiSigner, asesorList, hasAsesor2Data, statusHasAsesor2, hasAsesor2Input])
 
   // ── Ably realtime ──
   const channelName = idIzin ? `signing.${idIzin}.${pageKey}` : ''
@@ -244,10 +264,18 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (singleSigner) return true
     if (isUuidFlow) return true
     if (asesorList.length === 0) return false
+    // Halaman multi-slot (AK.01/AK.07): cukup pihak yang SUNGGUH dijadwalkan.
+    // Slot asesor 2 kosong (nama/noreg null) tidak menuntut TTD.
+    if (slotsMultiSigner) {
+      if (hasAsesor1Data && !barcodes?.asesor1?.url) return false
+      if ((hasAsesor2Data || asesor2Required) && !barcodes?.asesor2?.url) return false
+      if (!hasAsesor1Data && !hasAsesor2Data && !barcodes?.asesor1?.url) return false
+      return true
+    }
     if (!barcodes?.asesor1?.url) return false
     if (asesor2Required && !barcodes?.asesor2?.url) return false
     return true
-  }, [tahap, singleSigner, isUuidFlow, asesorList, barcodes, asesor2Required])
+  }, [tahap, singleSigner, isUuidFlow, asesorList, barcodes, asesor2Required, slotsMultiSigner, hasAsesor1Data, hasAsesor2Data])
 
   const allSigned = useMemo(() => {
     if (order === 'asesi_only') return asesiHasSigned
