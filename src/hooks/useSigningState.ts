@@ -91,6 +91,10 @@ export function useSigningState(input: SigningStateInput): SigningState {
   // input.hasAsesor2 / panjang asesorList).
   const [statusHasAsesor2, setStatusHasAsesor2] = useState<boolean | null>(null)
   const [ttdDocs, setTtdDocs] = useState<Record<string, Partial<Record<BarcodeRole | 'admin', 0 | 1>>> | null>(null)
+  // Dokumen yang TIDAK diisi untuk izin ini (mis. AK04 = FR.AK.04 BANDING ASESMEN
+  // tanpa banding) → tidak masuk rantai wajib TTD. Dihitung server lewat
+  // ttd-status.not_required supaya FE & BE (assertTtdOrder) memakai aturan sama.
+  const [ttdNotRequired, setTtdNotRequired] = useState<string[]>([])
   useEffect(() => {
     if (!idIzin || isUuidFlow) return
     let alive = true
@@ -102,6 +106,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
         const has2 = json?.data?.has_asesor_2
         if (alive && typeof has2 === 'boolean') setStatusHasAsesor2(has2)
         if (alive && json?.data?.docs) setTtdDocs(json.data.docs)
+        if (alive && Array.isArray(json?.data?.not_required)) setTtdNotRequired(json.data.not_required)
       } catch { /* fallback ke input */ }
     })()
     return () => { alive = false }
@@ -248,6 +253,8 @@ export function useSigningState(input: SigningStateInput): SigningState {
     if (idx <= 0) return []
     const missing: string[] = []
     for (const c of chain.slice(0, idx)) {
+      // Dokumen yang tidak diisi (mis. AK04 tanpa banding) tidak wajib TTD.
+      if (ttdNotRequired.includes(c.doc)) continue
       const serverSigned = (ttdDocs[c.doc]?.[mySlot] ?? 0) === 1
       // Mirror lokal: dokumen yg baru di-sign di halaman ini (ttdDocs di-fetch
       // saat mount, bisa stale) — aman dari race setelah realtime update.
@@ -257,7 +264,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
       if (!serverSigned && !localSigned) missing.push(c.doc)
     }
     return missing
-  }, [tahap, isUuidFlow, isAsesor, mySlot, pageKey, ttdDocs, barcodes])
+  }, [tahap, isUuidFlow, isAsesor, mySlot, pageKey, ttdDocs, ttdNotRequired, barcodes])
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
