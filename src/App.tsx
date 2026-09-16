@@ -8,7 +8,7 @@ import { DaftarHadirModalProvider, useDaftarHadirModal } from './contexts/Daftar
 import { DokumenAsesiProvider } from './contexts/DokumenAsesiContext'
 import DokumenAsesiModal from './components/asesor/DokumenAsesiModal'
 import ProtectedRoute from './components/ProtectedRoute'
-import ValidatedNavigationRoute from './components/ValidatedNavigationRoute'
+import ValidatedNavigationRoute, { grantNavPath } from './components/ValidatedNavigationRoute'
 import {
   AdminLSPRoute,
   SuperAdminRoute,
@@ -467,7 +467,13 @@ function NavigationTracker() {
       const link = target.closest('a')
       const href = link?.getAttribute('href')
       if (link && href && href.startsWith('/')) {
-        sessionStorage.setItem('validated_nav_path', extractPath(href))
+        const path = extractPath(href)
+        sessionStorage.setItem('validated_nav_path', path)
+        // Link yang dibuka di TAB BARU (mis. tombol "Revisi Jawaban", target=_blank
+        // + rel=noopener) → sessionStorage tab baru kosong, jadi simpan grant
+        // lintas-tab sekali pakai supaya guard tidak melempar ke dashboard.
+        const tgt = link.getAttribute('target')
+        if (tgt && tgt !== '_self') grantNavPath(path)
       }
     }
     document.addEventListener('click', handleClick)
