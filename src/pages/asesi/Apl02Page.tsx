@@ -1974,15 +1974,21 @@ export default function Apl02Page() {
             barcodesFromApi = apl02Result.data.barcodes
             isDilanjutkanFromApi = apl02Result.data.is_dilanjutkan
 
-            // Map subunit.kompeten to kukChecklist — default K kalau belum disimpan
+            // Map subunit.kompeten to kukChecklist — default null kalau belum disimpan
+            // [2026-09-18] Default diubah dari 'K' → null (tidak autofill K) agar asesi
+            //   memilih sendiri K/BK. Autofill asli di-comment di bawah — uncomment untuk
+            //   mengembalikan perilaku lama (semua KUK otomatis 'K').
             const newKukChecklist: Record<string, 'K' | 'BK' | null> = {}
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
-                // Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
+                // Default semua KUK ke null; 'BK' hanya kalau tersimpan false.
+                // (Autofill lama: semua 'K' kecuali tersimpan false → lihat baris komentar)
                 subunit.kuk_list.forEach(kuk => {
                   const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                  newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
+                  // [AUTOFILL LAMA — DISABLED 2026-09-18] Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
+                  // newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
+                  newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : null
                 })
                 // Store barcodes per subunit (prefer subunit-level barcodes, fallback to API-level)
                 if (subunit.barcodes) {
