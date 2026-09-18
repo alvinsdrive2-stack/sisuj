@@ -1648,6 +1648,7 @@ export default function Apl02Page() {
   }, []) // No dependencies - uses ref instead
 
   const handleBuktiChange = useCallback((kukId: string, fileId: number) => {
+    const applyAll = import.meta.env.VITE_APL02_APPLY_TO_ALL !== 'false'
     setKukBukti(prev => {
       const currentFiles = prev[kukId] || []
       const isRemoving = currentFiles.includes(fileId)
@@ -1665,22 +1666,37 @@ export default function Apl02Page() {
       }
 
       if (isRemoving) {
-        // Remove file from ALL KUKs (every element)
-        const updated = { ...prev }
-        allKukIds.forEach(kid => {
-          updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
-        })
-        return updated
+        if (applyAll) {
+          // Remove file from ALL KUKs (every element)
+          const updated = { ...prev }
+          allKukIds.forEach(kid => {
+            updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
+          })
+          return updated
+        } else {
+          // Remove from targeted KUK only
+          const updated = { ...prev }
+          updated[kukId] = (updated[kukId] || []).filter(f => f !== fileId)
+          return updated
+        }
       } else {
-        // Add file to ALL KUKs across all elements
-        const updated = { ...prev }
-        allKukIds.forEach(kid => {
-          const files = updated[kid] || []
-          if (!files.includes(fileId)) {
-            updated[kid] = [...files, fileId]
-          }
-        })
-        return updated
+        if (applyAll) {
+          // Add file to ALL KUKs across all elements
+          const updated = { ...prev }
+          allKukIds.forEach(kid => {
+            const files = updated[kid] || []
+            if (!files.includes(fileId)) {
+              updated[kid] = [...files, fileId]
+            }
+          })
+          return updated
+        } else {
+          // Add to targeted KUK only
+          const updated = { ...prev }
+          if (!updated[kukId]) updated[kukId] = []
+          if (!updated[kukId].includes(fileId)) updated[kukId] = [...updated[kukId], fileId]
+          return updated
+        }
       }
     })
   }, []) // No dependencies - uses ref instead
@@ -1690,26 +1706,32 @@ export default function Apl02Page() {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
 
-  const handleRemoveBukti = useCallback((_kukId: string, fileId: number) => {
+  const handleRemoveBukti = useCallback((kukId: string, fileId: number) => {
+    const applyAll = import.meta.env.VITE_APL02_APPLY_TO_ALL !== 'false'
     setKukBukti(prev => {
-      // Collect all KUK IDs across all units/subunits
-      const allKukIds: string[] = []
-      if (apl02DataRef.current) {
-        apl02DataRef.current.units.forEach(unit => {
-          unit.subunits.forEach(subunit => {
-            subunit.kuk_list.forEach(kuk => {
-              allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+      if (applyAll) {
+        // Remove file from ALL KUKs (every element)
+        const allKukIds: string[] = []
+        if (apl02DataRef.current) {
+          apl02DataRef.current.units.forEach(unit => {
+            unit.subunits.forEach(subunit => {
+              subunit.kuk_list.forEach(kuk => {
+                allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
+              })
             })
           })
+        }
+        const updated = { ...prev }
+        allKukIds.forEach(kid => {
+          updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
         })
+        return updated
+      } else {
+        // Remove from targeted KUK only
+        const updated = { ...prev }
+        updated[kukId] = (updated[kukId] || []).filter(f => f !== fileId)
+        return updated
       }
-
-      // Remove file from ALL KUKs
-      const updated = { ...prev }
-      allKukIds.forEach(kid => {
-        updated[kid] = (prev[kid] || []).filter(f => f !== fileId)
-      })
-      return updated
     })
   }, [])
 
@@ -2020,12 +2042,14 @@ export default function Apl02Page() {
                   return [...newFiles, ...prev]
                 })
 
-                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA unit (default) ──
+                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA unit ──
+                // Dikontrol oleh env VITE_APL02_AUTO_ASSIGN_DOCS.
                 // File kebenaran (id negatif hasil injeksi dokumen-asesi) langsung
                 // terpilih di setiap elemen/subunit. Kecuali: mode asesor, atau
                 // subunit tsb SUDAH punya file serupa (mis. dari draft/attach
                 // sebelumnya) — hindari duplikat saat buka ulang halaman.
-                if (!isAsesor) {
+                const autoAssignEnabled = import.meta.env.VITE_APL02_AUTO_ASSIGN_DOCS !== 'false'
+                if (!isAsesor && autoAssignEnabled) {
                   const defaultFiles = dokumenFiles.filter(f => f.id < 0)
                   if (defaultFiles.length > 0) {
                     const nameById = new Map(defaultFiles.map(f => [f.id, String(f.name || '').toLowerCase()]))

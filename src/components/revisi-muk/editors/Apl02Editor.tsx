@@ -449,7 +449,7 @@ export function Apl02Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) 
   const [isUploading, setIsUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   /** Khusus revisi-MUK: 1 perubahan bukti langsung diterapkan ke semua elemen. */
-  const [applyToAll, setApplyToAll] = useState(true)
+  const [applyToAll, setApplyToAll] = useState(() => import.meta.env.VITE_APL02_APPLY_TO_ALL !== 'false')
   /** File hasil unggah sesi ini — katalog server bisa telat ter-refresh. */
   const [uploadedLocally, setUploadedLocally] = useState<ServerFile[]>([])
   const [deleteTarget, setDeleteTarget] = useState<ServerFile | null>(null)
