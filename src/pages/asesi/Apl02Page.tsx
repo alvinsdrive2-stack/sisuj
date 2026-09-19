@@ -1974,27 +1974,21 @@ export default function Apl02Page() {
             barcodesFromApi = apl02Result.data.barcodes
             isDilanjutkanFromApi = apl02Result.data.is_dilanjutkan
 
-            // Map subunit.kompeten to kukChecklist — default null kalau belum disimpan
-            // [2026-09-18] Default diubah dari 'K' → null (tidak autofill K) agar asesi
-            //   memilih sendiri K/BK. Autofill asli di-comment di bawah — uncomment untuk
-            //   mengembalikan perilaku lama (semua KUK otomatis 'K').
+            // Map subunit.kompeten to kukChecklist — auto-ceklis 'K' kalau belum disimpan
+            // [RESTORE 2026-09-19] Autofill 'K' diaktifkan kembali (per instruksi user):
+            //   jawaban null (belum diisi) → otomatis 'K'.
+            //   jawaban tersimpan false → 'BK', true → 'K' (menyesuaikan jawaban).
+            //   Riwayat: 823a7374 mengubah default jadi null; af995070 memperbaiki
+            //   nilai tersimpan true yang ikut jadi null — keduanya kini tercakup.
             const newKukChecklist: Record<string, 'K' | 'BK' | null> = {}
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
-                // Default KUK: null kalau BELUM ada jawaban tersimpan (tanpa autofill 'K').
-                // Jawaban tersimpan dihormati: false → 'BK', true → 'K'.
-                // [FIX 2026-09-19] Sebelumnya `=== false ? 'BK' : null` membuat
-                //   kompeten=true (jawaban 'K' tersimpan) ikut jadi null di tampilan.
-                // [AUTOFILL LAMA — DISABLED 2026-09-18] Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
-                // newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
+                // Auto-ceklis: semua KUK 'K'; 'BK' hanya kalau jawaban tersimpan false.
+                // Jawaban dari backend dihormati (true → 'K', false → 'BK').
                 subunit.kuk_list.forEach(kuk => {
                   const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                  newKukChecklist[kukId] = subunit.kompeten === false
-                    ? 'BK'
-                    : subunit.kompeten === true
-                      ? 'K'
-                      : null
+                  newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
                 })
                 // Store barcodes per subunit (prefer subunit-level barcodes, fallback to API-level)
                 if (subunit.barcodes) {
