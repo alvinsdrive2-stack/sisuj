@@ -1982,13 +1982,19 @@ export default function Apl02Page() {
             const newSubunitBarcodes: Record<string, SubunitBarcodes> = {}
             units.forEach(unit => {
               unit.subunits.forEach(subunit => {
-                // Default semua KUK ke null; 'BK' hanya kalau tersimpan false.
-                // (Autofill lama: semua 'K' kecuali tersimpan false → lihat baris komentar)
+                // Default KUK: null kalau BELUM ada jawaban tersimpan (tanpa autofill 'K').
+                // Jawaban tersimpan dihormati: false → 'BK', true → 'K'.
+                // [FIX 2026-09-19] Sebelumnya `=== false ? 'BK' : null` membuat
+                //   kompeten=true (jawaban 'K' tersimpan) ikut jadi null di tampilan.
+                // [AUTOFILL LAMA — DISABLED 2026-09-18] Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
+                // newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
                 subunit.kuk_list.forEach(kuk => {
                   const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                  // [AUTOFILL LAMA — DISABLED 2026-09-18] Default semua KUK ke 'K'; 'BK' hanya kalau tersimpan false
-                  // newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : 'K'
-                  newKukChecklist[kukId] = subunit.kompeten === false ? 'BK' : null
+                  newKukChecklist[kukId] = subunit.kompeten === false
+                    ? 'BK'
+                    : subunit.kompeten === true
+                      ? 'K'
+                      : null
                 })
                 // Store barcodes per subunit (prefer subunit-level barcodes, fallback to API-level)
                 if (subunit.barcodes) {
