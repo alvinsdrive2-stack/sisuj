@@ -169,7 +169,20 @@ export default function UploadTugasPage() {
       
 
       if (response.ok) {
-        // Refetch tugas data to get the correct URL from server
+        // Set state LANGSUNG dari file yang barusan diupload, jangan menunggu
+        // refetch. Dulu urutannya `await fetchTugas()` lalu baru setShowModal:
+        // bila asesi cepat menutup modal & klik Lanjut sebelum refetch selesai,
+        // `uploadedTugas` masih null → muncul alert (dulu salah menuduh ceklis);
+        // asesi jadi harus klik dua kali. Respons upload TIDAK memuat URL
+        // (hanya `message`), jadi bentuk state disamakan dengan fetchTugas()
+        // supaya URL-nya identik — file diunggah ke UUID/path yang sama.
+        setUploadedTugas((prev) => ({
+          url: prev?.url ?? "",
+          extension: selectedFile.name.split('.').pop()?.toLowerCase() ?? "",
+          fileName: selectedFile.name,
+        }))
+        // Refetch tetap jalan untuk melengkapi data server (barcodes dll),
+        // tapi tidak lagi jadi syarat tombol Lanjut aktif.
         await fetchTugas()
         publishUpdate()
         setSelectedFile(null)
@@ -533,26 +546,17 @@ export default function UploadTugasPage() {
         </div>
 
           <div style={{ marginTop: '16px'}}>
-            {!signing.allSigned && (
+            {/* Satu label saja. Dulu ada DUA blok terpisah — `!allSigned` dan
+                `tahap===0` — yang keduanya memakai state `agreedChecklist`, jadi
+                saat tahap===0 && !allSigned keduanya ter-render bersamaan dan
+                tampak seperti dua pernyataan berbeda padahal satu. */}
+            {(!signing.allSigned || tahap === 0) && (
             <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', padding: '12px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
               <input
                 type="checkbox"
                 checked={signing.agreedChecklist}
                 onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
                 disabled={signing.allSigned}
-                style={{ marginTop: '4px', width: '16px', height: '16px' }}
-              />
-              <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
-                Saya menyatakan bahwa file yang saya upload adalah hasil karya sendiri dan tidak melanggar hak cipta pihak lain. Saya bersedia bertanggung jawab atas keaslian dokumen yang saya sertakan.
-              </span>
-            </label>
-            )}
-            {tahap===0 && (
-            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer', padding: '12px', background: '#f9fafb', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
-              <input
-                type="checkbox"
-                checked={signing.agreedChecklist}
-                onChange={(e) => signing.setAgreedChecklist(e.target.checked)}
                 style={{ marginTop: '4px', width: '16px', height: '16px' }}
               />
               <span style={{ fontSize: '13px', color: '#374151', lineHeight: '1.5' }}>
@@ -601,7 +605,15 @@ export default function UploadTugasPage() {
                 }
                 return
               }
-              if (!uploadedTugas || !signing.agreedChecklist) {
+              // Dua sebab BERBEDA tidak boleh memakai satu pesan: dulu
+              // `!uploadedTugas || !agreedChecklist` memunculkan "Silakan centang
+              // pernyataan..." walau asesi SUDAH centang tapi file tugasnya belum
+              // terbaca/terupload. Pisahkan supaya pesannya jujur soal penyebabnya.
+              if (!uploadedTugas || !uploadedTugas.url) {
+                showWarning("Silakan upload file tugas terlebih dahulu sebelum melanjutkan.")
+                return
+              }
+              if (!signing.agreedChecklist) {
                 showWarning("Silakan centang pernyataan bahwa file adalah hasil karya sendiri.")
                 return
               }
