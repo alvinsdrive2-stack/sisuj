@@ -23,6 +23,18 @@ import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
 
+// ============== KEY & ENV HELPERS ==============
+
+/** Key bukti per ELEMEN. Pemisah '|' supaya id yang mengandung '-' tidak ambigu. */
+const subunitBuktiKey = (unitId: string, subunitId: string) => `${unitId}|${subunitId}`
+
+// Dibaca sekali di module scope: nilai env stabil seumur build, dan dengan
+// begini hasilnya konsisten walau callback di-memoize dengan deps [].
+// Fail-closed (harus 'true' eksplisit) — fitur ini mengubah arti dokumen asesi,
+// jadi deployment yang lupa set env TIDAK boleh menyalakannya sendiri.
+const APL02_APPLY_TO_ALL = import.meta.env.VITE_APL02_APPLY_TO_ALL === 'true'
+const APL02_AUTO_ASSIGN_DOCS = import.meta.env.VITE_APL02_AUTO_ASSIGN_DOCS === 'true'
+
 // ============== LAYOUT COMPONENT ==============
 
 interface Apl02PageLayoutProps {
@@ -261,7 +273,9 @@ const RekomendasiAsesiSection = React.memo(({ initialValue, isAsesor, jenjang, a
 interface Apl02ContentProps {
   apl02Data: Apl02Data | null
   kukChecklist: Record<string, 'K' | 'BK' | null>
-  kukBukti: Record<string, number[]>
+  /** Bukti per ELEMEN (subunit), bukan per KUK — satu sumber kebenaran.
+   *  Key = subunitBuktiKey(unit.id, subunit.id). */
+  buktiBySubunit: Record<string, number[]>
   uploadedFilesInfo: Array<{ id: number; name: string; path: string; kebenaran?: boolean }>
   excludedApiFileIds: Set<string>
   isAsesor: boolean
@@ -269,13 +283,13 @@ interface Apl02ContentProps {
   jenjang: string | number
   onCheckRadio: (kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => void
   onToggleExclude: (unitId: string, subunitId: string, fileId: number) => void
-  onRemoveBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
-  onSelectBukti: (kukId: string, fileId: number, unitId: string, subunitId: string) => void
+  onRemoveBukti: (unitId: string, subunitId: string, fileId: number) => void
+  onSelectBukti: (unitId: string, subunitId: string, fileId: number) => void
   onViewFile: (file: { id: number; name: string; path: string }) => void
   refreshKey: number
 }
 
-const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, kukBukti, uploadedFilesInfo, excludedApiFileIds, isAsesor, isSaving, onCheckRadio, onToggleExclude, onRemoveBukti, onSelectBukti, onViewFile }) => {
+const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, buktiBySubunit, uploadedFilesInfo, excludedApiFileIds, isAsesor, isSaving, onCheckRadio, onToggleExclude, onRemoveBukti, onSelectBukti, onViewFile }) => {
   if (!apl02Data) return null
 
   // All KUK IDs across all units for shift-click global toggle
@@ -374,19 +388,18 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
 
             {/* Subunits & KUK */}
             {unit.subunits.map((subunit) => {
-              const kukCount = subunit.kuk_list.length
-              const firstKukId = kukCount > 0 ? `${unit.id}-${subunit.id}-${subunit.kuk_list[0].no_kuk}` : ''
               const allKukIds = subunit.kuk_list.map(k => `${unit.id}-${subunit.id}-${k.no_kuk}`)
               const isSubunitK = allKukIds.some(id => kukChecklist[id] === 'K')
               const isSubunitBK = allKukIds.some(id => kukChecklist[id] === 'BK')
-              const subunitFileIds = kukBukti[firstKukId] || []
+              // Bukti disimpan per ELEMEN — dibaca sekali, tidak lagi dari KUK pertama.
+              const subunitFileIds = buktiBySubunit[subunitBuktiKey(unit.id, subunit.id)] || []
 
               const handleSubunitK = (shiftKey?: boolean) => {
                 if (shiftKey) {
                   const v = globalAllK ? 'BK' : 'K'
                   allKukIdsGlobal.forEach(kid => {
                     const p = kid.split('-')
-                    onCheckRadio(kid, v, p[0], `${p[0]}-${p[1]}`)
+                    onCheckRadio(kid, v, p[0], p[1])
                   })
                 } else {
                   const v = isSubunitK ? null : 'K'
@@ -398,7 +411,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                   const v = globalAllBK ? 'K' : 'BK'
                   allKukIdsGlobal.forEach(kid => {
                     const p = kid.split('-')
-                    onCheckRadio(kid, v, p[0], `${p[0]}-${p[1]}`)
+                    onCheckRadio(kid, v, p[0], p[1])
                   })
                 } else {
                   const v = isSubunitBK ? null : 'BK'
@@ -422,6 +435,8 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                 {/* KUK Rows with rowspan for K/BK + Bukti */}
                 {subunit.kuk_list.map((kuk, idx) => {
                   const kukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
+                  // Jumlah baris KUK — dipakai rowSpan sel K/BK & bukti (hanya di baris pertama).
+                  const kukRowSpan = subunit.kuk_list.length
                   return (
                     <tr key={kukId}>
                       <td style={{ border: '1px solid #000', padding: '4px', width: '45%', verticalAlign: 'top' }}>
@@ -429,13 +444,13 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                       </td>
                       {idx === 0 && (
                         <>
-                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td rowSpan={kukRowSpan} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
                             <CustomCheckbox checked={isSubunitK} onChange={handleSubunitK} disabled={isAsesor || isSaving} />
                           </td>
-                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
+                          <td rowSpan={kukRowSpan} style={{ border: '1px solid #000', padding: '4px', width: '5%', textAlign: 'center', verticalAlign: 'middle' }}>
                             <CustomCheckbox checked={isSubunitBK} onChange={handleSubunitBK} disabled={isAsesor || isSaving} />
                           </td>
-                          <td rowSpan={kukCount} style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
+                          <td rowSpan={kukRowSpan} style={{ border: '1px solid #000', padding: '6px 8px', width: '45%', verticalAlign: 'top' }}>
                             {(subunit.files || []).length > 0 && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
                                 {(subunit.files || []).map((file) => (
@@ -463,17 +478,17 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
                                       file={fInfo}
                                       isAsesor={isAsesor}
                                       onView={onViewFile}
-                                      onRemove={() => onRemoveBukti(firstKukId, id, unit.id, subunit.id)}
+                                      onRemove={() => onRemoveBukti(unit.id, subunit.id, id)}
                                     />
                                   )
                                 })}
                               </div>
                             )}
                             <BuktiDropdown
-                              kukId={firstKukId}
+                              kukId={subunitBuktiKey(unit.id, subunit.id)}
                               uploadedFiles={uploadedFilesInfo}
                               selectedFileIds={subunitFileIds}
-                              onSelectFile={(_: string, fileId: number) => onSelectBukti(firstKukId, fileId, unit.id, subunit.id)}
+                              onSelectFile={(_: string, fileId: number) => onSelectBukti(unit.id, subunit.id, fileId)}
                               disabled={isAsesor || isSaving}
                             />
                           </td>
@@ -495,7 +510,7 @@ const Apl02Content = React.memo<Apl02ContentProps>(({ apl02Data, kukChecklist, k
   return (
     prevProps.apl02Data === nextProps.apl02Data &&
     prevProps.kukChecklist === nextProps.kukChecklist &&
-    prevProps.kukBukti === nextProps.kukBukti &&
+    prevProps.buktiBySubunit === nextProps.buktiBySubunit &&
     prevProps.uploadedFilesInfo === nextProps.uploadedFilesInfo &&
     prevProps.excludedApiFileIds === nextProps.excludedApiFileIds &&
     prevProps.isAsesor === nextProps.isAsesor &&
@@ -1473,7 +1488,9 @@ export default function Apl02Page() {
   const [uploadedFilesInfo, setUploadedFilesInfo] = useState<Array<{ id: number; name: string; path: string; kebenaran?: boolean }>>([])
   const [filePanelRefreshKey, setFilePanelRefreshKey] = useState(0)
   const [kukChecklist, setKukChecklist] = useState<Record<string, 'K' | 'BK' | null>>({})
-  const [kukBukti, setKukBukti] = useState<Record<string, number[]>>({}) // Store file IDs instead of names
+  // Bukti per ELEMEN (subunit). Satu sumber kebenaran — dulu disimpan per KUK
+  // sehingga bisa desync dengan tampilan (file "dobel"/kanibal).
+  const [buktiBySubunit, setBuktiBySubunit] = useState<Record<string, number[]>>({})
   const [excludedApiFileIds, setExcludedApiFileIds] = useState<Set<string>>(new Set()) // API files excluded from POST — composite key `${unitId}-${subunitId}-${fileId}`
   // metodeAsesmen moved to RekomendasiAsesiSection - use ref for POST value
   const metodeAsesmenRef = useRef<'observasi' | 'portofolio' | null>(null)
@@ -1571,7 +1588,7 @@ export default function Apl02Page() {
     tahap: tahap
   })
 
-  const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId?: string, subunitId?: string, globalMode?: boolean) => {
+  const handleCheckboxChange = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId?: string, subunitId?: string) => {
     setKukChecklist(prev => {
       const current = prev[kukId]
 
@@ -1579,165 +1596,87 @@ export default function Apl02Page() {
       if (value === null && !current) return prev
       if (value && current === value) return prev
 
+      // Klik nilai yang sama = uncheck. Berlaku untuk SATU elemen saja —
+      // sedangkan "terapkan ke semua elemen" ditangani handleBuktiChange
+      // (perubahan bukti), bukan di sini.
       if (current === value) {
-        // Uncheck if clicking the same value
         const { [kukId]: _, ...rest } = prev
-
-        if (globalMode && apl02DataRef.current) {
-          // Global mode: uncheck ALL KUKs in ALL units/subunits
-          apl02DataRef.current.units.forEach(unit => {
-            unit.subunits.forEach(subunit => {
-              subunit.kuk_list.forEach(kuk => {
-                const otherKukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-                if (otherKukId !== kukId) {
-                  delete rest[otherKukId]
-                }
-              })
-            })
+        if (unitId && subunitId && apl02DataRef.current) {
+          const subunit = apl02DataRef.current.units
+            .find(u => u.id === unitId)?.subunits.find(s => s.id === subunitId)
+          subunit?.kuk_list.forEach(kuk => {
+            const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
+            if (otherKukId !== kukId) delete rest[otherKukId]
           })
-        } else if (unitId && subunitId && apl02DataRef.current) {
-          // Local mode: uncheck KUKs in same subunit only
-          const unit = apl02DataRef.current.units.find(u => u.id === unitId)
-          if (unit) {
-            const subunit = unit.subunits.find(s => s.id === subunitId)
-            if (subunit) {
-              subunit.kuk_list.forEach(kuk => {
-                const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
-                if (otherKukId !== kukId) {
-                  delete rest[otherKukId]
-                }
-              })
-            }
-          }
         }
         return rest
       }
 
-      // Set value for this KUK
       if (value === null) {
         const { [kukId]: _, ...rest } = prev
         return rest
       }
-      const updated = { ...prev, [kukId]: value }
 
-      if (globalMode && apl02DataRef.current) {
-        // Global mode: set ALL KUKs in ALL units/subunits
-        apl02DataRef.current.units.forEach(unit => {
-          unit.subunits.forEach(subunit => {
-            subunit.kuk_list.forEach(kuk => {
-              const otherKukId = `${unit.id}-${subunit.id}-${kuk.no_kuk}`
-              updated[otherKukId] = value
-            })
-          })
+      // Set K yang sama ke seluruh KUK dalam elemen ini (penilaian per elemen).
+      const updated = { ...prev, [kukId]: value }
+      if (unitId && subunitId && apl02DataRef.current) {
+        const subunit = apl02DataRef.current.units
+          .find(u => u.id === unitId)?.subunits.find(s => s.id === subunitId)
+        subunit?.kuk_list.forEach(kuk => {
+          updated[`${unitId}-${subunitId}-${kuk.no_kuk}`] = value
         })
-      } else if (unitId && subunitId && apl02DataRef.current) {
-        // Local mode: set KUKs in same subunit only
-        const unit = apl02DataRef.current.units.find(u => u.id === unitId)
-        if (unit) {
-          const subunit = unit.subunits.find(s => s.id === subunitId)
-          if (subunit) {
-            subunit.kuk_list.forEach(kuk => {
-              const otherKukId = `${unitId}-${subunitId}-${kuk.no_kuk}`
-              updated[otherKukId] = value
-            })
-          }
-        }
       }
       return updated
     })
   }, []) // No dependencies - uses ref instead
 
-  const handleBuktiChange = useCallback((kukId: string, fileId: number) => {
-    const applyAll = import.meta.env.VITE_APL02_APPLY_TO_ALL !== 'false'
-    setKukBukti(prev => {
-      const currentFiles = prev[kukId] || []
-      const isRemoving = currentFiles.includes(fileId)
-
-      // Collect all KUK IDs across all units/subunits
-      const allKukIds: string[] = []
-      if (apl02DataRef.current) {
-        apl02DataRef.current.units.forEach(unit => {
-          unit.subunits.forEach(subunit => {
-            subunit.kuk_list.forEach(kuk => {
-              allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
-            })
-          })
-        })
-      }
-
-      if (isRemoving) {
-        if (applyAll) {
-          // Remove file from ALL KUKs (every element)
-          const updated = { ...prev }
-          allKukIds.forEach(kid => {
-            updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
-          })
-          return updated
-        } else {
-          // Remove from targeted KUK only
-          const updated = { ...prev }
-          updated[kukId] = (updated[kukId] || []).filter(f => f !== fileId)
-          return updated
-        }
-      } else {
-        if (applyAll) {
-          // Add file to ALL KUKs across all elements
-          const updated = { ...prev }
-          allKukIds.forEach(kid => {
-            const files = updated[kid] || []
-            if (!files.includes(fileId)) {
-              updated[kid] = [...files, fileId]
-            }
-          })
-          return updated
-        } else {
-          // Add to targeted KUK only
-          const updated = { ...prev }
-          if (!updated[kukId]) updated[kukId] = []
-          if (!updated[kukId].includes(fileId)) updated[kukId] = [...updated[kukId], fileId]
-          return updated
-        }
-      }
+  /** Daftar key seluruh elemen (subunit) di skema — dipakai mode "semua elemen". */
+  const allSubunitKeys = useCallback((): string[] => {
+    const keys: string[] = []
+    apl02DataRef.current?.units.forEach(unit => {
+      unit.subunits.forEach(subunit => {
+        keys.push(subunitBuktiKey(unit.id, subunit.id))
+      })
     })
-  }, []) // No dependencies - uses ref instead
+    return keys
+  }, [])
 
-  // Stable callbacks for KukRow � defined after handleCheckboxChange & handleBuktiChange
+  /**
+   * Tambah/hapus satu bukti untuk sebuah ELEMEN.
+   * Kalau APL02_APPLY_TO_ALL aktif, perubahan diterapkan ke SEMUA elemen
+   * sekaligus (satu operasi, satu state) — jadi tidak mungkin lagi ada elemen
+   * yang tertinggal saat file dihapus.
+   */
+  const handleBuktiChange = useCallback((unitId: string, subunitId: string, fileId: number) => {
+    const key = subunitBuktiKey(unitId, subunitId)
+    setBuktiBySubunit(prev => {
+      const isRemoving = (prev[key] || []).includes(fileId)
+      const targets = APL02_APPLY_TO_ALL ? allSubunitKeys() : [key]
+      if (targets.length === 0) return prev
+
+      const next = { ...prev }
+      targets.forEach(k => {
+        const cur = next[k] || []
+        next[k] = isRemoving
+          ? cur.filter(f => f !== fileId)
+          : cur.includes(fileId) ? cur : [...cur, fileId]
+      })
+      return next
+    })
+  }, [allSubunitKeys])
+
+  const handleSelectBukti = useCallback((unitId: string, subunitId: string, fileId: number) => {
+    handleBuktiChange(unitId, subunitId, fileId)
+  }, [handleBuktiChange])
+
+  const handleRemoveBukti = useCallback((unitId: string, subunitId: string, fileId: number) => {
+    handleBuktiChange(unitId, subunitId, fileId)
+  }, [handleBuktiChange])
+
+  // Stable callbacks for KukRow — defined after handleCheckboxChange
   const handleCheckRadio = useCallback((kukId: string, value: 'K' | 'BK' | null, unitId: string, subunitId: string) => {
     handleCheckboxChange(kukId, value, unitId, subunitId)
   }, [handleCheckboxChange])
-
-  const handleRemoveBukti = useCallback((kukId: string, fileId: number) => {
-    const applyAll = import.meta.env.VITE_APL02_APPLY_TO_ALL !== 'false'
-    setKukBukti(prev => {
-      if (applyAll) {
-        // Remove file from ALL KUKs (every element)
-        const allKukIds: string[] = []
-        if (apl02DataRef.current) {
-          apl02DataRef.current.units.forEach(unit => {
-            unit.subunits.forEach(subunit => {
-              subunit.kuk_list.forEach(kuk => {
-                allKukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
-              })
-            })
-          })
-        }
-        const updated = { ...prev }
-        allKukIds.forEach(kid => {
-          updated[kid] = (updated[kid] || []).filter(f => f !== fileId)
-        })
-        return updated
-      } else {
-        // Remove from targeted KUK only
-        const updated = { ...prev }
-        updated[kukId] = (updated[kukId] || []).filter(f => f !== fileId)
-        return updated
-      }
-    })
-  }, [])
-
-  const handleSelectBukti = useCallback((kukId: string, fileId: number) => {
-    handleBuktiChange(kukId, fileId)
-  }, [handleBuktiChange])
 
   const deleteFile = async (fileId: number) => {
     // Kebenaran data files (negative IDs) are read-only, cannot be deleted
@@ -1755,26 +1694,29 @@ export default function Apl02Page() {
       })
 
       if (response.ok) {
-        // Remove from uploadedFilesInfo
+        // Bersihkan dari SEMUA elemen sekaligus (satu sumber kebenaran), lalu
+        // buang dari daftar file. Kalau tidak dibersihkan, id file hantu tetap
+        // ada di state dan bikin bukti "dobel"/kanibal saat halaman dibuka lagi.
         setUploadedFilesInfo(prev => prev.filter(f => f.id !== fileId))
-        // Preserve file selections per bukti; do not remove from kukBukti on delete
-        // setKukBukti(prev => {
-        //   const newKukBukti = { ...prev }
-        //   Object.keys(newKukBukti).forEach(kukId => {
-        //     newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
-        //   })
-        //   return newKukBukti
-        // })
+        setBuktiBySubunit(prev => {
+          const next: Record<string, number[]> = {}
+          Object.entries(prev).forEach(([key, ids]) => {
+            const filtered = ids.filter(id => id !== fileId)
+            if (filtered.length) next[key] = filtered
+          })
+          return next
+        })
         showSuccess('File berhasil dihapus')
       } else if (response.status === 404) {
-        // File not found on server - remove from local state anyway
+        // File tidak ada di server — bersihkan state lokal juga
         setUploadedFilesInfo(prev => prev.filter(f => f.id !== fileId))
-        setKukBukti(prev => {
-          const newKukBukti = { ...prev }
-          Object.keys(newKukBukti).forEach(kukId => {
-            newKukBukti[kukId] = newKukBukti[kukId].filter(id => id !== fileId)
+        setBuktiBySubunit(prev => {
+          const next: Record<string, number[]> = {}
+          Object.entries(prev).forEach(([key, ids]) => {
+            const filtered = ids.filter(id => id !== fileId)
+            if (filtered.length) next[key] = filtered
           })
-          return newKukBukti
+          return next
         })
       } else {
         const msg = await extractApiError(response, 'Gagal menghapus file')
@@ -2048,36 +1990,31 @@ export default function Apl02Page() {
                   return [...newFiles, ...prev]
                 })
 
-                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA unit ──
+                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA elemen ──
                 // Dikontrol oleh env VITE_APL02_AUTO_ASSIGN_DOCS.
                 // File kebenaran (id negatif hasil injeksi dokumen-asesi) langsung
                 // terpilih di setiap elemen/subunit. Kecuali: mode asesor, atau
                 // subunit tsb SUDAH punya file serupa (mis. dari draft/attach
                 // sebelumnya) — hindari duplikat saat buka ulang halaman.
-                const autoAssignEnabled = import.meta.env.VITE_APL02_AUTO_ASSIGN_DOCS !== 'false'
-                if (!isAsesor && autoAssignEnabled) {
+                if (!isAsesor && APL02_AUTO_ASSIGN_DOCS) {
                   const defaultFiles = dokumenFiles.filter(f => f.id < 0)
                   if (defaultFiles.length > 0) {
                     const nameById = new Map(defaultFiles.map(f => [f.id, String(f.name || '').toLowerCase()]))
-                    setKukBukti(prev => {
+                    setBuktiBySubunit(prev => {
                       const next = { ...prev }
                       units.forEach(unit => {
                         unit.subunits.forEach(subunit => {
                           const existingNames = new Set(
                             (subunit.files || []).map(f => String(f.name || '').toLowerCase()),
                           )
-                          const kukIds: string[] = []
-                          subunit.kuk_list.forEach(kuk => {
-                            kukIds.push(`${unit.id}-${subunit.id}-${kuk.no_kuk}`)
-                          })
+                          const key = subunitBuktiKey(unit.id, subunit.id)
+                          const cur = next[key] || []
                           defaultFiles.forEach(df => {
                             const nm = nameById.get(df.id)
                             if (!nm || existingNames.has(nm)) return
-                            kukIds.forEach(kukId => {
-                              const cur = next[kukId] || []
-                              if (!cur.includes(df.id)) next[kukId] = [...cur, df.id]
-                            })
+                            if (!cur.includes(df.id)) cur.push(df.id)
                           })
+                          if (cur.length) next[key] = cur
                         })
                       })
                       return next
@@ -2268,51 +2205,56 @@ export default function Apl02Page() {
   // Crash / session expired tidak bikin isi ulang dari nol.
   // Draft TIDAK trigger status/submitted_at — hanya upsert jawaban.
 
-  // Build answers dari kukChecklist + kukBukti (sama dengan yang dikirim saat submit)
+  // Build answers dari kukChecklist + buktiBySubunit (sama dengan yang dikirim saat submit).
+  // Kumpulkan file per ELEMEN lewat unit.id/subunit.id — bukan lewat parsing
+  // string key — supaya id yang mengandung '-' tidak salah petakan.
   const buildApl02Answers = () => {
-    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; allFileIds: Set<number>; allFileUrls: { url: string; name: string }[] }>()
+    const subunitDataMap = new Map<number, { statuses: ('K' | 'BK')[]; fileIds: Set<number>; fileUrls: { url: string; name: string }[] }>()
 
-    Object.entries(kukChecklist).forEach(([kukId, status]) => {
-      if (status === null) return
-      const parts = kukId.split('-')
-      const subunitId = parseInt(parts[1])
-
-      if (!subunitDataMap.has(subunitId)) {
-        subunitDataMap.set(subunitId, { statuses: [], allFileIds: new Set(), allFileUrls: [] })
+    const ensureSubunit = (subunitId: number) => {
+      let entry = subunitDataMap.get(subunitId)
+      if (!entry) {
+        entry = { statuses: [], fileIds: new Set(), fileUrls: [] }
+        subunitDataMap.set(subunitId, entry)
       }
+      return entry
+    }
 
-      const data = subunitDataMap.get(subunitId)
-      if (!data) {
-        subunitDataMap.set(subunitId, { statuses: [status], allFileIds: new Set(), allFileUrls: [] })
-        return
-      }
-      data.statuses.push(status)
-
-      const fileIds = kukBukti[kukId] || []
-      fileIds.forEach(id => {
+    const collectFrom = (key: string, entry: { fileIds: Set<number>; fileUrls: { url: string; name: string }[] }) => {
+      ;(buktiBySubunit[key] || []).forEach(id => {
         if (excludedApiFileIds.has(String(id))) return
         const fInfo = uploadedFilesInfo.find(f => f.id === id)
         if (!fInfo) return
         if (fInfo.kebenaran || id < 0) {
-          if (fInfo.path) data.allFileUrls.push({ url: fInfo.path, name: fInfo.name })
+          if (fInfo.path) entry.fileUrls.push({ url: fInfo.path, name: fInfo.name })
         } else {
-          data.allFileIds.add(id)
+          entry.fileIds.add(id)
         }
       })
-    })
+    }
 
     apl02Data?.units.forEach(unit => {
       unit.subunits.forEach(subunit => {
-        const subunitId = parseInt(subunit.id)
-        if (subunitDataMap.has(subunitId)) {
-          const data = subunitDataMap.get(subunitId)
-          if (!data) return
-          subunit.files.forEach(file => {
-            if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
-              data.allFileIds.add(file.id)
-            }
-          })
-        }
+        const subunitId = Number(subunit.id)
+        const statuses: ('K' | 'BK')[] = []
+        subunit.kuk_list.forEach(kuk => {
+          const status = kukChecklist[`${unit.id}-${subunit.id}-${kuk.no_kuk}`]
+          if (status === 'K' || status === 'BK') statuses.push(status)
+        })
+
+        // Elemen yang belum dijawab tidak ikut dikirim (validator minta kompeten boolean).
+        if (statuses.length === 0) return
+
+        const entry = ensureSubunit(subunitId)
+        entry.statuses.push(...statuses)
+        collectFrom(subunitBuktiKey(unit.id, subunit.id), entry)
+
+        // File yang sudah menempel di jawaban tersimpan (dari API), kecuali di-exclude.
+        subunit.files.forEach(file => {
+          if (!excludedApiFileIds.has(`${unit.id}-${subunit.id}-${file.id}`)) {
+            entry.fileIds.add(file.id)
+          }
+        })
       })
     })
 
@@ -2328,62 +2270,10 @@ export default function Apl02Page() {
     return Array.from(subunitDataMap.entries()).map(([subunitId, data]) => ({
       subunit_id: subunitId,
       kompeten: data.statuses.every(s => s === 'K'),
-      file_ids: Array.from(data.allFileIds),
-      file_urls: dedupByUrl(data.allFileUrls)
+      file_ids: Array.from(data.fileIds),
+      file_urls: dedupByUrl(data.fileUrls)
     }))
   }
-
-  const [draftStatus, setDraftStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
-  const [draftSavedAt, setDraftSavedAt] = useState('')
-  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const draftBaselineRef = useRef<string>('')
-  const draftChainRef = useRef<Promise<void>>(Promise.resolve())
-
-  const saveDraftApl02 = useCallback(async () => {
-    const finalIdIzin = _idIzin || idIzin
-    if (!finalIdIzin || isAsesor) return
-    const answers = buildApl02Answers()
-    if (!answers.length) return
-
-    setDraftStatus('saving')
-    try {
-      const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02/draft`, {
-        method: 'POST',
-        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers }),
-      })
-      if (!response.ok) throw new Error('draft save failed')
-      setDraftStatus('saved')
-      setDraftSavedAt(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }))
-    } catch (error) {
-      console.error('Error saving APL-02 draft:', error)
-      setDraftStatus('error')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [_idIzin, idIzin, isAsesor, kukChecklist, kukBukti, uploadedFilesInfo, apl02Data])
-
-  useEffect(() => {
-    // Baseline setelah data awal selesai dimuat — hindari autosave saat open page.
-    // Asesi TETAP boleh mengubah jawaban walau asesor sudah menandatangani
-    // (perubahan tersimpan & PDF APL-02 di-regen saat submit resmi).
-    if (isDataLoading || isAsesor) return
-    const snapshot = JSON.stringify({ k: kukChecklist, b: kukBukti })
-    if (!draftBaselineRef.current) {
-      draftBaselineRef.current = snapshot
-      return
-    }
-    if (snapshot === draftBaselineRef.current) return
-
-    if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
-    draftTimerRef.current = setTimeout(() => {
-      draftChainRef.current = draftChainRef.current.then(saveDraftApl02).then(() => {
-        draftBaselineRef.current = JSON.stringify({ k: kukChecklist, b: kukBukti })
-      }).catch(() => {})
-    }, 1500)
-    return () => {
-      if (draftTimerRef.current) clearTimeout(draftTimerRef.current)
-    }
-  }, [kukChecklist, kukBukti, isDataLoading, isAsesor, saveDraftApl02])
 
   const getNextRoute = (id: string) => {
     const base = isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'
@@ -2455,7 +2345,7 @@ export default function Apl02Page() {
 
         const asesorAnswers = apl02Data ? apl02Data.units.flatMap(unit =>
           unit.subunits.map(subunit => {
-            const subunitId = parseInt(subunit.id)
+            const subunitId = Number(subunit.id)
             const fileIds = new Set<number>()
             const fileUrls: { url: string; name: string }[] = []
 
@@ -2466,20 +2356,16 @@ export default function Apl02Page() {
               }
             })
 
-            // Kebeneran/dokumen asesi dari kukBukti pilihan user (url-based)
-            Object.entries(kukBukti).forEach(([kukId, ids]) => {
-              const parts = kukId.split('-')
-              if (parseInt(parts[1]) !== subunitId) return
-              ids.forEach(id => {
-                if (excludedApiFileIds.has(String(id))) return
-                const fInfo = uploadedFilesInfo.find(f => f.id === id)
-                if (!fInfo) return
-                if (fInfo.kebenaran || id < 0) {
-                  if (fInfo.path) fileUrls.push({ url: fInfo.path, name: fInfo.name })
-                } else {
-                  fileIds.add(id)
-                }
-              })
+            // Kebenaran/dokumen asesi dari pilihan user, dibaca per ELEMEN
+            ;(buktiBySubunit[subunitBuktiKey(unit.id, subunit.id)] || []).forEach(id => {
+              if (excludedApiFileIds.has(String(id))) return
+              const fInfo = uploadedFilesInfo.find(f => f.id === id)
+              if (!fInfo) return
+              if (fInfo.kebenaran || id < 0) {
+                if (fInfo.path) fileUrls.push({ url: fInfo.path, name: fInfo.name })
+              } else {
+                fileIds.add(id)
+              }
             })
 
             return {
@@ -2896,7 +2782,7 @@ export default function Apl02Page() {
         <Apl02Content
           apl02Data={apl02Data}
           kukChecklist={kukChecklist}
-          kukBukti={kukBukti}
+          buktiBySubunit={buktiBySubunit}
           uploadedFilesInfo={uploadedFilesInfo}
           excludedApiFileIds={excludedApiFileIds}
           isAsesor={isAsesor}
@@ -2937,21 +2823,6 @@ export default function Apl02Page() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', alignItems: 'center' }}>
-          {!isAsesor && draftStatus !== 'idle' && (
-            <span
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                marginRight: 'auto',
-                color: draftStatus === 'error' ? '#dc2626' : draftStatus === 'saving' ? '#64748b' : '#059669',
-              }}
-              role="status"
-            >
-              {draftStatus === 'saving' && 'Menyimpan draf…'}
-              {draftStatus === 'saved' && `Draf tersimpan ${draftSavedAt}`}
-              {draftStatus === 'error' && 'Gagal menyimpan draf — coba ubah lagi'}
-            </span>
-          )}
           {isAsesor && (
             <ActionButton variant="secondary" onClick={handleNavigateBack} disabled={isSaving}>
               Kembali
