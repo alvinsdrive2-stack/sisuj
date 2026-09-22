@@ -6,6 +6,7 @@ import { StatusStamp } from "@/components/ui/StatusStamp"
 import { RoleId } from "@/lib/rbac-config"
 import { getDocFileType as getFileType } from "@/lib/doc-file-type"
 import { API_BASE_URL } from "@/config/api"
+import { useDokumenModal } from "@/contexts/DokumenModalContext"
 
 interface DokumenResponse {
   message: string
@@ -67,6 +68,7 @@ interface DokumenModalProps {
 }
 
 export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, onPenilaianSuccess, readOnly = false }: DokumenModalProps) {
+  const { initialDocType, persistSelectedDoc } = useDokumenModal()
   const [dokumenResponse, setDokumenResponse] = useState<DokumenResponse | null>(null)
   const [jenjang, setJenjang] = useState<string>('0')
   const [metode, setMetode] = useState<string>('')
@@ -211,12 +213,22 @@ export function DokumenModal({ isOpen, onClose, asesiId, asesiNama, jadwalId, on
   // Get only documents that have URLs
   const documentsWithUrls = documentList.filter(doc => doc.url !== null)
 
-  // Auto-select first document when modal opens
+  // Auto-select document when modal opens — restore docType tersimpan (reload), kalau nggak ada pakai dok pertama
   useEffect(() => {
     if (isOpen && !selectedDoc && documentsWithUrls.length > 0) {
-      setSelectedDoc(documentsWithUrls[0])
+      const restored = initialDocType
+        ? documentsWithUrls.find(d => d.docType === initialDocType)
+        : undefined
+      setSelectedDoc(restored ?? documentsWithUrls[0])
     }
   }, [isOpen, documentsWithUrls])
+
+  // Simpan dokumen yang lagi dibuka biar reload balik ke dokumen yang sama
+  useEffect(() => {
+    if (isOpen && selectedDoc) {
+      persistSelectedDoc(selectedDoc.docType)
+    }
+  }, [isOpen, selectedDoc])
 
   // Auto-scroll to selected document
   useEffect(() => {
