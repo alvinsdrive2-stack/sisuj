@@ -1,14 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, ChevronLeft, Play, History } from "lucide-react"
+import { Shield, Calendar, Users, CheckCircle2, Clock, ChevronRight, Play, History, Search } from "lucide-react"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
+import { Pagination } from "@/components/ui/Pagination"
 import { useNavigate } from "react-router-dom"
 import { useKegiatanAdminTUK, useListAsesi, useKegiatanHistoryAdminTUK } from "@/hooks/useKegiatan"
 import { useBatchAbsenData } from "@/hooks/useAbsenData"
 import { formatDateWIB, formatTimeWIB } from "@/lib/date-utils"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
-import React, { memo, useState } from "react"
+import React, { memo, useEffect, useState } from "react"
 import { jenisKelasLabel } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { kegiatanService } from "@/lib/kegiatan-service"
@@ -18,22 +19,36 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 export default function DashboardAdminTUK() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'jadwal' | 'riwayat'>('jadwal')
-  const { kegiatans, isLoading, error, refetch: refetchKegiatan } = useKegiatanAdminTUK()
   const [currentPage, setCurrentPage] = useState(1)
   const [historyPage, setHistoryPage] = useState(1)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  // Debounce search biar nggak nembak API tiap ketikan
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 400)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCurrentPage(1)
+    setHistoryPage(1)
+  }
+
+  const {
+    kegiatans,
+    isLoading,
+    error,
+    pagination,
+    refetch: refetchKegiatan,
+  } = useKegiatanAdminTUK(currentPage, debouncedSearch)
   const {
     kegiatans: historyKegiatans,
     isLoading: historyLoading,
     error: historyError,
     pagination: historyPagination,
-  } = useKegiatanHistoryAdminTUK(historyPage)
-  const itemsPerPage = 10
-
-  // Pagination logic
-  const totalPages = Math.ceil(kegiatans.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const endIndex = startIndex + itemsPerPage
-  const paginatedKegiatans = kegiatans.slice(startIndex, endIndex)
+  } = useKegiatanHistoryAdminTUK(historyPage, debouncedSearch)
 
   const _adminTukStats = [
     {
@@ -234,6 +249,18 @@ export default function DashboardAdminTUK() {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          placeholder="Cari kegiatan..."
+          value={search}
+          onChange={(e) => handleSearchChange(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
+
       {/* Jadwal Mendatang Tab */}
       {activeTab === 'jadwal' && (
         <Card>
@@ -271,42 +298,28 @@ export default function DashboardAdminTUK() {
             ) : error ? (
               <ErrorState title="Gagal memuat jadwal" message={error} onRetry={() => window.location.reload()} />
             ) : kegiatans.length === 0 ? (
-              <EmptyState icon={Calendar} title="Tidak ada jadwal mendatang" message="Belum ada kegiatan yang dijadwalkan" />
+              <EmptyState
+                icon={Calendar}
+                title={debouncedSearch ? "Tidak ada hasil" : "Tidak ada jadwal mendatang"}
+                message={debouncedSearch
+                  ? `Tidak ada kegiatan yang cocok dengan "${debouncedSearch}"`
+                  : "Belum ada kegiatan yang dijadwalkan"}
+              />
             ) : (
               <>
                 <div className="space-y-3">
-                  {paginatedKegiatans.map((kegiatan) => (
+                  {kegiatans.map((kegiatan) => (
                     <KegiatanCard key={kegiatan.jadwal_id} kegiatan={kegiatan} />
                   ))}
                 </div>
 
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-                    <div className="text-sm text-slate-600">
-                      Menampilkan {startIndex + 1}-{Math.min(endIndex, kegiatans.length)} dari {kegiatans.length} kegiatan
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm text-slate-600">
-                        Halaman {currentPage} dari {totalPages}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <Pagination
+                  page={pagination.currentPage}
+                  lastPage={pagination.lastPage}
+                  total={pagination.total}
+                  perPage={pagination.perPage}
+                  onPageChange={setCurrentPage}
+                />
               </>
             )}
           </CardContent>
@@ -349,7 +362,13 @@ export default function DashboardAdminTUK() {
             ) : historyError ? (
               <ErrorState title="Gagal memuat riwayat" message={historyError} onRetry={() => window.location.reload()} />
             ) : historyKegiatans.length === 0 ? (
-              <EmptyState icon={History} title="Belum ada riwayat kegiatan" message="Riwayat kegiatan akan muncul setelah asesmen selesai" />
+              <EmptyState
+                icon={History}
+                title={debouncedSearch ? "Tidak ada hasil" : "Belum ada riwayat kegiatan"}
+                message={debouncedSearch
+                  ? `Tidak ada kegiatan yang cocok dengan "${debouncedSearch}"`
+                  : "Riwayat kegiatan akan muncul setelah asesmen selesai"}
+              />
             ) : (
               <>
                 <div className="space-y-3">
@@ -358,33 +377,13 @@ export default function DashboardAdminTUK() {
                   ))}
                 </div>
 
-                {/* History Pagination */}
-                {historyPagination.lastPage > 1 && (
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-                    <div className="text-sm text-slate-600">
-                      Halaman {historyPagination.currentPage} dari {historyPagination.lastPage} ({historyPagination.total} kegiatan)
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                        disabled={historyPage === 1}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <span className="text-sm text-slate-600">
-                        {historyPagination.currentPage} / {historyPagination.lastPage}
-                      </span>
-                      <button
-                        onClick={() => setHistoryPage(p => Math.min(historyPagination.lastPage, p + 1))}
-                        disabled={historyPage === historyPagination.lastPage}
-                        className="p-2 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <Pagination
+                  page={historyPagination.currentPage}
+                  lastPage={historyPagination.lastPage}
+                  total={historyPagination.total}
+                  perPage={historyPagination.perPage}
+                  onPageChange={setHistoryPage}
+                />
               </>
             )}
           </CardContent>

@@ -269,10 +269,11 @@ export function useKegiatanAsesi(enabled = true) {
   return { kegiatan, isLoading, error, refetch: fetchKegiatanAsesi }
 }
 
-export function useKegiatanAdminTUK() {
+export function useKegiatanAdminTUK(page: number = 1, search: string = '') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({ currentPage: 1, lastPage: 1, total: 0, perPage: 10 })
 
   const fetchKegiatanAdminTUK = useCallback(async () => {
     setIsLoading(true)
@@ -288,24 +289,30 @@ export function useKegiatanAdminTUK() {
       }).formatToParts(now)
       const tanggalUji = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
 
-      const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji)
+      const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji, page, search)
       setKegiatans(response.data.data)
+      setPagination({
+        currentPage: response.data.current_page,
+        lastPage: response.data.last_page,
+        total: response.data.total,
+        perPage: response.data.per_page,
+      })
     } catch (err) {
       console.error('Error fetching kegiatan admin TUK:', err)
       setError(err instanceof Error ? err.message : "Failed to fetch kegiatan admin TUK")
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [page, search])
 
   useEffect(() => {
     fetchKegiatanAdminTUK()
   }, [fetchKegiatanAdminTUK])
 
-  return { kegiatans, isLoading, error, refetch: fetchKegiatanAdminTUK }
+  return { kegiatans, isLoading, error, pagination, refetch: fetchKegiatanAdminTUK }
 }
 
-export function useKegiatanHistoryAdminTUK(page: number = 1) {
+export function useKegiatanHistoryAdminTUK(page: number = 1, search: string = '') {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -315,7 +322,7 @@ export function useKegiatanHistoryAdminTUK(page: number = 1) {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await kegiatanService.getKegiatanHistoryAdminTUK(page)
+      const response = await kegiatanService.getKegiatanHistoryAdminTUK(page, search)
       setKegiatans(response.data.data)
       setPagination({
         currentPage: response.data.current_page,
@@ -329,7 +336,7 @@ export function useKegiatanHistoryAdminTUK(page: number = 1) {
     } finally {
       setIsLoading(false)
     }
-  }, [page])
+  }, [page, search])
 
   useEffect(() => {
     fetchHistory()

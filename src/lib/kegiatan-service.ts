@@ -209,8 +209,10 @@ class KegiatanService {
   }
 
   // Get kegiatan for admin TUK (paginated, by date)
-  async getKegiatanAdminTUK(tanggalUji: string): Promise<PaginatedKegiatanResponse> {
-    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?tanggal_uji=${tanggalUji}`)
+  async getKegiatanAdminTUK(tanggalUji: string, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
+    const params = new URLSearchParams({ tanggal_uji: tanggalUji, page: String(page) })
+    if (search) params.set('search', search)
+    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?${params}`)
   }
 
   // Get kegiatan for direktur (paginated, by ttd status)
@@ -338,8 +340,10 @@ class KegiatanService {
   }
 
   // Get history/riwayat kegiatan for admin TUK (paginated)
-  async getKegiatanHistoryAdminTUK(page: number = 1): Promise<PaginatedKegiatanResponse> {
-    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?page=${page}`)
+  async getKegiatanHistoryAdminTUK(page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
+    const params = new URLSearchParams({ page: String(page) })
+    if (search) params.set('search', search)
+    return apiFetchJson(`${this.baseUrl}/kegiatan/admin-tuk?${params}`)
   }
 
   // Get single kegiatan detail by jadwal ID
