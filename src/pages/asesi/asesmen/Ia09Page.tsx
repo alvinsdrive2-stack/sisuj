@@ -643,7 +643,9 @@ export default function Ia09Page() {
                       border: p.perluWawancara ? BORDER_WAJIB : "1px solid #ccc",
                       padding: "4px",
                       fontSize: "12px",
-                      resize: "vertical",
+                      // Tinggi diatur auto-resize; handle tarik manual dimatikan biar
+                      // nggak ketimpa tiap ketikan.
+                      resize: "none",
                     }}
                   />
                 </td>
