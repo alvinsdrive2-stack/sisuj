@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback, useMemo } from "react"
+﻿import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
 import { useNavigate, useParams } from "react-router-dom"
 import ModularAsesiLayout from "@/components/ModularAsesiLayout"
@@ -31,6 +31,52 @@ interface Pertanyaan {
   kesimpulan: string
   k: boolean
   bk: boolean
+  /**
+   * true  = baris ini dicentang di cek list wawancara FR.IA.08 → textarea ditandai merah,
+   *         asesor wajib isi kesimpulannya sendiri.
+   * false = tidak dicentang → kesimpulan & checkbox K diisi otomatis.
+   * null  = tidak bisa dipetakan ke IA08 → dibiarkan netral (perilaku lama).
+   */
+  perluWawancara: boolean | null
+}
+
+/** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
+const KESIMPULAN_AUTO = "Sudah sesuai dengan referensi kerja dan SKKNI"
+
+/** Penanda textarea yang wajib diisi asesor. */
+const BORDER_WAJIB = "2px solid #dc2626"
+
+/** Normalisasi kode biar match antar dokumen nggak kena beda spasi/kapitalisasi. */
+function normKode(v: unknown): string {
+  return String(v ?? "").trim().toUpperCase()
+}
+
+/** Kunci gabungan unit+elemen+kuk — dipakai buat nyocokin baris IA09 ke baris IA08. */
+function kunciKode(unit: unknown, elemen: unknown, kuk: unknown): string {
+  return `${normKode(unit)}|${normKode(elemen)}|${normKode(kuk)}`
+}
+
+/**
+ * Ekstrak penanda unit/elemen/KUK dari teks soal IA09.
+ * Soal IA09 umumnya berbentuk:
+ *   "<pertanyaan>\nKode Unit: F.42ATJ00.020.2\nElemen: 6\nKUK: 6.1"
+ * Sebagian soal (35 dari 1263 di DB) nggak punya penanda ini — itu yang bikin
+ * pemetaan harus fallback ke urutan baris.
+ */
+function parseKodeSoal(teksSoal: string): { unit: string; elemen: string; kuk: string } | null {
+  const unit = teksSoal.match(/Kode Unit\s*:\s*(\S+)/i)?.[1]
+  const elemen = teksSoal.match(/Elemen\s*:\s*(\S+)/i)?.[1]
+  const kuk = teksSoal.match(/KUK\s*:\s*(\S+)/i)?.[1]
+  if (!unit || !elemen || !kuk) return null
+  return { unit, elemen, kuk }
+}
+
+/** Bentuk satu baris cek list wawancara FR.IA.08. */
+interface Ia08Baris {
+  soalId: number
+  no: string
+  kunci: string
+  checked: boolean
 }
 
 interface Ia09File {
@@ -106,6 +152,104 @@ export default function Ia09Page() {
   } | null>(null)
   const [showBkConfirm, setShowBkConfirm] = useState(false)
 
+  /**
+   * Cek list wawancara FR.IA.08 — sumber penentu baris IA09 mana yang perlu diwawancara.
+   * Diambil dari endpoint /ia08 (pola cross-fetch sama seperti Ia04bPage).
+   */
+  const [ia08Baris, setIa08Baris] = useState<Ia08Baris[]>([])
+  const ia08FetchingRef = useRef(false)
+
+  /**
+   * Ambil cek list wawancara dari FR.IA.08.
+   * Sengaja tidak menandai error ke user: kalau IA08 belum diisi / gagal diambil,
+   * halaman IA09 tetap jalan dengan perilaku lama (semua textarea netral).
+   */
+  const fetchIa08Checklist = useCallback(async () => {
+    if (!id || authLoading || ia08FetchingRef.current) return
+    ia08FetchingRef.current = true
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/asesmen/${id}/ia08`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (!response.ok) return
+      const result = await response.json()
+      const soal = result?.data?.soal?.["2"]
+      if (!Array.isArray(soal)) return
+
+      const unitAnswers: Record<string, boolean> = result?.data?.unit_answers || {}
+      // `soal` cuma berisi soal yang masih aktif, jadi centangan lama yang nunjuk ke
+      // soal hasil regenerate (row orphan di ia08_unit_answers) otomatis terabaikan.
+      // Itu memang yang diinginkan: soal lama sudah tidak ada, tidak perlu dipetakan.
+      const baris: Ia08Baris[] = soal.map((item: any) => ({
+        soalId: item.id,
+        no: String(item.no ?? ""),
+        kunci: kunciKode(item.unit?.kode, item.subunit?.kode, item.kuk?.kode),
+        checked: unitAnswers[String(item.id)] === true,
+      }))
+      setIa08Baris(baris)
+    } catch (err) {
+      console.error("Error fetching IA08 checklist:", err)
+    } finally {
+      ia08FetchingRef.current = false
+    }
+  }, [id, authLoading])
+
+  useEffect(() => { fetchIa08Checklist() }, [fetchIa08Checklist])
+
+  /**
+   * Terapkan hasil pemetaan IA08 → IA09: tandai perlu-wawancara, lalu auto-isi
+   * baris yang tidak perlu diwawancara.
+   *
+   * Jalan setelah KEDUA data siap (urutan fetch nggak dijamin; SSE juga bisa
+   * nge-refresh IA09 kapan saja). Dijaga `appliedRef` supaya cuma jalan sekali —
+   * kalau tidak, tiap refresh bakal nimpa ketikan asesor.
+   *
+   * Yang TIDAK perlu diwawancara: kesimpulan diisi KESIMPULAN_AUTO + checkbox K
+   * dicentang. Yang perlu diwawancara: textarea dibiarkan kosong & ditandai merah
+   * supaya asesor isi sendiri.
+   *
+   * Baris yang sudah ada isinya tidak pernah ditimpa.
+   */
+  const appliedRef = useRef(false)
+
+  useEffect(() => {
+    if (appliedRef.current) return
+    if (!pertanyaanList.length || !ia08Baris.length) return
+
+    appliedRef.current = true
+
+    setPertanyaanList(prev => prev.map((p, index) => {
+      let perlu: boolean | null
+
+      // Guard: IA08 belum punya centangan sama sekali → jangan auto-isi apa pun.
+      if (!ia08Baris.some(b => b.checked)) {
+        perlu = true
+      } else {
+        perlu = null
+        const parsed = parseKodeSoal(p.pertanyaan || "")
+        if (parsed) {
+          const kunci = kunciKode(parsed.unit, parsed.elemen, parsed.kuk)
+          const match = ia08Baris.find(b => b.kunci === kunci)
+          if (match) perlu = match.checked
+        }
+
+        // Fallback urutan baris — hanya valid kalau jumlah baris kedua dokumen sama.
+        if (perlu === null && ia08Baris.length === prev.length) {
+          const byNo = ia08Baris.find(b => b.no === String(p.no)) ?? ia08Baris[index]
+          if (byNo) perlu = byNo.checked
+        }
+      }
+
+      if (perlu !== false) return { ...p, perluWawancara: perlu }
+
+      // perlu === false → tidak diwawancara, isi otomatis kalau masih kosong.
+      if (p.kesimpulan?.trim() || p.k || p.bk) return { ...p, perluWawancara: perlu }
+
+      return { ...p, perluWawancara: perlu, kesimpulan: KESIMPULAN_AUTO, k: true }
+    }))
+  }, [pertanyaanList.length, ia08Baris])
+
   const fetchIa09Data = useCallback(async () => {
     if (!id || authLoading) return
     try {
@@ -128,6 +272,7 @@ export default function Ia09Page() {
                 kesimpulan: (saved.kesimpulan || "").replace(/&#039;/g, ' '),
                 k: saved.is_kompeten === true,
                 bk: saved.is_kompeten === false,
+                perluWawancara: null as boolean | null,
               }
             })
             setPertanyaanList(pertanyaanData)
@@ -465,10 +610,11 @@ export default function Ia09Page() {
                       ))
                     }}
                     disabled={!isAsesor || signing.allSigned}
+                    placeholder={p.perluWawancara ? "Wajib diisi — pertanyaan ini dicentang pada FR.IA.08" : undefined}
                     style={{
                       width: "100%",
                       minHeight: "60px",
-                      border: "1px solid #ccc",
+                      border: p.perluWawancara ? BORDER_WAJIB : "1px solid #ccc",
                       padding: "4px",
                       fontSize: "12px",
                       resize: "vertical",
