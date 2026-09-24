@@ -295,6 +295,23 @@ export default function Ia09Page() {
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
 
+  /** Textarea tumbuh mengikuti isi — pola sama seperti Ia04bPage. */
+  const autoResizeTextarea = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [])
+
+  /**
+   * Setelah data / auto-isi masuk, tinggi textarea perlu dihitung ulang —
+   * teks hasil auto-isi tidak memicu onChange, jadi tanpa ini textarea-nya
+   * tetap setinggi default walau isinya panjang.
+   */
+  useEffect(() => {
+    document.querySelectorAll<HTMLTextAreaElement>('textarea[data-auto-resize]')
+      .forEach(autoResizeTextarea)
+  }, [pertanyaanList, autoResizeTextarea])
+
   const signing = useSigningState({
     pageKey: 'ia09',
     nextPageName: nextStepLabel,
@@ -597,23 +614,32 @@ export default function Ia09Page() {
             </tr>
           </thead>
           <tbody>
-            {pertanyaanList.map((p) => (
+            {pertanyaanList.map((p) => {
+              // Berdenyut hanya selama masih kosong. Begitu asesor mengisi, denyutnya
+              // berhenti supaya sisa baris yang belum diisi justru lebih menonjol.
+              const wajibDiisi = p.perluWawancara === true && !p.kesimpulan?.trim()
+              return (
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>{p.pertanyaan}</td>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>
                   <textarea
                     value={p.kesimpulan}
+                    ref={autoResizeTextarea}
+                    data-auto-resize
                     onChange={(e) => {
+                      autoResizeTextarea(e.target)
                       setPertanyaanList(prev => prev.map(item =>
                         item.id === p.id ? { ...item, kesimpulan: e.target.value } : item
                       ))
                     }}
                     disabled={!isAsesor || signing.allSigned}
                     placeholder={p.perluWawancara ? "Wajib diisi — pertanyaan ini dicentang pada FR.IA.08" : undefined}
+                    className={wajibDiisi ? "textarea-heartbeat" : undefined}
                     style={{
                       width: "100%",
                       minHeight: "60px",
+                      overflow: "hidden",
                       border: p.perluWawancara ? BORDER_WAJIB : "1px solid #ccc",
                       padding: "4px",
                       fontSize: "12px",
@@ -636,7 +662,8 @@ export default function Ia09Page() {
                   />
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
 

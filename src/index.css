@@ -178,6 +178,31 @@
   }
 }
 
+/* Denyut buat textarea yang wajib diisi (FR.IA.09). Sengaja cuma border +
+   box-shadow yang dianimasikan, bukan opacity/transform — biar teks di dalamnya
+   tetap stabil dan kebaca sambil berdenyut. */
+@keyframes heartbeatBorder {
+  0%, 100% {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45);
+  }
+  50% {
+    border-color: #f87171;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
+  }
+}
+
+.textarea-heartbeat {
+  animation: heartbeatBorder 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .textarea-heartbeat {
+    animation: none;
+    border-color: #dc2626;
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
