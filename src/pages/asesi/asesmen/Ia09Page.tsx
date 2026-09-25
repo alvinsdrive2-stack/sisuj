@@ -41,7 +41,7 @@ interface Pertanyaan {
 }
 
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
-const KESIMPULAN_AUTO = "Sudah sesuai dengan referensi kerja dan SKKNI"
+const KESIMPULAN_AUTO = "Pertanyaan dari unit kompetensi ini sudah terjawab dalam referensi kerja."
 
 /** Penanda textarea yang wajib diisi asesor. */
 const BORDER_WAJIB = "2px solid #dc2626"
