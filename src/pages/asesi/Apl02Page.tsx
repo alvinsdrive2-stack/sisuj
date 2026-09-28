@@ -2855,24 +2855,27 @@ export default function Apl02Page() {
         onCancel={() => setShowBkConfirm(false)}
       />
 
+      {/* Webcam absen masuk cuma relevan di flow login biasa — UUID flow
+          nggak punya data absen, jadi modalnya jangan ikut di-mount. */}
       {!isUuidFlow && (
-        <>
-      <WebcamModal
-        isOpen={showAwalModal}
-        onClose={handleAwalModalClose}
-        onSubmit={submitAbsenAwal}
-        title="Absen Masuk Pra-Asesmen"
-        description="Silakan ambil foto wajah Anda untuk absen masuk"
-        canClose={false}
-      />
+        <WebcamModal
+          isOpen={showAwalModal}
+          onClose={handleAwalModalClose}
+          onSubmit={submitAbsenAwal}
+          title="Absen Masuk Pra-Asesmen"
+          description="Silakan ambil foto wajah Anda untuk absen masuk"
+          canClose={false}
+        />
+      )}
 
+      {/* Preview dokumen harus bisa dibuka di SEMUA flow, termasuk UUID flow
+          (persiapan asesmen). Kalau ikut di-guard !isUuidFlow, klik file jadi
+          diem aja karena modal-nya nggak pernah ke-mount. */}
       <DocumentPreviewModal
         isOpen={showPreview}
         onClose={handleClosePreview}
         file={selectedPreviewFile}
       />
-        </>
-      )}
 
       <FileTypeModal
         isOpen={showFileTypeModal}
