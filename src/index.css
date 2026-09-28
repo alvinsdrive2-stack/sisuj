@@ -145,7 +145,13 @@
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    /* WAJIB `none`, bukan `translateY(0)`. Dengan `animation-fill-mode: forwards`
+       nilai akhir keyframe menetap selamanya; transform identitas pun tetap
+       menjadikan elemen ini containing block untuk `position: fixed`, sehingga
+       dialog/modal fixed di dalamnya (mis. ConfirmDialog hapus bukti APL-02)
+       terposisi relatif area konten — bukan viewport — dan kotaknya jatuh di
+       luar layar (halaman tampak abu-abu saja tanpa dialog). */
+    transform: none;
   }
 }
 
@@ -279,7 +285,14 @@
 
 /* Page Transition Classes */
 .page-enter {
-  animation: pageFadeIn 0.3s ease-out forwards;
+  /* TANPA `forwards` — sengaja. Dengan `forwards` efek animasi menetap selamanya
+     dan nilainya diserialisasi sebagai matrix identitas (bukan `none`), sehingga
+     pembungkus konten tetap jadi containing block untuk `position: fixed`:
+     dialog/modal fixed di dalamnya (mis. konfirmasi hapus bukti APL-02) ikut
+     terposisi relatif area konten, bukan viewport — kotaknya jatuh di luar layar
+     dan halaman cuma tampak abu-abu tanpa dialog. Tanpa `forwards`, setelah 0,3 s
+     elemen kembali ke gaya aslinya (opacity dari class + transform: none). */
+  animation: pageFadeIn 0.3s ease-out;
 }
 
 .page-exit {

@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom'
+
 interface ConfirmDialogProps {
   isOpen: boolean
   title: string
@@ -21,7 +23,12 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   if (!isOpen) return null
 
-  return (
+  // Dirender lewat portal ke <body> supaya `position: fixed` selalu mengacu ke
+  // viewport. Bila dialog ini berada di dalam elemen ber-`transform` (mis.
+  // pembungkus konten DashboardLayout yang punya animasi transisi halaman),
+  // elemen itu jadi containing block dan overlay-nya terkunci di area konten —
+  // kotak dialog bisa jatuh di luar layar sehingga halaman tampak abu-abu saja.
+  return createPortal(
     <div style={{
       position: 'fixed',
       top: 0,
@@ -124,6 +131,7 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
