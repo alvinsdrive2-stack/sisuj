@@ -38,6 +38,7 @@ interface WawancaraItem {
   unit_kompetensi: string
   no_elemen: string
   materi: string
+  kuk: string
   checked: boolean
 }
 interface Soal2Item {
@@ -45,7 +46,21 @@ interface Soal2Item {
   id_dokumen?: number | string
   unit?: { kode: string } | null
   subunit?: { kode: string; nama?: string } | null
-  kuk?: { nama: string } | null
+  kuk?: { nama?: string; kode?: string; no?: string } | null
+  no_kuk?: string | number | null
+}
+
+function getCheckedSummary(items: WawancaraItem[]) {
+  const checked = items.filter((it) => it.checked)
+  const units = Array.from(new Set(checked.map((it) => it.unit_kompetensi).filter((u) => u && u !== '-')))
+  const elemens = Array.from(new Set(checked.map((it) => it.no_elemen).filter((e) => e && e !== '-')))
+  const kuks = Array.from(new Set(checked.map((it) => it.kuk || it.materi).filter((k) => k && k !== '-')))
+
+  return {
+    unit: units.join(', '),
+    elemen: elemens.join(', '),
+    kuk: kuks.join(', '),
+  }
 }
 interface Ia08Response {
   message: string
@@ -86,17 +101,22 @@ export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
 
     if (inner.files) setFiles(inner.files)
 
+    let mappedWawancara: WawancaraItem[] = []
     if (inner.soal?.['2']) {
       const savedUnit = inner.unit_answers || {}
-      setWawancara(
-        inner.soal['2'].map((item, index) => ({
+      mappedWawancara = inner.soal['2'].map((item, index) => {
+        const kukKode = item.kuk?.kode || item.kuk?.no || item.no_kuk || ''
+        const kukVal = kukKode ? String(kukKode) : (item.kuk?.nama || item.subunit?.nama || '-')
+        return {
           id: item.id || index + 1,
           unit_kompetensi: item.unit?.kode || '-',
           no_elemen: item.subunit?.kode || '-',
           materi: item.kuk?.nama || item.subunit?.nama || '-',
+          kuk: kukVal,
           checked: savedUnit[String(item.id)] === true,
-        }))
-      )
+        }
+      })
+      setWawancara(mappedWawancara)
       if (!inner.dokumen?.id && inner.soal['2'][0]?.id_dokumen) {
         setDokumenId(Number(inner.soal['2'][0].id_dokumen))
       }
@@ -112,6 +132,13 @@ export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
       if (rec.rekomendasi_unit) setRekomendasiUnit(rec.rekomendasi_unit)
       if (rec.rekomendasi_elemen) setRekomendasiElemen(rec.rekomendasi_elemen)
       if (rec.rekomendasi_kuk) setRekomendasiKuk(rec.rekomendasi_kuk)
+
+      if (rec.is_kompeten === false && !rec.rekomendasi_unit && !rec.rekomendasi_elemen && !rec.rekomendasi_kuk && mappedWawancara.length > 0) {
+        const summary = getCheckedSummary(mappedWawancara)
+        setRekomendasiUnit(summary.unit)
+        setRekomendasiElemen(summary.elemen)
+        setRekomendasiKuk(summary.kuk)
+      }
     }
   }, [data])
 
@@ -327,12 +354,19 @@ export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                 <CustomCheckbox
                   checked={item.checked}
-                  onChange={() =>
-                    !isSaving &&
-                    setWawancara((prev) =>
-                      prev.map((it) => (it.id === item.id ? { ...it, checked: !it.checked } : it))
-                    )
-                  }
+                  onChange={() => {
+                    if (isSaving) return
+                    setWawancara((prev) => {
+                      const updated = prev.map((it) => (it.id === item.id ? { ...it, checked: !it.checked } : it))
+                      if (isKompeten === false) {
+                        const summary = getCheckedSummary(updated)
+                        setRekomendasiUnit(summary.unit)
+                        setRekomendasiElemen(summary.elemen)
+                        setRekomendasiKuk(summary.kuk)
+                      }
+                      return updated
+                    })
+                  }}
                   disabled={isSaving}
                 />
               </td>
@@ -383,7 +417,10 @@ export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
                 <CustomCheckbox
                   checked={isKompeten === true}
-                  onChange={() => setIsKompeten(isKompeten === true ? null : true)}
+                  onChange={() => {
+                    if (isSaving) return
+                    setIsKompeten(isKompeten === true ? null : true)
+                  }}
                   disabled={isSaving}
                   style={{ marginTop: '2px' }}
                 />
@@ -392,7 +429,17 @@ export function Ia08Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
                 <CustomCheckbox
                   checked={isKompeten === false}
-                  onChange={() => setIsKompeten(isKompeten === false ? null : false)}
+                  onChange={() => {
+                    if (isSaving) return
+                    const nextVal = isKompeten === false ? null : false
+                    setIsKompeten(nextVal)
+                    if (nextVal === false) {
+                      const summary = getCheckedSummary(wawancara)
+                      setRekomendasiUnit(summary.unit)
+                      setRekomendasiElemen(summary.elemen)
+                      setRekomendasiKuk(summary.kuk)
+                    }
+                  }}
                   disabled={isSaving}
                   style={{ marginTop: '2px' }}
                 />

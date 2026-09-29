@@ -42,7 +42,22 @@ interface WawancaraItem {
   unit_kompetensi: string
   no_elemen: string
   materi: string
+  kuk: string
   checked: boolean
+}
+
+/** Ambil ringkasan unit, elemen, dan KUK unik dari baris wawancara yang dicentang */
+function getCheckedSummary(items: WawancaraItem[]) {
+  const checked = items.filter((it) => it.checked)
+  const units = Array.from(new Set(checked.map((it) => it.unit_kompetensi).filter((u) => u && u !== '-')))
+  const elemens = Array.from(new Set(checked.map((it) => it.no_elemen).filter((e) => e && e !== '-')))
+  const kuks = Array.from(new Set(checked.map((it) => it.kuk || it.materi).filter((k) => k && k !== '-')))
+
+  return {
+    unit: units.join(', '),
+    elemen: elemens.join(', '),
+    kuk: kuks.join(', '),
+  }
 }
 
 interface Ia08Referensi {
@@ -82,11 +97,11 @@ export default function Ia08Page() {
   })
 
   const [wawancaraItems, setWawancaraItems] = useState<WawancaraItem[]>([
-    { id: 1, unit_kompetensi: 'F.41BPC00.001.2', no_elemen: '1', materi: 'Ketentuan terkait tugas perencanaan', checked: false },
-    { id: 2, unit_kompetensi: 'F.41BPC00.002.2', no_elemen: '2', materi: 'Lokasi kerja dan gambar rencana', checked: false },
-    { id: 3, unit_kompetensi: 'F.41BPC00.003.2', no_elemen: '3', materi: 'Detail sambungan rencana', checked: false },
-    { id: 4, unit_kompetensi: 'F.41BPC00.004.2', no_elemen: '2', materi: 'Produktivitas kerja', checked: false },
-    { id: 5, unit_kompetensi: 'F.41BPC00.005.2', no_elemen: '5', materi: 'Spesifikasi teknis mutu', checked: false },
+    { id: 1, unit_kompetensi: 'F.41BPC00.001.2', no_elemen: '1', materi: 'Ketentuan terkait tugas perencanaan', kuk: '1.1', checked: false },
+    { id: 2, unit_kompetensi: 'F.41BPC00.002.2', no_elemen: '2', materi: 'Lokasi kerja dan gambar rencana', kuk: '2.1', checked: false },
+    { id: 3, unit_kompetensi: 'F.41BPC00.003.2', no_elemen: '3', materi: 'Detail sambungan rencana', kuk: '3.1', checked: false },
+    { id: 4, unit_kompetensi: 'F.41BPC00.004.2', no_elemen: '2', materi: 'Produktivitas kerja', kuk: '2.1', checked: false },
+    { id: 5, unit_kompetensi: 'F.41BPC00.005.2', no_elemen: '5', materi: 'Spesifikasi teknis mutu', kuk: '5.1', checked: false },
   ])
 
   const [buktiTambahan, setBuktiTambahan] = useState('')
@@ -127,16 +142,22 @@ export default function Ia08Page() {
           }
 
           // Map soal.2 (unit/kuk) to wawancara items
+          let mappedWawancara: WawancaraItem[] = []
           if (result.data.soal?.["2"]) {
             const savedUnit = result.data.unit_answers || {}
-            const wawancaraData = result.data.soal["2"].map((item: any, index: number) => ({
-              id: item.id || index + 1,
-              unit_kompetensi: item.unit?.kode || "-",
-              no_elemen: item.subunit?.kode || "-",
-              materi: item.kuk?.nama || item.subunit?.nama || "-",
-              checked: savedUnit[String(item.id)] === true,
-            }))
-            setWawancaraItems(wawancaraData)
+            mappedWawancara = result.data.soal["2"].map((item: any, index: number) => {
+              const kukKode = item.kuk?.kode || item.kuk?.no || item.no_kuk || ""
+              const kukVal = kukKode ? String(kukKode) : (item.kuk?.nama || item.subunit?.nama || "-")
+              return {
+                id: item.id || index + 1,
+                unit_kompetensi: item.unit?.kode || "-",
+                no_elemen: item.subunit?.kode || "-",
+                materi: item.kuk?.nama || item.subunit?.nama || "-",
+                kuk: kukVal,
+                checked: savedUnit[String(item.id)] === true,
+              }
+            })
+            setWawancaraItems(mappedWawancara)
           }
 
           // Set bukti tambahan from recommendation or soal.3
@@ -169,6 +190,14 @@ export default function Ia08Page() {
             if (rec.rekomendasi_unit) setRekomendasiUnit(rec.rekomendasi_unit)
             if (rec.rekomendasi_elemen) setRekomendasiElemen(rec.rekomendasi_elemen)
             if (rec.rekomendasi_kuk) setRekomendasiKuk(rec.rekomendasi_kuk)
+
+            // Jika rekomendasi belum kompeten tapi teksnya belum diisi, auto-fill dari centangan
+            if (rec.is_kompeten === false && !rec.rekomendasi_unit && !rec.rekomendasi_elemen && !rec.rekomendasi_kuk && mappedWawancara.length > 0) {
+              const summary = getCheckedSummary(mappedWawancara)
+              setRekomendasiUnit(summary.unit)
+              setRekomendasiElemen(summary.elemen)
+              setRekomendasiKuk(summary.kuk)
+            }
           }
 
           // Store dokumen_id for POST
@@ -230,9 +259,19 @@ export default function Ia08Page() {
 
   const handleWawancaraCheck = (id: number) => {
     if (isFormDisabled) return
-    setWawancaraItems(prev => prev.map(item =>
-      item.id === id ? { ...item, checked: !item.checked } : item
-    ))
+    setWawancaraItems(prev => {
+      const updated = prev.map(item =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+      // Jika saat ini asesor memilih belum kompeten, sinkronkan otomatis unit, elemen, dan kuk
+      if (rekomendasiKompeten === false) {
+        const summary = getCheckedSummary(updated)
+        setRekomendasiUnit(summary.unit)
+        setRekomendasiElemen(summary.elemen)
+        setRekomendasiKuk(summary.kuk)
+      }
+      return updated
+    })
   }
 
   const handleSave = async () => {
@@ -533,7 +572,10 @@ export default function Ia08Page() {
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '10px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={rekomendasiKompeten === true}
-                    onChange={() => setRekomendasiKompeten(rekomendasiKompeten === true ? null : true)}
+                    onChange={() => {
+                      if (isFormDisabled) return
+                      setRekomendasiKompeten(rekomendasiKompeten === true ? null : true)
+                    }}
                     disabled={isFormDisabled}
                     style={{ marginTop: '2px' }}
                   />
@@ -542,7 +584,17 @@ export default function Ia08Page() {
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: isFormDisabled ? 'not-allowed' : 'pointer' }}>
                   <CustomCheckbox
                     checked={rekomendasiKompeten === false}
-                    onChange={() => setRekomendasiKompeten(rekomendasiKompeten === false ? null : false)}
+                    onChange={() => {
+                      if (isFormDisabled) return
+                      const nextVal = rekomendasiKompeten === false ? null : false
+                      setRekomendasiKompeten(nextVal)
+                      if (nextVal === false) {
+                        const summary = getCheckedSummary(wawancaraItems)
+                        setRekomendasiUnit(summary.unit)
+                        setRekomendasiElemen(summary.elemen)
+                        setRekomendasiKuk(summary.kuk)
+                      }
+                    }}
                     disabled={isFormDisabled}
                     style={{ marginTop: '2px' }}
                   />
