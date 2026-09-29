@@ -276,6 +276,11 @@ export default function FrAk07Page() {
   // Selain jenis kelas 2: kuncian dibuka semua — form bebas diedit siapapun
   const isKelasTerbuka = jenisKelas !== '2'
   const isFormDisabled = tahap !== 0 && !isKelasTerbuka && (!isAsesor || signing.allSigned)
+  // Checkbox dalam tabel (potensi asesi, modifikasi, rencana asesmen) cuma boleh
+  // diisi asesor. Asesi tetap boleh lihat nilainya, tapi nggak bisa nge-klik —
+  // dulu asesi bisa nge-klik di tahap 0 / kelas non-2 karena `isAsesor` nggak
+  // pernah dicek di `isFormDisabled`.
+  const isCheckboxDisabled = isFormDisabled || isSaving || !isAsesor
 
   const handleBack = () => {
     navigate(-1)
@@ -638,8 +643,8 @@ export default function FrAk07Page() {
                           <div style={{ marginRight: '10px' }}>
                             <CustomCheckbox
                               checked={isChecked}
-                              disabled={isFormDisabled || isSaving}
-                              onChange={() => !isFormDisabled && !isSaving && handleReferenceChange(potensiAsesiData.kategoris[0]?.id || null, potensiAsesiData.id, ref.id, true)}
+                              disabled={isCheckboxDisabled}
+                              onChange={() => !isCheckboxDisabled && handleReferenceChange(potensiAsesiData.kategoris[0]?.id || null, potensiAsesiData.id, ref.id, true)}
                             />
                           </div>
                           <span style={{ flex: 1, fontSize: '14px' }}>{ref.nama}</span>
@@ -672,7 +677,7 @@ export default function FrAk07Page() {
                   return allReferensis.map((ref, refIdx) => {
                     const isChecked = isReferenceChecked(kategori.id, modifikasiData.id, ref.id)
                     const isFirstRow = refIdx === 0
-                    const isDisabled = isFormDisabled || isSaving
+                    const isDisabled = isCheckboxDisabled || isSaving
 
                     return (
                       <tr key={`${kategori.id || kategoriIndex}-${ref.id}`}>
@@ -690,7 +695,7 @@ export default function FrAk07Page() {
                           <CustomCheckbox
                             checked={isChecked}
                             onChange={(shiftKey) => {
-                              if (isFormDisabled || isSaving) return
+                              if (isCheckboxDisabled) return
                               if (shiftKey) handleBulkToggle(modifikasiData.id, modifikasiData.kategoris, true)
                               else handleReferenceChange(kategori.id, modifikasiData.id, ref.id, true)
                             }}
@@ -701,7 +706,7 @@ export default function FrAk07Page() {
                           <CustomCheckbox
                             checked={getReferenceState(kategori.id, modifikasiData.id, ref.id) === false}
                             onChange={(shiftKey) => {
-                              if (isFormDisabled || isSaving) return
+                              if (isCheckboxDisabled) return
                               if (shiftKey) handleBulkToggle(modifikasiData.id, modifikasiData.kategoris, false)
                               else handleReferenceChange(kategori.id, modifikasiData.id, ref.id, false)
                             }}
@@ -743,7 +748,7 @@ export default function FrAk07Page() {
                 {rencanaAsesmenData.kategoris[0].referensis.map((ref, refIdx) => {
                   const kategoriId = rencanaAsesmenData.kategoris[0]?.id || null
                   const isChecked = isReferenceChecked(kategoriId, rencanaAsesmenData.id, ref.id)
-                  const isDisabled = isFormDisabled || isSaving
+                  const isDisabled = isCheckboxDisabled || isSaving
 
                   return (
                     <tr key={ref.id}>
@@ -757,7 +762,7 @@ export default function FrAk07Page() {
                         <CustomCheckbox
                           checked={isChecked}
                           onChange={(shiftKey) => {
-                            if (isFormDisabled || isSaving) return
+                            if (isCheckboxDisabled) return
                             if (shiftKey) handleBulkToggle(rencanaAsesmenData.id, rencanaAsesmenData.kategoris, true)
                             else handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, true)
                           }}
@@ -768,7 +773,7 @@ export default function FrAk07Page() {
                         <CustomCheckbox
                           checked={getReferenceState(kategoriId, rencanaAsesmenData.id, ref.id) === false}
                           onChange={(shiftKey) => {
-                            if (isFormDisabled || isSaving) return
+                            if (isCheckboxDisabled) return
                             if (shiftKey) handleBulkToggle(rencanaAsesmenData.id, rencanaAsesmenData.kategoris, false)
                             else handleReferenceChange(kategoriId, rencanaAsesmenData.id, ref.id, false)
                           }}
