@@ -375,28 +375,9 @@ export default function FrAk07Page() {
       return
     }
 
-    // Validasi: baris pertanyaan (tanpa textarea) wajib pilih Ya/Tidak.
-    // Baris ber-keterangan (kolom kanan textarea) tidak wajib.
-    const missingDesc: string[] = []
-
-    const modifData = ak07Data?.find(d => d.urut === 2)
-    modifData?.kategoris.forEach(kategori => {
-      if (!kategori.nama) return
-      kategori.referensis.forEach((ref, idx) => {
-        if (!ref.nama) return
-        if (idx === kategori.referensis.length - 1) return // baris terakhir = keterangan textarea
-        if (getReferenceState(kategori.id, modifData.id, ref.id) === null) {
-          missingDesc.push(ref.nama)
-        }
-      })
-    })
-
-    if (missingDesc.length > 0) {
-      const preview = missingDesc.slice(0, 3).join(', ')
-      const extra = missingDesc.length > 3 ? ` (+${missingDesc.length - 3} lainnya)` : ''
-      showWarning(`Masih ada pertanyaan yang belum dipilih Ya/Tidak: ${preview}${extra}`)
-      return
-    }
+    // Catatan: tidak ada lagi validasi "wajib pilih Ya/Tidak" untuk asesi.
+    // Pengisian data AK07 adalah kewenangan asesor, sehingga asesi tetap
+    // boleh lanjut walau masih ada pertanyaan yang belum dipilih.
 
     // Guard: asesi cannot submit until all asesor have signed (selain kelas 2: bypass)
     if (!isKelasTerbuka && !isAsesor && !signing.allAsesorSigned) {
