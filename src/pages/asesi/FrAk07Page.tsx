@@ -93,6 +93,10 @@ export default function FrAk07Page() {
   const [selectedReferences, setSelectedReferences] = useState<SelectedReferences>({})
   const [textAnswers, setTextAnswers] = useState<Record<number, string>>({})
   const [isDataLoading, setIsDataLoading] = useState(true)
+  // id_izin hasil resolve fetchData (dari user?.id_izin atau list-asesi).
+  // Tanpa state ini, `actualIdIzin` di handleSave tetap objek user.id_izin →
+  // tombol lanjut nge-navigate ke /ak04 pakai "[object Object]".
+  const [actualIdIzin, setActualIdIzin] = useState<string | undefined>(idIzin)
 
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
@@ -184,6 +188,8 @@ export default function FrAk07Page() {
         return
       }
 
+      setActualIdIzin(actualIdIzin)
+
       // Fetch AK 07 data
       const ak07Response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak07`, {
         headers: {
@@ -266,7 +272,7 @@ export default function FrAk07Page() {
     userId: user?.id,
     userName: user?.name,
     isSaving,
-    idIzin,
+    idIzin: actualIdIzin,
     jadwalId,
     onRefresh: fetchData,
     jenisKelas,
@@ -346,8 +352,8 @@ export default function FrAk07Page() {
 
   const handleSave = async () => {
     // Resolve actualIdIzin for navigation
-    let actualIdIzin = idIzin
-    if (!actualIdIzin && jadwalId) {
+    let finalIdIzin = actualIdIzin || idIzin
+    if (!finalIdIzin && jadwalId) {
       const token = localStorage.getItem("access_token")
       const listAsesiResponse = await fetch(`${API_BASE_URL}/kegiatan/${jadwalId}/list-asesi`, {
         headers: {
@@ -358,19 +364,19 @@ export default function FrAk07Page() {
       if (listAsesiResponse.ok) {
         const listResult = await listAsesiResponse.json()
         if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
-          actualIdIzin = listResult.list_asesi[0].id_izin
+          finalIdIzin = matchAsesiIdIzin(listResult.list_asesi, user) ?? listResult.list_asesi[0].id_izin
         }
       }
     }
 
-    if (!actualIdIzin) {
+    if (!finalIdIzin) {
       showWarning("ID Izin tidak ditemukan")
       return
     }
 
     // Tahap 0: langsung navigasi tanpa save/ttd
     if (tahap === 0) {
-      navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`)
+      navigate(`/asesi/praasesmen/${finalIdIzin}/ak04`)
       return
     }
 
@@ -479,7 +485,7 @@ export default function FrAk07Page() {
 
       // POST to backend
       const token = localStorage.getItem("access_token")
-      const response = await fetch(`${API_BASE_URL}/praasesmen/${actualIdIzin}/ak07`, {
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/ak07`, {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -495,7 +501,7 @@ export default function FrAk07Page() {
       }
 
       // Generate QR jika jadwalId tersedia (skip untuk tahap 0 / sudah ttd)
-      console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, actualIdIzin })
+      console.log('[FR-AK-07] Generate QR:', { jadwalId, isAsesor, idIzin: finalIdIzin })
       if (tahap !== 0 && jadwalId && !alreadySigned) {
         const ok = await signing.generateQR()
         if (!ok) {
@@ -508,7 +514,7 @@ export default function FrAk07Page() {
       signing.publishUpdate()
       // Untuk tahap 0 / sudah ttd, langsung navigasi ke halaman berikutnya
       if (tahap === 0 || alreadySigned) {
-        setTimeout(() => navigate(`/asesi/praasesmen/${actualIdIzin}/ak04`), 500)
+        setTimeout(() => navigate(`/asesi/praasesmen/${finalIdIzin}/ak04`), 500)
       }
     } catch (error) {
       showError(error instanceof Error ? error.message : "Gagal menyimpan data AK07")
