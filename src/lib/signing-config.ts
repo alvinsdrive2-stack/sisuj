@@ -12,7 +12,7 @@ export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
   apl02: { order: 'asesi_first', qrEndpoint: 'apl02', nextPageName: 'MAPA 01' },
   mapa01: { order: 'asesor_first', qrEndpoint: 'mapa01', nextPageName: 'MAPA 02' },
   mapa02: { order: 'asesor_first', qrEndpoint: 'mapa02', nextPageName: 'FR AK 07' },
-  ak07:   { order: 'asesi_only', qrEndpoint: 'ak07', nextPageName: 'FR AK 04' },
+  ak07:   { order: 'asesor_first', qrEndpoint: 'ak07', nextPageName: 'FR AK 04' },
   ak04:   { order: 'asesi_first', qrEndpoint: 'ak04', nextPageName: 'K3 Asesmen' },
   k3:     { order: 'asesi_first', qrEndpoint: 'k3', nextPageName: 'Dashboard' },
   ak01:   { order: 'asesor_first', qrEndpoint: 'ak01', nextPageName: 'AK01 Success' },

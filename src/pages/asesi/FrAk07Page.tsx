@@ -278,13 +278,6 @@ export default function FrAk07Page() {
     jenisKelas,
   })
 
-  // Asesi tidak boleh terhalang apa pun di AK 07 (kewenangan pengisian ada di
-  // asesor). Lepas di sini — bukan di useSigningState — karena hook itu dipakai
-  // bersama oleh 26 halaman MUK lain yang aturan TTD-nya harus tetap berlaku.
-  const tombolAk07 = isAsesor
-    ? { text: signing.buttonText, disabled: signing.buttonDisabled }
-    : { text: signing.buttonText, disabled: isSaving }
-
 
   // Selain jenis kelas 2: kuncian dibuka semua — form bebas diedit siapapun
   const isKelasTerbuka = jenisKelas !== '2'
@@ -383,10 +376,7 @@ export default function FrAk07Page() {
     // Sudah semua ttd → tetap POST jawaban di bawah, skip QR, lalu redirect ke FR AK 04
     const alreadySigned = tahap !== 0 && signing.allSigned
 
-    // Asesi tidak dihalangi apa pun di AK 07: pengisian data AK 07 adalah
-    // kewenangan asesor, jadi asesi boleh langsung lanjut tanpa menunggu
-    // TTD asesor dan tanpa centang pernyataan di halaman ini.
-    if (isAsesor && !alreadySigned && !signing.agreedChecklist) {
+    if (!alreadySigned && !signing.agreedChecklist) {
       showWarning("Silakan centang pernyataan bahwa Anda telah memahami dokumen ini.")
       return
     }
@@ -395,8 +385,8 @@ export default function FrAk07Page() {
     // Pengisian data AK07 adalah kewenangan asesor, sehingga asesi tetap
     // boleh lanjut walau masih ada pertanyaan yang belum dipilih.
 
-    // Guard TTD asesor hanya berlaku untuk asesor. Asesi lanjut tanpa menunggu.
-    if (isAsesor && !isKelasTerbuka && !signing.allAsesorSigned) {
+    // Guard: asesi cannot submit until all asesor have signed (selain kelas 2: bypass)
+    if (!isKelasTerbuka && !isAsesor && !signing.allAsesorSigned) {
       showWarning(`Menunggu tanda tangan: ${signing.missingLabels.join(', ')}`)
       return
     }
@@ -962,8 +952,8 @@ export default function FrAk07Page() {
                 Kembali
               </ActionButton>
             )}
-            <ActionButton variant="primary" disabled={tombolAk07.disabled} onClick={handleSave}>
-              {tombolAk07.text}
+            <ActionButton variant="primary" disabled={signing.buttonDisabled} onClick={handleSave}>
+              {signing.buttonText}
             </ActionButton>
           </div>
         </div>
