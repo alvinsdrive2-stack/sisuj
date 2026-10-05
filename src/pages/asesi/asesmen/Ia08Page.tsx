@@ -274,6 +274,43 @@ export default function Ia08Page() {
     })
   }
 
+  /** Ada baris cek list wawancara yang dicentang → ada pertanyaan yang wajib ditanyakan di IA09. */
+  const anyWawancaraChecked = useMemo(
+    () => wawancaraItems.some((item) => item.checked),
+    [wawancaraItems]
+  )
+
+  /**
+   * Tombol "Lanjut" setelah TTD. Wawancara yang dicentang di sini adalah_source_ penentu
+   * baris mana yang ditandai wajib di IA09 — jadiASESOR harus inget sebelum pindah halaman.
+   */
+  const handleGoNext = () => {
+    const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
+    const nextStep = asesmenSteps[currentStepIndex + 1]
+    const nextHref = nextStep
+      ? nextStep.href.replace('/asesi/asesmen/', '/asesi/asesmen/' + id + '/')
+      : `/asesi/asesmen/${id}/selesai`
+
+    if (nextStep && !anyWawancaraChecked) {
+      showWarning(
+        'Belum ada pertanyaan wawancara yang dicentang. Centang dulu di "Cek List Wawancara" baris mana yang perlu ditanyakan di ' +
+        (nextStep.label || 'IA09') +
+        '.'
+      )
+      return
+    }
+
+    if (anyWawancaraChecked) {
+      showWarning(
+        'Ingat: pertanyaan yang Anda centang di Cek List Wawancara WAJIB ditanyakan ke asesi dan dijawab di ' +
+        (nextStep?.label || 'IA09') +
+        '.'
+      )
+    }
+
+    navigate(nextHref)
+  }
+
   const handleSave = async () => {
     // Tahap 0: skip save/TTD, langsung navigasi next
     if (tahap === 0) {
@@ -794,17 +831,15 @@ export default function Ia08Page() {
             {isAsesor && hasSigned && (
               <ActionButton
                 variant="primary"
-                onClick={() => {
-                  const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('ia08'))
-                  const nextStep = asesmenSteps[currentStepIndex + 1]
-                  if (nextStep) {
-                    navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
-                  } else {
-                    navigate(`/asesi/asesmen/${id}/selesai`)
-                  }
+                style={{
+                  backgroundColor: anyWawancaraChecked ? '#16a34a' : '#dc2626',
+                  opacity: 1,
                 }}
+                onClick={handleGoNext}
               >
-                Lanjut ke {nextStepLabel || 'IA09'}
+                {anyWawancaraChecked
+                  ? `Lanjut ke ${nextStepLabel || 'IA09'} (ada yang dicentang)`
+                  : `Lanjut ke ${nextStepLabel || 'IA09'} — WAJIB centang minimal 1`}
               </ActionButton>
             )}
           </div>
