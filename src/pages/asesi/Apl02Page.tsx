@@ -2463,14 +2463,22 @@ export default function Apl02Page() {
               savedMetodeRef.current = freshJson.data.metode
             }
           }
-        } catch { /* biarkan kosong kalau GET gagal — backend harus skip metode kosong */ }
+        } catch { /* biarkan kosong kalau GET gagal */ }
+      }
+
+      // Guard: navigasi (Lanjut ke MUK) hanya boleh kalau metode sudah ada.
+      // saveOnly=true (Simpan & TTA) tetap diizinkan — asesi TTD boleh dulu.
+      if (!saveOnly && !metodeToPost) {
+        showWarning("Metode asesmen belum dipilih asesor. Menunggu asesor memilih Observasi/Portofolio.")
+        return
       }
 
       const response = await fetch(`${API_BASE_URL}/praasesmen/${finalIdIzin}/apl02`, {
         method: 'POST',
         headers: { ...authHeaders(), "Content-Type": "application/json" },
+        // metode null → key TIDAK dikirim (metode: '' bisa overwrite pilihan asesor)
         body: JSON.stringify({
-          metode: metodeToPost || '',
+          ...(metodeToPost ? { metode: metodeToPost } : {}),
           is_dilanjutkan: true,
           answers
         }),
