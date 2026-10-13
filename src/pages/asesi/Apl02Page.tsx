@@ -2324,8 +2324,9 @@ export default function Apl02Page() {
         return
       }
 
-      // Validasi: asesor harus memilih metode asesmen
-      if (!metodeAsesmenRef.current) {
+      // Validasi: asesor harus memilih metode asesmen.
+      // Kecuali UUID flow — biarin tetap save walau metode kosong.
+      if (!metodeAsesmenRef.current && !isUuidFlow) {
         showWarning("Silakan pilih metode asesmen (Observasi atau Portofolio)")
         return
       }
