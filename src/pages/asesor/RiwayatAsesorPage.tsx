@@ -76,7 +76,7 @@ export default function RiwayatAsesorPage() {
                     <div
                       key={kegiatan.jadwal_id}
                       className="p-4 border border-slate-200 rounded-lg hover:shadow-md bg-white cursor-pointer"
-                      onClick={() => navigate(`/asesor/asesi/${kegiatan.jadwal_id}`)}
+                      onClick={() => navigate(`/asesor/asesi/${kegiatan.jadwal_id}?riwayat`)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">

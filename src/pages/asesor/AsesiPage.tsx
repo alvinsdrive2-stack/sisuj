@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -72,6 +72,8 @@ export default function AsesiPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const { jadwalId } = useParams<{ jadwalId: string }>()
+  const [searchParams] = useSearchParams()
+  const isRiwayat = searchParams.has('riwayat')
   const { openModal: openDokumenAsesiModal } = useDokumenAsesiModal()
 
   // Debug logging
@@ -169,6 +171,9 @@ export default function AsesiPage() {
   const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
   const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
   const [tahapMap, setTahapMap] = useState<Record<string, number>>({})
+
+  // Mode riwayat: id_izin yang menampilkan pilihan Pra-Asesmen / Asesmen
+  const [pilihanAsesi, setPilihanAsesi] = useState<string | null>(null)
 
   // Fetch asesor IDs, jenjang, and metode from data-dokumen endpoint (per-asesi)
   useEffect(() => {
@@ -300,6 +305,12 @@ export default function AsesiPage() {
   }
 
   const handleViewAsesi = async (idIzin: string) => {
+    // Mode riwayat: tampilkan pilihan Pra-Asesmen / Asesmen (buka tab baru)
+    if (isRiwayat) {
+      setPilihanAsesi(prev => (prev === idIzin ? null : idIzin))
+      return
+    }
+
     const tahap = currentKegiatan?.tahap ?? tahapMap[idIzin] ?? 0
 
     // Mark valid navigation entry for asesmen routes
@@ -771,6 +782,33 @@ export default function AsesiPage() {
                               </div>
                             </div>
                           </div>
+
+                          {isRiwayat && pilihanAsesi === asesi.id_izin && (
+                            <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  window.open(`/asesi/praasesmen/${asesi.id_izin}/apl01`, '_blank')
+                                }}
+                              >
+                                <FileText className="w-4 h-4 mr-1.5" />
+                                Pra-Asesmen (APL.01)
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  window.open(`/asesi/perjanjian/${asesi.id_izin}/ak01`, '_blank')
+                                }}
+                              >
+                                <FileText className="w-4 h-4 mr-1.5" />
+                                Asesmen (AK.01)
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )
                     })}
