@@ -790,7 +790,8 @@ export default function AsesiPage() {
                                 variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  window.open(`/asesi/praasesmen/${asesi.id_izin}/apl01`, '_blank')
+                                  sessionStorage.setItem('validNavigationEntry', 'true')
+                                  navigate(`/asesi/praasesmen/${asesi.id_izin}/apl01`)
                                 }}
                               >
                                 <FileText className="w-4 h-4 mr-1.5" />
@@ -801,7 +802,8 @@ export default function AsesiPage() {
                                 variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  window.open(`/asesi/perjanjian/${asesi.id_izin}/ak01`, '_blank')
+                                  sessionStorage.setItem('validNavigationEntry', 'true')
+                                  navigate(`/asesi/perjanjian/${asesi.id_izin}/ak01`)
                                 }}
                               >
                                 <FileText className="w-4 h-4 mr-1.5" />
