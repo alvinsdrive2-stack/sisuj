@@ -9,6 +9,7 @@ import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { DokumenBuktiPicker, type Apl02FileOption } from "@/components/ia09/DokumenBuktiPicker"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -40,14 +41,6 @@ interface Pertanyaan {
   perluWawancara: boolean | null
   /** id file APL-02 yang ditunjuk asesor sebagai bukti baris ini. */
   apl2FileIds: number[]
-}
-
-/** Satu file bukti APL-02 yang bisa dipilih asesor. */
-interface Apl02FileOption {
-  id: number
-  name: string
-  path: string
-  filetype: string | null
 }
 
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
@@ -333,6 +326,26 @@ export default function Ia09Page() {
   }, [id, authLoading])
 
   useEffect(() => { fetchApl02Files() }, [fetchApl02Files])
+
+  /**
+   * Peta id file APL-02 → nomor urut di tabel "Bukti – Bukti Kompetensi".
+   * Urutan tabel bukti = urutan `ia09Files` (yang datang dari server), jadi nomornya
+   * dihitung dari situ, bukan dari urutan pemilihan asesor.
+   */
+  const nomorFileMap = useMemo(() => {
+    const map = new Map<number, number>()
+    ia09Files.forEach((f, i) => map.set(f.id, i + 1))
+    return map
+  }, [ia09Files])
+
+  /** Label "Berdasarkan bukti nomor ..." untuk satu baris, dihitung dari pilihan terkini. */
+  const labelNomorBukti = useCallback((ids: number[]): string => {
+    return ids
+      .map(id => nomorFileMap.get(id))
+      .filter((n): n is number => typeof n === "number")
+      .sort((a, b) => a - b)
+      .join(", ")
+  }, [nomorFileMap])
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
 
@@ -667,7 +680,7 @@ export default function Ia09Page() {
               <th style={{ width: "26%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
               <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>K</th>
               <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>BK</th>
-              <th style={{ width: "21%", border: "1px solid #000", padding: "6px" }}>Bukti APL-02</th>
+              <th style={{ width: "21%", border: "1px solid #000", padding: "6px" }}>Dokumen Bukti</th>
             </tr>
           </thead>
           <tbody>
@@ -678,7 +691,17 @@ export default function Ia09Page() {
               return (
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
-                <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>{p.pertanyaan}</td>
+                <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>
+                  {(() => {
+                    const nomor = labelNomorBukti(p.apl2FileIds)
+                    return nomor ? (
+                      <div style={{ fontSize: "11px", fontStyle: "italic", marginBottom: "4px" }}>
+                        Berdasarkan bukti nomor {nomor} yang anda lampirkan
+                      </div>
+                    ) : null
+                  })()}
+                  {p.pertanyaan}
+                </td>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>
                   <textarea
                     value={p.kesimpulan}
@@ -721,60 +744,12 @@ export default function Ia09Page() {
                   />
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px", verticalAlign: "top" }}>
-                  {/*
-                    Asesor menunjuk file APL-02 mana yang jadi bukti baris ini.
-                    Daftar file di-embed di dalam <details> biar nggak makan tinggi baris
-                    di dokumen yang bisa punya 100+ pertanyaan.
-                  */}
-                  {apl02Files.length === 0 ? (
-                    <span style={{ fontSize: "11px", color: "#888" }}>Tidak ada file APL-02</span>
-                  ) : (
-                    <>
-                      <details style={{ fontSize: "11px" }}>
-                        <summary style={{ cursor: "pointer", fontWeight: "bold" }}>
-                          {p.apl2FileIds.length > 0
-                            ? `${p.apl2FileIds.length} file dipilih`
-                            : "Pilih file..."}
-                        </summary>
-                        <div style={{ marginTop: "4px", maxHeight: "140px", overflowY: "auto" }}>
-                          {apl02Files.map(f => (
-                            <label
-                              key={f.id}
-                              style={{ display: "flex", alignItems: "flex-start", gap: "4px", padding: "2px 0", cursor: "pointer" }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={p.apl2FileIds.includes(f.id)}
-                                disabled={!isAsesor || signing.allSigned}
-                                onChange={() => isAsesor && handleApl02FileToggle(p.id, f.id)}
-                                style={{ marginTop: "2px", flexShrink: 0 }}
-                              />
-                              <span style={{ wordBreak: "break-word" }}>{f.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </details>
-                      {p.apl2FileIds.length > 0 && (
-                        <div style={{ marginTop: "4px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                          {p.apl2FileIds.map(fid => {
-                            const f = apl02Files.find(x => x.id === fid)
-                            if (!f) return null
-                            return (
-                              <a
-                                key={fid}
-                                href={f.path}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ fontSize: "11px", color: "#0066cc", textDecoration: "underline", wordBreak: "break-word" }}
-                              >
-                                {f.name}
-                              </a>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
+                  <DokumenBuktiPicker
+                    files={apl02Files}
+                    selectedIds={p.apl2FileIds}
+                    disabled={!isAsesor || signing.allSigned}
+                    onToggle={(fid) => isAsesor && handleApl02FileToggle(p.id, fid)}
+                  />
                 </td>
               </tr>
               )
