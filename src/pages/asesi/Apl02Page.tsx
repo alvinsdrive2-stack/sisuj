@@ -2469,7 +2469,9 @@ export default function Apl02Page() {
 
       // Guard: navigasi (Lanjut ke MUK) hanya boleh kalau metode sudah ada.
       // saveOnly=true (Simpan & TTA) tetap diizinkan — asesi TTD boleh dulu.
-      if (!saveOnly && !metodeToPost) {
+      // UUID flow: dikecualikan — gak nuju MUK (ke apl02/success) dan metodenya
+      // ditentukan belakangan oleh asesor.
+      if (!saveOnly && !metodeToPost && !isUuidFlow) {
         showWarning("Metode asesmen belum dipilih asesor. Menunggu asesor memilih Observasi/Portofolio.")
         return
       }
