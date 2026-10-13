@@ -9,7 +9,8 @@ import { useEffect, useState } from 'react'
 import { BRANDING } from '@/config/branding'
 import { CustomCheckbox } from '@/components/ui/Checkbox'
 import { useToast } from '@/contexts/ToastContext'
-import { asesmenUrl } from '@/lib/revisi-muk-api'
+import { API_BASE_URL } from '@/config/api'
+import { asesmenUrl, getJson } from '@/lib/revisi-muk-api'
 import {
   DocError,
   DocLoading,
@@ -36,7 +37,7 @@ interface Ia09Response {
   data?: {
     soal?: { '2'?: Soal2Item[] }
     files?: Ia09File[]
-    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean; apl2_file_ids?: number[] }>
     dokumen?: { id: number }
     barcodes?: Barcodes
   }
@@ -49,6 +50,15 @@ interface Pertanyaan {
   kesimpulan: string
   k: boolean
   bk: boolean
+  /** id file APL-02 yang ditunjuk sebagai bukti baris ini. */
+  apl2FileIds: number[]
+}
+
+/** Satu file bukti APL-02 yang bisa dipilih. */
+interface Apl02FileOption {
+  id: number
+  name: string
+  path: string
 }
 
 const bersihkan = (s: string) => s.replace(/&#039;/g, ' ')
@@ -60,8 +70,28 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
   const [dokumenId, setDokumenId] = useState<number | undefined>(undefined)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
+  const [apl02Files, setApl02Files] = useState<Apl02FileOption[]>([])
   const [barcodes, setBarcodes] = useState<Barcodes | undefined>(undefined)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Daftar file bukti APL-02 — sumber isi dropdown kolom Bukti APL-02.
+  // Gagal ambil → dropdown kosong, editor tetap jalan.
+  useEffect(() => {
+    let batal = false
+    getJson<{ message: string; data: Array<{ id: number; name?: string; original_name?: string; path: string }> }>(
+      `${API_BASE_URL}/praasesmen/${encodeURIComponent(idIzin)}/apl02/files`
+    )
+      .then((res) => {
+        if (batal || res?.message !== 'Success' || !Array.isArray(res.data)) return
+        setApl02Files(
+          res.data.map((f) => ({ id: f.id, name: f.original_name || f.name || `File ${f.id}`, path: f.path }))
+        )
+      })
+      .catch(() => {})
+    return () => {
+      batal = true
+    }
+  }, [idIzin])
 
   useEffect(() => {
     const inner = data?.data
@@ -82,6 +112,7 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
           kesimpulan: bersihkan(s.kesimpulan || ''),
           k: s.is_kompeten === true,
           bk: s.is_kompeten === false,
+          apl2FileIds: Array.isArray(s.apl2_file_ids) ? s.apl2_file_ids : [],
         }
       })
     )
@@ -97,6 +128,21 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
     setPertanyaanList((prev) => prev.map((p) => (p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p)))
   }
 
+  /** Tambah/lepas satu file APL-02 sebagai bukti baris pertanyaan. */
+  const handleApl02FileToggle = (soalId: number, fileId: number) => {
+    if (isSaving) return
+    setPertanyaanList((prev) =>
+      prev.map((p) => {
+        if (p.id !== soalId) return p
+        const sudahAda = p.apl2FileIds.includes(fileId)
+        return {
+          ...p,
+          apl2FileIds: sudahAda ? p.apl2FileIds.filter((fid) => fid !== fileId) : [...p.apl2FileIds, fileId],
+        }
+      })
+    )
+  }
+
   const handleSave = async () => {
     setIsSaving(true)
     try {
@@ -106,6 +152,7 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
           soal_id: p.id,
           kesimpulan: p.kesimpulan,
           is_kompeten: p.k,
+          apl2_file_ids: p.apl2FileIds,
         })),
       })
       toast.showSuccess('FR.IA.09 berhasil disimpan')
@@ -246,10 +293,11 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
         <thead>
           <tr style={{ background: BRANDING.primaryColor, color: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
             <th style={{ width: '5%', border: '1px solid #000', padding: '6px' }}>No.</th>
-            <th style={{ width: '40%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan Wawancara</th>
-            <th style={{ width: '35%', border: '1px solid #000', padding: '6px' }}>Kesimpulan Jawaban Asesi</th>
-            <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>K</th>
-            <th style={{ width: '10%', border: '1px solid #000', padding: '6px' }}>BK</th>
+            <th style={{ width: '32%', border: '1px solid #000', padding: '6px' }}>Daftar Pertanyaan Wawancara</th>
+            <th style={{ width: '26%', border: '1px solid #000', padding: '6px' }}>Kesimpulan Jawaban Asesi</th>
+            <th style={{ width: '8%', border: '1px solid #000', padding: '6px' }}>K</th>
+            <th style={{ width: '8%', border: '1px solid #000', padding: '6px' }}>BK</th>
+            <th style={{ width: '21%', border: '1px solid #000', padding: '6px' }}>Bukti APL-02</th>
           </tr>
         </thead>
         <tbody>
@@ -282,6 +330,55 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
               </td>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                 <CustomCheckbox checked={p.bk} onChange={() => handleBKChange(p.id, !p.bk)} disabled={isSaving} />
+              </td>
+              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>
+                {apl02Files.length === 0 ? (
+                  <span style={{ fontSize: '11px', color: '#888' }}>Tidak ada file APL-02</span>
+                ) : (
+                  <>
+                    <details style={{ fontSize: '11px' }}>
+                      <summary style={{ cursor: 'pointer', fontWeight: 'bold' }}>
+                        {p.apl2FileIds.length > 0 ? `${p.apl2FileIds.length} file dipilih` : 'Pilih file...'}
+                      </summary>
+                      <div style={{ marginTop: '4px', maxHeight: '140px', overflowY: 'auto' }}>
+                        {apl02Files.map((f) => (
+                          <label
+                            key={f.id}
+                            style={{ display: 'flex', alignItems: 'flex-start', gap: '4px', padding: '2px 0', cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={p.apl2FileIds.includes(f.id)}
+                              disabled={isSaving}
+                              onChange={() => handleApl02FileToggle(p.id, f.id)}
+                              style={{ marginTop: '2px', flexShrink: 0 }}
+                            />
+                            <span style={{ wordBreak: 'break-word' }}>{f.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+                    {p.apl2FileIds.length > 0 && (
+                      <div style={{ marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {p.apl2FileIds.map((fid) => {
+                          const f = apl02Files.find((x) => x.id === fid)
+                          if (!f) return null
+                          return (
+                            <a
+                              key={fid}
+                              href={f.path}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ fontSize: '11px', color: '#0066cc', textDecoration: 'underline', wordBreak: 'break-word' }}
+                            >
+                              {f.name}
+                            </a>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
+                )}
               </td>
             </tr>
           ))}
@@ -404,7 +501,7 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
       <SaveBar
         isSaving={isSaving}
         onSave={handleSave}
-        note="Semua pertanyaan dikirim ulang saat simpan (kesimpulan + status K/BK)."
+        note="Semua pertanyaan dikirim ulang saat simpan (kesimpulan + status K/BK + bukti APL-02)."
       />
     </div>
   )

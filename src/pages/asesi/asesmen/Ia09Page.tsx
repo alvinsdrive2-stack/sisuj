@@ -38,6 +38,16 @@ interface Pertanyaan {
    * null  = tidak bisa dipetakan ke IA08 → dibiarkan netral (perilaku lama).
    */
   perluWawancara: boolean | null
+  /** id file APL-02 yang ditunjuk asesor sebagai bukti baris ini. */
+  apl2FileIds: number[]
+}
+
+/** Satu file bukti APL-02 yang bisa dipilih asesor. */
+interface Apl02FileOption {
+  id: number
+  name: string
+  path: string
+  filetype: string | null
 }
 
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
@@ -94,7 +104,7 @@ interface Ia09Response {
       "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
     }
     files?: Array<{ id: number; original_name: string; path: string; filetype: string | null }>
-    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean; apl2_file_ids?: number[] }>
     dokumen?: { id: number; nama_dokumen: string }
     barcodes?: {
       asesi?: BarcodeData | null
@@ -145,6 +155,8 @@ export default function Ia09Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
+  /** Daftar file APL-02 asesi — sumber isi dropdown kolom Bukti APL-02. */
+  const [apl02Files, setApl02Files] = useState<Apl02FileOption[]>([])
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData | null
     asesor1?: BarcodeData | null
@@ -273,6 +285,7 @@ export default function Ia09Page() {
                 k: saved.is_kompeten === true,
                 bk: saved.is_kompeten === false,
                 perluWawancara: null as boolean | null,
+                apl2FileIds: Array.isArray(saved.apl2_file_ids) ? saved.apl2_file_ids : [],
               }
             })
             setPertanyaanList(pertanyaanData)
@@ -292,6 +305,34 @@ export default function Ia09Page() {
   }, [id, authLoading])
 
   useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
+
+  /**
+   * Ambil daftar file bukti APL-02 asesi (endpoint praasesmen). Dipakai isi dropdown
+   * kolom Bukti APL-02. Gagal ambil → dropdown kosong, halaman tetap jalan.
+   */
+  const fetchApl02Files = useCallback(async () => {
+    if (!id || authLoading) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${id}/apl02/files`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (!response.ok) return
+      const result = await response.json()
+      if (result?.message === "Success" && Array.isArray(result.data)) {
+        setApl02Files(result.data.map((f: any) => ({
+          id: f.id,
+          name: f.original_name || f.name || `File ${f.id}`,
+          path: f.path,
+          filetype: f.filetype ?? null,
+        })))
+      }
+    } catch (err) {
+      console.error("Error fetching APL-02 files:", err)
+    }
+  }, [id, authLoading])
+
+  useEffect(() => { fetchApl02Files() }, [fetchApl02Files])
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
 
@@ -340,6 +381,20 @@ export default function Ia09Page() {
     setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
   }
 
+  /** Tambah/lepas satu file APL-02 sebagai bukti baris pertanyaan. */
+  const handleApl02FileToggle = (soalId: number, fileId: number) => {
+    setPertanyaanList(prev => prev.map(p => {
+      if (p.id !== soalId) return p
+      const sudahAda = p.apl2FileIds.includes(fileId)
+      return {
+        ...p,
+        apl2FileIds: sudahAda
+          ? p.apl2FileIds.filter(fid => fid !== fileId)
+          : [...p.apl2FileIds, fileId],
+      }
+    }))
+  }
+
   const doSave = async (skipQr = false) => {
     setIsSaving(true)
     try {
@@ -352,6 +407,7 @@ export default function Ia09Page() {
           soal_id: p.id,
           kesimpulan: p.kesimpulan,
           is_kompeten: p.k,
+          apl2_file_ids: p.apl2FileIds,
         })),
       }
 
@@ -607,10 +663,11 @@ export default function Ia09Page() {
           <thead>
             <tr style={{ background: BRANDING.primaryColor, color: "#fff", fontWeight: "bold", textAlign: "center" }}>
               <th style={{ width: "5%", border: "1px solid #000", padding: "6px" }}>No.</th>
-              <th style={{ width: "40%", border: "1px solid #000", padding: "6px" }}>Daftar Pertanyaan Wawancara</th>
-              <th style={{ width: "35%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
-              <th style={{ width: "10%", border: "1px solid #000", padding: "6px" }}>K</th>
-              <th style={{ width: "10%", border: "1px solid #000", padding: "6px" }}>BK</th>
+              <th style={{ width: "32%", border: "1px solid #000", padding: "6px" }}>Daftar Pertanyaan Wawancara</th>
+              <th style={{ width: "26%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
+              <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>K</th>
+              <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>BK</th>
+              <th style={{ width: "21%", border: "1px solid #000", padding: "6px" }}>Bukti APL-02</th>
             </tr>
           </thead>
           <tbody>
@@ -662,6 +719,62 @@ export default function Ia09Page() {
                     onChange={() => isAsesor && handleBKChange(p.id, !p.bk)}
                     disabled={!isAsesor || signing.allSigned}
                   />
+                </td>
+                <td style={{ border: "1px solid #000", padding: "6px", verticalAlign: "top" }}>
+                  {/*
+                    Asesor menunjuk file APL-02 mana yang jadi bukti baris ini.
+                    Daftar file di-embed di dalam <details> biar nggak makan tinggi baris
+                    di dokumen yang bisa punya 100+ pertanyaan.
+                  */}
+                  {apl02Files.length === 0 ? (
+                    <span style={{ fontSize: "11px", color: "#888" }}>Tidak ada file APL-02</span>
+                  ) : (
+                    <>
+                      <details style={{ fontSize: "11px" }}>
+                        <summary style={{ cursor: "pointer", fontWeight: "bold" }}>
+                          {p.apl2FileIds.length > 0
+                            ? `${p.apl2FileIds.length} file dipilih`
+                            : "Pilih file..."}
+                        </summary>
+                        <div style={{ marginTop: "4px", maxHeight: "140px", overflowY: "auto" }}>
+                          {apl02Files.map(f => (
+                            <label
+                              key={f.id}
+                              style={{ display: "flex", alignItems: "flex-start", gap: "4px", padding: "2px 0", cursor: "pointer" }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={p.apl2FileIds.includes(f.id)}
+                                disabled={!isAsesor || signing.allSigned}
+                                onChange={() => isAsesor && handleApl02FileToggle(p.id, f.id)}
+                                style={{ marginTop: "2px", flexShrink: 0 }}
+                              />
+                              <span style={{ wordBreak: "break-word" }}>{f.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
+                      {p.apl2FileIds.length > 0 && (
+                        <div style={{ marginTop: "4px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                          {p.apl2FileIds.map(fid => {
+                            const f = apl02Files.find(x => x.id === fid)
+                            if (!f) return null
+                            return (
+                              <a
+                                key={fid}
+                                href={f.path}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontSize: "11px", color: "#0066cc", textDecoration: "underline", wordBreak: "break-word" }}
+                              >
+                                {f.name}
+                              </a>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </td>
               </tr>
               )
