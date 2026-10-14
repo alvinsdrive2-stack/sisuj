@@ -564,7 +564,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Prosedur asesmen:<br />â€¢ Rencana asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>Prosedur asesmen:<br />• Rencana asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Rencana asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -580,7 +580,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Persiapan asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Persiapan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Persiapan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -596,7 +596,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Implementasi asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Implementasi asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Implementasi asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -612,7 +612,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Keputusan asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Keputusan asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Keputusan asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>
@@ -626,7 +626,7 @@ export default function Ak06Page() {
             </tr>
 
             <tr>
-              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>â€¢ Umpan balik asesmen</td>
+              <td style={{ background: '#fff', border: '1px solid #000', padding: '6px' }}>• Umpan balik asesmen</td>
               <td style={{ textAlign: 'center', border: '1px solid #000', padding: '6px' }}>
                 <CustomCheckbox checked={aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.validitas || false} onChange={() => handleAspekChange(aspekItems.find(a => a.nama.includes('Umpan balik asesmen'))?.id || '', 'validitas')} disabled={isFormDisabled || signing.allSigned} />
               </td>

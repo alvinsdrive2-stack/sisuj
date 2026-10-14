@@ -601,13 +601,13 @@ export default function FrAk07Page() {
               </tr>
               <tr>
                 <td style={{ border: '1px solid #000', padding: '8px', lineHeight: '1.6' }}>
-                  â€¢ Formulir ini digunakan pada saat pelaksanaan pra asesmen<br />
-                  â€¢ Formulir ini terdiri dari dua bagian yaitu A dan B<br />
-                  â€¢ Coretlah pada tanda * yang tidak sesuai<br />
-                  â€¢ Berilah tanda âˆš Ya atau Tidak pada tanda ** sesuai pilihan<br />
-                  â€¢ Berilah tanda âˆš pada kotak â˜ pada kolom potensi asesi<br />
-                  â€¢ Formulir ini juga digunakan untuk bagian B<br />
-                  â€¢ Berilah tanda âˆš Ya atau Tidak pada tanda *** sesuai pilihan
+                  • Formulir ini digunakan pada saat pelaksanaan pra asesmen<br />
+                  • Formulir ini terdiri dari dua bagian yaitu A dan B<br />
+                  • Coretlah pada tanda * yang tidak sesuai<br />
+                  • Berilah tanda √ Ya atau Tidak pada tanda ** sesuai pilihan<br />
+                  • Berilah tanda √ pada kotak â˜ pada kolom potensi asesi<br />
+                  • Formulir ini juga digunakan untuk bagian B<br />
+                  • Berilah tanda √ Ya atau Tidak pada tanda *** sesuai pilihan
                 </td>
               </tr>
             </tbody>

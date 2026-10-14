@@ -978,7 +978,7 @@ export function Ak02View({ data }: { data: any }) {
       </table>
 
       <p style={{ fontSize: '13px', marginBottom: '15px' }}>
-        Beri tanda centang (âˆš) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
+        Beri tanda centang (√) di kolom yang sesuai untuk mencerminkan bukti yang diperoleh untuk menentukan Kompetensi asesi untuk setiap Unit Kompetensi.
       </p>
 
       {/* MATRIKS KOMPETENSI Table */}
@@ -1158,7 +1158,7 @@ export function Ia08View({ data }: { data: any }) {
             <li>Verifikasi portofolio dapat dilakukan untuk keseluruhan unit kompetensi dalam skema sertifikasi atau dilakukan untuk masing-masing kelompok pekerjaan dalam satu skema sertifikasi.</li>
             <li>Isilah bukti portofolio sesuai ketentuan bukti berkualitas dan relevan dengan standar kompetensi kerja.</li>
             <li>Lakukan verifikasi portofolio berdasarkan aturan bukti.</li>
-            <li>Berikan hasil verifikasi portofolio dengan memberi centang (âˆš).</li>
+            <li>Berikan hasil verifikasi portofolio dengan memberi centang (√).</li>
             <li>Jika belum memenuhi aturan bukti maka lanjutkan wawancara.</li>
           </ul>
         </div>
@@ -1297,7 +1297,7 @@ export function Ia09View({ data }: { data: any }) {
                 <li>Ajukan pertanyaan verifikasi portofolio untuk semua unit kompetensi.</li>
                 <li>Ajukan pertanyaan kepada asesi sebagai tindak lanjut verifikasi portofolio.</li>
                 <li>Jika hasil verifikasi belum memadai, ajukan pertanyaan tambahan.</li>
-                <li>Tuliskan pencapaian dengan mencentang (âˆš) "Ya" atau "Tidak".</li>
+                <li>Tuliskan pencapaian dengan mencentang (√) "Ya" atau "Tidak".</li>
               </ul>
             </td>
           </tr>
