@@ -297,9 +297,9 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
                     files={apl02Files}
                     value={p.apl2FileId}
                     disabled={isSaving}
+                    highlightEmpty={p.apl2FileId === null}
                     onChange={(fid) => handleApl02FileChange(p.id, fid)}
                   />{' '}
-                  yang anda lampirkan
                 </div>
                 {p.pertanyaan}
               </td>
@@ -312,10 +312,11 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
                     )
                   }
                   disabled={isSaving}
+                  className={!p.kesimpulan?.trim() ? 'textarea-heartbeat' : undefined}
                   style={{
                     width: '100%',
                     minHeight: '60px',
-                    border: '1px solid #ccc',
+                    border: !p.kesimpulan?.trim() ? `2px solid ${BRANDING.primaryColor}` : '1px solid #ccc',
                     padding: '4px',
                     fontSize: '12px',
                     resize: 'vertical',

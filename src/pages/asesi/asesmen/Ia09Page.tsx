@@ -46,8 +46,8 @@ interface Pertanyaan {
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
 const KESIMPULAN_AUTO = "Pertanyaan dari unit kompetensi ini sudah terjawab dalam referensi kerja."
 
-/** Penanda textarea yang wajib diisi asesor. */
-const BORDER_WAJIB = "2px solid #dc2626"
+/** Penanda textarea yang wajib diisi asesor. Ikut VITE_LSP_PRIMARY_COLOR. */
+const BORDER_WAJIB = `2px solid ${BRANDING.primaryColor}`
 
 /** Normalisasi kode biar match antar dokumen nggak kena beda spasi/kapitalisasi. */
 function normKode(v: unknown): string {
@@ -656,9 +656,10 @@ export default function Ia09Page() {
           </thead>
           <tbody>
             {pertanyaanList.map((p) => {
-              // Berdenyut hanya selama masih kosong. Begitu asesor mengisi, denyutnya
-              // berhenti supaya sisa baris yang belum diisi justru lebih menonjol.
+              // Kosong + wajib → teks/border warna primer + denyut. Begitu asesor
+              // mengisi, denyutnya berhenti.
               const wajibDiisi = p.perluWawancara === true && !p.kesimpulan?.trim()
+              const buktiWajib = p.perluWawancara === true && p.apl2FileId === null
               return (
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
@@ -669,9 +670,10 @@ export default function Ia09Page() {
                       files={apl02Files}
                       value={p.apl2FileId}
                       disabled={!isAsesor || signing.allSigned}
+                      highlightEmpty={buktiWajib}
                       onChange={(fid) => isAsesor && handleApl02FileChange(p.id, fid)}
                     />{" "}
-                    yang anda lampirkan
+
                   </div>
                   {p.pertanyaan}
                 </td>
