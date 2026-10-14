@@ -9,6 +9,7 @@ import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
+import { DokumenBuktiSelect, type Apl02FileOption } from "@/components/ia09/DokumenBuktiSelect"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -38,6 +39,8 @@ interface Pertanyaan {
    * null  = tidak bisa dipetakan ke IA08 → dibiarkan netral (perilaku lama).
    */
   perluWawancara: boolean | null
+  /** id file APL-02 yang ditunjuk asesor sebagai bukti baris ini. */
+  apl2FileId: number | null
 }
 
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
@@ -94,7 +97,7 @@ interface Ia09Response {
       "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
     }
     files?: Array<{ id: number; original_name: string; path: string; filetype: string | null }>
-    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean; apl2_file_id?: number | null }>
     dokumen?: { id: number; nama_dokumen: string }
     barcodes?: {
       asesi?: BarcodeData | null
@@ -145,6 +148,8 @@ export default function Ia09Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
+  /** Daftar file APL-02 asesi — sumber isi dropdown kolom bukti per baris. */
+  const [apl02Files, setApl02Files] = useState<Apl02FileOption[]>([])
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData | null
     asesor1?: BarcodeData | null
@@ -273,6 +278,7 @@ export default function Ia09Page() {
                 k: saved.is_kompeten === true,
                 bk: saved.is_kompeten === false,
                 perluWawancara: null as boolean | null,
+                apl2FileId: typeof saved.apl2_file_id === "number" ? saved.apl2_file_id : null,
               }
             })
             setPertanyaanList(pertanyaanData)
@@ -293,11 +299,32 @@ export default function Ia09Page() {
 
   useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
 
-  /** Nama semua bukti APL-02 yang dilampirkan, digabung koma. */
-  const namaBukti = useMemo(
-    () => ia09Files.map(f => f.original_name).filter(Boolean).join(", "),
-    [ia09Files]
-  )
+  /**
+   * Ambil daftar file bukti APL-02 asesi (endpoint praasesmen) untuk isi dropdown
+   * bukti per baris. Gagal ambil → dropdown kosong, halaman tetap jalan.
+   */
+  const fetchApl02Files = useCallback(async () => {
+    if (!id || authLoading) return
+    try {
+      const token = localStorage.getItem("access_token")
+      const response = await fetch(`${API_BASE_URL}/praasesmen/${id}/apl02/files`, {
+        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
+      })
+      if (!response.ok) return
+      const result = await response.json()
+      if (result?.message === "Success" && Array.isArray(result.data)) {
+        setApl02Files(result.data.map((f: any) => ({
+          id: f.id,
+          name: f.original_name || f.name || `File ${f.id}`,
+          path: f.path,
+        })))
+      }
+    } catch (err) {
+      console.error("Error fetching APL-02 files:", err)
+    }
+  }, [id, authLoading])
+
+  useEffect(() => { fetchApl02Files() }, [fetchApl02Files])
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
 
@@ -346,6 +373,13 @@ export default function Ia09Page() {
     setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
   }
 
+  /** Ganti file bukti APL-02 yang ditunjuk satu baris pertanyaan. */
+  const handleApl02FileChange = (soalId: number, fileId: number | null) => {
+    setPertanyaanList(prev =>
+      prev.map(p => (p.id === soalId ? { ...p, apl2FileId: fileId } : p))
+    )
+  }
+
   const doSave = async (skipQr = false) => {
     setIsSaving(true)
     try {
@@ -358,6 +392,7 @@ export default function Ia09Page() {
           soal_id: p.id,
           kesimpulan: p.kesimpulan,
           is_kompeten: p.k,
+          apl2_file_id: p.apl2FileId,
         })),
       }
 
@@ -628,11 +663,16 @@ export default function Ia09Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>
-                  {namaBukti && (
-                    <div style={{ fontSize: "11px", fontStyle: "italic", marginBottom: "4px" }}>
-                      Berdasarkan bukti {namaBukti} yang anda lampirkan
-                    </div>
-                  )}
+                  <div style={{ marginBottom: "4px" }}>
+                    Berdasarkan bukti{" "}
+                    <DokumenBuktiSelect
+                      files={apl02Files}
+                      value={p.apl2FileId}
+                      disabled={!isAsesor || signing.allSigned}
+                      onChange={(fid) => isAsesor && handleApl02FileChange(p.id, fid)}
+                    />{" "}
+                    yang anda lampirkan
+                  </div>
                   {p.pertanyaan}
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>

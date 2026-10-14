@@ -5,11 +5,13 @@
  * (barcode existing, tanpa generate).
  * Payload persis Ia09Page: semua pertanyaan dikirim dgn kesimpulan + is_kompeten (bool).
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BRANDING } from '@/config/branding'
 import { CustomCheckbox } from '@/components/ui/Checkbox'
+import { DokumenBuktiSelect, type Apl02FileOption } from '@/components/ia09/DokumenBuktiSelect'
 import { useToast } from '@/contexts/ToastContext'
-import { asesmenUrl } from '@/lib/revisi-muk-api'
+import { API_BASE_URL } from '@/config/api'
+import { asesmenUrl, getJson } from '@/lib/revisi-muk-api'
 import {
   DocError,
   DocLoading,
@@ -36,7 +38,7 @@ interface Ia09Response {
   data?: {
     soal?: { '2'?: Soal2Item[] }
     files?: Ia09File[]
-    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean; apl2_file_id?: number | null }>
     dokumen?: { id: number }
     barcodes?: Barcodes
   }
@@ -49,6 +51,8 @@ interface Pertanyaan {
   kesimpulan: string
   k: boolean
   bk: boolean
+  /** id file APL-02 yang ditunjuk sebagai bukti baris ini. */
+  apl2FileId: number | null
 }
 
 const bersihkan = (s: string) => s.replace(/&#039;/g, ' ')
@@ -60,8 +64,28 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
   const [dokumenId, setDokumenId] = useState<number | undefined>(undefined)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
+  const [apl02Files, setApl02Files] = useState<Apl02FileOption[]>([])
   const [barcodes, setBarcodes] = useState<Barcodes | undefined>(undefined)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Daftar file bukti APL-02 — sumber isi dropdown bukti per baris.
+  // Gagal ambil → dropdown kosong, editor tetap jalan.
+  useEffect(() => {
+    let batal = false
+    getJson<{ message: string; data: Array<{ id: number; name?: string; original_name?: string; path: string }> }>(
+      `${API_BASE_URL}/praasesmen/${encodeURIComponent(idIzin)}/apl02/files`
+    )
+      .then((res) => {
+        if (batal || res?.message !== 'Success' || !Array.isArray(res.data)) return
+        setApl02Files(
+          res.data.map((f) => ({ id: f.id, name: f.original_name || f.name || `File ${f.id}`, path: f.path }))
+        )
+      })
+      .catch(() => {})
+    return () => {
+      batal = true
+    }
+  }, [idIzin])
 
   useEffect(() => {
     const inner = data?.data
@@ -82,6 +106,7 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
           kesimpulan: bersihkan(s.kesimpulan || ''),
           k: s.is_kompeten === true,
           bk: s.is_kompeten === false,
+          apl2FileId: typeof s.apl2_file_id === 'number' ? s.apl2_file_id : null,
         }
       })
     )
@@ -97,6 +122,14 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
     setPertanyaanList((prev) => prev.map((p) => (p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p)))
   }
 
+  /** Ganti file bukti APL-02 yang ditunjuk satu baris pertanyaan. */
+  const handleApl02FileChange = (soalId: number, fileId: number | null) => {
+    if (isSaving) return
+    setPertanyaanList((prev) =>
+      prev.map((p) => (p.id === soalId ? { ...p, apl2FileId: fileId } : p))
+    )
+  }
+
   const handleSave = async () => {
     setIsSaving(true)
     try {
@@ -106,6 +139,7 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
           soal_id: p.id,
           kesimpulan: p.kesimpulan,
           is_kompeten: p.k,
+          apl2_file_id: p.apl2FileId,
         })),
       })
       toast.showSuccess('FR.IA.09 berhasil disimpan')
@@ -116,12 +150,6 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
       setIsSaving(false)
     }
   }
-
-  /** Nama semua bukti APL-02 yang dilampirkan, digabung koma. */
-  const namaBukti = useMemo(
-    () => ia09Files.map((f) => f.original_name).filter(Boolean).join(', '),
-    [ia09Files]
-  )
 
   if (isLoading) return <DocLoading />
   if (error) return <DocError message={error} onRetry={reload} />
@@ -263,11 +291,16 @@ export function Ia09Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
             <tr key={p.id}>
               <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>{p.no}</td>
               <td style={{ border: '1px solid #000', padding: '6px', whiteSpace: 'pre-line' }}>
-                {namaBukti && (
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', marginBottom: '4px' }}>
-                    Berdasarkan bukti {namaBukti} yang anda lampirkan
-                  </div>
-                )}
+                <div style={{ marginBottom: '4px' }}>
+                  Berdasarkan bukti{' '}
+                  <DokumenBuktiSelect
+                    files={apl02Files}
+                    value={p.apl2FileId}
+                    disabled={isSaving}
+                    onChange={(fid) => handleApl02FileChange(p.id, fid)}
+                  />{' '}
+                  yang anda lampirkan
+                </div>
                 {p.pertanyaan}
               </td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>
