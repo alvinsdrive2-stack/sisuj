@@ -9,7 +9,6 @@ import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { getAsesmenSteps } from "@/lib/asesmen-steps"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
-import { DokumenBuktiPicker, type Apl02FileOption } from "@/components/ia09/DokumenBuktiPicker"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
 import { WebcamModal } from "@/components/ui/WebcamModal"
@@ -39,8 +38,6 @@ interface Pertanyaan {
    * null  = tidak bisa dipetakan ke IA08 → dibiarkan netral (perilaku lama).
    */
   perluWawancara: boolean | null
-  /** id file APL-02 yang ditunjuk asesor sebagai bukti baris ini. */
-  apl2FileIds: number[]
 }
 
 /** Teks kesimpulan untuk baris yang tidak perlu diwawancara (tidak dicentang di FR.IA.08). */
@@ -97,7 +94,7 @@ interface Ia09Response {
       "2"?: Array<{ id: number; soal: string; no: string; id_kelompok: string }>
     }
     files?: Array<{ id: number; original_name: string; path: string; filetype: string | null }>
-    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean; apl2_file_ids?: number[] }>
+    answers?: Record<string, { kesimpulan?: string; is_kompeten?: boolean }>
     dokumen?: { id: number; nama_dokumen: string }
     barcodes?: {
       asesi?: BarcodeData | null
@@ -148,8 +145,6 @@ export default function Ia09Page() {
   const [isSaving, setIsSaving] = useState(false)
   const [pertanyaanList, setPertanyaanList] = useState<Pertanyaan[]>([])
   const [ia09Files, setIa09Files] = useState<Ia09File[]>([])
-  /** Daftar file APL-02 asesi — sumber isi dropdown kolom Bukti APL-02. */
-  const [apl02Files, setApl02Files] = useState<Apl02FileOption[]>([])
   const [barcodes, setBarcodes] = useState<{
     asesi?: BarcodeData | null
     asesor1?: BarcodeData | null
@@ -278,7 +273,6 @@ export default function Ia09Page() {
                 k: saved.is_kompeten === true,
                 bk: saved.is_kompeten === false,
                 perluWawancara: null as boolean | null,
-                apl2FileIds: Array.isArray(saved.apl2_file_ids) ? saved.apl2_file_ids : [],
               }
             })
             setPertanyaanList(pertanyaanData)
@@ -299,53 +293,11 @@ export default function Ia09Page() {
 
   useEffect(() => { fetchIa09Data() }, [fetchIa09Data])
 
-  /**
-   * Ambil daftar file bukti APL-02 asesi (endpoint praasesmen). Dipakai isi dropdown
-   * kolom Bukti APL-02. Gagal ambil → dropdown kosong, halaman tetap jalan.
-   */
-  const fetchApl02Files = useCallback(async () => {
-    if (!id || authLoading) return
-    try {
-      const token = localStorage.getItem("access_token")
-      const response = await fetch(`${API_BASE_URL}/praasesmen/${id}/apl02/files`, {
-        headers: { "Accept": "application/json", "Authorization": `Bearer ${token}` },
-      })
-      if (!response.ok) return
-      const result = await response.json()
-      if (result?.message === "Success" && Array.isArray(result.data)) {
-        setApl02Files(result.data.map((f: any) => ({
-          id: f.id,
-          name: f.original_name || f.name || `File ${f.id}`,
-          path: f.path,
-          filetype: f.filetype ?? null,
-        })))
-      }
-    } catch (err) {
-      console.error("Error fetching APL-02 files:", err)
-    }
-  }, [id, authLoading])
-
-  useEffect(() => { fetchApl02Files() }, [fetchApl02Files])
-
-  /**
-   * Peta id file APL-02 → nomor urut di tabel "Bukti – Bukti Kompetensi".
-   * Urutan tabel bukti = urutan `ia09Files` (yang datang dari server), jadi nomornya
-   * dihitung dari situ, bukan dari urutan pemilihan asesor.
-   */
-  const nomorFileMap = useMemo(() => {
-    const map = new Map<number, number>()
-    ia09Files.forEach((f, i) => map.set(f.id, i + 1))
-    return map
-  }, [ia09Files])
-
-  /** Label "Berdasarkan bukti nomor ..." untuk satu baris, dihitung dari pilihan terkini. */
-  const labelNomorBukti = useCallback((ids: number[]): string => {
-    return ids
-      .map(id => nomorFileMap.get(id))
-      .filter((n): n is number => typeof n === "number")
-      .sort((a, b) => a - b)
-      .join(", ")
-  }, [nomorFileMap])
+  /** Nama semua bukti APL-02 yang dilampirkan, digabung koma. */
+  const namaBukti = useMemo(
+    () => ia09Files.map(f => f.original_name).filter(Boolean).join(", "),
+    [ia09Files]
+  )
 
   const nextStepLabel = asesmenSteps[asesmenSteps.findIndex(s => s.href.includes('ia09')) + 1]?.label
 
@@ -394,20 +346,6 @@ export default function Ia09Page() {
     setPertanyaanList(prev => prev.map(p => p.id === id ? { ...p, bk: value, k: value ? false : p.k } : p))
   }
 
-  /** Tambah/lepas satu file APL-02 sebagai bukti baris pertanyaan. */
-  const handleApl02FileToggle = (soalId: number, fileId: number) => {
-    setPertanyaanList(prev => prev.map(p => {
-      if (p.id !== soalId) return p
-      const sudahAda = p.apl2FileIds.includes(fileId)
-      return {
-        ...p,
-        apl2FileIds: sudahAda
-          ? p.apl2FileIds.filter(fid => fid !== fileId)
-          : [...p.apl2FileIds, fileId],
-      }
-    }))
-  }
-
   const doSave = async (skipQr = false) => {
     setIsSaving(true)
     try {
@@ -420,7 +358,6 @@ export default function Ia09Page() {
           soal_id: p.id,
           kesimpulan: p.kesimpulan,
           is_kompeten: p.k,
-          apl2_file_ids: p.apl2FileIds,
         })),
       }
 
@@ -626,7 +563,7 @@ export default function Ia09Page() {
                   <li>Ajukan pertanyaan verifikasi portofolio untuk semua unit kompetensi.</li>
                   <li>Ajukan pertanyaan kepada asesi sebagai tindak lanjut verifikasi portofolio.</li>
                   <li>Jika hasil verifikasi belum memadai, ajukan pertanyaan tambahan.</li>
-                  <li>Tuliskan pencapaian dengan mencentang (âˆš) "Ya" atau "Tidak".</li>
+                  <li>Tuliskan pencapaian dengan mencentang (√) "Ya" atau "Tidak".</li>
                 </ul>
               </td>
             </tr>
@@ -676,11 +613,10 @@ export default function Ia09Page() {
           <thead>
             <tr style={{ background: BRANDING.primaryColor, color: "#fff", fontWeight: "bold", textAlign: "center" }}>
               <th style={{ width: "5%", border: "1px solid #000", padding: "6px" }}>No.</th>
-              <th style={{ width: "32%", border: "1px solid #000", padding: "6px" }}>Daftar Pertanyaan Wawancara</th>
-              <th style={{ width: "26%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
-              <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>K</th>
-              <th style={{ width: "8%", border: "1px solid #000", padding: "6px" }}>BK</th>
-              <th style={{ width: "21%", border: "1px solid #000", padding: "6px" }}>Dokumen Bukti</th>
+              <th style={{ width: "40%", border: "1px solid #000", padding: "6px" }}>Daftar Pertanyaan Wawancara</th>
+              <th style={{ width: "35%", border: "1px solid #000", padding: "6px" }}>Kesimpulan Jawaban Asesi</th>
+              <th style={{ width: "10%", border: "1px solid #000", padding: "6px" }}>K</th>
+              <th style={{ width: "10%", border: "1px solid #000", padding: "6px" }}>BK</th>
             </tr>
           </thead>
           <tbody>
@@ -692,14 +628,11 @@ export default function Ia09Page() {
               <tr key={p.id}>
                 <td style={{ border: "1px solid #000", padding: "6px", textAlign: "center" }}>{p.no}</td>
                 <td style={{ border: "1px solid #000", padding: "6px", whiteSpace: "pre-line" }}>
-                  {(() => {
-                    const nomor = labelNomorBukti(p.apl2FileIds)
-                    return nomor ? (
-                      <div style={{ fontSize: "11px", fontStyle: "italic", marginBottom: "4px" }}>
-                        Berdasarkan bukti nomor {nomor} yang anda lampirkan
-                      </div>
-                    ) : null
-                  })()}
+                  {namaBukti && (
+                    <div style={{ fontSize: "11px", fontStyle: "italic", marginBottom: "4px" }}>
+                      Berdasarkan bukti {namaBukti} yang anda lampirkan
+                    </div>
+                  )}
                   {p.pertanyaan}
                 </td>
                 <td style={{ border: "1px solid #000", padding: "6px" }}>
@@ -741,14 +674,6 @@ export default function Ia09Page() {
                     checked={p.bk}
                     onChange={() => isAsesor && handleBKChange(p.id, !p.bk)}
                     disabled={!isAsesor || signing.allSigned}
-                  />
-                </td>
-                <td style={{ border: "1px solid #000", padding: "6px", verticalAlign: "top" }}>
-                  <DokumenBuktiPicker
-                    files={apl02Files}
-                    selectedIds={p.apl2FileIds}
-                    disabled={!isAsesor || signing.allSigned}
-                    onToggle={(fid) => isAsesor && handleApl02FileToggle(p.id, fid)}
                   />
                 </td>
               </tr>
