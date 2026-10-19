@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { PenTool, FileText, Calendar, User, Clock, CheckCircle2, Search, Crown } from "lucide-react"
+import { PenTool, FileText, Calendar, User, Clock, CheckCircle2, Search, Crown, History } from "lucide-react"
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
+import { PerPageSelect } from "@/components/ui/PerPageSelect"
+import { StatusUjiBadge } from "@/components/komtek/StatusUjiBadge"
 import { useKegiatanKomtek } from "@/hooks/useKegiatan"
 import { useBaKomtekProgress } from "@/hooks/useBaKomtekProgress"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
@@ -16,8 +18,9 @@ import { KetuaKomtekIcon } from "@/components/komtek/KetuaKomtekIcon"
 export default function TandatanganKomtek() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
   const [search, setSearch] = useState('')
-  const { kegiatans: pendingDocs, isLoading: isLoadingPending, pagination } = useKegiatanKomtek(false, page, search)
+  const { kegiatans: pendingDocs, isLoading: isLoadingPending, pagination } = useKegiatanKomtek(false, page, search, perPage)
   const { isLoading: isLoadingSigned } = useKegiatanKomtek(true)
   const { baProgress, isLoading: isLoadingProgress } = useBaKomtekProgress(pendingDocs, pendingDocs.length > 0)
   const [ketuaOnly, setKetuaOnly] = useState(false)
@@ -74,6 +77,14 @@ export default function TandatanganKomtek() {
           <Crown className="w-4 h-4" />
           {ketuaOnly ? "Semua Kegiatan" : "Ketua Saya"}
         </Button>
+        <Button variant="outline" onClick={() => navigate("/komtek/riwayat")} className="whitespace-nowrap">
+          <History className="w-4 h-4" />
+          Riwayat
+        </Button>
+        <PerPageSelect
+          value={perPage}
+          onChange={(n) => { setPerPage(n); setPage(1) }}
+        />
       </div>
 
       {/* Documents to View */}
@@ -110,7 +121,7 @@ export default function TandatanganKomtek() {
                       { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                       { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                     ]}
-                    badges={[getStatusBadge(doc.jadwal_id)]}
+                    badges={[getStatusBadge(doc.jadwal_id), <StatusUjiBadge key="uji" status={doc.status_uji} />]}
                     cornerElement={isKetua ? <KetuaKomtekIcon signed={!!progress?.my_ttd_signed} /> : undefined}
                     onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}
                   />

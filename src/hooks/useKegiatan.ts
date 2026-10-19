@@ -375,7 +375,7 @@ export function useKegiatanDirektur(ttd: boolean, page = 1, search = '', statusF
   return { kegiatans, isLoading, error, pagination }
 }
 
-export function useKegiatanKomtek(ttd: boolean, page = 1, search = '') {
+export function useKegiatanKomtek(ttd: boolean, page = 1, search = '', perPage = 10, riwayat = false) {
   const [kegiatans, setKegiatans] = useState<KegiatanAsesor[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -389,7 +389,9 @@ export function useKegiatanKomtek(ttd: boolean, page = 1, search = '') {
       setIsLoading(true)
       setError(null)
       try {
-        const response = await kegiatanService.getKegiatanKomtek(ttd, page, search)
+        const response = riwayat
+          ? await kegiatanService.getRiwayatKegiatanKomtek(ttd, page, search, perPage)
+          : await kegiatanService.getKegiatanKomtek(ttd, page, search, perPage)
         setKegiatansRef.current?.(response.data.data)
         setPagination({ currentPage: response.data.current_page, lastPage: response.data.last_page, total: response.data.total, perPage: response.data.per_page })
       } catch (err) {
@@ -400,7 +402,7 @@ export function useKegiatanKomtek(ttd: boolean, page = 1, search = '') {
       }
     }
     fetchKegiatanKomtek()
-  }, [ttd, page, search])
+  }, [ttd, page, search, perPage, riwayat])
 
   return { kegiatans, isLoading, error, pagination }
 }

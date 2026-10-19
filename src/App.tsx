@@ -61,6 +61,7 @@ const BelumDitandatanganiKomtek = lazy(() => import('./pages/komtek/BelumDitanda
 const DaftarAsesiPage = lazy(() => import('./pages/komtek/DaftarAsesiPage'))
 const EditJadwalPage = lazy(() => import('./pages/komtek/EditJadwalPage'))
 const DaftarAsesiAll = lazy(() => import('./pages/komtek/DaftarAsesiAll'))
+const RiwayatKomtek = lazy(() => import('./pages/komtek/RiwayatKomtek'))
 
 // Manajer Pages
 const DashboardManajer = lazy(() => import('./pages/manajer/DashboardManajer'))
@@ -237,6 +238,7 @@ function App() {
                   <DashboardLayout>
                     <Routes>
                       <Route path="tandatangan" element={<TandatanganKomtek />} />
+                      <Route path="riwayat" element={<RiwayatKomtek />} />
                       <Route path="sudah-ditandatangani" element={<SudahDitandatanganiKomtek />} />
                       <Route path="sudah-ditandatangani/:jadwalId" element={<DaftarAsesiPage />} />
                       <Route path="belum-ditandatangani" element={<BelumDitandatanganiKomtek />} />

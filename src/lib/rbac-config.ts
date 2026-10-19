@@ -332,6 +332,11 @@ export const roleConfig: Partial<Record<UserRole, RoleConfig>> = {
         icon: PenTool
       },
       {
+        title: "Riwayat",
+        path: "/komtek/riwayat",
+        icon: Calendar
+      },
+      {
         title: "Sudah Ditandatangani",
         path: "/komtek/sudah-ditandatangani",
         icon: FileCheckIcon

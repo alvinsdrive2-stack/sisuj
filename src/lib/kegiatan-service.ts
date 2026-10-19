@@ -86,6 +86,19 @@ export interface KegiatanAsesor {
     nama: string
   }
   asesi?: AsesiSkema[]
+  // Hanya ada di GET /kegiatan/komtek
+  status_uji?: StatusUji | null
+}
+
+// Penanda "uji sudah/belum" dari absen akhir asesmen asesi + asesor
+export interface StatusUji {
+  sudah_uji: boolean
+  asesi_total: number
+  asesi_absen: number
+  asesor1_absen: boolean
+  asesor2_absen: boolean
+  punya_asesor2: boolean
+  asesi_belum_absen: string[]
 }
 
 // Admin TUK / Komtek response (includes id field)
@@ -224,10 +237,17 @@ class KegiatanService {
   }
 
   // Get kegiatan for komtek (paginated, by ttd status)
-  async getKegiatanKomtek(ttd: boolean, page: number = 1, search: string = ''): Promise<PaginatedKegiatanResponse> {
-    const params = new URLSearchParams({ ttd: String(ttd), page: String(page) })
+  async getKegiatanKomtek(ttd: boolean, page: number = 1, search: string = '', perPage: number = 10): Promise<PaginatedKegiatanResponse> {
+    const params = new URLSearchParams({ ttd: String(ttd), page: String(page), per_page: String(perPage) })
     if (search) params.set('search', search)
     return apiFetchJson(`${this.baseUrl}/kegiatan/komtek?${params}`)
+  }
+
+  // Riwayat komtek: tanggal uji lebih dari 14 hari ke belakang
+  async getRiwayatKegiatanKomtek(ttd: boolean, page: number = 1, search: string = '', perPage: number = 10): Promise<PaginatedKegiatanResponse> {
+    const params = new URLSearchParams({ ttd: String(ttd), page: String(page), per_page: String(perPage) })
+    if (search) params.set('search', search)
+    return apiFetchJson(`${this.baseUrl}/kegiatan/komtek/riwayat?${params}`)
   }
 
   // Get kegiatan asesor (paginated)
