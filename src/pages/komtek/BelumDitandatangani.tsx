@@ -7,17 +7,20 @@ import { CheckCircle2, FileText, Calendar, User, Clock, Search, Crown } from "lu
 import { DocumentCard, EmptyState } from "@/components/direktur"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { Pagination } from "@/components/ui/Pagination"
+import { PerPageSelect } from "@/components/ui/PerPageSelect"
 import { useKegiatanKomtek } from "@/hooks/useKegiatan"
 import { useBaKomtekProgress } from "@/hooks/useBaKomtekProgress"
 import { getUniqueSkemaNames } from "@/lib/kegiatan-service"
 import { jenisKelasLabel } from "@/lib/utils"
 import { KetuaKomtekIcon } from "@/components/komtek/KetuaKomtekIcon"
+import { StatusUjiBadge } from "@/components/komtek/StatusUjiBadge"
 
 export default function BelumDitandatangani() {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
+  const [perPage, setPerPage] = useState(10)
   const [search, setSearch] = useState('')
-  const { kegiatans: pendingDocs, isLoading: isLoadingDocs, error, pagination } = useKegiatanKomtek(false, page, search)
+  const { kegiatans: pendingDocs, isLoading: isLoadingDocs, error, pagination } = useKegiatanKomtek(false, page, search, perPage)
   const { baProgress, isLoading: isLoadingProgress } = useBaKomtekProgress(pendingDocs, pendingDocs.length > 0)
   const isLoading = isLoadingDocs || isLoadingProgress
   const [ketuaOnly, setKetuaOnly] = useState(false)
@@ -72,6 +75,10 @@ export default function BelumDitandatangani() {
           <Crown className="w-4 h-4" />
           {ketuaOnly ? "Semua Kegiatan" : "Ketua Saya"}
         </Button>
+        <PerPageSelect
+          value={perPage}
+          onChange={(n) => { setPerPage(n); setPage(1) }}
+        />
       </div>
 
       {/* Unsigned Documents List */}
@@ -113,7 +120,7 @@ export default function BelumDitandatangani() {
                     { icon: Calendar, label: "Tanggal", value: formatDate(doc.tanggal_uji) },
                     { icon: Clock, label: "Waktu", value: formatTime(doc.tanggal_uji) }
                   ]}
-                  badges={[getStatusBadge(doc.jadwal_id)]}
+                  badges={[getStatusBadge(doc.jadwal_id), <StatusUjiBadge key="uji" status={doc.status_uji} />]}
                   cardClassName="bg-amber-50/40"
                   cornerElement={isKetua ? <KetuaKomtekIcon signed={!!progress?.my_ttd_signed} /> : undefined}
                   onClick={() => navigate(`/komtek/belum-ditandatangani/${doc.jadwal_id}`)}

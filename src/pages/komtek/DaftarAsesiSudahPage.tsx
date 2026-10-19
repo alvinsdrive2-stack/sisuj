@@ -15,6 +15,7 @@ import { API_BASE_URL } from "@/config/api"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog"
+import { StatusUjiBadge } from "@/components/komtek/StatusUjiBadge"
 
 interface KomtekFiles {
   ba_komtek?: string
@@ -219,6 +220,7 @@ export default function DaftarAsesiSudahPage() {
                     Sedang Berjalan
                   </Badge>
                 )}
+                <StatusUjiBadge status={kegiatan.status_uji} />
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
                 {kegiatan.tuk.nama} • {kegiatan.asesor.nama}
