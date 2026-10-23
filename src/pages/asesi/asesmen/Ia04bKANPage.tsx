@@ -28,7 +28,7 @@ export default function Ia04bKANPage() {
   const navigate = useNavigate(); const { user } = useAuth(); const { id } = useParams<{ id?: string }>()
   const { role: asesorRole } = useAsesorRole(id)
   const { jenjang, metode, asesorList, jabatanKerja, nomorSkema, tuk, namaAsesi, jadwalId, isPaket, jenisKelas,
-    namaPenyusun, namaValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator } = useDataDokumenAsesmen(id)
+    namaPenyusun, namaValidator, noregPenyusun, noregValidator, tanggalPenyusun, tanggalValidator, barcodePenyusun, barcodeValidator, tanggalUji } = useDataDokumenAsesmen(id)
   const { tahap } = useDataDokumenPraAsesmen(id)
   const isAsesor = user?.role?.id === RoleId.ASESOR
   const isKanFlow = import.meta.env.VITE_SAAT_INI === 'KAN' || !!isPaket
@@ -226,7 +226,7 @@ export default function Ia04bKANPage() {
               <td style={{ border: '1px solid #000', padding: '6px' }}>{(namaAsesi || user?.name || '-').toUpperCase()}</td></tr>
             <tr><td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>{new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+              <td style={{ border: '1px solid #000', padding: '6px' }}>{tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-'}</td></tr>
           </table>
           <p style={{ fontSize: '12px' }}>*Coret yang tidak perlu</p>
 

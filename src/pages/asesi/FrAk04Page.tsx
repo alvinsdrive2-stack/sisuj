@@ -53,7 +53,7 @@ export default function FrAk04Page() {
   const isAsesor = user?.role?.id === RoleId.ASESOR
 
   const idIzin = isAsesor ? idIzinFromUrl : user?.id_izin
-  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
+  const { jabatanKerja, nomorSkema, namaAsesor: _namaAsesor, asesorList, namaAsesi, tahap, jadwalId, metode, jenjang, jenisKelas, tanggalUji } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
   const [ak04Data, setAk04Data] = useState<Ak04Data | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -358,7 +358,7 @@ export default function FrAk04Page() {
               {/* Tanggal Asesmen */}
               <tr>
                 <td style={{ border: '1px solid #000', padding: '6px 8px' }}>Tanggal Asesmen</td>
-                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</td>
+                <td colSpan={3} style={{ border: '1px solid #000', padding: '6px 8px' }}>: {tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</td>
               </tr>
 
               {/* Header Row */}
@@ -462,7 +462,7 @@ export default function FrAk04Page() {
                   ) : (
                     <div style={{ marginTop: '8px' }}>
                       <br />
-                      Tanggal : {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      Tanggal : {tanggalUji ? new Date(tanggalUji).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                     </div>
                   )}
                 </td>
