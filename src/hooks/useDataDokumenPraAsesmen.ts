@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom"
 import { useDokumenPraAsesmenCtx } from "@/contexts/AsesmenDataContext"
 import { apiFetch } from "@/lib/api-fetch"
 import { API_BASE_URL } from "@/config/api"
+import { setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 interface Asesor {
   id: number
@@ -180,6 +181,10 @@ export function useDataDokumenPraAsesmen(idIzin: string | undefined): UseDataDok
 
             // Combine asesor names for backward compatibility
             const namaAsesor = asesorList.map(a => a.nama).join(', ')
+
+            // DUMMY: kunci tanggal uji jadwal untuk halaman pra-asesmen juga,
+            // supaya tanggal barcode mengikuti jadwal (bukan hari ini).
+            setTanggalUjiAktif(result.data.tanggal_uji)
 
             setData({
               jabatanKerja: result.data.jabatan_kerja || '',
