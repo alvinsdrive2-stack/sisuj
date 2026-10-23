@@ -109,7 +109,9 @@ export default function DashboardAsesiPage() {
     setTanggalUjiAktif(kegiatan.tanggal_uji)
 
     const updateCountdown = () => {
-      const now = dummyNow()
+      // Teruskan tanggal uji: render pertama bisa jalan sebelum effect ini
+      // sempat mengunci tanggal, jadi jangan bergantung pada global saja.
+      const now = dummyNow(kegiatan.tanggal_uji)
       const examDate = new Date(kegiatan.tanggal_uji)
       const diff = examDate.getTime() - now.getTime()
 
@@ -143,7 +145,7 @@ export default function DashboardAsesiPage() {
     updateCountdown()
 
     // Calculate time until exam to determine interval (pakai jam virtual juga)
-    const now = dummyNow()
+    const now = dummyNow(kegiatan.tanggal_uji)
     const examDate = new Date(kegiatan.tanggal_uji)
     const diffMs = examDate.getTime() - now.getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
@@ -252,6 +254,11 @@ export default function DashboardAsesiPage() {
     return "Lihat Persiapan"
   }, [kegiatan?.tahap, kegiatan?.is_started, kegiatan?.is_started_praasesmen])
 
+  // DUMMY: jam virtual = tepat waktu uji, jadi selisihnya 0. Tampilkan status
+  // "hari uji" — hitungan "berjalan 0 menit 0 detik" akan membingungkan.
+  const isHariUji = countdown.isLate &&
+    countdown.days === 0 && countdown.hours === 0 && countdown.minutes === 0
+
   // Show loading overlay while page initializes or API is fetching
   if (isPageLoading || isLoading) {
     return (
@@ -309,13 +316,21 @@ export default function DashboardAsesiPage() {
                   <div className="flex items-center gap-3 mb-3">
                     <PulsingIcon icon={Timer} className="w-8 h-8" autoHide={false} />
                     <h3 className="text-2xl font-bold">
-                      {countdown.isLate && examData.phase?.title === "Asesmen" ? "Waktu Pengerjaan Asesi Telah Dimulai" :
+                      {isHariUji ? "Hari Uji Kompetensi" :
+                       countdown.isLate && examData.phase?.title === "Asesmen" ? "Waktu Pengerjaan Asesi Telah Dimulai" :
                        countdown.isLate ? "Ayo Kerjakan Ujian Waktu Sudah Berjalan" :
                        "Ujian Akan Dimulai Dalam"}
                     </h3>
                   </div>
                   <p className="text-white/80">
-                    {countdown.isLate ? (
+                    {isHariUji ? (
+                      <>
+                        Jadwal uji Anda berlangsung hari ini
+                        {examData.schedule?.time ? ` pukul ${examData.schedule.time}` : ''}.
+                        <br />
+                        <span className="text-white font-semibold">Silakan masuk ujian.</span>
+                      </>
+                    ) : countdown.isLate ? (
                       <>
                         {countdown.hours > 0 ? (
                           <>Waktu pengerjaan telah berjalan {countdown.hours} jam {countdown.minutes} menit {countdown.seconds} detik.</>
@@ -332,7 +347,7 @@ export default function DashboardAsesiPage() {
                 </div>
 
                 <div className="flex gap-4">
-                  {[
+                  {isHariUji ? null : [
                     { label: "Hari", value: countdown.days },
                     { label: "Jam", value: countdown.hours },
                     { label: "Menit", value: countdown.minutes },

@@ -51,8 +51,9 @@ function useCountdown(targetDate: string): CountdownTime {
     const target = new Date(targetDate).getTime()
 
     const calculateTimeLeft = () => {
-      // DUMMY: patokan "sekarang" = tanggal uji jadwal.
-      const now = dummyNowMs()
+      // DUMMY: patokan "sekarang" = tanggal uji jadwal (target diteruskan
+      // agar tidak bergantung urutan render/effect).
+      const now = dummyNowMs(targetDate)
       const difference = target - now
 
       if (difference <= 0) {

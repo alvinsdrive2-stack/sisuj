@@ -41,8 +41,9 @@ function calculateCountdown(targetDate: string): CountdownTime {
   }
 
   const target = new Date(targetDate).getTime()
-  // DUMMY: patokan "sekarang" = tanggal uji jadwal.
-  const now = dummyNowMs()
+  // DUMMY: patokan "sekarang" = tanggal uji jadwal. Target diteruskan supaya
+  // render pertama (sebelum effect mengunci tanggal) sudah benar.
+  const now = dummyNowMs(targetDate)
   const difference = target - now
 
   if (difference <= 0) {

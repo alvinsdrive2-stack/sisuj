@@ -77,26 +77,41 @@ export function tanggalSuratSekarang(jamAcuan: Date = new Date()): string {
  * Kalau tanggal uji belum diketahui (mis. halaman daftar tanpa konteks jadwal),
  * kembalikan jam sebenarnya.
  */
-export function dummyNow(): Date {
-  if (!tanggalUjiAktif) return new Date()
+export function dummyNow(referensi?: string | null): Date {
+  // Prioritas: tanggal uji yang dikunci global, lalu tanggal target yang
+  // diberikan pemanggil. Referensi ini penting karena komponen countdown
+  // menghitung saat RENDER, sedangkan setTanggalUjiAktif() dipanggil di
+  // useEffect (jalan SESUDAH render pertama) — tanpa referensi, render
+  // pertama memakai jam asli dan sisa hari tetap muncul.
+  const sumber = tanggalUjiAktif ?? String(referensi ?? '').trim()
+  if (!sumber) return new Date()
 
-  const dinormalisasi = tanggalUjiAktif.includes('T')
-    ? tanggalUjiAktif
-    : tanggalUjiAktif.replace(' ', 'T')
-
+  const dinormalisasi = sumber.includes('T') ? sumber : sumber.replace(' ', 'T')
   const d = new Date(dinormalisasi)
 
   return Number.isNaN(d.getTime()) ? new Date() : d
 }
 
-/** dummyNow() dalam milidetik — pengganti Date.now() untuk countdown. */
-export function dummyNowMs(): number {
-  return dummyNow().getTime()
+/**
+ * dummyNow() dalam milidetik — pengganti Date.now() untuk countdown.
+ * Teruskan tanggal uji supaya tidak bergantung urutan render/effect.
+ */
+export function dummyNowMs(referensi?: string | null): number {
+  return dummyNow(referensi).getTime()
+}
+
+/**
+ * TRUE bila jam virtual sedang aktif (ada tanggal uji jadwal yang dikunci).
+ * Dipakai UI untuk menampilkan status "hari uji" alih-alih hitungan mundur
+ * sisa hari yang tidak relevan di web dummy.
+ */
+export function isJamVirtualAktif(): boolean {
+  return tanggalUjiAktif !== null
 }
 
 /** Tanggal (YYYY-MM-DD) menurut jam virtual — pengganti "hari ini". */
-export function dummyTodayISO(): string {
-  const d = dummyNow()
+export function dummyTodayISO(referensi?: string | null): string {
+  const d = dummyNow(referensi)
   const pad = (n: number) => String(n).padStart(2, '0')
 
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`

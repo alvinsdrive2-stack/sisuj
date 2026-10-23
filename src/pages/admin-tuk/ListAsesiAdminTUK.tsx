@@ -52,7 +52,7 @@ function useCountdown(targetDate: string): CountdownTime {
     const calculateTimeLeft = () => {
       // DUMMY: patokan "sekarang" = tanggal uji jadwal, bukan jam aktual,
       // supaya kegiatan 18 Des bisa dimulai hari ini juga.
-      const now = dummyNowMs()
+      const now = dummyNowMs(targetDate)
       const difference = target - now
 
       if (difference <= 0) {
