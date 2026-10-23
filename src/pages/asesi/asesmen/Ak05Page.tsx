@@ -18,6 +18,7 @@ import { CustomCheckbox } from "@/components/ui/Checkbox"
 import { ActionButton } from "@/components/ui/ActionButton"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { tanggalUjiSekarang } from "@/lib/dummy-tanggal"
 import { BRANDING } from "@/config/branding"
 
 type BarcodeData = {
@@ -313,9 +314,9 @@ export default function Ak05Page() {
             const qrResult = await qrResponse.json()
             if (qrResult.data?.url_image) {
               if (role === 'asesor_1') {
-                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                setBarcodes(prev => ({ ...prev, asesor1: { url: qrResult.data.url_image, tanggal: tanggalUjiSekarang(), nama: user?.name || '' } }))
               } else {
-                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: new Date().toISOString(), nama: user?.name || '' } }))
+                setBarcodes(prev => ({ ...prev, asesor2: { url: qrResult.data.url_image, tanggal: tanggalUjiSekarang(), nama: user?.name || '' } }))
               }
             }
           }

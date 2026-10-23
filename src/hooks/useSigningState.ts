@@ -3,6 +3,7 @@ import { getSigningConfig, SigningOrder } from '@/lib/signing-config'
 import { useRealtimeSync } from '@/hooks/useRealtimeSync'
 import { apiFetch } from '@/lib/api-fetch'
 import { API_BASE_URL } from '@/config/api'
+import { tanggalUjiSekarang } from '@/lib/dummy-tanggal'
 
 export interface BarcodeState {
   asesi?: { url: string; tanggal: string; nama: string }
@@ -334,9 +335,11 @@ export function useSigningState(input: SigningStateInput): SigningState {
       const result = await response.json()
       if (result.message !== 'Success' || !result.data?.url_image) return false
 
-      const now = new Date().toISOString()
+      // DUMMY: tanggal barcode mengikuti tanggal uji jadwal, JAM tetap aktual.
+      // (dummy-tanggal membaca tanggal uji yang dikunci hook data dokumen)
+      const tanggalBarcode = tanggalUjiSekarang()
       const name = userName || ''
-      const barcode = { url: result.data.url_image, tanggal: now, nama: name }
+      const barcode = { url: result.data.url_image, tanggal: tanggalBarcode, nama: name }
 
       let role: BarcodeRole
 

@@ -104,7 +104,9 @@ export function Ia06Editor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPro
 
   const header = dokumenHeader
   const asesorList = header?.asesorList ?? []
-  const today = fmtTanggalId(new Date().toISOString())
+  // DUMMY: tanggal dokumen asesmen mengikuti tanggal uji jadwal,
+  // bukan tanggal hari ini. Fallback ke hari ini bila header kosong.
+  const today = fmtTanggalId(header?.tanggalUji ?? new Date().toISOString())
 
   const totalSkor = Object.values(skor).reduce<number>((a, b) => a + (b || 0), 0)
 

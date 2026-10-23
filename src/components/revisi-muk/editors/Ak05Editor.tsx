@@ -125,7 +125,7 @@ export function Ak05Editor({ idIzin, onSaved, dokumenHeader }: MukEditorProps) {
           <tr>
             <td style={{ border: '1px solid #000', padding: '6px' }}>Tanggal</td>
             <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>:</td>
-            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px' }}>{fmtTanggalId(new Date().toISOString())}</td>
+            <td colSpan={4} style={{ border: '1px solid #000', padding: '6px' }}>{fmtTanggalId(header?.tanggalUji ?? new Date().toISOString())}</td>
           </tr>
         </tbody>
       </table>

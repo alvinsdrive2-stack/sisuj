@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import { useDokumenAsesmenCtx } from "@/contexts/AsesmenDataContext"
 import { API_BASE_URL } from "@/config/api"
+import { setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 interface Asesor {
   id: number
@@ -174,6 +175,10 @@ export function useDataDokumenAsesmen(idIzin: string | undefined): UseDataDokume
 
             // Combine asesor names for backward compatibility
             const namaAsesor = asesorList.map(a => a.nama).join(', ')
+
+            // DUMMY: kunci tanggal uji jadwal untuk halaman ini, supaya tanggal
+            // barcode & dokumen mengikuti jadwal (bukan tanggal hari ini).
+            setTanggalUjiAktif(result.data.tanggal_uji)
 
             setData({
               jabatanKerja: result.data.jabatan_kerja || '',

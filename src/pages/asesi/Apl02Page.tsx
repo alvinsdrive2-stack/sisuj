@@ -19,6 +19,7 @@ import { useSigningState } from "@/hooks/useSigningState"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { WebcamModal } from "@/components/ui/WebcamModal"
 import { API_BASE_URL } from "@/config/api"
+import { tanggalUjiSekarang, formatTanggalUji } from "@/lib/dummy-tanggal"
 import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
@@ -2051,7 +2052,7 @@ export default function Apl02Page() {
           tuk: tuk,
           nama_asesor: namaAsesor,
           nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
-          tanggal: new Date().toLocaleDateString('id-ID'),
+          tanggal: formatTanggalUji(),
           metode: metodeFromApi,
           is_dilanjutkan: isDilanjutkanFromApi,
           units: units,
@@ -2063,7 +2064,7 @@ export default function Apl02Page() {
           tuk: tuk,
           nama_asesor: namaAsesor,
           nama_asesi: namaAsesiFromApi || namaAsesi || user?.name || '',
-          tanggal: new Date().toLocaleDateString('id-ID'),
+          tanggal: formatTanggalUji(),
           metode: metodeFromApi,
           is_dilanjutkan: isDilanjutkanFromApi,
           units: units,
@@ -2524,7 +2525,7 @@ export default function Apl02Page() {
                       newBarcodes[subunit.id] = {
                         asesi: {
                           url: qrResult.data.url_image,
-                          tanggal: new Date().toISOString(),
+                          tanggal: tanggalUjiSekarang(),
                           nama: user?.name || null
                         },
                         asesor1: subunit.barcodes?.asesor1 || null,

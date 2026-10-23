@@ -146,7 +146,9 @@ export function Ia04bEditor({ idIzin, onSaved, dokumenHeader, kan }: MukEditorPr
 
   const header = dokumenHeader
   const asesorList = header?.asesorList ?? []
-  const today = fmtTanggalId(new Date().toISOString())
+  // DUMMY: tanggal dokumen asesmen mengikuti tanggal uji jadwal,
+  // bukan tanggal hari ini. Fallback ke hari ini bila header kosong.
+  const today = fmtTanggalId(header?.tanggalUji ?? new Date().toISOString())
 
   // Pencapaian read-only: Ya = boolean true / skor > 1; Tidak = false / 0.
   const isYa = (p?: boolean | number) => p === true || (typeof p === 'number' && p > 1)
