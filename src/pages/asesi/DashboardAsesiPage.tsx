@@ -31,6 +31,7 @@ import { API_BASE_URL } from "@/config/api"
 import { matchAsesiIdIzin } from "@/lib/match-asesi"
 import { apiFetch } from "@/lib/api-fetch"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
+import { dummyNow, setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 export default function DashboardAsesiPage() {
   const { user } = useAuth()
@@ -103,8 +104,12 @@ export default function DashboardAsesiPage() {
       return
     }
 
+    // DUMMY: "sekarang" = tanggal uji jadwal, jadi hitungan mundur 0 dan
+    // asesi dianggap sudah berada di hari uji.
+    setTanggalUjiAktif(kegiatan.tanggal_uji)
+
     const updateCountdown = () => {
-      const now = new Date()
+      const now = dummyNow()
       const examDate = new Date(kegiatan.tanggal_uji)
       const diff = examDate.getTime() - now.getTime()
 
@@ -137,8 +142,8 @@ export default function DashboardAsesiPage() {
     // Initial call
     updateCountdown()
 
-    // Calculate time until exam to determine interval
-    const now = new Date()
+    // Calculate time until exam to determine interval (pakai jam virtual juga)
+    const now = dummyNow()
     const examDate = new Date(kegiatan.tanggal_uji)
     const diffMs = examDate.getTime() - now.getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
@@ -236,42 +241,16 @@ export default function DashboardAsesiPage() {
     }
   }, [kegiatan])
 
-  const isExamTime = (countdown: { days: number; hours: number; minutes: number; seconds: number; isLate: boolean }) => {
-    // Show "Masuk ke Ujian" if:
-    // 1. Late (waktu ujian sudah lewat) - tapi max 60 menit
-    // 2. Kurang dari 15 menit sebelum ujian
-    if (countdown.isLate) {
-      // Only show button for 60 minutes after exam time
-      const lateSeconds = countdown.minutes * 60 + countdown.seconds
-      return lateSeconds <= 3600 // 60 minutes = 3600 seconds
-    }
-    const totalSeconds = countdown.days * 86400 + countdown.hours * 3600 + countdown.minutes * 60 + countdown.seconds
-    return totalSeconds < 900 // 15 minutes = 900 seconds
-  }
 
+  // DUMMY: label tombol ditentukan HANYA oleh status start dari admin kegiatan
+  // (bukan jam/countdown). Dulu label baru berubah kalau sudah masuk 15 menit
+  // sebelum jadwal, sehingga di web dummy tombol tetap "Lihat Persiapan".
+  const buttonText = useMemo(() => {
+    if (kegiatan?.tahap === 2 || kegiatan?.is_started === "1") return "Masuk Asesmen"
+    if (kegiatan?.tahap === 1 || kegiatan?.is_started_praasesmen === "1") return "Masuk Pra-Asesmen"
 
-  // Memoize button text to prevent flickering - use stable state
-  const [buttonText, setButtonText] = useState("Lihat Persiapan")
-  const [isButtonLocked, setIsButtonLocked] = useState(false)
-
-  useEffect(() => {
-    // Skip if already locked or exam already started
-    if (isButtonLocked || kegiatan?.is_started === "1") {
-      return
-    }
-
-    const currentTimeToEnter = isExamTime(countdown)
-    if (currentTimeToEnter) {
-      setIsButtonLocked(true)
-      if (kegiatan?.is_started_praasesmen === "1") {
-        setButtonText("Masuk Pra-Asesmen")
-      } else if (kegiatan?.is_started === "1") {
-        setButtonText("Masuk Asesmen")
-      } else {
-        setButtonText("Masuk ke Ujian")
-      }
-    }
-  }, [countdown, isButtonLocked, kegiatan?.is_started, kegiatan?.tahap])
+    return "Lihat Persiapan"
+  }, [kegiatan?.tahap, kegiatan?.is_started, kegiatan?.is_started_praasesmen])
 
   // Show loading overlay while page initializes or API is fetching
   if (isPageLoading || isLoading) {

@@ -16,6 +16,7 @@ import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
 import { AbsenUploadModal } from "@/components/admin-tuk/AbsenUploadModal"
 import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { formatShortDateWIB, formatTimeWIB } from "@/lib/date-utils"
+import { dummyNowMs, setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 interface CountdownTime {
   days: number
@@ -49,7 +50,9 @@ function useCountdown(targetDate: string): CountdownTime {
     const target = new Date(targetDate).getTime()
 
     const calculateTimeLeft = () => {
-      const now = new Date().getTime()
+      // DUMMY: patokan "sekarang" = tanggal uji jadwal, bukan jam aktual,
+      // supaya kegiatan 18 Des bisa dimulai hari ini juga.
+      const now = dummyNowMs()
       const difference = target - now
 
       if (difference <= 0) {
@@ -151,6 +154,8 @@ export default function ListAsesiAdminTUK() {
     const fetchKegiatan = async () => {
       try {
         const response = await kegiatanService.getKegiatanDetail(jadwalId)
+        // DUMMY: kunci jam virtual ke tanggal uji jadwal ini.
+        setTanggalUjiAktif(response.data?.tanggal_uji)
         setKegiatan(response.data)
       } catch (err) {
         console.error('Error fetching kegiatan detail:', err)

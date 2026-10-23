@@ -18,6 +18,7 @@ import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
 import { API_BASE_URL } from "@/config/api"
 import { getAk01Status } from "@/lib/ak01-check"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
+import { dummyNowMs, setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 interface CountdownTime {
   days: number
@@ -40,7 +41,8 @@ function calculateCountdown(targetDate: string): CountdownTime {
   }
 
   const target = new Date(targetDate).getTime()
-  const now = new Date().getTime()
+  // DUMMY: patokan "sekarang" = tanggal uji jadwal.
+  const now = dummyNowMs()
   const difference = target - now
 
   if (difference <= 0) {
@@ -82,6 +84,12 @@ export default function AsesiPage() {
   const { kegiatans, isLoading: kegiatanLoading, error: kegiatanError, refetch: refetchKegiatan } = useKegiatanAsesorList(true, 1, '', undefined, true)
   const [allKegiatans, setAllKegiatans] = useState<KegiatanAsesor[]>(kegiatans)
   const currentKegiatan = allKegiatans.find(k => String(k.jadwal_id) === String(jadwalId)) || allKegiatans[0]
+
+  // DUMMY: kunci jam virtual ke tanggal uji jadwal yang sedang dibuka, supaya
+  // countdown & gating memakai tanggal uji (bukan tanggal aktual).
+  useEffect(() => {
+    setTanggalUjiAktif(currentKegiatan?.tanggal_uji)
+  }, [currentKegiatan?.tanggal_uji])
   const { asesiList, isLoading: asesiLoading, error: asesiError, refetch: refetchAsesi } = useListAsesi(jadwalId || "")
 
   // Progress dokumen per asesi (live)

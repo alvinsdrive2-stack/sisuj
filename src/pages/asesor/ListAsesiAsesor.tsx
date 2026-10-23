@@ -16,6 +16,7 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgress"
 import { RealtimeStatusBanner } from "@/components/RealtimeStatusBanner"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
+import { dummyNowMs, setTanggalUjiAktif } from "@/lib/dummy-tanggal"
 
 interface CountdownTime {
   days: number
@@ -50,7 +51,8 @@ function useCountdown(targetDate: string): CountdownTime {
     const target = new Date(targetDate).getTime()
 
     const calculateTimeLeft = () => {
-      const now = new Date().getTime()
+      // DUMMY: patokan "sekarang" = tanggal uji jadwal.
+      const now = dummyNowMs()
       const difference = target - now
 
       if (difference <= 0) {
@@ -131,6 +133,8 @@ export default function ListAsesiAsesor() {
         }
 
         if (found) {
+          // DUMMY: kunci jam virtual ke tanggal uji jadwal ini.
+          setTanggalUjiAktif(found.tanggal_uji)
           setKegiatan(found)
         }
       } catch (err) {

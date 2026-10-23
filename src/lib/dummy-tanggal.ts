@@ -68,6 +68,41 @@ export function tanggalSuratSekarang(jamAcuan: Date = new Date()): string {
 }
 
 /**
+ * JAM VIRTUAL — dipakai untuk gating & countdown, bukan untuk stempel barcode.
+ *
+ * Mengembalikan tanggal_uji jadwal apa adanya (tanggal + jam uji). Efeknya:
+ * selisih terhadap tanggal_uji = 0, sehingga aplikasi menganggap "sekarang"
+ * tepat pada waktu uji jadwal — bukan tanggal aktual server/browser.
+ *
+ * Kalau tanggal uji belum diketahui (mis. halaman daftar tanpa konteks jadwal),
+ * kembalikan jam sebenarnya.
+ */
+export function dummyNow(): Date {
+  if (!tanggalUjiAktif) return new Date()
+
+  const dinormalisasi = tanggalUjiAktif.includes('T')
+    ? tanggalUjiAktif
+    : tanggalUjiAktif.replace(' ', 'T')
+
+  const d = new Date(dinormalisasi)
+
+  return Number.isNaN(d.getTime()) ? new Date() : d
+}
+
+/** dummyNow() dalam milidetik — pengganti Date.now() untuk countdown. */
+export function dummyNowMs(): number {
+  return dummyNow().getTime()
+}
+
+/** Tanggal (YYYY-MM-DD) menurut jam virtual — pengganti "hari ini". */
+export function dummyTodayISO(): string {
+  const d = dummyNow()
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+/**
  * Format tanggal Indonesia (dd Bulan yyyy) dari ISO string, mengikuti tanggal uji.
  * Dipakai di tempat yang dulu menampilkan `new Date()` mentah.
  */

@@ -279,15 +279,9 @@ export function useKegiatanAdminTUK(page: number = 1, search: string = '') {
     setIsLoading(true)
     setError(null)
     try {
-      // Get today's date in WIB (YYYY-MM-DD format)
-      const now = new Date()
-      const wibParts = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Jakarta',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).formatToParts(now)
-      const tanggalUji = `${wibParts.find(p => p.type === 'year')!.value}-${wibParts.find(p => p.type === 'month')!.value}-${wibParts.find(p => p.type === 'day')!.value}`
+      // DUMMY: jangan saring pakai tanggal aktual. Seminar semua jadwal milik
+      // admin kegiatan, supaya jadwal demo (mis. 18 Des) tetap tampil hari ini.
+      const tanggalUji = ''
 
       const response = await kegiatanService.getKegiatanAdminTUK(tanggalUji, page, search)
       setKegiatans(response.data.data)

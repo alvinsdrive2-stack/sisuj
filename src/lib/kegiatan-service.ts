@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "@/config/api"
 import { apiFetch, apiFetchJson } from "@/lib/api-fetch"
+import { dummyNow } from "@/lib/dummy-tanggal"
 
 // Kegiatan / Jadwal Types
 export interface Kegiatan {
@@ -194,7 +195,8 @@ class KegiatanService {
   // Get upcoming kegiatan
   async getUpcomingKegiatan(): Promise<Kegiatan[]> {
     const allKegiatan = await this.getAllKegiatan()
-    const now = new Date()
+    // DUMMY: patokan "sekarang" = tanggal uji jadwal aktif.
+    const now = dummyNow()
     return allKegiatan.data.filter(k => {
       const tanggalUji = new Date(k.tanggal_uji)
       return tanggalUji >= now
@@ -206,7 +208,8 @@ class KegiatanService {
   // Get today's kegiatan
   async getTodayKegiatan(): Promise<Kegiatan[]> {
     const allKegiatan = await this.getAllKegiatan()
-    const today = new Date()
+    // DUMMY: patokan "hari ini" = tanggal uji jadwal aktif.
+    const today = dummyNow()
     today.setHours(0, 0, 0, 0)
 
     return allKegiatan.data.filter(k => {
