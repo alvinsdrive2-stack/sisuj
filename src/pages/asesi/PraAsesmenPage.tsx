@@ -127,7 +127,7 @@ export default function PraAsesmenPage() {
     try {
       // If idIzin already in URL (from UUID redirect), use it directly
       if (idIzinFromUrl) {
-        navigate(`/asesi/praasesmen/${idIzinFromUrl}/apl01`)
+        navigate(`/praasesmen/${idIzinFromUrl}/surat-perjanjian`)
         return
       }
 
@@ -151,7 +151,7 @@ export default function PraAsesmenPage() {
         if (listResult.message === "Success" && listResult.list_asesi && listResult.list_asesi.length > 0) {
           const matchedIdIzin = matchAsesiIdIzin(listResult.list_asesi, user)
           if (matchedIdIzin) {
-            navigate(`/asesi/praasesmen/${matchedIdIzin}/apl01`)
+            navigate(`/praasesmen/${matchedIdIzin}/surat-perjanjian`)
             return
           }
         }

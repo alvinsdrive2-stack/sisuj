@@ -45,7 +45,7 @@ interface SelectedDokumen {
   title: string
 }
 
-type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'sk_komtek' | 'spt_komtek' | 'ba_komtek' | 'sk_penetapan'
+type DokumenKey = 'sk_pelaksanaan_uji' | 'spt_asesor' | 'sk_komtek' | 'spt_komtek' | 'ba_komtek' | 'sk_penetapan' | 'surat_perjanjian'
 
 const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEndpoint?: string }> = [
   { key: 'sk_pelaksanaan_uji', label: 'SK Pelaksanaan Uji', approveEndpoint: '/direktur/approve-sk-pelaksanaan-uji' },
@@ -54,6 +54,7 @@ const DOKUMEN_DIREKTUR_CONFIG: Array<{ key: DokumenKey; label: string; approveEn
   { key: 'spt_komtek', label: 'SPT Komtek', approveEndpoint: '/direktur/approve-spt-komtek' },
   { key: 'ba_komtek', label: 'BA Komtek' },
   { key: 'sk_penetapan', label: 'SK Penetapan' },
+  { key: 'surat_perjanjian', label: 'Surat Perjanjian Sertifikasi' },
 ]
 
 export default function DetailDokumenDirekturPage() {
@@ -149,6 +150,32 @@ export default function DetailDokumenDirekturPage() {
 
   const handleOpenDokumenModal = (asesi: { id_izin: string; nama: string }) => {
     openDokumenModal(asesi.id_izin, asesi.nama, true, id)
+  }
+
+  const [agreement, setAgreement] = useState<{ idIzin: string; name: string; url: string } | null>(null)
+  const [agreementSigned, setAgreementSigned] = useState<Record<string, boolean>>({})
+
+  const openAgreement = async (idIzin: string, name: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${API_BASE_URL}/direktur/surat-perjanjian/${idIzin}`, { headers: { Accept: 'application/pdf', Authorization: `Bearer ${token}` } })
+      if (!response.ok) throw new Error(await extractApiError(response, 'Gagal memuat draft surat'))
+      const url = URL.createObjectURL(await response.blob())
+      setAgreement(prev => { if (prev) URL.revokeObjectURL(prev.url); return { idIzin, name, url } })
+    } catch (error) { showError(extractErrorMessage(error, 'Gagal memuat draft surat')) }
+  }
+  const signAgreement = async () => {
+    if (!agreement) return
+    setIsSigning(true)
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(`${API_BASE_URL}/direktur/surat-perjanjian/${agreement.idIzin}/ttd`, { method: 'POST', headers: { Accept: 'application/json', Authorization: `Bearer ${token}` } })
+      if (!response.ok) throw new Error(await extractApiError(response, 'Gagal tanda tangan'))
+      setAgreementSigned(prev => ({ ...prev, [agreement.idIzin]: true }))
+      showSuccess('Surat perjanjian ditandatangani')
+      await openAgreement(agreement.idIzin, agreement.name)
+    } catch (error) { showError(extractErrorMessage(error, 'Gagal tanda tangan')) }
+    finally { setIsSigning(false) }
   }
 
   const direkturDocuments: DokumenDirekturItem[] = DOKUMEN_DIREKTUR_CONFIG.map(config => ({
@@ -438,6 +465,10 @@ export default function DetailDokumenDirekturPage() {
                             </div>
 
                             <div className="flex items-center gap-3">
+                              <Button type="button" variant="outline" size="sm" onClick={(event) => { event.stopPropagation(); openAgreement(asesi.id_izin, asesi.nama) }}>
+                                <FileText className="w-4 h-4 mr-1" />
+                                {agreementSigned[asesi.id_izin] ? 'Surat ditandatangani' : 'Surat perjanjian'}
+                              </Button>
                               {/* SK Penetapan Status */}
                               {asesi.id_izin in skPenAsesiMap && (
                                 skPenAsesiMap[asesi.id_izin]
@@ -583,6 +614,15 @@ export default function DetailDokumenDirekturPage() {
         }
         isSigning={isSigning}
       />
+      {agreement && (
+        <div className="fixed inset-0 z-[100000] bg-black/70 p-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Surat Perjanjian Sertifikasi">
+          <div className="bg-white rounded-xl w-full max-w-5xl h-[90vh] flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between"><h2 className="font-semibold">Surat Perjanjian Sertifikasi — {agreement.name}</h2><Button variant="ghost" onClick={() => { URL.revokeObjectURL(agreement.url); setAgreement(null) }}>Tutup</Button></div>
+            <iframe title={`Draft surat perjanjian ${agreement.name}`} src={agreement.url} className="flex-1 w-full" />
+            {!agreementSigned[agreement.idIzin] && <div className="p-4 border-t flex justify-end"><Button onClick={signAgreement} disabled={isSigning}>{isSigning ? 'Memproses…' : 'Tanda tangan surat'}</Button></div>}
+          </div>
+        </div>
+      )}
     </>
   )
 }

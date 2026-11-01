@@ -82,6 +82,7 @@ const QontakWhatsAppPage = lazy(() => import('./pages/qontak/QontakWhatsAppPage'
 
 // Asesi Pages
 const DashboardAsesiPage = lazy(() => import('./pages/asesi/DashboardAsesiPage'))
+const SuratPerjanjianPage = lazy(() => import('./pages/asesi/SuratPerjanjianPage'))
 const PraAsesmenPage = lazy(() => import('./pages/asesi/PraAsesmenPage'))
 const AsesmenPage = lazy(() => import('./pages/asesi/AsesmenPage'))
 const Ia01Page = lazy(() => import('./pages/asesi/asesmen/Ia01Page'))
@@ -151,6 +152,7 @@ function App() {
           <Route path="/persiapan-asesmen/:uuid" element={<PraAsesmenByUuidPage />} />
           <Route path="/praasesmen/:idIzin/verifikasi-tuk" element={<VerifikasiTukAjjPage />} />
           <Route path="/praasesmen/:idIzin/konfirmasi" element={<KonfirmasiDataPage />} />
+          <Route path="/praasesmen/:idIzin/surat-perjanjian" element={<PraAsesmenDataGate><AsesiRoute><SuratPerjanjianPage /></AsesiRoute></PraAsesmenDataGate>} />
           <Route path="/praasesmen/:idIzin/apl01" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl01Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
           <Route path="/praasesmen/:idIzin/apl02" element={<PraAsesmenDataGate><AsesiOrAsesorRoute><Apl02Page /></AsesiOrAsesorRoute></PraAsesmenDataGate>} />
           <Route path="/praasesmen/:idIzin/apl02/success" element={<Apl02SuccessPage />} />
