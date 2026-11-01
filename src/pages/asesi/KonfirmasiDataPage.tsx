@@ -74,7 +74,7 @@ export default function KonfirmasiDataPage() {
   }, [idIzin])
 
   const handleConfirm = () => {
-    navigate(`/praasesmen/${idIzin}/apl01`, { replace: true })
+    navigate(`/praasesmen/${idIzin}/surat-perjanjian`, { replace: true })
   }
 
   const openDocument = (url: string, label: string) => {
