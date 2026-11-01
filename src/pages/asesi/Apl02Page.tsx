@@ -2103,6 +2103,18 @@ export default function Apl02Page() {
     return isAsesor1 ? !!barcode?.asesor1?.url : !!barcode?.asesor2?.url
   })()
 
+  // Semua subunit punya barcode asesor yang login. Dipakai guard redirect
+  // "asesor sudah ttd" — satu subunit ber-barcode tidak cukup.
+  const allSubunitsAsesorSigned = useMemo(() => {
+    if (tahap === 0) return true
+    if (!isAsesor) return false
+    const asesorIndex = asesorList.findIndex(a => String(a.id) === String(user?.id))
+    const isAsesor1 = asesorIndex === 0 || asesorIndex === -1
+    const items = Object.values(subunitBarcodes)
+    if (items.length === 0) return false
+    return items.every(sb => (isAsesor1 ? !!sb.asesor1?.url : !!sb.asesor2?.url))
+  }, [tahap, isAsesor, asesorList, user?.id, subunitBarcodes])
+
   // Check if all asesor signatures exist across all subunits (skip untuk tahap 0)
   const allAsesorSigned = (() => {
     if (tahap === 0 || isUuidFlow) return true
@@ -2308,8 +2320,12 @@ export default function Apl02Page() {
       console.warn('[APL02-DEBUG] subunitBarcodes:', JSON.stringify(subunitBarcodes, null, 2))
     }
 
-    // Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0)
-    if (tahap !== 0 && isAsesor && asesorHasSigned) {
+    // Jika asesor sudah ttd → redirect ke halaman berikutnya (skip untuk tahap 0).
+    // Cuma kalau tombolnya "Lanjut ke MUK" (saveOnly=false): asesor boleh
+    // mengubah metode/penilaian lalu simpan ulang tanpa kehilangan data.
+    // Hanya berlaku bila SEMUA subunit punya barcode asesor — satu subunit
+    // ber-barcode bukan berarti asesor sudah menandatangani dokumen ini.
+    if (tahap !== 0 && isAsesor && asesorHasSigned && allSubunitsAsesorSigned && !saveOnly) {
       const finalIdIzin = idIzinFromUrl || _idIzin
       if (finalIdIzin) {
         navigate(`${isUuidFlow ? '/praasesmen' : '/asesi/praasesmen'}/${finalIdIzin}/${isUuidFlow ? 'apl02/success' : 'muk'}`)

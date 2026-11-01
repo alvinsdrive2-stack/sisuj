@@ -350,15 +350,11 @@ export default function Ia05KANPage() {
           <table style={{ width: '100%', border: '1px solid #000', borderCollapse: 'collapse', textAlign: 'center' }}>
             <tbody>
               <tr style={{ fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>
-                <td colSpan={2} style={{ ...td, textAlign: 'center' }}>Rekapitulasi Penilaian Pertanyaan Pilihan Ganda</td>
+                <td colSpan={2} style={{ ...td, textAlign: 'center' }}>Rekapitulasi Penilaian Pertanyaan IA05<br></br><span style={{ fontSize: '9pt', fontWeight: 'normal' }}>(Penilaian = Jumlah skor seluruh soal)</span></td>
               </tr>
               <tr>
-                <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Benar</td>
-                <td style={{ ...td, fontWeight: 'bold', backgroundColor: BRANDING.primaryColor, color: '#fff' }}>Salah</td>
-              </tr>
-              <tr>
+                <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>Total Skor Penilaian</td>
                 <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahBenar}</td>
-                <td style={{ ...td, textAlign: 'center', fontSize: '14pt' }}>{jumlahSalah}</td>
               </tr>
             </tbody>
           </table>

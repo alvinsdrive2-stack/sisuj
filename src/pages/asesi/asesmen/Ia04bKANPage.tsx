@@ -365,8 +365,8 @@ export default function Ia04bKANPage() {
               <td colSpan={2} style={{ border: '1px solid #000', padding: '6px' }}>Rekapitulasi Skor Penilaian Pertanyaan IA04B <span style={{ fontWeight: 'normal' }}><br/>(Penilaian = Jumlah skor seluruh butir soal)</span></td>
             </tr>
             <tr style={{ textAlign: 'center' }}>
-              <td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Total Skor Penilaian</td>
-              <td style={{ fontWeight: 'bold', height: '50px', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>{totalSkor}</td>
+              <td style={{ width: '50%', fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Total Skor Penilaian</td>
+              <td style={{ width: '50%', fontWeight: 'bold', height: '50px', border: '1px solid #000', padding: '6px', fontSize: '18px' }}>{totalSkor}</td>
             </tr>
           </table>
           <br />
