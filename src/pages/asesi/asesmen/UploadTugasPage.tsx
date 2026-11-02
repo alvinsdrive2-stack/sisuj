@@ -87,6 +87,12 @@ export default function UploadTugasPage() {
   // Get dynamic steps
   const asesmenSteps = useMemo(() => getAsesmenSteps(jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket), [jenjang, isAsesor, asesorRole, asesorList.length, metode, tahap, isPaket])
 
+  // Step setelah upload-tugas → label tombol ("Lanjut ke IA.05") & target redirect.
+  const nextStepLabel = useMemo(() => {
+    const idx = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
+    return asesmenSteps[idx + 1]?.label ?? null
+  }, [asesmenSteps])
+
   // Absen check - auto-detect role (asesi/asesor1/asesor2)
   const { showAwalModal, submitAbsenAwal, handleAwalModalClose } = useAbsenCheck({
     phase: 'asesmen',
@@ -138,6 +144,7 @@ export default function UploadTugasPage() {
     jadwalId,
     onRefresh: fetchTugas,
     jenisKelas,
+    nextPageName: nextStepLabel ?? undefined,
   })
   const publishUpdate = signing.publishUpdate
 
@@ -594,17 +601,6 @@ export default function UploadTugasPage() {
                 navigate(nextStep ? nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`) : `/asesi/asesmen/${id}/selesai`)
                 return
               }
-              if (signing.allSigned) {
-                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
-                const nextStep = asesmenSteps[currentStepIndex + 1]
-                if (nextStep) {
-                  const nextPath = nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`)
-                  navigate(nextPath)
-                } else {
-                  navigate(`/asesi/asesmen/${id}/selesai`)
-                }
-                return
-              }
               // Dua sebab BERBEDA tidak boleh memakai satu pesan: dulu
               // `!uploadedTugas || !agreedChecklist` memunculkan "Silakan centang
               // pernyataan..." walau asesi SUDAH centang tapi file tugasnya belum
@@ -617,21 +613,25 @@ export default function UploadTugasPage() {
                 showWarning("Silakan centang pernyataan bahwa file adalah hasil karya sendiri.")
                 return
               }
-              if (!signing.asesiHasSigned) {
+              // Asesor TTD sendiri dulu. Jangan cek signing.allSigned — buat asesor
+              // itu selalu true begitu asesi sudah TTD (waitAsesor:false), sehingga
+              // redirect duluan dan TTD asesor tidak pernah terkirim.
+              if (isAsesor && !signing.asesorHasSigned) {
                 const ok = await signing.generateQR()
                 if (!ok) return
-                showSuccess(signing.singleSigner ? "Dokumen berhasil ditandatangani!" : "QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
+                showSuccess("Dokumen berhasil ditandatangani!")
                 signing.publishUpdate()
-                // Halaman yang tidak menunggu asesor (upload-tugas, waitAsesor:false)
-                // → asesi cukup TTD sekali, jangan wajibkan klik Lanjut kedua.
-                if (!signing.allAsesorSigned) return
               }
-              setIsNavigating(true)
-              const jenjangNum = parseInt(jenjang)
-              if (jenjangNum < 4) {
-                navigate(`/asesi/asesmen/${id}/ia05`)
-              } else {
-                navigate(`/asesi/asesmen/${id}/ia04b`)
+              if (signing.allSigned) {
+                setIsNavigating(true)
+                const currentStepIndex = asesmenSteps.findIndex(s => s.href.includes('upload-tugas') || s.href.includes('tugas'))
+                const nextStep = asesmenSteps[currentStepIndex + 1]
+                if (nextStep) {
+                  navigate(nextStep.href.replace('/asesi/asesmen/', `/asesi/asesmen/${id}/`))
+                } else {
+                  navigate(`/asesi/asesmen/${id}/selesai`)
+                }
+                return
               }
             }}
           >

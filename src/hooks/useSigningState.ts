@@ -299,8 +299,13 @@ export function useSigningState(input: SigningStateInput): SigningState {
   const allSigned = useMemo(() => {
     if (order === 'asesi_only') return asesiHasSigned
     if (order === 'asesor_only') return asesorHasSigned
+    // Halaman tanpa gate asesor (upload-tugas): `allAsesorSigned` selalu true
+    // supaya asesi tidak menunggu. Tapi asesor sendiri harus TTD lebih dulu —
+    // tanpa ini, asesor langsung dianggap selesai dan tombol melompat ke
+    // "Lanjut" sebelum TTD-nya terkirim.
+    if (config.waitAsesor === false && isAsesor) return asesorHasSigned
     return asesiHasSigned && allAsesorSigned
-  }, [order, asesiHasSigned, asesorHasSigned, allAsesorSigned])
+  }, [order, asesiHasSigned, asesorHasSigned, allAsesorSigned, config.waitAsesor, isAsesor])
 
   const missingLabels = useMemo(() => {
     if (tahap === 0) return []
@@ -440,7 +445,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
         }
       }
       if (asesorHasSigned) {
-        if (testingMode || allAsesorSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
+        if (testingMode || allSigned) return { buttonText: lanjutText, buttonDisabled: isSaving }
         return {
           buttonText: `Menunggu TTD: ${missingLabels.join(', ')}`,
           buttonDisabled: true,
@@ -480,7 +485,7 @@ export function useSigningState(input: SigningStateInput): SigningState {
     }
 
     return { buttonText: lanjutText, buttonDisabled: false }
-  }, [order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, agreedChecklist, missingLabels, lanjutText, testingMode, myAsesorRole])
+  }, [order, tahap, isAsesor, isSaving, asesiHasSigned, asesorHasSigned, allAsesorSigned, allSigned, agreedChecklist, missingLabels, lanjutText, testingMode, myAsesorRole])
 
   return {
     asesiHasSigned,
