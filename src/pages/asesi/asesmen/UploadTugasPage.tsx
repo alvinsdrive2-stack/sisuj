@@ -622,7 +622,9 @@ export default function UploadTugasPage() {
                 if (!ok) return
                 showSuccess(signing.singleSigner ? "Dokumen berhasil ditandatangani!" : "QR Code berhasil dibuat. Menunggu tanda tangan Asesor.")
                 signing.publishUpdate()
-                return
+                // Halaman yang tidak menunggu asesor (upload-tugas, waitAsesor:false)
+                // → asesi cukup TTD sekali, jangan wajibkan klik Lanjut kedua.
+                if (!signing.allAsesorSigned) return
               }
               setIsNavigating(true)
               const jenjangNum = parseInt(jenjang)

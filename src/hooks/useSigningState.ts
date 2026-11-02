@@ -276,6 +276,10 @@ export function useSigningState(input: SigningStateInput): SigningState {
 
   const allAsesorSigned = useMemo(() => {
     if (tahap === 0) return true
+    // Halaman yang tidak menunggu asesor (mis. upload-tugas) → anggap lunas
+    // begitu asesi sendiri sudah TTD. Backend juga tidak mengecek TTD asesor
+    // untuk dokumen ini.
+    if (config.waitAsesor === false) return true
     if (singleSigner) return true
     if (isUuidFlow) return true
     if (asesorList.length === 0) return false

@@ -4,6 +4,8 @@ export interface PageSigningConfig {
   order: SigningOrder
   qrEndpoint: string
   nextPageName?: string
+  /** false = tombol lanjut tidak menunggu TTD asesor. Default true. */
+  waitAsesor?: boolean
 }
 
 export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
@@ -19,7 +21,10 @@ export const PAGE_SIGNING_CONFIG: Record<string, PageSigningConfig> = {
 
   // Asesmen — no static next page, determined by step config
   ia01:  { order: 'asesor_first', qrEndpoint: 'ia01' },
-  'upload-tugas': { order: 'asesi_first', qrEndpoint: 'tugas' },
+  // TUGAS = unggahan asesi; asesor tidak TTD di halaman ini. Backend juga tidak
+  // memasukkan TUGAS ke TTD_CHAIN, jadi gate tunggu-asesor hanya ada di FE dan
+  // bikin asesi macet kalau asesor tidak pernah TTD.
+  'upload-tugas': { order: 'asesi_first', qrEndpoint: 'tugas', waitAsesor: false },
   ia02:  { order: 'asesor_first', qrEndpoint: 'ia02' },
   ia03:  { order: 'asesor_first', qrEndpoint: 'ia03' },
   ia04a: { order: 'asesor_first', qrEndpoint: 'ia04a' },

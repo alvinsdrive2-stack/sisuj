@@ -376,7 +376,7 @@ export default function Ia04bKANPage() {
             <tbody>
             <tr><td style={{ fontWeight: 'bold', border: '1px solid #000', padding: '6px' }}>Umpan balik untuk asesi:</td>
               <td style={{ border: '1px solid #000', padding: '6px' }}>:</td>
-              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{adaNilaiNol ? <s>tercapai</s> : 'tercapai'} / {adaNilaiNol ? 'belum tercapai' : <s>belum tercapai</s>}</strong>)* <br/><br/>Tuliskan unit/elemen/KUK jika belum tercapai:
+              <td style={{ border: '1px solid #000', padding: '6px' }}>Aspek pengetahuan seluruh unit kompetensi yang diujikan (<strong>{adaNilaiNol ? <s>tercapai</s> : 'tercapai'} / {adaNilaiNol ? 'belum tercapai' : <s>belum tercapai</s>}</strong>)* <br/><br/>Tuliskan unit/ll/KUK jika belum tercapai:
                 {isAsesor ? (
                   <textarea
                     value={komentar || komentarAuto}
