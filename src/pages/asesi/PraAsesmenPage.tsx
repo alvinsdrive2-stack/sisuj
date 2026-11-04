@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import AsesmenBreadcrumb from "@/components/AsesmenBreadcrumb"
-import { XCircle, X, ZoomIn, ZoomOut, ExternalLink } from "lucide-react"
+import { XCircle, X, ZoomIn, ZoomOut, ExternalLink, AlertTriangle, CheckCircle2, FileText } from "lucide-react"
 import { toast } from "@/components/ui/toast"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
 import { useKegiatanAsesi } from "@/hooks/useKegiatan"
@@ -40,6 +40,19 @@ interface ApiResponse {
   data: PersonalData
 }
 
+// Status TTD Surat Perjanjian Bebas Konflik Kepentingan (backend: perjanjianAsesorStatus)
+interface PerjanjianAsesorStatus {
+  jumlah_asesor: number
+  nama_asesor1: string
+  nama_asesor2: string | null
+  id_user_asesor1: number | null
+  id_user_asesor2: number | null
+  ttd_asesor1: boolean
+  ttd_asesor2: boolean | null
+  all_signed: boolean
+  url_pdf: string
+}
+
 const documentConfig = [
   { key: "npwp" as const, label: "NPWP" },
   { key: "ktp" as const, label: "Kartu Tanda Penduduk" },
@@ -68,6 +81,9 @@ export default function PraAsesmenPage() {
   const [selectedDoc, setSelectedDoc] = useState<{ url: string; label: string; type: string } | null>(null)
   const [zoom, setZoom] = useState(1)
   const isAsesor = user?.role?.id === RoleId.ASESOR
+  const [perjanjianAsesor, setPerjanjianAsesor] = useState<PerjanjianAsesorStatus | null>(null)
+  const [showPerjanjianModal, setShowPerjanjianModal] = useState(false)
+  const [isSigningPerjanjian, setIsSigningPerjanjian] = useState(false)
 
   // Get asesor data for absen check
   const { asesorList, tahap } = useDataDokumenPraAsesmen(idIzinFromUrl)
@@ -116,6 +132,34 @@ export default function PraAsesmenPage() {
   }, [])
 
   useEffect(() => { fetchPraAsesmenData() }, [fetchPraAsesmenData])
+
+  // Status TTD Surat Perjanjian Bebas Konflik Kepentingan asesor.
+  // Gagal fetch bukan alasan nge-block alur absen — diamkan aja.
+  useEffect(() => {
+    if (!idIzinFromUrl) return
+    let cancelled = false
+    const fetchPerjanjianAsesor = async () => {
+      try {
+        const token = localStorage.getItem("access_token")
+        const res = await fetch(`${API_BASE_URL}/praasesmen/${idIzinFromUrl}/perjanjian-asesor`, {
+          headers: {
+            "Accept": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        })
+        if (!res.ok) return
+        const result = await res.json()
+        if (!cancelled && result?.data) {
+          setPerjanjianAsesor(result.data)
+          if (!result.data.all_signed) setShowPerjanjianModal(true)
+        }
+      } catch {
+        // ignore — status opsional
+      }
+    }
+    fetchPerjanjianAsesor()
+    return () => { cancelled = true }
+  }, [idIzinFromUrl])
 
   const { publishUpdate: _publishUpdate } = useRealtimeSync({
     channelName: `praasesmen.${idIzinFromUrl}`,
@@ -183,6 +227,60 @@ export default function PraAsesmenPage() {
 
   const handleZoomOut = () => {
     setZoom(prev => Math.max(prev - 0.25, 0.5))
+  }
+
+  // Slot TTD viewer ini: 1/2 kalau dia asesor jadwal ini yang belum TTD, selain itu null.
+  const myPerjanjianSlot = (() => {
+    if (!perjanjianAsesor || user?.role?.id !== RoleId.ASESOR) return null
+    if (perjanjianAsesor.id_user_asesor1 === user.id && !perjanjianAsesor.ttd_asesor1) return 1 as const
+    if (perjanjianAsesor.id_user_asesor2 && perjanjianAsesor.id_user_asesor2 === user.id && !perjanjianAsesor.ttd_asesor2) return 2 as const
+    return null
+  })()
+
+  const refreshPerjanjianAsesor = async () => {
+    try {
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/praasesmen/${idIzinFromUrl}/perjanjian-asesor`, {
+        headers: {
+          "Accept": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (!res.ok) return
+      const result = await res.json()
+      if (result?.data) {
+        setPerjanjianAsesor(result.data)
+        if (result.data.all_signed) setShowPerjanjianModal(false)
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTtdPerjanjian = async () => {
+    if (!idIzinFromUrl) return
+    setIsSigningPerjanjian(true)
+    try {
+      const token = localStorage.getItem("access_token")
+      const res = await fetch(`${API_BASE_URL}/praasesmen/${idIzinFromUrl}/perjanjian-asesor/ttd`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      })
+      if (!res.ok) {
+        const apiMsg = await extractApiError(res, "Gagal menandatangani surat")
+        throw new Error(apiMsg)
+      }
+      toast("Surat perjanjian bebas konflik kepentingan berhasil ditandatangani", "success")
+      await refreshPerjanjianAsesor()
+    } catch (error) {
+      toast(extractErrorMessage(error, "Gagal menandatangani surat"), "error")
+    } finally {
+      setIsSigningPerjanjian(false)
+    }
   }
 
   if (!data) {
@@ -495,6 +593,88 @@ export default function PraAsesmenPage() {
         description="Silakan ambil foto wajah Anda untuk absen masuk"
         canClose={false}
       />
+
+      {/* Floating Modal: Surat Perjanjian Bebas Konflik Kepentingan asesor.
+          zIndex 10000 → DI ATAS modal foto absen masuk (WebcamModal zIndex 9999). */}
+      {showPerjanjianModal && perjanjianAsesor && !perjanjianAsesor.all_signed && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'rgba(0,0,0,0.6)' }}
+        >
+          <div
+            style={{ background: '#fff', borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.25)', maxWidth: '440px', width: '100%', overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #e0e0e0', background: '#fffbeb' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle style={{ width: '20px', height: '20px', color: '#d97706', flexShrink: 0 }} />
+                <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#000', margin: 0 }}>Surat Perjanjian Bebas Konflik Kepentingan</h3>
+              </div>
+              <button
+                onClick={() => setShowPerjanjianModal(false)}
+                style={{ padding: '4px', border: '1px solid #e0e0e0', background: '#fff', cursor: 'pointer', borderRadius: '4px' }}
+                aria-label="Tutup"
+              >
+                <X style={{ width: '16px', height: '16px' }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '16px' }}>
+              <p style={{ fontSize: '13px', color: '#333', margin: '0 0 12px' }}>
+                Asesor belum menandatangani Surat Perjanjian Bebas Konflik Kepentingan asesmen Anda:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+                  <span style={{ fontSize: '13px', color: '#000' }}>{perjanjianAsesor.nama_asesor1} <span style={{ color: '#666' }}>(Asesor 1)</span></span>
+                  {perjanjianAsesor.ttd_asesor1 ? (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#059669', fontWeight: 600 }}><CheckCircle2 style={{ width: '14px', height: '14px' }} /> TTD</span>
+                  ) : (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#d97706', fontWeight: 600 }}><AlertTriangle style={{ width: '14px', height: '14px' }} /> Belum TTD</span>
+                  )}
+                </div>
+                {perjanjianAsesor.nama_asesor2 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '13px', color: '#000' }}>{perjanjianAsesor.nama_asesor2} <span style={{ color: '#666' }}>(Asesor 2)</span></span>
+                    {perjanjianAsesor.ttd_asesor2 ? (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#059669', fontWeight: 600 }}><CheckCircle2 style={{ width: '14px', height: '14px' }} /> TTD</span>
+                    ) : (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#d97706', fontWeight: 600 }}><AlertTriangle style={{ width: '14px', height: '14px' }} /> Belum TTD</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', padding: '12px 16px', borderTop: '1px solid #e0e0e0' }}>
+              <button
+                onClick={() => window.open(perjanjianAsesor.url_pdf, "_blank")}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '13px', border: '1px solid #999', background: '#fff', color: '#000', cursor: 'pointer', borderRadius: '4px' }}
+              >
+                <FileText style={{ width: '14px', height: '14px' }} /> Lihat Surat
+              </button>
+              {myPerjanjianSlot && (
+                <button
+                  onClick={handleTtdPerjanjian}
+                  disabled={isSigningPerjanjian}
+                  style={{ padding: '8px 14px', fontSize: '13px', border: 'none', background: isSigningPerjanjian ? '#93c5fd' : '#0066cc', color: '#fff', cursor: isSigningPerjanjian ? 'not-allowed' : 'pointer', borderRadius: '4px', fontWeight: 600 }}
+                >
+                  {isSigningPerjanjian ? 'Memproses...' : 'Tandatangani Sekarang'}
+                </button>
+              )}
+              {!myPerjanjianSlot && (
+                <button
+                  onClick={() => setShowPerjanjianModal(false)}
+                  style={{ padding: '8px 14px', fontSize: '13px', border: 'none', background: '#0066cc', color: '#fff', cursor: 'pointer', borderRadius: '4px', fontWeight: 600 }}
+                >
+                  Mengerti
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
