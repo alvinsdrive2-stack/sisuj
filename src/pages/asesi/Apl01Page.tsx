@@ -13,6 +13,7 @@ import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { useAbsenCheck } from "@/hooks/useAbsenCheck"
 import { WebcamModal } from "@/components/ui/WebcamModal"
+import { PerjanjianAsesorModal } from "@/components/ui/PerjanjianAsesorModal"
 import { API_BASE_URL } from "@/config/api"
 import { apiFetch } from "@/lib/api-fetch"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
@@ -1074,6 +1075,9 @@ anda pada saat ini.</span>
           canClose={false}
         />
       )}
+
+      {/* Floating modal perjanjian asesor — zIndex di atas modal absen masuk */}
+      <PerjanjianAsesorModal idIzin={idIzin} />
     </div>
   )
 }
