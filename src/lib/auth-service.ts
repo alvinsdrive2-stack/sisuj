@@ -79,7 +79,11 @@ class AuthService {
       throw new Error(error.message || "Login failed")
     }
 
-    return response.json()
+    const result: LoginResponse = await response.json()
+    // Login nyata = sesi milik akun ini. Buang sisa sesi UUID dari tab mana pun,
+    // supaya halaman pra-asesmen tidak memakai id_izin dari URL/izin orang lain.
+    this.clearUuidSession()
+    return result
   }
 
   // Simpan token ke localStorage
@@ -96,6 +100,15 @@ class AuthService {
   removeToken(): void {
     localStorage.removeItem("access_token")
     localStorage.removeItem("user_data")
+    // Sisa sesi UUID (link wa_uuid) tidak boleh ikut hidup setelah logout/401:
+    // flag itu membuat pra-asesmen mempercayai id_izin dari URL.
+    this.clearUuidSession()
+  }
+
+  // Hapus jejak sesi UUID pra-asesmen di tab ini
+  clearUuidSession(): void {
+    sessionStorage.removeItem("isUuidFlow")
+    sessionStorage.removeItem("praasesmen_uuid_data")
   }
 
   // Simpan user data

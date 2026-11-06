@@ -9,6 +9,7 @@ import UuidStepIndicator from "@/components/UuidStepIndicator"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/contexts/ToastContext"
 import { extractErrorMessage, extractApiError } from "@/lib/error-utils"
+import { resolvePraasesmenIzin, clearUuidSession } from "@/lib/praasesmen-session"
 import { useKegiatanByRole } from "@/hooks/useKegiatanByRole"
 import { useDataDokumenPraAsesmen } from "@/hooks/useDataDokumenPraAsesmen"
 import { CustomCheckbox } from "@/components/ui/Checkbox"
@@ -1471,14 +1472,15 @@ export default function Apl02Page() {
   const { kegiatan, isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  const isUuidSession = !!sessionStorage.getItem("praasesmen_uuid_data")
-  // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
-  const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
+  // id_izin tidak boleh diambil mentah dari URL untuk asesi yang sudah login.
+  // Lihat src/lib/praasesmen-session.ts (guard salah-ttd lintas asesi).
+  const resolved = resolvePraasesmenIzin({ idIzinFromUrl, user, isAsesor })
+  const idIzin = resolved.idIzin
   const { asesorList, namaAsesi, jenjang, tahap, jadwalId, jenisKelas, idAsesor2 } = useDataDokumenPraAsesmen(idIzin)
   const { showSuccess, showError, showWarning } = useToast()
 
   // UUID flow only valid at tahap 0
-  const isUuidFlow = isUuidSession && (tahap === 0 || tahap === undefined)
+  const isUuidFlow = resolved.isUuidSession && (tahap === 0 || tahap === undefined)
 
   const [apl02Data, setApl02Data] = useState<Apl02Data | null>(null)
   const [isDataLoading, setIsDataLoading] = useState(true)
@@ -1847,8 +1849,8 @@ export default function Apl02Page() {
 
   const fetchData = useCallback(async () => {
       try {
-        // Use idIzin from URL when accessed by asesor or UUID flow, otherwise use from user context
-        const idIzin = (isAsesor || isUuidFlow) ? idIzinFromUrl : user?.id_izin
+        // Sumber tunggal (lib/praasesmen-session): URL tidak dipercaya untuk asesi login.
+        const idIzin = resolved.idIzin
 
         // Fetch id_izin dari list-asesi endpoint (skip for asesor)
         let fetchedIdIzin: string | null = idIzin || null
@@ -2503,6 +2505,13 @@ export default function Apl02Page() {
           answers
         }),
       })
+
+      if (response.status === 403) {
+        // Backend menolak: izin ini bukan milik akun yang login.
+        clearUuidSession()
+        showError('Dokumen ini bukan milik akun Anda. Sesi lama sudah dibersihkan — buka kembali dari dashboard Anda.')
+        return
+      }
 
       let signingOk = true
       let signingErrMsg = 'Gagal menyimpan data APL 02'

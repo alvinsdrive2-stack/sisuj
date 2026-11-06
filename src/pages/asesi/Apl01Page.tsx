@@ -16,6 +16,7 @@ import { WebcamModal } from "@/components/ui/WebcamModal"
 import { PerjanjianAsesorModal } from "@/components/ui/PerjanjianAsesorModal"
 import { API_BASE_URL } from "@/config/api"
 import { apiFetch } from "@/lib/api-fetch"
+import { resolvePraasesmenIzin, clearUuidSession } from "@/lib/praasesmen-session"
 import { useSigningState, BarcodeState } from "@/hooks/useSigningState"
 import { FullPageLoader } from "@/components/ui/loading-spinner"
 import { BRANDING } from "@/config/branding"
@@ -128,18 +129,20 @@ function Apl01Layout({ isUuidFlow, idIzin, tahap, children }: { isUuidFlow: bool
 
 export default function Apl01Page() {
   const navigate = useNavigate()
-  const isUuidSession = sessionStorage.getItem("isUuidFlow") === "true"
   const { user } = useAuth()
   const { isAsesor } = useKegiatanByRole()
   const { idIzin: idIzinFromUrl } = useParams<{ idIzin: string }>()
 
-  const idIzin = isUuidSession ? idIzinFromUrl : (isAsesor ? idIzinFromUrl : user?.id_izin)
+  // id_izin tidak boleh diambil mentah dari URL untuk asesi yang sudah login.
+  // Lihat src/lib/praasesmen-session.ts (guard salah-ttd lintas asesi).
+  const resolved = resolvePraasesmenIzin({ idIzinFromUrl, user, isAsesor })
+  const idIzin = resolved.idIzin
 
   // Get asesor data for absen check
   const { asesorList, tahap, jadwalId, namaAsesi, jenisKelas } = useDataDokumenPraAsesmen(idIzin)
 
   // UUID flow only valid at tahap 0
-  const isUuidFlow = isUuidSession && (tahap === 0 || tahap === undefined)
+  const isUuidFlow = resolved.isUuidSession && (tahap === 0 || tahap === undefined)
 
   const { showSuccess, showError, showWarning } = useToast()
 
@@ -349,6 +352,12 @@ export default function Apl01Page() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formDataPekerjaan),
         })
+        if (res.status === 403) {
+          // Backend menolak karena izin ini bukan milik akun yang login.
+          clearUuidSession()
+          showError('Dokumen ini bukan milik akun Anda. Sesi lama sudah dibersihkan — silakan buka kembali dari dashboard Anda.')
+          return
+        }
         if (!res.ok) throw new Error("Gagal menyimpan")
 
         // Generate QR for UUID flow
@@ -358,6 +367,11 @@ export default function Apl01Page() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_jadwal: jadwalId ?? "" }),
           })
+          if (qrRes.status === 403) {
+            clearUuidSession()
+            showError('Tanda tangan ditolak: dokumen ini bukan milik akun Anda. Sesi lama sudah dibersihkan — buka kembali dari dashboard Anda.')
+            return
+          }
           if (!qrRes.ok) {
             showError('Data tersimpan, tetapi tanda tangan digital gagal. Periksa koneksi/sesi Anda, lalu coba lagi.')
             return
