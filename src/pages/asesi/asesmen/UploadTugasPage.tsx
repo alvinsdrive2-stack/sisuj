@@ -613,6 +613,19 @@ export default function UploadTugasPage() {
                 showWarning("Silakan centang pernyataan bahwa file adalah hasil karya sendiri.")
                 return
               }
+              // TTD pihak yang sedang login. Branch asesi sempat hilang saat
+              // refactor ee15faae (diganti, bukan ditambah) → tombol
+              // "Simpan & Tanda Tangan" tidak melakukan apa pun.
+              if (!isAsesor && !signing.asesiHasSigned) {
+                const ok = await signing.generateQR()
+                if (!ok) {
+                  showError("Tanda tangan gagal diproses. Periksa koneksi/sesi Anda, lalu coba lagi.")
+                  return
+                }
+                showSuccess("Dokumen berhasil ditandatangani!")
+                signing.publishUpdate()
+                return
+              }
               // Asesor TTD sendiri dulu. Jangan cek signing.allSigned — buat asesor
               // itu selalu true begitu asesi sudah TTD (waitAsesor:false), sehingga
               // redirect duluan dan TTD asesor tidak pernah terkirim.
