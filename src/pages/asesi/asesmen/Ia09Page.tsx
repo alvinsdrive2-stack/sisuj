@@ -49,36 +49,10 @@ const KESIMPULAN_AUTO = "Pertanyaan dari unit kompetensi ini sudah terjawab dala
 /** Penanda textarea yang wajib diisi asesor. Ikut VITE_LSP_PRIMARY_COLOR. */
 const BORDER_WAJIB = `2px solid ${BRANDING.primaryColor}`
 
-/** Normalisasi kode biar match antar dokumen nggak kena beda spasi/kapitalisasi. */
-function normKode(v: unknown): string {
-  return String(v ?? "").trim().toUpperCase()
-}
-
-/** Kunci gabungan unit+elemen+kuk — dipakai buat nyocokin baris IA09 ke baris IA08. */
-function kunciKode(unit: unknown, elemen: unknown, kuk: unknown): string {
-  return `${normKode(unit)}|${normKode(elemen)}|${normKode(kuk)}`
-}
-
-/**
- * Ekstrak penanda unit/elemen/KUK dari teks soal IA09.
- * Soal IA09 umumnya berbentuk:
- *   "<pertanyaan>\nKode Unit: F.42ATJ00.020.2\nElemen: 6\nKUK: 6.1"
- * Sebagian soal (35 dari 1263 di DB) nggak punya penanda ini — itu yang bikin
- * pemetaan harus fallback ke urutan baris.
- */
-function parseKodeSoal(teksSoal: string): { unit: string; elemen: string; kuk: string } | null {
-  const unit = teksSoal.match(/Kode Unit\s*:\s*(\S+)/i)?.[1]
-  const elemen = teksSoal.match(/Elemen\s*:\s*(\S+)/i)?.[1]
-  const kuk = teksSoal.match(/KUK\s*:\s*(\S+)/i)?.[1]
-  if (!unit || !elemen || !kuk) return null
-  return { unit, elemen, kuk }
-}
-
 /** Bentuk satu baris cek list wawancara FR.IA.08. */
 interface Ia08Baris {
   soalId: number
   no: string
-  kunci: string
   checked: boolean
 }
 
@@ -189,7 +163,6 @@ export default function Ia09Page() {
       const baris: Ia08Baris[] = soal.map((item: any) => ({
         soalId: item.id,
         no: String(item.no ?? ""),
-        kunci: kunciKode(item.unit?.kode, item.subunit?.kode, item.kuk?.kode),
         checked: unitAnswers[String(item.id)] === true,
       }))
       setIa08Baris(baris)
@@ -203,16 +176,20 @@ export default function Ia09Page() {
   useEffect(() => { fetchIa08Checklist() }, [fetchIa08Checklist])
 
   /**
-   * Terapkan hasil pemetaan IA08 → IA09: tandai perlu-wawancara, lalu auto-isi
-   * baris yang tidak perlu diwawancara.
+   * Terapkan pemetaan IA08 → IA09 berdasarkan urutan baris, lalu auto-isi baris
+   * yang tidak dicentang di FR.IA.08.
+   *
+   * Dipetakan per urutan (index), bukan per kode unit/elemen/KUK: kode di kedua
+   * dokumen tidak konsisten (IA09 kadang nunjuk elemen/KUK yang berbeda untuk unit
+   * yang sama), jadi pencocokan kode justru bikin hampir semua baris gagal dipetakan.
    *
    * Jalan setelah KEDUA data siap (urutan fetch nggak dijamin; SSE juga bisa
    * nge-refresh IA09 kapan saja). Dijaga `appliedRef` supaya cuma jalan sekali —
    * kalau tidak, tiap refresh bakal nimpa ketikan asesor.
    *
    * Yang TIDAK perlu diwawancara: kesimpulan diisi KESIMPULAN_AUTO + checkbox K
-   * dicentang. Yang perlu diwawancara: textarea dibiarkan kosong & ditandai merah
-   * supaya asesor isi sendiri.
+   * dicentang. Yang perlu diwawancara: textarea dibiarkan kosong & ditandai warna
+   * primer supaya asesor isi sendiri.
    *
    * Baris yang sudah ada isinya tidak pernah ditimpa.
    */
@@ -225,25 +202,15 @@ export default function Ia09Page() {
     appliedRef.current = true
 
     setPertanyaanList(prev => prev.map((p, index) => {
-      let perlu: boolean | null
+      let perlu: boolean
 
       // Guard: IA08 belum punya centangan sama sekali → jangan auto-isi apa pun.
       if (!ia08Baris.some(b => b.checked)) {
         perlu = true
       } else {
-        perlu = null
-        const parsed = parseKodeSoal(p.pertanyaan || "")
-        if (parsed) {
-          const kunci = kunciKode(parsed.unit, parsed.elemen, parsed.kuk)
-          const match = ia08Baris.find(b => b.kunci === kunci)
-          if (match) perlu = match.checked
-        }
-
-        // Fallback urutan baris — hanya valid kalau jumlah baris kedua dokumen sama.
-        if (perlu === null && ia08Baris.length === prev.length) {
-          const byNo = ia08Baris.find(b => b.no === String(p.no)) ?? ia08Baris[index]
-          if (byNo) perlu = byNo.checked
-        }
+        // Baris ke-N IA09 dibandingkan dengan baris ke-N IA08. Baris IA09 yang
+        // jumlahnya melebihi IA08 dianggap tidak dicentang → ikut auto-isi.
+        perlu = ia08Baris[index]?.checked ?? false
       }
 
       if (perlu !== false) return { ...p, perluWawancara: perlu }
