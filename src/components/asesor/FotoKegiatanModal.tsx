@@ -42,6 +42,7 @@ export function FotoKegiatanModal({
   const [preview, setPreview] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null)
+  const [dragKey, setDragKey] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -49,6 +50,7 @@ export function FotoKegiatanModal({
       setPreview(null)
       setUploading(false)
       setUploadingSlot(null)
+      setDragKey(null)
     }
   }, [isOpen, idIzin])
 
@@ -67,6 +69,27 @@ export function FotoKegiatanModal({
     reader.onload = () => setPreview(reader.result as string)
     reader.readAsDataURL(picked)
   }
+
+  // Drag & drop helpers — key dipakai untuk menandai zona mana yang sedang di-hover
+  const dragProps = (key: string, onFile: (f: File) => void) => ({
+    onDragOver: (e: React.DragEvent) => {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+      if (dragKey !== key) setDragKey(key)
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      const next = e.relatedTarget as Node | null
+      if (!next || !e.currentTarget.contains(next)) {
+        setDragKey(prev => (prev === key ? null : prev))
+      }
+    },
+    onDrop: (e: React.DragEvent) => {
+      e.preventDefault()
+      setDragKey(null)
+      const picked = e.dataTransfer.files?.[0]
+      if (picked) onFile(picked)
+    },
+  })
 
   const handleSubmit = async () => {
     if (!file) {
@@ -170,6 +193,8 @@ export function FotoKegiatanModal({
   return createPortal(
     <div
       onClick={onClose}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
       style={{
         position: 'fixed',
         inset: 0,
@@ -221,16 +246,34 @@ export function FotoKegiatanModal({
 
         <div style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
           {/* Foto kegiatan asesi */}
-          <div style={{
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            background: '#f9fafb',
-            minHeight: '200px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}>
+          <div
+            {...dragProps('kegiatan', handlePick)}
+            style={{
+              border: dragKey === 'kegiatan' ? '2px dashed #059669' : '1px solid #e5e7eb',
+              borderRadius: '12px',
+              background: dragKey === 'kegiatan' ? '#ecfdf5' : '#f9fafb',
+              minHeight: '200px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              position: 'relative',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {dragKey === 'kegiatan' && (
+              <div style={{
+                position: 'absolute', inset: 0, zIndex: 2,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '8px',
+                background: 'rgba(236, 253, 245, 0.92)',
+                color: '#059669', fontSize: '13px', fontWeight: '600',
+                pointerEvents: 'none',
+              }}>
+                <Upload style={{ width: '28px', height: '28px' }} />
+                Lepaskan foto di sini
+              </div>
+            )}
             {preview ? (
               <img src={preview} alt="Preview foto kegiatan" style={{ width: '100%', maxHeight: '320px', objectFit: 'contain' }} />
             ) : existingUrl ? (
@@ -245,6 +288,9 @@ export function FotoKegiatanModal({
               >
                 <Camera style={{ width: '36px', height: '36px', color: '#9ca3af' }} />
                 Belum ada foto kegiatan
+                <span style={{ fontSize: '11px', fontWeight: '400', color: '#9ca3af' }}>
+                  Drag &amp; drop atau klik untuk pilih
+                </span>
                 <input
                   type="file"
                   accept={ACCEPT}
@@ -298,11 +344,14 @@ export function FotoKegiatanModal({
                 return (
                   <div
                     key={slot.label}
+                    {...dragProps(kind, (f) => handleAbsenUpload(kind, f))}
                     style={{
-                      border: `1px solid ${slot.url ? '#d1fae5' : '#e5e7eb'}`,
+                      border: dragKey === kind ? '2px dashed #4f46e5' : `1px solid ${slot.url ? '#d1fae5' : '#e5e7eb'}`,
                       borderRadius: '12px',
                       padding: '12px',
-                      background: slot.url ? '#f0fdf4' : '#f9fafb',
+                      background: dragKey === kind ? '#eef2ff' : slot.url ? '#f0fdf4' : '#f9fafb',
+                      position: 'relative',
+                      transition: 'all 0.15s ease',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px' }}>
@@ -312,7 +361,19 @@ export function FotoKegiatanModal({
                     <div style={{
                       height: '140px', borderRadius: '8px', overflow: 'hidden',
                       background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      position: 'relative',
                     }}>
+                      {dragKey === kind && (
+                        <div style={{
+                          position: 'absolute', inset: 0, zIndex: 2,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(238, 242, 255, 0.94)',
+                          color: '#4f46e5', fontSize: '12px', fontWeight: '600',
+                          pointerEvents: 'none',
+                        }}>
+                          Lepaskan di sini
+                        </div>
+                      )}
                       {slot.url ? (
                         renderPreview(slot.url, slot.label, 'max-h-[140px]')
                       ) : (
@@ -366,7 +427,7 @@ export function FotoKegiatanModal({
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '16px', padding: '10px 12px', background: '#fef3c7', borderRadius: '8px' }}>
             <AlertCircle style={{ width: '14px', height: '14px', color: '#d97706', marginTop: '2px', flexShrink: 0 }} />
             <p style={{ fontSize: '11px', color: '#92400e', margin: 0 }}>
-              Maksimal 10MB per foto (JPG/PNG/WebP).
+              Drag &amp; drop atau klik untuk pilih. Maksimal 10MB per foto (JPG/PNG/WebP).
             </p>
           </div>
         </div>
