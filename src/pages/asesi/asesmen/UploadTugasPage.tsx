@@ -624,7 +624,9 @@ export default function UploadTugasPage() {
                 }
                 showSuccess("Dokumen berhasil ditandatangani!")
                 signing.publishUpdate()
-                return
+                // Halaman yang tidak menunggu asesor (upload-tugas, waitAsesor:false)
+                // → asesi cukup TTD sekali, jangan wajibkan klik Lanjut kedua.
+                if (!signing.allAsesorSigned) return
               }
               // Asesor TTD sendiri dulu. Jangan cek signing.allSigned — buat asesor
               // itu selalu true begitu asesi sudah TTD (waitAsesor:false), sehingga
