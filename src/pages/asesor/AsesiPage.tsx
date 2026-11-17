@@ -220,6 +220,7 @@ export default function AsesiPage() {
   const [jenjangMap, setJenjangMap] = useState<Record<string, string>>({})
   const [metodeMap, setMetodeMap] = useState<Record<string, string>>({})
   const [tahapMap, setTahapMap] = useState<Record<string, number>>({})
+  const [asesorRoleMap, setAsesorRoleMap] = useState<Record<string, 1 | 2>>({})
 
   // Mode riwayat: id_izin yang menampilkan pilihan Pra-Asesmen / Asesmen
   const [pilihanAsesi, setPilihanAsesi] = useState<string | null>(null)
@@ -272,14 +273,19 @@ export default function AsesiPage() {
           const newJenjangMap: Record<string, string> = {}
           const newMetodeMap: Record<string, string> = {}
           const newTahapMap: Record<string, number> = {}
+          const newRoleMap: Record<string, 1 | 2> = {}
+          const userId = Number(user?.id)
           validResults.forEach(r => {
             newJenjangMap[r.id_izin] = r.jenjang
             newMetodeMap[r.id_izin] = r.metode
             newTahapMap[r.id_izin] = r.tahap
+            if (r.id_asesor_1 === userId) newRoleMap[r.id_izin] = 1
+            else if (r.id_asesor_2 === userId) newRoleMap[r.id_izin] = 2
           })
           setJenjangMap(newJenjangMap)
           setMetodeMap(newMetodeMap)
           setTahapMap(newTahapMap)
+          setAsesorRoleMap(newRoleMap)
         }
       } catch (err) {
         console.error('Error fetching asesor data:', err)
@@ -287,7 +293,7 @@ export default function AsesiPage() {
     }
 
     fetchAsesorData()
-  }, [asesiList])
+  }, [asesiList, user?.id])
 
   // Determine if user is asesor1 or asesor2
   const isAsesor1 = asesorIds.id_asesor_1 === Number(user?.id)
@@ -948,6 +954,17 @@ export default function AsesiPage() {
         idIzin={fotoTarget?.id_izin || ''}
         nama={fotoTarget?.nama || ''}
         existingUrl={fotoTarget ? absenData[fotoTarget.id_izin]?.foto_kegiatan : null}
+        phase={currentKegiatan.tahap === 1 ? 'praasesmen' : 'asesmen'}
+        absenAwalUrl={
+          asesorRoleMap[fotoTarget?.id_izin ?? ''] === 2
+            ? absenData[fotoTarget?.id_izin ?? '']?.url_absen_asesor2_awal ?? null
+            : absenData[fotoTarget?.id_izin ?? '']?.url_absen_asesor1_awal ?? null
+        }
+        absenAkhirUrl={
+          asesorRoleMap[fotoTarget?.id_izin ?? ''] === 2
+            ? absenData[fotoTarget?.id_izin ?? '']?.url_absen_asesor2_akhir ?? null
+            : absenData[fotoTarget?.id_izin ?? '']?.url_absen_asesor1_akhir ?? null
+        }
         onClose={() => setFotoTarget(null)}
         onSuccess={() => setAbsenRefreshKey(k => k + 1)}
       />
