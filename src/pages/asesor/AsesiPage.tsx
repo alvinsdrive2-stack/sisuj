@@ -2,7 +2,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle, FileText } from "lucide-react"
+import { Users, Clock, Calendar, MapPin, UserCheck, Check, AlertCircle, FileText, Camera } from "lucide-react"
 import { EmptyState } from "@/components/ui/EmptyState"
 import { ErrorState } from "@/components/ui/ErrorState"
 import { useKegiatanAsesorList, useListAsesi, KegiatanAsesor } from "@/hooks/useKegiatan"
@@ -15,6 +15,8 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync"
 import { useDokumenProgress, countFilledDokumen } from "@/hooks/useDokumenProgress"
 import { RealtimeStatusBanner } from "@/components/RealtimeStatusBanner"
 import { useDokumenAsesiModal } from "@/contexts/DokumenAsesiContext"
+import { useDaftarHadirModal } from "@/contexts/DaftarHadirModalContext"
+import { FotoKegiatanModal } from "@/components/asesor/FotoKegiatanModal"
 import { API_BASE_URL } from "@/config/api"
 import { getAk01Status } from "@/lib/ak01-check"
 import JadwalVideoUploader from "@/components/admin-tuk/JadwalVideoUploader"
@@ -78,6 +80,10 @@ export default function AsesiPage() {
   const [searchParams] = useSearchParams()
   const isRiwayat = searchParams.has('riwayat')
   const { openModal: openDokumenAsesiModal } = useDokumenAsesiModal()
+  const { openKegiatanModal } = useDaftarHadirModal()
+
+  // Modal upload foto kegiatan per-asesi
+  const [fotoTarget, setFotoTarget] = useState<{ id_izin: string; nama: string } | null>(null)
 
   // Debug logging
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
@@ -170,7 +176,8 @@ export default function AsesiPage() {
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
-  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0)
+  const [absenRefreshKey, setAbsenRefreshKey] = useState(0)
+  const { absenData } = useBatchAbsenData(asesiIds, asesiIds.length > 0, absenRefreshKey)
 
   // State for asesor IDs and jenjang per-asesi
   const [asesorIds, setAsesorIds] = useState<{ id_asesor_1: number | null; id_asesor_2: number | null }>({
@@ -774,6 +781,21 @@ export default function AsesiPage() {
                                   {filled}/20
                                 </span>
                               </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setFotoTarget({ id_izin: asesi.id_izin, nama: asesi.nama })
+                                }}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                                  absen?.foto_kegiatan
+                                    ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100'
+                                    : 'text-slate-400 hover:text-primary hover:bg-primary/10'
+                                }`}
+                                title={absen?.foto_kegiatan ? 'Foto kegiatan sudah ada — klik untuk ganti' : 'Upload foto kegiatan'}
+                              >
+                                <Camera className="w-4 h-4" />
+                              </button>
                               <Badge className={getStatusBadgeStyle(reviewStatus)}>
                                 {reviewStatus}
                               </Badge>
@@ -839,7 +861,7 @@ export default function AsesiPage() {
                 Dokumen Asesi
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {asesiList.length > 0 ? (
                 <button
                   onClick={() => openDokumenAsesiModal(asesiList[0].id_izin)}
@@ -856,10 +878,32 @@ export default function AsesiPage() {
               ) : (
                 <EmptyState icon={Users} title="Tidak ada asesi" message="Pilih asesi terlebih dahulu" />
               )}
+
+              <button
+                onClick={() => openKegiatanModal('foto_bersama', String(currentKegiatan.jadwal_id))}
+                className="w-full p-4 rounded-xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/60 transition-all text-center cursor-pointer group flex items-center justify-center gap-3"
+              >
+                <Camera className="w-6 h-6 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
+                <div className="text-left">
+                  <p className="font-semibold text-slate-700 group-hover:text-emerald-700 transition-colors">
+                    Foto Bersama
+                  </p>
+                  <p className="text-xs text-slate-400">Upload foto bersama kegiatan</p>
+                </div>
+              </button>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      <FotoKegiatanModal
+        isOpen={!!fotoTarget}
+        idIzin={fotoTarget?.id_izin || ''}
+        nama={fotoTarget?.nama || ''}
+        existingUrl={fotoTarget ? absenData[fotoTarget.id_izin]?.foto_kegiatan : null}
+        onClose={() => setFotoTarget(null)}
+        onSuccess={() => setAbsenRefreshKey(k => k + 1)}
+      />
     </div>
   )
 }
