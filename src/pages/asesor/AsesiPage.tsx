@@ -80,10 +80,13 @@ export default function AsesiPage() {
   const [searchParams] = useSearchParams()
   const isRiwayat = searchParams.has('riwayat')
   const { openModal: openDokumenAsesiModal } = useDokumenAsesiModal()
-  const { openKegiatanModal } = useDaftarHadirModal()
+  const { openKegiatanModal, isKegiatanModalOpen } = useDaftarHadirModal()
 
   // Modal upload foto kegiatan per-asesi
   const [fotoTarget, setFotoTarget] = useState<{ id_izin: string; nama: string } | null>(null)
+
+  // Foto bersama per-jadwal
+  const [fotoBersamaUrl, setFotoBersamaUrl] = useState<string | null>(null)
 
   // Debug logging
   console.log('[AsesiPage] Render:', { jadwalId, userName: user?.name, userRole: user?.role?.name })
@@ -173,6 +176,36 @@ export default function AsesiPage() {
     const timer = setInterval(updateCountdowns, 1000)
     return () => clearInterval(timer)
   }, [allKegiatans.length]) // Only re-run when number of kegiatans changes, not array reference
+
+  // Fetch foto bersama milik jadwal ini
+  useEffect(() => {
+    const jadwal = currentKegiatan?.jadwal_id
+    if (!jadwal) {
+      setFotoBersamaUrl(null)
+      return
+    }
+
+    let cancelled = false
+    const token = localStorage.getItem("access_token")
+
+    fetch(`${API_BASE_URL}/bukti/${jadwal}/kegiatan`, {
+      headers: {
+        "Accept": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+    })
+      .then(res => (res.ok ? res.json() : null))
+      .then(result => {
+        if (cancelled) return
+        const url = result?.data?.url_foto_bersama
+        setFotoBersamaUrl(url && url !== '' ? url : null)
+      })
+      .catch(() => {
+        if (!cancelled) setFotoBersamaUrl(null)
+      })
+
+    return () => { cancelled = true }
+  }, [currentKegiatan?.jadwal_id, isKegiatanModalOpen])
 
   // Get asesi IDs for absen data fetch
   const asesiIds = asesiList.map(a => a.id_izin)
@@ -881,14 +914,28 @@ export default function AsesiPage() {
 
               <button
                 onClick={() => openKegiatanModal('foto_bersama', String(currentKegiatan.jadwal_id))}
-                className="w-full p-4 rounded-xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/60 transition-all text-center cursor-pointer group flex items-center justify-center gap-3"
+                className={`w-full p-4 rounded-xl border-2 border-dashed transition-all text-center cursor-pointer group flex items-center justify-center gap-3 ${
+                  fotoBersamaUrl
+                    ? 'border-emerald-300 hover:border-emerald-500 hover:bg-emerald-50/60'
+                    : 'border-red-300 hover:border-red-500 hover:bg-red-50/60'
+                }`}
               >
-                <Camera className="w-6 h-6 text-emerald-400 group-hover:text-emerald-600 transition-colors" />
+                <Camera className={`w-6 h-6 transition-colors ${
+                  fotoBersamaUrl
+                    ? 'text-emerald-400 group-hover:text-emerald-600'
+                    : 'text-red-400 group-hover:text-red-600'
+                }`} />
                 <div className="text-left">
-                  <p className="font-semibold text-slate-700 group-hover:text-emerald-700 transition-colors">
-                    Foto Bersama
+                  <p className={`font-semibold transition-colors ${
+                    fotoBersamaUrl
+                      ? 'text-slate-700 group-hover:text-emerald-700'
+                      : 'text-slate-700 group-hover:text-red-700'
+                  }`}>
+                    {fotoBersamaUrl ? 'Lihat Foto Bersama' : 'Upload Foto Bersama'}
                   </p>
-                  <p className="text-xs text-slate-400">Upload foto bersama kegiatan</p>
+                  <p className="text-xs text-slate-400">
+                    {fotoBersamaUrl ? 'Foto bersama sudah tersimpan' : 'Belum ada foto bersama'}
+                  </p>
                 </div>
               </button>
             </CardContent>
