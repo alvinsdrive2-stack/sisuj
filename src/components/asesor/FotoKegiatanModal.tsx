@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Camera, Upload, X, Image as ImageIcon, ExternalLink, AlertCircle, UserCheck } from "lucide-react"
 import { SimpleSpinner } from "@/components/ui/loading-spinner"
 import { toast } from "@/components/ui/toast"
@@ -166,7 +167,7 @@ export function FotoKegiatanModal({
     )
   }
 
-  return (
+  return createPortal(
     <div
       onClick={onClose}
       style={{
@@ -407,6 +408,7 @@ export function FotoKegiatanModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
