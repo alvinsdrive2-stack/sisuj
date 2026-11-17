@@ -40,6 +40,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
   const [qrDataUrl, setQrDataUrl] = useState<string>("")
   const [selectedField, setSelectedField] = useState<UrlField | null>(null)
   const [imageLoadError, setImageLoadError] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   // Get labels based on type
   const getTypeInfo = (): {
@@ -188,6 +189,7 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
     if (!isOpen) {
       setSelectedField(null)
       setData(null)
+      setIsDragging(false)
     }
   }, [isOpen])
 
@@ -252,6 +254,8 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
   return (
     <div
       onClick={onClose}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
       style={{
         position: 'fixed',
         top: 0,
@@ -335,18 +339,50 @@ export function KegiatanModal({ isOpen, type, jadwalId, onClose }: KegiatanModal
             <>
               {/* Photo Preview Area */}
               {selectedField && (
-                <div style={{
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.dataTransfer.dropEffect = 'copy'
+                    if (!isDragging) setIsDragging(true)
+                  }}
+                  onDragLeave={(e) => {
+                    const next = e.relatedTarget as Node | null
+                    if (!next || !e.currentTarget.contains(next)) setIsDragging(false)
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    setIsDragging(false)
+                    const file = e.dataTransfer.files?.[0]
+                    if (file && selectedField && !isUploading) {
+                      handleUpload(selectedField.key, file)
+                    }
+                  }}
+                  style={{
                   borderRadius: '12px',
                   overflowY: 'auto',
                   overflowX: 'hidden',
-                  border: '1px solid #e5e7eb',
-                  background: '#f9fafb',
+                  border: isDragging ? '2px dashed #059669' : '1px solid #e5e7eb',
+                  background: isDragging ? '#ecfdf5' : '#f9fafb',
                   position: 'relative',
                   width: '100%',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
+                  transition: 'all 0.15s ease',
                 }}>
+                  {isDragging && (
+                    <div style={{
+                      position: 'absolute', inset: 0, zIndex: 30,
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center', gap: '10px',
+                      background: 'rgba(236, 253, 245, 0.94)',
+                      color: '#059669', fontSize: '14px', fontWeight: '600',
+                      pointerEvents: 'none',
+                    }}>
+                      <FontAwesomeIcon icon={faUpload} style={{ fontSize: '32px' }} />
+                      Lepaskan foto di sini
+                    </div>
+                  )}
                   {selectedUrl ? (
                     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                       {isPdf ? (
