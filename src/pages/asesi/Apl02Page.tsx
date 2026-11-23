@@ -37,6 +37,17 @@ const subunitBuktiKey = (unitId: string, subunitId: string) => `${unitId}|${subu
 const APL02_APPLY_TO_ALL = import.meta.env.VITE_APL02_APPLY_TO_ALL === 'true'
 const APL02_AUTO_ASSIGN_DOCS = import.meta.env.VITE_APL02_AUTO_ASSIGN_DOCS === 'true'
 
+/**
+ * Jenis dokumen dari filetype/nama file APL-02 yang ikut auto-assign.
+ * Normalisasi sama dengan Proyek::isReferensiKerjaFile di backend.
+ */
+const apl02DocKind = (raw: string): 'ijazah' | 'referensi' | null => {
+  const norm = raw.toLowerCase().replace(/[^a-z0-9]+/g, ' ')
+  if (/referensi\s*kerja/.test(norm)) return 'referensi'
+  if (/ijazah/.test(norm)) return 'ijazah'
+  return null
+}
+
 // ============== LAYOUT COMPONENT ==============
 
 interface Apl02PageLayoutProps {
@@ -1956,6 +1967,7 @@ export default function Apl02Page() {
         }
 
         // Parse files response
+        let mappedFiles: Array<{ id: number; name: string; path: string; filetype?: string | null }> = []
         if (filesResponse.ok) {
           const filesResult = await filesResponse.json()
           if (filesResult.message === "Success" && filesResult.data) {
@@ -1964,8 +1976,11 @@ export default function Apl02Page() {
               const fileBase = import.meta.env.VITE_FILE_BASE_URL || API_BASE_URL.replace('/api', '')
               return `${fileBase}${p.startsWith('/') ? '' : '/'}${p}`
             }
-            const mappedFiles = filesResult.data.map((f: any) => ({
-              id: f.id, name: f.original_name || f.name, path: getFileUrl(f.path)
+            mappedFiles = filesResult.data.map((f: any) => ({
+              id: f.id,
+              name: f.original_name || f.name,
+              path: getFileUrl(f.path),
+              filetype: f.filetype ?? null,
             }))
             setUploadedFilesInfo(mappedFiles)
           }
@@ -1974,12 +1989,12 @@ export default function Apl02Page() {
         // Parse dokumen-asesi response and inject ijazah + referensi_kerja
         // Skip if asesi QR already exists (prevents re-selection creating duplicates)
         const sudahDitandatangani = barcodesFromApi?.asesi?.url != null
+        const dokumenFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
         if (dokumenAsesiResponse.ok && !sudahDitandatangani) {
           try {
             const dokumenAsesiResult = await dokumenAsesiResponse.json()
             const data = dokumenAsesiResult.data || dokumenAsesiResult
             if (data) {
-              const dokumenFiles: Array<{ id: number; name: string; path: string; kebenaran: boolean }> = []
               if (data.ijazah) {
                 dokumenFiles.push({ id: -1, name: 'Ijazah', path: data.ijazah, kebenaran: true })
               }
@@ -1992,41 +2007,59 @@ export default function Apl02Page() {
                   const newFiles = dokumenFiles.filter(f => !existingIds.has(f.id))
                   return [...newFiles, ...prev]
                 })
-
-                // ── Auto-select Ijazah & Referensi Kerja utk SEMUA elemen ──
-                // Dikontrol oleh env VITE_APL02_AUTO_ASSIGN_DOCS.
-                // File kebenaran (id negatif hasil injeksi dokumen-asesi) langsung
-                // terpilih di setiap elemen/subunit. Kecuali: mode asesor, atau
-                // subunit tsb SUDAH punya file serupa (mis. dari draft/attach
-                // sebelumnya) — hindari duplikat saat buka ulang halaman.
-                if (!isAsesor && APL02_AUTO_ASSIGN_DOCS) {
-                  const defaultFiles = dokumenFiles.filter(f => f.id < 0)
-                  if (defaultFiles.length > 0) {
-                    const nameById = new Map(defaultFiles.map(f => [f.id, String(f.name || '').toLowerCase()]))
-                    setBuktiBySubunit(prev => {
-                      const next = { ...prev }
-                      units.forEach(unit => {
-                        unit.subunits.forEach(subunit => {
-                          const existingNames = new Set(
-                            (subunit.files || []).map(f => String(f.name || '').toLowerCase()),
-                          )
-                          const key = subunitBuktiKey(unit.id, subunit.id)
-                          const cur = next[key] || []
-                          defaultFiles.forEach(df => {
-                            const nm = nameById.get(df.id)
-                            if (!nm || existingNames.has(nm)) return
-                            if (!cur.includes(df.id)) cur.push(df.id)
-                          })
-                          if (cur.length) next[key] = cur
-                        })
-                      })
-                      return next
-                    })
-                  }
-                }
               }
             }
           } catch { /* ignore parse errors */ }
+        }
+
+        // ── Auto-select Ijazah & Referensi Kerja utk SEMUA elemen ──
+        // Dikontrol oleh env VITE_APL02_AUTO_ASSIGN_DOCS.
+        // Sumber kandidat: file kebenaran (id negatif hasil injeksi
+        // dokumen-asesi) DAN file yang diupload asesi di APL-02 yang jenisnya
+        // cocok (filetype/nama "referensi kerja" atau "ijazah"). Dijalankan
+        // terpisah dari respons dokumen-asesi supaya file upload tetap
+        // ter-assign walau proyeks.surat_referensi kosong.
+        // Kecuali: mode asesor, atau subunit SUDAH punya file serupa
+        // (draft/attach sebelumnya) — hindari duplikat saat buka ulang halaman.
+        if (!isAsesor && APL02_AUTO_ASSIGN_DOCS && !sudahDitandatangani) {
+          const kebenaranFiles = dokumenFiles.filter(f => f.id < 0)
+          const uploadedDocFiles = mappedFiles.filter(
+            f => apl02DocKind(`${f.filetype || ''} ${f.name || ''}`) !== null,
+          )
+          const defaultFiles = [...kebenaranFiles, ...uploadedDocFiles]
+          if (defaultFiles.length > 0) {
+            const nameById = new Map(defaultFiles.map(f => [f.id, String(f.name || '').toLowerCase()]))
+            const kindById = new Map(
+              uploadedDocFiles.map(f => [f.id, apl02DocKind(`${f.filetype || ''} ${f.name || ''}`)]),
+            )
+            setBuktiBySubunit(prev => {
+              const next = { ...prev }
+              units.forEach(unit => {
+                unit.subunits.forEach(subunit => {
+                  const existingNames = new Set(
+                    (subunit.files || []).map(f => String(f.name || '').toLowerCase()),
+                  )
+                  const existingKinds = new Set(
+                    (subunit.files || [])
+                      .map(f => apl02DocKind(String(f.name || '')))
+                      .filter((k): k is 'ijazah' | 'referensi' => k !== null),
+                  )
+                  const key = subunitBuktiKey(unit.id, subunit.id)
+                  const cur = next[key] || []
+                  defaultFiles.forEach(df => {
+                    const nm = nameById.get(df.id)
+                    if (!nm || existingNames.has(nm)) return
+                    // File upload: jangan dobel jenis yang sudah ada.
+                    const kind = kindById.get(df.id)
+                    if (kind && existingKinds.has(kind)) return
+                    if (!cur.includes(df.id)) cur.push(df.id)
+                  })
+                  if (cur.length) next[key] = cur
+                })
+              })
+              return next
+            })
+          }
         }
 
         // Set metode dari API — jangan pernah memoles null: selama asesor
